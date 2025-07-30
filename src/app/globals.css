@@ -27,11 +27,11 @@
   }
 
   .font-primary {
-    font-family: var(--font-family-primary);
+    font-family: var(--font-rajdhani), "Rajdhani", sans-serif;
   }
 
   .font-secondary {
-    font-family: var(--font-family-secondary);
+    font-family: var(--font-manrope), "Manrope", sans-serif;
   }
 }
 
@@ -42,7 +42,7 @@
   }
 
   body {
-    font-family: var(--font-family-primary);
+    font-family: var(--font-rajdhani), "Rajdhani", sans-serif;
     line-height: 1.6;
     color: #ffffff;
     background-color: #0e0e11;
@@ -61,7 +61,7 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-family-primary);
+    font-family: var(--font-rajdhani), "Rajdhani", sans-serif;
     font-weight: 600;
     line-height: 1.2;
   }

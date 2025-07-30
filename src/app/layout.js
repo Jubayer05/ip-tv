@@ -8,13 +8,15 @@ const rajdhani = Rajdhani({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   display: "swap",
+  fallback: ["Arial", "sans-serif"], // Add fallback
 });
 
 const manrope = Manrope({
-  variable: "--font-manrope", 
+  variable: "--font-manrope",
   subsets: ["latin"],
   weight: ["200", "300", "400", "500", "600", "700", "800"],
   display: "swap",
+  fallback: ["Arial", "sans-serif"], // Add fallback
 });
 
 export const metadata = {
@@ -25,10 +27,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body
-        className={`${rajdhani.variable} ${manrope.variable} antialiased font-primary`}
-      >
+    <html lang="en" className={`${rajdhani.variable} ${manrope.variable}`}>
+      <body className="antialiased font-primary">
         <Navbar />
         <main className="min-h-screen">{children}</main>
         <Footer />
