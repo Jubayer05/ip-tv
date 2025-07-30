@@ -1,0 +1,1 @@
+// AffiliateWithdrawal model
