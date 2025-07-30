@@ -11,42 +11,32 @@ const movies = [
   {
     id: 1,
     title: "Interstellar",
-    image:
-      "https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=400&h=600&fit=crop&crop=center",
+    image: "/movies/trailer-1.jpg",
     tagline: "Mankind's next step will be our greatest",
-  },
-  {
-    id: 2,
-    title: "Reversion",
-    image:
-      "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=600&fit=crop&crop=center",
-    tagline: "The end is only the beginning",
   },
   {
     id: 3,
     title: "Inception",
-    image:
-      "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=400&h=600&fit=crop&crop=center",
+    image: "/movies/trailer-2.jpg",
     tagline: "Your mind is the scene of the crime",
   },
   {
     id: 4,
     title: "The Matrix",
-    image:
-      "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&h=600&fit=crop&crop=center",
+    image: "/movies/trailer-3.jpg",
     tagline: "Welcome to the real world",
   },
   {
     id: 5,
     title: "Blade Runner",
-    image:
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=600&fit=crop&crop=center",
+    image: "/movies/trailer-1.jpg",
     tagline: "More human than human",
   },
 ];
 
 const LatestTrailers = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentMovie, setCurrentMovie] = useState(movies[0]);
 
   const CustomArrow = ({ className, style, onClick, direction }) => (
     <button
@@ -72,7 +62,7 @@ const LatestTrailers = () => {
     className: "center",
     centerMode: true,
     infinite: true,
-    centerPadding: "60px",
+    // centerPadding: "60px",
     slidesToShow: 3,
     speed: 500,
     focusOnSelect: true,
@@ -80,7 +70,10 @@ const LatestTrailers = () => {
     dots: false,
     nextArrow: <CustomArrow direction="next" />,
     prevArrow: <CustomArrow direction="prev" />,
-    beforeChange: (current, next) => setCurrentSlide(next),
+    beforeChange: (current, next) => {
+      setCurrentSlide(next);
+      setCurrentMovie(movies[next]);
+    },
     initialSlide: 0,
     responsive: [
       {
@@ -180,18 +173,43 @@ const LatestTrailers = () => {
         `}</style>
 
         <div className="movie-slider mt-8 relative">
-          <div className="absolute top-[50%] left-[50%] -translate-x-[50%] -translate-y-[46%] w-[600px] bg-gradient-to-t from-black/80 z-10 border-3 border-cyan-400 rounded-2xl overflow-hidden">
-            <div>
+          {/* Dynamic Current Movie Overlay */}
+          <div className="absolute top-[50%] left-[50%] -translate-x-[50%] -translate-y-[46%] w-[600px] bg-gradient-to-t from-black/80 z-20 border-3 border-cyan-400 rounded-2xl overflow-hidden transition-all duration-500">
+            <div className="relative">
               <Image
-                src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=600&fit=crop&crop=center"
-                alt="Latest Trailers"
-                width={100}
-                height={100}
-                className="object-cover w-[600px] h-[400px] "
+                src={currentMovie.image}
+                alt={currentMovie.title}
+                width={600}
+                height={400}
+                className="object-cover w-[600px] h-[400px]"
               />
-              <div className="absolute bottom-0 left-0 right-0 p-4 text-white transition-all duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+
+              {/* Current Movie Info */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                <h3 className="text-3xl font-bold mb-3 tracking-wider drop-shadow-lg">
+                  {currentMovie.title}
+                </h3>
+                <p className="text-lg text-gray-200 opacity-90 drop-shadow-md">
+                  {currentMovie.tagline}
+                </p>
+              </div>
+
+              {/* Enhanced Play Button for Current Movie */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <div className="w-20 h-20 bg-gradient-to-br from-cyan-400 via-cyan-500 to-cyan-600 rounded-full flex items-center justify-center shadow-xl shadow-cyan-500/60 hover:shadow-cyan-400/80 hover:scale-110 transition-all duration-300 cursor-pointer">
+                  <svg
+                    className="w-8 h-8 text-white ml-1 drop-shadow-lg"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M8 5v10l8-5-8-5z" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
+
           <Slider {...settings}>
             {movies.map((movie, index) => (
               <div

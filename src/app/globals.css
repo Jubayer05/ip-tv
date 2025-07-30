@@ -21,8 +21,8 @@
 
 /* Utility classes */
 @layer utilities {
-  .w-container {
-    max-width: var(--maxWidth-container);
+  .container {
+    max-width: 1400px;
     margin-left: auto;
     margin-right: auto;
   }
@@ -63,10 +63,6 @@
 /* NOTE: POLYGON */
 .polygon_container {
   position: relative;
-  max-width: 1400px;
-  margin: 0 auto;
-  height: 550px;
-  padding: 2px; /* Creates space for the border */
   z-index: 10; /* Add z-index to ensure it stays above background */
 
   clip-path: polygon(
@@ -83,12 +79,6 @@
     34% 100%,
     0 100%
   );
-
-  background: linear-gradient(
-    180deg,
-    #0c3fbc 0%,
-    #00bacd 100%
-  ); /* Gradient border */
 }
 
 .polygon {

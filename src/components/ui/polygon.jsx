@@ -1,7 +1,23 @@
 "use client";
-const Polygon = ({ imageBg, children }) => {
+const Polygon = ({
+  imageBg,
+  children,
+  showGradient = true,
+  fullWidth = false,
+}) => {
+  const gradientStyle = showGradient
+    ? {
+        background: "linear-gradient(180deg, #0c3fbc 0%, #00bacd 100%)",
+      }
+    : {};
+
   return (
-    <div className="polygon_container">
+    <div
+      className={`polygon_container ${
+        fullWidth ? "w-full -ml-0.5 h-[700px]" : "container p-[2px]"
+      }`}
+      style={gradientStyle}
+    >
       <div className="relative bg-black overflow-hidden polygon">
         {/* Image background */}
         {imageBg && (

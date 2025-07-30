@@ -36,7 +36,7 @@ const Navbar = () => {
   return (
     <>
       <nav className="h-[70px] relative bg-transparent">
-        <div className="flex items-center justify-between w-container mx-auto h-full">
+        <div className="flex items-center justify-between container mx-auto h-full">
           {/* Left Section - Menu and Navigation */}
           <div className="flex items-center space-x-4 lg:space-x-8">
             <button
