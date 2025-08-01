@@ -16,6 +16,9 @@
 
   --maxWidth-container: 1400px;
   --height-polygon: 560px;
+
+  --border-primary: #44dcf3;
+  --background-primary: #44dcf3;
 }
 
 /* Utility classes */

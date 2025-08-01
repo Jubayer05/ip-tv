@@ -1,9 +1,13 @@
 import { Film, Monitor, Zap } from "lucide-react";
 import Image from "next/image";
 
-const FeatureHome = () => {
+const FeatureHome = ({ featureAbout = false }) => {
   return (
-    <div className="min-h-screen  bg-black text-white overflow-hidden">
+    <div
+      className={`min-h-screen  ${
+        featureAbout ? "" : "bg-black"
+      } text-white overflow-hidden`}
+    >
       <div className="relative flex items-center justify-center min-h-screen px-4 md:px-8 lg:px-16">
         {/* Main content container */}
         <div className="relative z-10 max-w-7xl w-full grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
@@ -22,9 +26,12 @@ const FeatureHome = () => {
           <div className="space-y-8 text-center lg:text-left">
             {/* Main heading */}
             <div className="space-y-4">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                WATCH WHAT YOU LOVE,{" "}
-                <span className="block">ANYTIME, ANYWHERE</span>
+              <h1
+                className={`text-4xl text-white font-bold leading-tight ${
+                  featureAbout ? "" : "md:text-5xl"
+                }`}
+              >
+                WATCH WHAT YOU LOVE, ANYTIME, ANYWHERE
               </h1>
 
               <p className="text-gray-300 font-secondary text-lg md:text-xl leading-relaxed max-w-2xl">

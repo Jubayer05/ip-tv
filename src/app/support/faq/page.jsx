@@ -1,16 +1,19 @@
-import Link from "next/link";
+import FAQ from "@/components/features/Home/FaqHome";
+import FaqBanner from "@/components/features/Support/FAQ/FaqBanner";
+import FaqTimeline from "@/components/features/Support/FAQ/FaqTimeline";
+import FaqStillQuestion from "@/components/features/Support/FAQ/StillQuestion";
 
-export default function FAQPage() {
+export default function FaqPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <h1 className="text-3xl font-bold mb-4">FAQ</h1>
-      <p className="text-gray-600 mb-6">Frequently asked questions</p>
-      <Link
-        href="/"
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-      >
-        Go Home
-      </Link>
+    <div className="-mt-14">
+      <div className="py-16">
+        <FaqBanner />
+        <FaqTimeline />
+        <div className="bg-black pt-1 pb-16">
+          <FAQ />
+        </div>
+        <FaqStillQuestion />
+      </div>
     </div>
   );
 }

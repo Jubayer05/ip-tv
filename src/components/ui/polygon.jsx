@@ -4,6 +4,8 @@ const Polygon = ({
   children,
   showGradient = true,
   fullWidth = false,
+  className = "",
+  height,
 }) => {
   const gradientStyle = showGradient
     ? {
@@ -11,18 +13,23 @@ const Polygon = ({
       }
     : {};
 
+  const containerStyle = {
+    ...gradientStyle,
+    ...(height && { height }),
+  };
+
   return (
     <div
       className={`polygon_container ${
-        fullWidth ? "w-full -ml-0.5 h-[700px]" : "container p-[2px]"
-      }`}
-      style={gradientStyle}
+        fullWidth ? `w-full -ml-[1px]` : "container p-[2px]"
+      } ${className}`}
+      style={containerStyle}
     >
       <div className="relative bg-black overflow-hidden polygon">
         {/* Image background */}
         {imageBg && (
           <div
-            className="absolute inset-0 bg-cover bg-center z-0"
+            className="absolute inset-0 bg-no-repeat bg-cover bg-top z-0"
             style={{ backgroundImage: `url(${imageBg})` }}
           />
         )}

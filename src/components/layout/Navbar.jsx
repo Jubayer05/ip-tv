@@ -1,6 +1,7 @@
 "use client";
 import { ChevronDown, Globe, Menu, Search, X } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import Button from "../ui/button";
 
@@ -107,9 +108,9 @@ const Navbar = () => {
             </div>
 
             {/* Sign In Button */}
-            <div className="">
+            <Link href="/login">
               <Button size="md">Sign In</Button>
-            </div>
+            </Link>
           </div>
         </div>
       </nav>

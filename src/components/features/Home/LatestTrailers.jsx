@@ -91,7 +91,7 @@ const LatestTrailers = () => {
       <div className="container mx-auto">
         {/* Heading */}
         <h1 className="text-center text-white text-3xl md:text-4xl font-bold mb-8 leading-tight">
-          WATCH LATEST <span className="text-cyan-400">TRAILERS</span>
+          WATCH LATEST <span className="text-primary">TRAILERS</span>
         </h1>
 
         <style jsx>{`
@@ -174,7 +174,7 @@ const LatestTrailers = () => {
 
         <div className="movie-slider mt-8 relative">
           {/* Dynamic Current Movie Overlay */}
-          <div className="absolute top-[50%] left-[50%] -translate-x-[50%] -translate-y-[46%] w-[600px] bg-gradient-to-t from-black/80 z-20 border-3 border-cyan-400 rounded-2xl overflow-hidden transition-all duration-500">
+          <div className="absolute top-[50%] left-[50%] -translate-x-[50%] -translate-y-[46%] w-[600px] bg-gradient-to-t from-black/80 z-20 border-3 border-primary rounded-2xl overflow-hidden transition-all duration-500">
             <div className="relative">
               <Image
                 src={currentMovie.image}
@@ -221,7 +221,7 @@ const LatestTrailers = () => {
                 <div
                   className={`movie-card relative bg-gray-900 rounded-lg overflow-hidden cursor-pointer transition-all duration-500 h-80 ${
                     index === currentSlide
-                      ? "border-3 border-cyan-400 shadow-2xl shadow-cyan-400/30 hover:shadow-cyan-400/50"
+                      ? "border-3 border-primary shadow-2xl shadow-cyan-400/30 hover:shadow-cyan-400/50"
                       : "border-transparent"
                   }`}
                 >

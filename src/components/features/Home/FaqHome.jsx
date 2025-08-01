@@ -46,7 +46,7 @@ export default function FAQ() {
   return (
     <div className="mt-24 container">
       {/* Header */}
-      <h1 className="text-white text-4xl md:text-5xl font-bold text-center mb-12 tracking-wider">
+      <h1 className="text-white text-4xl font-bold text-center mb-12 tracking-wider">
         FREQUENTLY ASKED QUESTIONS
       </h1>
 
@@ -57,7 +57,7 @@ export default function FAQ() {
             key={index}
             className={`overflow-hidden rounded-2xl transition-all duration-500 ease-in-out ${
               openItem === index
-                ? "border border-cyan-400 shadow-lg shadow-cyan-400/20"
+                ? "border border-primary shadow-lg shadow-cyan-400/20"
                 : "border border-transparent"
             }`}
           >
@@ -71,9 +71,9 @@ export default function FAQ() {
               </h3>
               <div className="flex-shrink-0 transition-transform duration-300 ease-in-out group-hover:scale-110">
                 {openItem === index ? (
-                  <CircleMinus className="w-6 h-6 text-cyan-400 transition-all duration-300 ease-in-out transform" />
+                  <CircleMinus className="w-6 h-6 text-primary transition-all duration-300 ease-in-out transform" />
                 ) : (
-                  <CirclePlus className="w-6 h-6 text-cyan-400 transition-all duration-300 ease-in-out transform" />
+                  <CirclePlus className="w-6 h-6 text-primary transition-all duration-300 ease-in-out transform" />
                 )}
               </div>
             </button>

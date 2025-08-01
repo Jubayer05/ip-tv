@@ -18,8 +18,8 @@ export default function Footer() {
       title: "COMPANY",
       type: "links",
       items: [
-        { label: "About Us", href: "#" },
-        { label: "FAQ", href: "#" },
+        { label: "About Us", href: "/about-us" },
+        { label: "FAQ", href: "/support/faq" },
         { label: "Privacy Policy", href: "#" },
         { label: "Terms of Use", href: "#" },
       ],
@@ -30,7 +30,7 @@ export default function Footer() {
       items: [
         { label: "Blogs", href: "#" },
         { label: "Knowledge Base", href: "#" },
-        { label: "Support", href: "#" },
+        { label: "Support", href: "/support/contact" },
       ],
     },
     {
@@ -84,7 +84,7 @@ export default function Footer() {
 
   return (
     <footer className="text-white">
-      <Polygon showGradient={false} fullWidth={true} height="100%">
+      <Polygon showGradient={false} fullWidth={true} className="h-[700px]">
         <div className="max-w-5xl mx-auto">
           {/* Top Section - Logo, Description, Social Icons */}
           <div className="text-center mb-16">
@@ -137,10 +137,21 @@ export default function Footer() {
           {/* Copyright Section */}
         </div>
       </Polygon>
-      <div className="-mt-16 -translate-y-3 z-[500] pt-8 text-center">
+      <div className="-mt-22 -translate-y-0 z-[500] pt-8 text-center">
         <p className="text-gray-400 text-sm font-secondary">
           Copyright © Cheap Stream {new Date().getFullYear()} . All rights
           reserved
+        </p>
+        <p className="text-gray-400 text-sm font-secondary mt-0">
+          Developed by{" "}
+          <a
+            href="https://weberspoint.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            Weberspoint
+          </a>
         </p>
       </div>
     </footer>

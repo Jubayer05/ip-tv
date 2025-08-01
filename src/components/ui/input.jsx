@@ -1,16 +1,35 @@
-import Link from "next/link";
+import React from "react";
 
-export default function Input() {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <h1 className="text-3xl font-bold mb-4">Input Component</h1>
-      <p className="text-gray-600 mb-6">Reusable input component</p>
-      <Link
-        href="/"
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-      >
-        Go Home
-      </Link>
-    </div>
-  );
-}
+const Input = React.forwardRef(
+  (
+    {
+      type = "text",
+      name,
+      value,
+      onChange,
+      placeholder,
+      required = false,
+      className = "",
+      ...props
+    },
+    ref
+  ) => {
+    return (
+      <input
+        ref={ref}
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        required={required}
+        className={`w-full bg-[#0C171C] text-white placeholder-white/50 border border-white/10 rounded-full px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 ${className}`}
+        {...props}
+      />
+    );
+  }
+);
+
+Input.displayName = "Input";
+
+export default Input;

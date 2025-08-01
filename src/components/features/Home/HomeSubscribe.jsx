@@ -13,7 +13,7 @@ const HomeSubscribe = () => {
             <h1 className="text-white text-4xl md:text-5xl font-bold mb-6 leading-tight text-left">
               Start Streaming for Less –
               <br />
-              <span className="text-cyan-400">Sign Up Today!</span>
+              <span className="text-primary">Sign Up Today!</span>
             </h1>
 
             <p className="text-left text-white text-[16px] font-medium mb-8 leading-relaxed font-secondary max-w-xl">
@@ -29,7 +29,7 @@ const HomeSubscribe = () => {
                 <input
                   type="email"
                   placeholder="Email Address"
-                  className="w-full px-6 pr-32 py-4 bg-[rgba(128,128,128,0.7)] border border-gray-600 rounded-full text-white placeholder-white focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all duration-300"
+                  className="w-full px-6 pr-32 py-4 bg-[rgba(128,128,128,0.7)] border border-gray-600 rounded-full text-white placeholder-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-cyan-400/20 transition-all duration-300"
                 />
                 <div className="absolute right-1 top-1/2 -translate-y-1/2">
                   <Button size="lg">Get Started</Button>
