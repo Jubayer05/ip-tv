@@ -12,9 +12,9 @@ const FeatureHome = ({ featureAbout = false }) => {
         {/* Main content container */}
         <div className="relative z-10 max-w-7xl w-full grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
           {/* Left side - Image with decorative elements */}
-          <div className="relative flex justify-center lg:justify-start">
+          <div className="relative flex justify-center lg:justify-start bg-primary rounded-4xl">
             <Image
-              src="/background/feature.webp"
+              src="/background/feature.png"
               width={400}
               height={500}
               alt="hero-image"

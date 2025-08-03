@@ -23,6 +23,7 @@ const Navbar = () => {
     { href: "/explore", label: "EXPLORE" },
     { href: "/pricing", label: "PRICING" },
     { href: "/packages", label: "PACKAGES" },
+    { href: "/affiliate", label: "AFFILIATE" },
   ];
 
   const handleLanguageSelect = (language) => {
