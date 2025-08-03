@@ -1,21 +1,29 @@
-import Link from "next/link";
+import Sidebar from "@/components/layout/Sidebar";
+import PolygonUpperLine from "@/components/ui/polygonUpperLine";
 
 export default function DashboardLayout({ children }) {
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="p-6">
-        <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-        <p className="text-gray-600 mb-6">Welcome to your dashboard</p>
-        {children}
-        <div className="mt-6">
-          <Link
-            href="/"
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Go Home
-          </Link>
+    <PolygonUpperLine fullWidth>
+      <div className="bg-[#0e0e11] pb-16">
+        <div className="h-[220px] flex flex-col font-secondary justify-end items-center pb-8">
+          <h2 className="text-[40px] font-bold">👋 Welcome back, VIPSTORE</h2>
+          <p className="text-sm text-white">
+            Here’s your account overview, current subscription, and recent
+            activity.
+          </p>
+        </div>
+        <div className="container flex gap-6">
+          <Sidebar />
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col">
+            {/* Content */}
+            <main className="border border-[#212121] bg-black rounded-[15px] p-6">
+              {children}
+            </main>
+          </div>
         </div>
       </div>
-    </div>
+    </PolygonUpperLine>
   );
 }
