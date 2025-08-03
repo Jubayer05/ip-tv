@@ -20,16 +20,16 @@ export default function Footer() {
       items: [
         { label: "About Us", href: "/about-us" },
         { label: "FAQ", href: "/support/faq" },
-        { label: "Privacy Policy", href: "#" },
-        { label: "Terms of Use", href: "#" },
+        { label: "Privacy Policy", href: "/privacy-policy" },
+        { label: "Terms of Use", href: "/terms-of-use" },
       ],
     },
     {
       title: "HELP CENTER",
       type: "links",
       items: [
-        { label: "Blogs", href: "#" },
-        { label: "Knowledge Base", href: "#" },
+        { label: "Blogs", href: "/blogs" },
+        { label: "Knowledge Base", href: "/knowledge-base" },
         { label: "Support", href: "/support/contact" },
       ],
     },

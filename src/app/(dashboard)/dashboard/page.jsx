@@ -1,6 +1,6 @@
-import BillingTable from "@/components/features/Dashboard/OrderHistory/BillingTable";
 import PaymentMethodCard from "@/components/features/Dashboard/DashboardHome/PaymentMethod";
 import PremiumPlanCard from "@/components/features/Dashboard/DashboardHome/PremiumPlan";
+import BillingTable from "@/components/features/Dashboard/OrderHistory/BillingTable";
 
 export default function DashboardPage() {
   return (
