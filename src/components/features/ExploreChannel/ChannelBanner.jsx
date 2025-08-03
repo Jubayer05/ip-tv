@@ -1,6 +1,6 @@
 "use client";
 
-import Polygon from "@/components/ui/polygon";
+import PolygonUpperLine from "@/components/ui/polygonUpperLine";
 import { Play, Plus, Share2 } from "lucide-react";
 import { useState } from "react";
 import Slider from "react-slick";
@@ -68,7 +68,7 @@ const ExploreChannelBanner = () => {
     <div className="relative overflow-hidden">
       <Slider {...settings} ref={(slider) => (window.sliderRef = slider)}>
         {slides.map((slide) => (
-          <Polygon fullWidth={true} showOnlyUpperLine={true}>
+          <PolygonUpperLine fullWidth={true} showOnlyUpperLine={true}>
             <div key={slide.id} className="relative h-[550px]">
               {/* Background Image */}
               <div
@@ -138,7 +138,7 @@ const ExploreChannelBanner = () => {
                 </div>
               </div>
             </div>
-          </Polygon>
+          </PolygonUpperLine>
         ))}
       </Slider>
 

@@ -1,5 +1,5 @@
 "use client";
-const Polygon = ({
+const PolygonUpperLine = ({
   imageBg,
   children,
   showGradient = true,
@@ -21,12 +21,12 @@ const Polygon = ({
 
   return (
     <div
-      className={`polygon_container ${
+      className={`polygon_container_upper ${
         fullWidth ? `w-full -ml-[1px]` : "container p-[2px]"
       } ${className}`}
       style={containerStyle}
     >
-      <div className="relative bg-black overflow-hidden polygon">
+      <div className="relative bg-black overflow-hidden polygon_upper">
         {/* Image background */}
         {imageBg && (
           <div
@@ -43,4 +43,4 @@ const Polygon = ({
   );
 };
 
-export default Polygon;
+export default PolygonUpperLine;

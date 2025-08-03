@@ -110,3 +110,35 @@
   height: 100%;
   z-index: 1;
 }
+
+.polygon_container_upper {
+  position: relative;
+  z-index: 10;
+
+  clip-path: polygon(
+    0 0,
+    34% 0,
+    38% 10%,
+    62% 10%,
+    66% 0,
+    100% 0,
+    100% 100%,
+    0 100%
+  );
+}
+
+.polygon_upper {
+  clip-path: polygon(
+    0% 0.5%,
+    33.8% 0.5%,
+    37.8% 10.5%,
+    62% 10.7%,
+    66.2% 0.5%,
+    100% 0.5%,
+    100% 100%,
+    0 100%
+  );
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
