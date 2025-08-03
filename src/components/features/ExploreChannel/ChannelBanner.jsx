@@ -1,8 +1,10 @@
 "use client";
 
 import PolygonUpperLine from "@/components/ui/polygonUpperLine";
-import { Play, Plus, Share2 } from "lucide-react";
+import { Plus, Share2 } from "lucide-react";
 import { useState } from "react";
+import { GoDotFill } from "react-icons/go";
+import { IoPlaySharp } from "react-icons/io5";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
@@ -83,9 +85,9 @@ const ExploreChannelBanner = () => {
 
               {/* Content */}
               <div className="relative z-10 h-full flex items-center px-6 md:px-12 lg:px-20">
-                <div className="max-w-2xl text-white">
+                <div className="max-w-3xl text-white">
                   {/* Title */}
-                  <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
+                  <h1 className="text-3xl md:text-5xl font-secondary font-bold mb-4 leading-tight">
                     {slide.title}
                   </h1>
 
@@ -93,20 +95,26 @@ const ExploreChannelBanner = () => {
                   <div className="flex items-center gap-4 mb-6 flex-wrap">
                     <div className="flex items-center gap-1">
                       <span className="text-yellow-400">★</span>
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium text-white/60">
                         {slide.rating}
                       </span>
                     </div>
+                    <GoDotFill className="text-white/30" />
 
                     <span className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-full">
                       {slide.status}
                     </span>
-
-                    <span className="text-sm font-medium">{slide.year}</span>
-
+                    <GoDotFill className="text-white/30" />
+                    <span className="text-sm font-medium text-white/60">
+                      {slide.year}
+                    </span>
+                    <GoDotFill className="text-white/30" />
                     <div className="flex items-center gap-2">
                       {slide.genres.map((genre, index) => (
-                        <span key={index} className="text-sm text-gray-300">
+                        <span
+                          key={index}
+                          className="text-sm text-white/60 font-bold"
+                        >
                           {genre}
                           {index < slide.genres.length - 1 && ", "}
                         </span>
@@ -115,23 +123,23 @@ const ExploreChannelBanner = () => {
                   </div>
 
                   {/* Description */}
-                  <p className="text-gray-300 text-sm md:text-base leading-relaxed mb-8 max-w-xl">
+                  <p className="text-white/75 font-medium text-sm leading-relaxed mb-8 max-w-xl">
                     {slide.description}
                   </p>
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-4">
-                    <button className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-full font-medium hover:bg-gray-200 transition-colors duration-200">
-                      <Play className="w-5 h-5" fill="currentColor" />
+                    <button className="cursor-pointer flex items-center gap-2 bg-white text-black px-6 py-2 rounded-full font-semibold hover:bg-gray-200 transition-colors duration-200 text-sm">
+                      <IoPlaySharp className="w-5 h-5" fill="currentColor" />
                       Watch Now
                     </button>
 
-                    <button className="flex items-center gap-2 border border-white/30 text-white px-6 py-3 rounded-full font-medium hover:border-white hover:bg-white/10 transition-all duration-200">
+                    <button className="cursor-pointer flex items-center gap-2 border border-white/30 text-white px-6 py-2 rounded-full font-medium hover:border-white bg-white/15 hover:bg-white/25 transition-all duration-200 text-sm">
                       <Plus className="w-5 h-5" />
                       My Wishlist
                     </button>
 
-                    <button className="p-3 border border-white/30 text-white rounded-full hover:border-white hover:bg-white/10 transition-all duration-200">
+                    <button className="cursor-pointer p-2 border border-white/30 text-white rounded-full hover:border-white transition-all duration-200 bg-white/15 hover:bg-white/25 text-sm">
                       <Share2 className="w-5 h-5" />
                     </button>
                   </div>
