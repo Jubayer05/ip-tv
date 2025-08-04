@@ -79,7 +79,7 @@ const TrendingMovies = () => {
       {
         breakpoint: 480,
         settings: {
-          slidesToShow: 1,
+          slidesToShow: 2,
           slidesToScroll: 1,
         },
       },
@@ -114,12 +114,12 @@ const TrendingMovies = () => {
     <div className="container text-white py-8 px-4 md:px-8 lg:px-12 mt-10">
       <div className="">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-wider uppercase">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4 sm:gap-0">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-wider uppercase text-center sm:text-left">
             Trending Movies
           </h2>
-          <Button className="bg-white text-black px-6 py-2 rounded-full font-medium hover:bg-gray-200 transition-all flex items-center gap-2">
-            Get More Movies <ArrowRight />{" "}
+          <Button className="bg-white text-black px-4 sm:px-6 py-1.5 sm:py-2 rounded-full font-medium hover:bg-gray-200 transition-all flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
+            Get More Movies <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />{" "}
           </Button>
         </div>
 

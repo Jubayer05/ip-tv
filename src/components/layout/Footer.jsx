@@ -53,12 +53,12 @@ export default function Footer() {
   const renderSection = (section) => {
     if (section.type === "links") {
       return (
-        <ul className="space-y-4">
+        <ul className="space-y-0 md:space-y-3 -mt-2 md:mt-0">
           {section.items.map((item, index) => (
             <li key={index}>
               <a
                 href={item.href}
-                className="text-gray-300 hover:text-white transition-colors font-secondary text-sm"
+                className="text-white hover:text-white transition-colors font-secondary text-xs sm:text-sm md:text-base"
               >
                 {item.label}
               </a>
@@ -70,11 +70,15 @@ export default function Footer() {
 
     if (section.type === "contact") {
       return (
-        <div className="space-y-4">
+        <div className="space-y-0 md:space-y-3 -mt-2 md:mt-0 font-secondary">
           {section.items.map((item, index) => (
-            <div key={index}>
-              <p className="text-gray-300 mb-1">{item.label}</p>
-              <p className="text-white">{item.value}</p>
+            <div key={index} className="mt-2">
+              <p className="text-white mb-1 text-xs sm:text-sm md:text-base leading-6">
+                {item.label}
+              </p>
+              <p className="text-white text-xs sm:text-sm md:text-base">
+                {item.value}
+              </p>
             </div>
           ))}
         </div>
@@ -83,50 +87,51 @@ export default function Footer() {
   };
 
   return (
-    <footer className="text-white">
+    <footer className="text-white -mt-6 md:mt-0">
       <Polygon showGradient={false} fullWidth={true} className="h-[700px]">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Top Section - Logo, Description, Social Icons */}
-          <div className="text-center mb-16">
+          <div className="text-center mb-8 md:mb-10">
             {/* Logo */}
-            <div className="flex items-center justify-center mt-24 mb-6">
+            <div className="flex items-center justify-center mt-12 sm:mt-16 md:mt-20 lg:mt-24 mb-4 sm:mb-6">
               <Image
                 src="/logos/logo.png"
                 alt="Cheap Stream"
                 width={150}
                 height={150}
+                className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-[150px] lg:h-[150px]"
               />
             </div>
 
             {/* Description */}
-            <p className="text-gray-300 max-w-2xl mx-auto mb-8 leading-relaxed">
+            <p className="text-gray-300 max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed text-xs sm:text-sm md:text-base px-4 sm:px-0">
               Cheap Stream is a budget-friendly IPTV service that delivers
               unlimited access to movies, live TV, and entertainment in HD and
               4K—without contracts or hidden fees.
             </p>
 
             {/* Social Icons */}
-            <div className="flex justify-center space-x-6">
+            <div className="flex justify-center space-x-4 sm:space-x-6">
               {socialLinks.map((social, index) => {
                 const IconComponent = social.icon;
                 return (
                   <a
                     key={index}
                     href={social.href}
-                    className="text-gray-400 hover:text-blue-400 transition-colors"
+                    className="text-primary transition-colors"
                   >
-                    <IconComponent className="w-6 h-6" />
+                    <IconComponent className="w-5 h-5 sm:w-6 sm:h-6" />
                   </a>
                 );
               })}
             </div>
           </div>
 
-          {/* Bottom Section - 4 Column Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+          {/* Bottom Section - Responsive Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 sm:gap-8 lg:gap-12">
             {footerSections.map((section, index) => (
-              <div key={index} className="text-center sm:text-left">
-                <h3 className="text-white font-semibold text-lg mb-6 tracking-wide">
+              <div key={index} className="text-left">
+                <h3 className="text-white font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4 md:mb-6 tracking-wide">
                   {section.title}
                 </h3>
                 {renderSection(section)}
@@ -137,12 +142,12 @@ export default function Footer() {
           {/* Copyright Section */}
         </div>
       </Polygon>
-      <div className="-mt-22 -translate-y-0 z-[500] pt-8 text-center">
-        <p className="text-gray-400 text-sm font-secondary">
+      <div className="-mt-16 sm:-mt-20 md:-mt-22 -translate-y-0 z-[500] pt-4 sm:pt-6 md:pt-8 text-center px-4 sm:px-6 lg:px-8">
+        <p className="text-gray-400 text-[10px] sm:text-sm font-secondary">
           Copyright © Cheap Stream {new Date().getFullYear()} . All rights
           reserved
         </p>
-        <p className="text-gray-400 text-sm font-secondary mt-0">
+        <p className="text-gray-400 text-[10px] sm:text-sm font-secondary mt-1 sm:mt-0">
           Developed by{" "}
           <a
             href="https://weberspoint.com/"

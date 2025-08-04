@@ -44,18 +44,18 @@ export default function FAQ() {
   };
 
   return (
-    <div className="mt-24 container">
+    <div className="mt-12 sm:mt-16 md:mt-20 lg:mt-24 container mx-auto px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <h1 className="text-white text-4xl font-bold text-center mb-12 tracking-wider">
+      <h1 className="text-white text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-8 sm:mb-10 md:mb-12 tracking-wider">
         FREQUENTLY ASKED QUESTIONS
       </h1>
 
       {/* FAQ Items */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4 md:space-y-5 max-w-4xl mx-auto">
         {faqData.map((item, index) => (
           <div
             key={index}
-            className={`overflow-hidden rounded-2xl transition-all duration-500 ease-in-out ${
+            className={`overflow-hidden rounded-xl sm:rounded-2xl transition-all duration-500 ease-in-out ${
               openItem === index
                 ? "border border-primary shadow-lg shadow-cyan-400/20"
                 : "border border-transparent"
@@ -64,16 +64,16 @@ export default function FAQ() {
             {/* Question Header */}
             <button
               onClick={() => toggleItem(index)}
-              className="w-full flex items-center justify-between p-6  text-white hover:bg-black/30 border border-[#ffffff00] hover:border-[#ffffff20] transition-all duration-300 ease-in-out rounded-2xl group"
+              className="w-full flex items-center justify-between p-4 sm:p-5 md:p-6 text-white hover:bg-black/30 border border-[#ffffff00] hover:border-[#ffffff20] transition-all duration-300 ease-in-out rounded-xl sm:rounded-2xl group"
             >
-              <h3 className="text-lg md:text-xl font-semibold text-left pr-4 transition-colors duration-300">
+              <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold text-left pr-3 sm:pr-4 transition-colors duration-300 leading-tight">
                 {item.question}
               </h3>
               <div className="flex-shrink-0 transition-transform duration-300 ease-in-out group-hover:scale-110">
                 {openItem === index ? (
-                  <CircleMinus className="w-6 h-6 text-primary transition-all duration-300 ease-in-out transform" />
+                  <CircleMinus className="w-5 h-5 sm:w-6 sm:h-6 text-primary transition-all duration-300 ease-in-out transform" />
                 ) : (
-                  <CirclePlus className="w-6 h-6 text-primary transition-all duration-300 ease-in-out transform" />
+                  <CirclePlus className="w-5 h-5 sm:w-6 sm:h-6 text-primary transition-all duration-300 ease-in-out transform" />
                 )}
               </div>
             </button>
@@ -86,9 +86,9 @@ export default function FAQ() {
                   : "max-h-0 opacity-0"
               }`}
             >
-              <div className="px-6 pb-6">
-                <div className="border-t border-gray-800 pt-4 transition-all duration-300 ease-in-out">
-                  <p className="text-gray-300 font-secondary text-base leading-relaxed transform transition-all duration-500 ease-in-out">
+              <div className="px-4 sm:px-5 md:px-6 pb-4 sm:pb-5 md:pb-6">
+                <div className="border-t border-gray-800 pt-3 sm:pt-4 transition-all duration-300 ease-in-out">
+                  <p className="text-gray-300 font-secondary text-xs sm:text-sm md:text-base leading-relaxed transform transition-all duration-500 ease-in-out">
                     {item.answer}
                   </p>
                 </div>

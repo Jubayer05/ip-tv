@@ -13,11 +13,11 @@ const MainBanner = () => {
             <span className="text-primary">ENTERTAINMENT</span>
           </h1>
 
-          <p className="text-white text-[14px] font-medium mb-6 leading-tight font-secondary">
+          <p className="text-white text-xs sm:text-sm md:text-[14px] font-medium mb-6 leading-tight font-secondary">
             Why pay more when you can stream smarter? Cheap Stream brings you
-            thousands of movies at the best price. Whether <br /> you love
-            action, drama, comedy, or horror, we have something for everyone—all
-            in HD & 4K quality with zero buffering.
+            thousands of movies at the best price. Whether you love action,
+            drama, comedy, or horror, we have something for everyone—all in HD &
+            4K quality with zero buffering.
           </p>
 
           {/* Email input and button */}
