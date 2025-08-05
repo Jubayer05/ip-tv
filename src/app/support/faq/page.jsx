@@ -5,7 +5,7 @@ import FaqStillQuestion from "@/components/features/Support/FAQ/StillQuestion";
 
 export default function FaqPage() {
   return (
-    <div className="-mt-14">
+    <div className="-mt-8 md:-mt-14">
       <div className="py-16">
         <FaqBanner />
         <FaqTimeline />

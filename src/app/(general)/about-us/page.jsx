@@ -7,7 +7,7 @@ import HomeSubscribe from "@/components/features/Home/HomeSubscribe";
 
 export default function AboutUs() {
   return (
-    <div className="-mt-14">
+    <div className="-mt-8 md:-mt-14">
       <div className="py-16">
         <AboutUsBanner />
         <FeatureHome featureAbout={true} />

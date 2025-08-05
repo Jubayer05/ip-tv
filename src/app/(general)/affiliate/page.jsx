@@ -8,7 +8,7 @@ import ReferalOrderHistory from "@/components/features/AffiliateRank/ReferalOrde
 
 export default function Affiliate() {
   return (
-    <div className="-mt-14 font-secondary">
+    <div className="-mt-8 md:-mt-14 font-secondary">
       <div className="py-8 sm:py-12 md:py-16">
         <AffiliateBanner />
 

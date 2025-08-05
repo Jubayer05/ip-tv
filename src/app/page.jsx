@@ -7,7 +7,7 @@ import TrendingMovies from "@/components/features/Home/TrendingMovie";
 
 export default function Home() {
   return (
-    <div className="-mt-14">
+    <div className="-mt-8 md:-mt-14">
       <div className="py-16">
         <MainBanner />
         <TrendingMovies />

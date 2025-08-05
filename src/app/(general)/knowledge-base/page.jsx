@@ -3,7 +3,7 @@ import KnowledgeBaseContent from "@/components/features/Privacy_Terms/KnowledgeB
 
 export default function Pricing() {
   return (
-    <div className="-mt-14">
+    <div className="-mt-8 md:-mt-14">
       <div className="py-16">
         <KnowledgeBaseBanner />
         <KnowledgeBaseContent />
