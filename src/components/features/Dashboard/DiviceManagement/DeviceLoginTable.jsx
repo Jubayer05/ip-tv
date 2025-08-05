@@ -65,8 +65,9 @@ const DeviceLoginTable = () => {
       title: "Device",
       dataIndex: "device",
       key: "device",
+      width: 200,
       render: (text) => (
-        <span className="text-gray-300 text-sm font-secondary pl-5">
+        <span className="text-gray-300 text-xs sm:text-sm font-secondary pl-2 sm:pl-5 break-words">
           {text}
         </span>
       ),
@@ -75,16 +76,20 @@ const DeviceLoginTable = () => {
       title: "Login Date",
       dataIndex: "loginDate",
       key: "loginDate",
+      width: 150,
       render: (text) => (
-        <span className="text-gray-300 text-sm font-secondary">{text}</span>
+        <span className="text-gray-300 text-xs sm:text-sm font-secondary">
+          {text}
+        </span>
       ),
     },
     {
       title: "IP Address",
       dataIndex: "ipAddress",
       key: "ipAddress",
+      width: 180,
       render: (text) => (
-        <span className="text-gray-300 text-sm font-secondary font-mono">
+        <span className="text-gray-300 text-xs sm:text-sm font-secondary font-mono break-all">
           {text}
         </span>
       ),
@@ -93,9 +98,12 @@ const DeviceLoginTable = () => {
       title: "Last Activity",
       dataIndex: "lastActivity",
       key: "lastActivity",
+      width: 200,
       align: "center",
       render: (text) => (
-        <span className="text-gray-300 text-sm font-secondary">{text}</span>
+        <span className="text-gray-300 text-xs sm:text-sm font-secondary">
+          {text}
+        </span>
       ),
     },
   ];
@@ -103,24 +111,29 @@ const DeviceLoginTable = () => {
   // Show loading state while data is being generated
   if (deviceData.length === 0) {
     return (
-      <div className="border border-[#212121] bg-black rounded-[15px] mt-6 p-8 w-full max-w-5xl mx-auto font-secondary">
-        <div className="flex items-center justify-center h-32">
-          <div className="text-gray-400">Loading device data...</div>
+      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 p-4 sm:p-8 w-full max-w-5xl mx-auto font-secondary">
+        <div className="flex items-center justify-center h-24 sm:h-32">
+          <div className="text-gray-400 text-sm sm:text-base">
+            Loading device data...
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <TableCustom
-      title="DEVICE LOGIN"
-      data={deviceData}
-      columns={columns}
-      pageSize={5}
-      showButton={false}
-      showPagination={true}
-      showHeader={true}
-    />
+    <div className="mt-4 sm:mt-6 overflow-x-auto">
+      <TableCustom
+        title="DEVICE LOGIN"
+        data={deviceData}
+        columns={columns}
+        pageSize={5}
+        showButton={false}
+        showPagination={true}
+        showHeader={true}
+        className="min-w-[500px] sm:min-w-[700px] md:min-w-full"
+      />
+    </div>
   );
 };
 

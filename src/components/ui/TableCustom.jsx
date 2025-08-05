@@ -31,7 +31,7 @@ const TableCustom = ({
 
   return (
     <div
-      className={`border border-[#212121] bg-black rounded-[15px] mt-6 p-8 w-full max-w-5xl mx-auto font-secondary ${containerClassName}`}
+      className={` bg-black rounded-[15px] mt-6 md:p-8 w-full max-w-5xl mx-auto font-secondary ${containerClassName}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
@@ -45,7 +45,7 @@ const TableCustom = ({
               className="w-7 h-7"
             />
           )}
-          <h2 className="text-2xl md:text-3xl font-bold tracking-wider uppercase">
+          <h2 className="text-base sm:text-2xl md:text-3xl font-bold tracking-wider uppercase">
             {title}
           </h2>
         </div>
@@ -76,7 +76,7 @@ const TableCustom = ({
             showTotal: (total, range) =>
               `Showing ${range[1] - range[0] + 1} from ${range[0]}-${
                 range[1]
-              } of ${total} items`,
+              } `,
           }}
           className="custom-table"
         />
@@ -108,6 +108,10 @@ const TableCustom = ({
             .ant-table-row-expand-icon-cell
           ):not([colspan])::before {
           width: 0 !important;
+        }
+
+        .custom-pagination > li {
+          margin-right: 20px !important;
         }
 
         .custom-antd-table .ant-table-thead > tr > th {
@@ -154,11 +158,12 @@ const TableCustom = ({
         /* Antd Pagination Styles */
         .custom-antd-table .ant-pagination {
           margin-top: 16px !important;
-          text-align: right !important;
+          text-align: left !important;
           display: flex !important;
           align-items: center !important;
-          justify-content: flex-end !important;
+          justify-content: space-between !important;
           gap: 8px !important;
+          flex-wrap: wrap !important;
         }
 
         /* More specific pagination styles */
@@ -170,8 +175,8 @@ const TableCustom = ({
           align-items: center !important;
           justify-content: center !important;
           margin: 0 !important;
-          min-width: 32px !important;
-          height: 32px !important;
+          min-width: 28px !important;
+          height: 28px !important;
           border-radius: 6px !important;
         }
 
@@ -182,9 +187,10 @@ const TableCustom = ({
           justify-content: center !important;
           width: 100% !important;
           height: 100% !important;
-          line-height: 32px !important;
+          line-height: 28px !important;
           text-align: center !important;
           border-radius: 6px !important;
+          font-size: 12px !important;
         }
 
         .custom-antd-table .ant-pagination .ant-pagination-item:hover {
@@ -206,9 +212,10 @@ const TableCustom = ({
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          min-width: 32px !important;
-          height: 32px !important;
+          min-width: 28px !important;
+          height: 28px !important;
           border-radius: 6px !important;
+          margin: 0 2px !important;
         }
 
         .custom-antd-table .ant-pagination .ant-pagination-prev:hover,
@@ -232,6 +239,7 @@ const TableCustom = ({
           justify-content: center !important;
           width: 100% !important;
           height: 100% !important;
+          font-size: 12px !important;
         }
 
         .custom-antd-table
@@ -247,7 +255,9 @@ const TableCustom = ({
 
         .custom-antd-table .ant-pagination .ant-pagination-total-text {
           color: #6b7280 !important;
-          font-size: 14px !important;
+          font-size: 12px !important;
+          margin: 0 8px !important;
+          flex: 1 !important;
         }
 
         /* Ensure all pagination items are visible */
@@ -272,6 +282,45 @@ const TableCustom = ({
         .custom-antd-table .ant-pagination .ant-pagination-item-active a {
           background: #3b82f6 !important;
           color: #ffffff !important;
+        }
+
+        /* Mobile specific pagination adjustments */
+        @media (max-width: 768px) {
+          .custom-antd-table .ant-pagination {
+            gap: 2px !important;
+            justify-content: space-between !important;
+            flex-direction: row !important;
+            align-items: center !important;
+          }
+
+          .custom-antd-table .ant-pagination .ant-pagination-item,
+          .custom-antd-table .ant-pagination .ant-pagination-prev,
+          .custom-antd-table .ant-pagination .ant-pagination-next {
+            min-width: 24px !important;
+            height: 24px !important;
+            margin: 0 1px !important;
+          }
+
+          .custom-antd-table .ant-pagination .ant-pagination-item a {
+            line-height: 24px !important;
+            font-size: 11px !important;
+          }
+
+          .custom-antd-table .ant-pagination .ant-pagination-total-text {
+            font-size: 11px !important;
+            margin-right: 4px !important;
+          }
+
+          .custom-antd-table
+            .ant-pagination
+            .ant-pagination-prev
+            .ant-pagination-item-link,
+          .custom-antd-table
+            .ant-pagination
+            .ant-pagination-next
+            .ant-pagination-item-link {
+            font-size: 11px !important;
+          }
         }
       `}</style>
     </div>

@@ -22,7 +22,6 @@ const Navbar = () => {
   const navigationLinks = [
     { href: "/", label: "HOME" },
     { href: "/explore", label: "EXPLORE" },
-    { href: "/pricing", label: "PRICING" },
     { href: "/packages", label: "PACKAGES" },
     { href: "/affiliate", label: "AFFILIATE" },
   ];
