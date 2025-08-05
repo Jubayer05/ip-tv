@@ -5,7 +5,7 @@ import PricingPlan from "@/components/features/Pricing/PricingPlan";
 export default function Pricing() {
   return (
     <div className="-mt-14">
-      <div className="py-16">
+      <div className="mt-14 md:py-16">
         <PricingBanner />
         <PricingPlan />
         <FAQ />

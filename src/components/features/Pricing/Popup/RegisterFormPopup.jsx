@@ -33,34 +33,34 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
         {/* Modal Content */}
-        <div className="bg-black rounded-3xl p-8 w-full max-w-lg mx-auto relative border border-[#FFFFFF26]">
+        <div className="bg-black rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 w-full max-w-sm sm:max-w-md md:max-w-lg mx-auto relative border border-[#FFFFFF26]">
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-6 right-6 text-white hover:text-gray-300 transition-colors"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-6 md:right-6 text-white hover:text-gray-300 transition-colors"
           >
-            <X size={24} />
+            <X size={20} className="sm:w-6 sm:h-6" />
           </button>
 
           {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-white text-2xl font-bold mb-4 tracking-wide">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-white text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 tracking-wide">
               THANK YOU FOR YOUR ORDER!
             </h1>
-            <p className="text-gray-300 text-sm leading-relaxed font-secondary">
+            <p className="text-gray-300 text-xs sm:text-sm leading-relaxed font-secondary">
               Check your email for IPTV details and a secure link to
-              <br />
+              <br className="hidden sm:block" />
               view your order history.
             </p>
           </div>
 
           {/* Form */}
-          <div className="space-y-6 font-secondary">
+          <div className="space-y-4 sm:space-y-6 font-secondary">
             {/* Full Name Field */}
             <div>
-              <label className="block text-white text-sm font-medium mb-3">
+              <label className="block text-white text-xs sm:text-sm font-medium mb-2 sm:mb-3">
                 Full Name
               </label>
               <input
@@ -68,13 +68,13 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter full name"
-                className="w-full bg-[#0c171c] border border-[#FFFFFF26] rounded-full px-6 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-cyan-400 transition-colors"
+                className="w-full bg-[#0c171c] border border-[#FFFFFF26] rounded-full px-4 sm:px-6 py-3 sm:py-4 text-white placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-cyan-400 transition-colors text-sm sm:text-base"
               />
             </div>
 
             {/* Email Field */}
             <div>
-              <label className="block text-white text-sm font-medium mb-3">
+              <label className="block text-white text-xs sm:text-sm font-medium mb-2 sm:mb-3">
                 Email
               </label>
               <input
@@ -82,21 +82,21 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter email"
-                className="w-full bg-[#0c171c] border border-[#FFFFFF26] rounded-full px-6 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-cyan-400 transition-colors"
+                className="w-full bg-[#0c171c] border border-[#FFFFFF26] rounded-full px-4 sm:px-6 py-3 sm:py-4 text-white placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-cyan-400 transition-colors text-sm sm:text-base"
               />
             </div>
 
             {/* Submit Button */}
             <button
               onClick={handleSubmit}
-              className="w-full bg-cyan-400 text-black py-4 rounded-full font-semibold text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2 mt-8 font-secondary"
+              className="w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2 mt-6 sm:mt-8 font-secondary"
             >
               Proceed With Checkout
-              <ArrowRight size={20} />
+              <ArrowRight size={16} className="sm:w-5 sm:h-5" />
             </button>
 
             {/* Footer Text */}
-            <p className="text-center text-gray-300 text-sm mt-6 font-secondary">
+            <p className="text-center text-gray-300 text-xs sm:text-sm mt-4 sm:mt-6 font-secondary">
               Or{" "}
               <button
                 onClick={handleCreateAccount}

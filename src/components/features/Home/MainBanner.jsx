@@ -7,13 +7,13 @@ const MainBanner = () => {
       <div className="relative z-10 flex items-center justify-center px-6 h-polygon">
         <div className="text-center max-w-4xl mx-auto">
           {/* Main heading */}
-          <h1 className="text-white text-4xl md:text-5xl lg:text-6xl font-bold mb-3 leading-tight">
+          <h1 className="polygon_heading">
             YOUR TICKET TO ENDLESS
             <br />
             <span className="text-primary">ENTERTAINMENT</span>
           </h1>
 
-          <p className="text-white text-xs sm:text-sm md:text-[14px] font-medium mb-6 leading-tight font-secondary">
+          <p className="polygon_paragraph">
             Why pay more when you can stream smarter? Cheap Stream brings you
             thousands of movies at the best price. Whether you love action,
             drama, comedy, or horror, we have something for everyone—all in HD &

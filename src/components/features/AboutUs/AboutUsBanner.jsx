@@ -5,7 +5,7 @@ const AboutUsBanner = () => {
     <Polygon
       imageBg="/background/about_us_bg.webp"
       fullWidth={true}
-      className="h-[550px]"
+      className="h-[450px] md:h-[550px]"
     >
       <div className="relative z-10 flex items-center justify-center px-6 h-polygon">
         <div className="text-center mx-auto">

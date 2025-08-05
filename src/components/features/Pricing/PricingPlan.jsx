@@ -67,7 +67,7 @@ const PricingPlan = () => {
     },
   ];
 
-  // Reusable button component
+  // Reusable button component with responsive sizing
   const ControlButton = ({
     children,
     isActive,
@@ -76,11 +76,14 @@ const PricingPlan = () => {
     size = "medium",
   }) => {
     const baseClasses =
-      "font-semibold text-sm transition-all duration-200 font-secondary";
+      "font-semibold transition-all duration-200 font-secondary";
+
     const sizeClasses = {
-      small: "w-12 h-12",
-      medium: "px-6 py-3",
-      large: "px-4 py-3",
+      small: "w-10 h-10 text-xs sm:w-12 sm:h-12 sm:text-sm",
+      medium:
+        "px-3 py-2 text-xs sm:px-4 sm:py-2.5 sm:text-sm md:px-6 md:py-3 md:text-base",
+      large:
+        "px-4 py-2.5 text-sm sm:px-5 sm:py-3 sm:text-base md:px-6 md:py-4 md:text-lg",
     };
 
     const activeClasses = isActive
@@ -106,57 +109,60 @@ const PricingPlan = () => {
   };
 
   return (
-    <div className="bg-black text-white min-h-screen py-6 font-primary max-w-[1280px] mx-auto mt-20 rounded-2xl border border-[#FFFFFF26]">
-      <div className="">
+    <div className="px-3 sm:px-6">
+      <div className="bg-black text-white min-h-screen py-4 sm:py-6 font-primary max-w-[1280px] mx-auto mt-16 sm:mt-20 rounded-xl sm:rounded-2xl border border-[#FFFFFF26]">
         {/* Header */}
-        <h1 className="text-white text-lg px-6 font-semibold mb-8 tracking-wide">
+        <h1 className="text-white text-sm sm:text-base md:text-lg px-2 sm:px-6 font-semibold mb-6 sm:mb-8 tracking-wide text-left">
           SELECT SUBSCRIPTION PERIOD:
         </h1>
 
         {/* Subscription Plans */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 px-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 gap-y-6 sm:gap-4 mb-6 sm:mb-8 px-2 sm:px-6">
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`relative border rounded-lg p-5 cursor-pointer transition-all duration-200 ${
+              className={`relative border bg-[#0e0e11] rounded-lg p-3 sm:p-4 md:p-5 cursor-pointer transition-all duration-200 ${
                 selectedPlan === plan.id
-                  ? "border-primary bg-[#0e0e11]"
-                  : "border-[#FFFFFF26] bg-[#0e0e11]"
+                  ? "border-[#FFFFFF26] md:border-primary"
+                  : "border-[#FFFFFF26]"
               }`}
               onClick={() => setSelectedPlan(plan.id)}
             >
               {plan.recommended && (
                 <div
-                  className="absolute w-full mx-auto -top-5 left-1/2 transform -translate-x-1/2
-                 bg-cyan-400 text-black px-4 py-1 rounded-t-[20px] text-xs font-semibold flex items-center 
+                  className="absolute w-full mx-auto -top-4 sm:-top-5 left-1/2 transform -translate-x-1/2
+                 bg-cyan-400 text-black px-3 sm:px-4 py-1 rounded-t-[20px] text-xs font-semibold flex items-center 
                  justify-center gap-1 font-secondary"
                 >
                   <span>
                     <RiFireFill />
                   </span>
-                  Recommended
+                  <span className="hidden sm:inline">Recommended</span>
+                  <span className="sm:hidden">Rec.</span>
                 </div>
               )}
 
               <div className="text-left font-secondary">
-                <h3 className="text-white font-bold text-2xl mb-1 font-primary">
+                <h3 className="text-white font-bold text-lg sm:text-xl md:text-2xl mb-1 font-primary">
                   {plan.name}
                 </h3>
-                <p className="text-[#AFAFAF] text-xs mb-3">
+                <p className="text-[#AFAFAF] text-[10px] sm:text-sm mb-2 sm:mb-3">
                   {plan.description}
                 </p>
-                <div className="text-white text-xl font-bold mb-4">
+                <div className="text-white text-base sm:text-lg font-bold mb-3 sm:mb-4">
                   {plan.duration}
                 </div>
 
                 {/* Features Section */}
                 <div className="space-y-2">
-                  <p className="text-[#AFAFAF] text-xs mb-3">Features:</p>
-                  <div className="space-y-[10px]">
+                  <p className="text-[#AFAFAF] text-xs mb-2 sm:mb-3">
+                    Features:
+                  </p>
+                  <div className="space-y-[8px] sm:space-y-[10px]">
                     {plan.features.map((feature, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <span className="text-[#00b877] text-xs">✓</span>
-                        <span className="text-white text-sm leading-tight">
+                      <div key={index} className="flex items-start gap-2">
+                        <span className="text-[#00b877] text-xs mt-0.5">✓</span>
+                        <span className="text-white text-[10px] sm:text-sm leading-tight">
                           {feature}
                         </span>
                       </div>
@@ -171,11 +177,11 @@ const PricingPlan = () => {
         {/* Bottom Control Section */}
         <div className="grid grid-cols-1 lg:grid-cols-12 border-t border-b border-[#FFFFFF26]">
           {/* Select Devices */}
-          <div className="p-6 lg:col-span-4 border-r border-[#FFFFFF26]">
-            <h3 className="text-white font-semibold text-2xl mb-4 font-primary">
+          <div className="p-4 sm:p-6 lg:col-span-4 border-r border-[#FFFFFF26]">
+            <h3 className="text-white font-semibold text-lg sm:text-xl md:text-2xl mb-3 sm:mb-4 font-primary">
               Select Devices:
             </h3>
-            <div className="flex gap-2 mb-6">
+            <div className="flex gap-2 mb-4 sm:mb-6">
               {[1, 2, 3].map((device) => (
                 <ControlButton
                   key={device}
@@ -188,10 +194,10 @@ const PricingPlan = () => {
               ))}
             </div>
             <div className="space-y-2">
-              <p className="text-[#afafaf] font-medium font-secondary">
+              <p className="text-[#afafaf] font-medium font-secondary text-xs sm:text-sm">
                 Devices Discount Details:
               </p>
-              <div className="flex justify-between font-secondary">
+              <div className="flex flex-col sm:flex-row justify-between font-secondary text-xs sm:text-sm gap-1 sm:gap-0">
                 <div className="flex items-center gap-2">
                   <span className="text-[#00b877]">✓</span>
                   <span className="text-[#ffffff]">3 = 5% OFF</span>
@@ -209,11 +215,11 @@ const PricingPlan = () => {
           </div>
 
           {/* Adult Channels */}
-          <div className="p-6 lg:col-span-3 border-r border-[#FFFFFF26] px-6">
-            <h3 className="text-white font-semibold text-2xl mb-4 font-primary">
+          <div className="p-4 sm:p-6 lg:col-span-3 border-r border-[#FFFFFF26]">
+            <h3 className="text-white font-semibold text-lg sm:text-xl md:text-2xl mb-3 sm:mb-4 font-primary">
               Adult Channels:
             </h3>
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <ControlButton
                 isActive={adultChannels}
                 onClick={() => setAdultChannels(true)}
@@ -232,11 +238,11 @@ const PricingPlan = () => {
           </div>
 
           {/* Select Quantity */}
-          <div className=" p-6 lg:col-span-5">
-            <h3 className="text-white font-semibold text-2xl mb-4 font-primary">
+          <div className="p-4 sm:p-6 lg:col-span-5">
+            <h3 className="text-white font-semibold text-lg sm:text-xl md:text-2xl mb-3 sm:mb-4 font-primary">
               Select Quantity:
             </h3>
-            <div className="flex gap-3 mb-6">
+            <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
               {[1, 3, 5].map((quantity) => (
                 <ControlButton
                   key={quantity}
@@ -256,10 +262,10 @@ const PricingPlan = () => {
               </ControlButton>
             </div>
             <div className="space-y-2">
-              <p className="text-[#afafaf] font-medium font-secondary">
-                Quantity Discount Details:{" "}
+              <p className="text-[#afafaf] font-medium font-secondary text-xs sm:text-sm">
+                Quantity Discount Details:
               </p>
-              <div className="flex justify-between font-secondary md:pr-16">
+              <div className="flex flex-col sm:flex-row justify-between font-secondary text-xs sm:text-sm gap-1 sm:gap-0 md:pr-8 lg:pr-16">
                 <div className="flex items-center gap-2">
                   <span className="text-[#00b877]">✓</span>
                   <span className="text-[#ffffff]">3 = 5% OFF</span>
@@ -278,9 +284,9 @@ const PricingPlan = () => {
         </div>
 
         {/* Proceed Button */}
-        <div className="mt-8 flex justify-center">
+        <div className="mt-6 sm:mt-8 flex justify-center px-4 ">
           <Button
-            className="font-secondary w-[526px] font-bold text-base"
+            className="font-secondary w-full sm:w-[350px] md:w-[420px] lg:w-[526px] font-bold text-base"
             onClick={handleProceedToCheckout}
           >
             PROCEED TO PURCHASE

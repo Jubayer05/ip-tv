@@ -56,7 +56,7 @@ const TrendingCommon = ({
       {
         breakpoint: 480,
         settings: {
-          slidesToShow: 1,
+          slidesToShow: 2,
           slidesToScroll: 1,
         },
       },
@@ -66,17 +66,17 @@ const TrendingCommon = ({
   const CustomArrow = ({ className, style, onClick, direction }) => (
     <button
       onClick={onClick}
-      className={`absolute top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-black/50 hover:bg-black/70 text-white 
+      className={`absolute top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-black/50 hover:bg-black/70 text-white 
         rounded-full flex items-center justify-center transition-all duration-300
          transform hover:scale-110 border border-[rgba(255,255,255,0.49)] ${
-           direction === "next" ? "right-4" : "left-4"
+           direction === "next" ? "right-2 sm:right-4" : "left-2 sm:left-4"
          }`}
       style={{ ...style, display: "flex" }}
     >
       {direction === "next" ? (
-        <ChevronRight className="w-6 h-6" />
+        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
       ) : (
-        <ChevronLeft className="w-6 h-6" />
+        <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
       )}
     </button>
   );
@@ -107,24 +107,26 @@ const TrendingCommon = ({
             </div>
 
             {/* Content Info */}
-            <div className="mt-4 space-y-2">
+            <div className="mt-2 sm:mt-4 space-y-1 sm:space-y-2">
               {/* Title */}
-              <h3 className="text-white font-semibold font-secondary text-xl leading-tight">
+              <h3 className="text-white font-semibold font-secondary text-sm sm:text-lg md:text-xl leading-tight">
                 {item.title}
               </h3>
 
-              <div className="flex justify-start items-center gap-3 text-xs">
+              <div className="flex justify-start items-center gap-2 sm:gap-3 text-xs">
                 {/* Rating */}
                 {item.rating && (
                   <div className="flex items-center gap-1">
-                    <span className="text-yellow-400 text-sm">★</span>
+                    <span className="text-yellow-400 text-xs sm:text-sm">
+                      ★
+                    </span>
                     <span className="text-white/60 text-xs font-bold">
                       {item.rating}
                     </span>
                   </div>
                 )}
 
-                <GoDotFill className="text-white/30" />
+                <GoDotFill className="text-white/30 text-xs" />
                 {/* Year */}
                 {item.year && (
                   <div className="text-white/60 text-xs font-bold">
@@ -150,19 +152,19 @@ const TrendingCommon = ({
             onClick={() => onItemClick?.(item)}
           >
             {/* Poster */}
-            <div className="relative overflow-hidden rounded-lg bg-gray-800  shadow-lg">
+            <div className="relative overflow-hidden rounded-lg bg-gray-800 shadow-lg">
               <Image
                 width={300}
                 height={450}
                 src={item.poster || item.image}
                 alt={item.title}
-                className="w-full h-[250px] object-cover transition-transform duration-300 group-hover:scale-105"
+                className="w-full h-[150px] sm:h-[200px] md:h-[250px] object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </div>
 
             {/* Title */}
-            <div className="mt-3 transition-opacity duration-300">
-              <h3 className="text-xl font-secondary font-bold text-white truncate">
+            <div className="mt-2 sm:mt-3 transition-opacity duration-300">
+              <h3 className="text-sm sm:text-lg md:text-xl font-secondary font-bold text-white truncate">
                 {item.title}
               </h3>
               <p className="text-xs font-secondary font-bold text-white/60 truncate">
@@ -194,28 +196,30 @@ const TrendingCommon = ({
   };
 
   return (
-    <div className={`text-white py-8 px-4 ${containerClassName}`}>
+    <div
+      className={`text-white py-4 sm:py-6 md:py-8 px-2 sm:px-4 ${containerClassName}`}
+    >
       <div className={`container ${className}`}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
+        <div className="flex sm:items-center justify-between mb-4 sm:mb-6 md:mb-8 gap-3 sm:gap-0">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Image
               src={icon}
               alt={title}
               width={30}
               height={30}
-              className="w-7 h-7"
+              className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7"
             />
-            <h2 className="text-2xl md:text-3xl font-bold tracking-wider uppercase">
+            <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-wider uppercase">
               {title}
             </h2>
           </div>
           {showButton && (
             <Button
-              className="bg-white text-black px-6 py-2 rounded-full font-medium hover:bg-gray-200 transition-all flex items-center gap-2"
+              className="bg-white text-black px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-full font-medium hover:bg-gray-200 transition-all flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
               onClick={onButtonClick}
             >
-              {buttonText} <ArrowRight />
+              {buttonText} <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
             </Button>
           )}
         </div>
@@ -225,14 +229,14 @@ const TrendingCommon = ({
           {items.length > 0 ? (
             <Slider {...updatedSettings}>
               {items.map((item, index) => (
-                <div key={item.id || index} className="px-2">
+                <div key={item.id || index} className="px-1 sm:px-2">
                   {renderCard(item)}
                 </div>
               ))}
             </Slider>
           ) : (
-            <div className="text-center py-12 text-gray-400">
-              <p>No content available</p>
+            <div className="text-center py-8 sm:py-12 text-gray-400">
+              <p className="text-sm sm:text-base">No content available</p>
             </div>
           )}
         </div>

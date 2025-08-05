@@ -87,13 +87,13 @@ export default function ReferralOrderHistory() {
   });
 
   return (
-    <div className="bg-black border border-[#212121] text-white p-6 rounded-lg w-full container">
+    <div className="bg-black border border-[#212121] text-white p-4 sm:p-6 rounded-lg w-full container">
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-xl font-bold mb-2 tracking-wide">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold mb-2 tracking-wide">
           REFERRAL ORDER HISTORY
         </h2>
-        <p className="text-gray-300 text-sm">
+        <p className="text-gray-300 text-xs sm:text-sm">
           Use the dashboard to keep track of your referrals and earnings.
         </p>
       </div>
@@ -108,14 +108,14 @@ export default function ReferralOrderHistory() {
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="text-left py-4 px-4 text-gray-300 font-medium text-sm border-b border-white/15 cursor-pointer hover:bg-white/5 transition-colors duration-200"
+                      className="text-left py-3 sm:py-4 px-2 sm:px-4 text-gray-300 font-medium text-xs sm:text-sm border-b border-white/15 cursor-pointer hover:bg-white/5 transition-colors duration-200"
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {flexRender(
                         header.column.columnDef.header,
                         header.getContext()
                       )}
-                      <span className="ml-2">
+                      <span className="ml-1 sm:ml-2">
                         {{
                           asc: " ↑",
                           desc: " ↓",
@@ -135,7 +135,7 @@ export default function ReferralOrderHistory() {
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      className="py-4 px-4 text-white text-sm border-b border-white/15"
+                      className="py-3 sm:py-4 px-2 sm:px-4 text-white text-xs sm:text-sm border-b border-white/15"
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

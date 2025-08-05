@@ -4,11 +4,11 @@ import BillingTable from "@/components/features/Dashboard/OrderHistory/BillingTa
 
 export default function DashboardPage() {
   return (
-    <div className="">
-      <h2 className="text-2xl font-bold py-4">
+    <div className="space-y-4 sm:space-y-6">
+      <h2 className="text-xl sm:text-2xl font-bold py-2 sm:py-4">
         User Dashboard & Order Tracking
       </h2>
-      <div className="flex gap-6 max-w-5xl mx-auto">
+      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 max-w-5xl mx-auto">
         <PremiumPlanCard />
         <PaymentMethodCard />
       </div>

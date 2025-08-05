@@ -19,19 +19,54 @@ const Polygon = ({
     ...(height && { height }),
   };
 
+  // Organize class conditions in a more readable way
+  const getContainerClasses = () => {
+    const baseClasses = [];
+
+    // Container type based on gradient
+    if (showGradient) {
+      baseClasses.push("polygon_container");
+    } else {
+      baseClasses.push("polygon_container_footer");
+    }
+
+    // Width configuration
+    if (fullWidth) {
+      baseClasses.push("w-full", "-ml-[1px]", "polygon_container_fullWidth");
+    } else {
+      baseClasses.push("container", "p-[2px]");
+    }
+
+    // Additional custom classes
+    if (className) {
+      baseClasses.push(className);
+    }
+
+    return baseClasses.join(" ");
+  };
+
+  const getPolygonClasses = () => {
+    const baseClasses = ["relative", "bg-black", "overflow-hidden"];
+
+    // Polygon type based on gradient
+    if (showGradient) {
+      baseClasses.push("polygon");
+    } else {
+      baseClasses.push("polygon_footer");
+    }
+
+    // Full width modifier
+    if (fullWidth) {
+      baseClasses.push("polygon_fullWidth");
+    }
+
+    return baseClasses.join(" ");
+  };
+
   return (
-    <div className="px-2">
-      <div
-        className={` ${
-          showGradient ? `polygon_container` : `polygon_container_footer`
-        } ${fullWidth ? `w-full -ml-[1px]` : "container p-[2px]"} ${className}`}
-        style={containerStyle}
-      >
-        <div
-          className={`relative bg-black overflow-hidden ${
-            showGradient ? `polygon` : `polygon_footer`
-          }`}
-        >
+    <div className={`${fullWidth ? "pl-[1.5px]" : "px-2"}`}>
+      <div className={getContainerClasses()} style={containerStyle}>
+        <div className={getPolygonClasses()}>
           {/* Image background */}
           {imageBg && (
             <div

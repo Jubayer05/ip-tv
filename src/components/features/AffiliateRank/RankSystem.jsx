@@ -35,34 +35,34 @@ export default function RankSystem() {
   ];
 
   return (
-    <div className="bg-black border border-[#212121] text-white p-8 rounded-lg max-w-4xl mx-auto">
+    <div className="bg-black border border-[#212121] text-white p-4 sm:p-6 md:p-8 rounded-lg w-full lg:max-w-4xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-3 tracking-wide">
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 tracking-wide">
           RANK SYSTEM - UNLOCK MORE AS YOU SPEND
         </h2>
-        <p className="text-gray-300 text-sm">
+        <p className="text-gray-300 text-xs sm:text-sm">
           Your total spending and referrals unlock rank-based discounts and
           benefits.
         </p>
       </div>
 
       {/* Rank Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
         {ranks.map((rank, index) => (
           <div
             key={rank.name}
-            className="bg-[#0E0E11] border border-white/15 rounded-lg p-6 hover:border-white/40 transition-colors duration-200"
+            className="bg-[#0E0E11] border border-white/15 rounded-lg p-4 sm:p-6 hover:border-white/40 transition-colors duration-200"
           >
-            <div className="flex justify-between items-start mb-3">
-              <h3 className="text-lg font-bold text-white tracking-wide">
+            <div className="flex justify-between items-start mb-2 sm:mb-3">
+              <h3 className="text-base sm:text-lg font-bold text-white tracking-wide">
                 {rank.name}
               </h3>
-              <span className=" text-white font-semibold text-right">
+              <span className="text-white font-semibold text-right text-xs sm:text-sm">
                 {rank.spending}
               </span>
             </div>
-            <p className="text-[#afafaf] text-sm leading-relaxed">
+            <p className="text-[#afafaf] text-xs sm:text-sm leading-relaxed">
               {rank.benefits}
             </p>
           </div>

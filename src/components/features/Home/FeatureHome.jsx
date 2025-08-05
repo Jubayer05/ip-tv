@@ -5,8 +5,8 @@ const FeatureHome = ({ featureAbout = false }) => {
   return (
     <div
       className={`min-h-screen  ${
-        featureAbout ? "" : "bg-black pt-12 -mt-2"
-      } text-white overflow-hidden`}
+        featureAbout ? "mt-14 md:mt-0" : "bg-black pt-12 -mt-2"
+      } text-white overflow-hidden `}
     >
       <div className="relative flex items-center justify-center min-h-screen px-4 md:px-8 lg:px-16">
         {/* Main content container */}

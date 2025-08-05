@@ -71,7 +71,10 @@ const ExploreChannelBanner = () => {
       <Slider {...settings} ref={(slider) => (window.sliderRef = slider)}>
         {slides.map((slide) => (
           <PolygonUpperLine fullWidth={true} showOnlyUpperLine={true}>
-            <div key={slide.id} className="relative h-[550px]">
+            <div
+              key={slide.id}
+              className="relative h-[300px] sm:h-[400px] md:h-[450px] lg:h-[550px]"
+            >
               {/* Background Image */}
               <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -84,36 +87,38 @@ const ExploreChannelBanner = () => {
               </div>
 
               {/* Content */}
-              <div className="relative z-10 h-full flex items-center px-6 md:px-12 lg:px-20">
+              <div className="relative z-10 h-full flex items-center px-4 sm:px-6 md:px-12 lg:px-20">
                 <div className="max-w-3xl text-white">
                   {/* Title */}
-                  <h1 className="text-3xl md:text-5xl font-secondary font-bold mb-4 leading-tight">
+                  <h1 className="polygon_heading text-xl sm:text-2xl md:text-3xl lg:text-4xl">
                     {slide.title}
                   </h1>
 
                   {/* Meta Information */}
-                  <div className="flex items-center gap-4 mb-6 flex-wrap">
+                  <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6 flex-wrap">
                     <div className="flex items-center gap-1">
-                      <span className="text-yellow-400">★</span>
-                      <span className="text-sm font-medium text-white/60">
+                      <span className="text-yellow-400 text-xs sm:text-sm">
+                        ★
+                      </span>
+                      <span className="text-xs sm:text-sm font-medium text-white/60">
                         {slide.rating}
                       </span>
                     </div>
-                    <GoDotFill className="text-white/30" />
+                    <GoDotFill className="text-white/30 text-xs sm:text-sm" />
 
-                    <span className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-full">
+                    <span className="px-2 sm:px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-full">
                       {slide.status}
                     </span>
-                    <GoDotFill className="text-white/30" />
-                    <span className="text-sm font-medium text-white/60">
+                    <GoDotFill className="text-white/30 text-xs sm:text-sm" />
+                    <span className="text-xs sm:text-sm font-medium text-white/60">
                       {slide.year}
                     </span>
-                    <GoDotFill className="text-white/30" />
-                    <div className="flex items-center gap-2">
+                    <GoDotFill className="text-white/30 text-xs sm:text-sm" />
+                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                       {slide.genres.map((genre, index) => (
                         <span
                           key={index}
-                          className="text-sm text-white/60 font-bold"
+                          className="text-xs sm:text-sm text-white/60 font-bold"
                         >
                           {genre}
                           {index < slide.genres.length - 1 && ", "}
@@ -123,24 +128,27 @@ const ExploreChannelBanner = () => {
                   </div>
 
                   {/* Description */}
-                  <p className="text-white/75 font-medium text-sm leading-relaxed mb-8 max-w-xl">
+                  <p className="text-white/75 font-medium text-xs sm:text-sm leading-relaxed mb-6 sm:mb-8 max-w-xl">
                     {slide.description}
                   </p>
 
                   {/* Action Buttons */}
-                  <div className="flex items-center gap-4">
-                    <button className="cursor-pointer flex items-center gap-2 bg-white text-black px-6 py-2 rounded-full font-semibold hover:bg-gray-200 transition-colors duration-200 text-sm">
-                      <IoPlaySharp className="w-5 h-5" fill="currentColor" />
+                  <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+                    <button className="cursor-pointer flex items-center gap-1 sm:gap-2 bg-white text-black px-3 sm:px-6 py-2 rounded-full font-semibold hover:bg-gray-200 transition-colors duration-200 text-xs sm:text-sm">
+                      <IoPlaySharp
+                        className="w-4 h-4 sm:w-5 sm:h-5"
+                        fill="currentColor"
+                      />
                       Watch Now
                     </button>
 
-                    <button className="cursor-pointer flex items-center gap-2 border border-white/30 text-white px-6 py-2 rounded-full font-medium hover:border-white bg-white/15 hover:bg-white/25 transition-all duration-200 text-sm">
-                      <Plus className="w-5 h-5" />
+                    <button className="cursor-pointer flex items-center gap-1 sm:gap-2 border border-white/30 text-white px-3 sm:px-6 py-2 rounded-full font-medium hover:border-white bg-white/15 hover:bg-white/25 transition-all duration-200 text-xs sm:text-sm">
+                      <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                       My Wishlist
                     </button>
 
-                    <button className="cursor-pointer p-2 border border-white/30 text-white rounded-full hover:border-white transition-all duration-200 bg-white/15 hover:bg-white/25 text-sm">
-                      <Share2 className="w-5 h-5" />
+                    <button className="cursor-pointer p-2 border border-white/30 text-white rounded-full hover:border-white transition-all duration-200 bg-white/15 hover:bg-white/25 text-xs sm:text-sm">
+                      <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                   </div>
                 </div>
@@ -151,8 +159,8 @@ const ExploreChannelBanner = () => {
       </Slider>
 
       {/* Custom Indicators */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
-        <div className="flex items-center gap-3">
+      <div className="absolute bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="flex items-center gap-2 sm:gap-3">
           {slides.map((_, index) => (
             <button
               key={index}
@@ -165,7 +173,7 @@ const ExploreChannelBanner = () => {
               {/* Progress Container */}
               <div className="relative">
                 {/* Background Line */}
-                <div className="w-16 h-1 bg-white/20 rounded-full overflow-hidden">
+                <div className="w-12 sm:w-16 h-1 bg-white/20 rounded-full overflow-hidden">
                   {/* Progress Fill */}
                   <div
                     className={`h-full bg-white rounded-full transition-all duration-300 ${
