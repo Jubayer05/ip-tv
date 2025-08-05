@@ -6,7 +6,7 @@ const Polygon = ({
   fullWidth = false,
   className = "",
   height,
-  showOnlyUpperLine = false,
+  fullWidthFooter = false,
 }) => {
   const gradientStyle = showGradient
     ? {
@@ -42,6 +42,7 @@ const Polygon = ({
       baseClasses.push(className);
     }
 
+    console.log(baseClasses);
     return baseClasses.join(" ");
   };
 

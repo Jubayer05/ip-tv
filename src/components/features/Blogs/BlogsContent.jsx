@@ -183,10 +183,10 @@ const BlogContent = () => {
   };
 
   return (
-    <div className="p-6 mt-10">
+    <div className="p-4 sm:p-6 mt-6 sm:mt-10">
       <div className="max-w-7xl mx-auto">
         {/* Grid Container */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
           {currentArticles.map((article) => (
             <ArticleCard
               key={article.id}
@@ -199,7 +199,7 @@ const BlogContent = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-center mt-8">
+          <div className="flex justify-center mt-6 sm:mt-8">
             <Pagination
               totalPages={totalPages}
               initialPage={currentPage}

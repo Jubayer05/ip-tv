@@ -3,8 +3,8 @@ import { CircleMinus, CirclePlus } from "lucide-react";
 import { useState } from "react";
 
 export default function KnowledgeBaseContent() {
-  const [openItem, setOpenItem] = useState(null); // Only one item can be open at a time
-  const [openCategory, setOpenCategory] = useState(null); // Track which category is expanded
+  const [openItem, setOpenItem] = useState(null);
+  const [openCategory, setOpenCategory] = useState(null);
 
   const iptvHelpDocumentation = [
     {
@@ -165,7 +165,6 @@ export default function KnowledgeBaseContent() {
     setOpenCategory(openCategory === categoryIndex ? null : categoryIndex);
   };
 
-  // Function to format answer text with proper line breaks
   const formatAnswer = (answer) => {
     return answer.split("\n").map((line, index) => (
       <span key={index}>
@@ -176,21 +175,21 @@ export default function KnowledgeBaseContent() {
   };
 
   return (
-    <div className="font-secondary text-white p-8 lg:p-12 max-w-6xl mx-auto">
+    <div className="font-secondary text-white p-4 md:p-8 lg:p-12 max-w-6xl mx-auto">
       {/* Knowledge Base Categories */}
-      <div className="space-y-8">
+      <div className="space-y-4 md:space-y-8">
         {iptvHelpDocumentation.map((category, categoryIndex) => (
-          <div key={categoryIndex} className="space-y-4">
+          <div key={categoryIndex} className="space-y-2 md:space-y-4">
             {/* Category Header */}
-            <div className="mb-6">
-              <h2 className="text-2xl lg:text-3xl font-bold uppercase mb-2 tracking-wide text-white">
+            <div className="mb-3 md:mb-6">
+              <h2 className="text-lg lg:text-3xl font-bold uppercase mb-1 md:mb-2 tracking-wide text-white">
                 {category.category}
               </h2>
-              <p className="text-gray-400 text-base">{category.description}</p>
+              <p className="text-gray-400 text-xs">{category.description}</p>
             </div>
 
             {/* Category Topics */}
-            <div className="space-y-4">
+            <div className="space-y-2 md:space-y-4">
               {category.topics.map((topic, topicIndex) => {
                 const itemKey = `${categoryIndex}-${topicIndex}`;
                 const isOpen = openItem === itemKey;
@@ -198,7 +197,7 @@ export default function KnowledgeBaseContent() {
                 return (
                   <div
                     key={topicIndex}
-                    className={`overflow-hidden rounded-2xl transition-all duration-500 ease-in-out ${
+                    className={`overflow-hidden rounded-lg md:rounded-2xl transition-all duration-500 ease-in-out ${
                       isOpen
                         ? "border border-primary shadow-lg shadow-cyan-400/20"
                         : "border border-transparent"
@@ -207,16 +206,16 @@ export default function KnowledgeBaseContent() {
                     {/* Question Header */}
                     <button
                       onClick={() => toggleItem(categoryIndex, topicIndex)}
-                      className="w-full flex items-center justify-between p-6 text-white hover:bg-black/30 border border-[#ffffff00] hover:border-[#ffffff20] transition-all duration-300 ease-in-out rounded-2xl group"
+                      className="w-full flex items-center justify-between p-3 md:p-6 text-white hover:bg-black/30 border border-[#ffffff00] hover:border-[#ffffff20] transition-all duration-300 ease-in-out rounded-lg md:rounded-2xl group"
                     >
-                      <h3 className="text-lg md:text-xl font-semibold text-left pr-4 transition-colors duration-300">
+                      <h3 className="text-sm md:text-base lg:text-xl font-semibold text-left pr-2 md:pr-4 transition-colors duration-300">
                         {topic.question}
                       </h3>
                       <div className="flex-shrink-0 transition-transform duration-300 ease-in-out group-hover:scale-110">
                         {isOpen ? (
-                          <CircleMinus className="w-6 h-6 text-primary transition-all duration-300 ease-in-out transform" />
+                          <CircleMinus className="w-4 h-4 md:w-6 md:h-6 text-primary transition-all duration-300 ease-in-out transform" />
                         ) : (
-                          <CirclePlus className="w-6 h-6 text-primary transition-all duration-300 ease-in-out transform" />
+                          <CirclePlus className="w-4 h-4 md:w-6 md:h-6 text-primary transition-all duration-300 ease-in-out transform" />
                         )}
                       </div>
                     </button>
@@ -229,9 +228,9 @@ export default function KnowledgeBaseContent() {
                           : "max-h-0 opacity-0"
                       }`}
                     >
-                      <div className="px-6 pb-6">
-                        <div className="border-t border-gray-800 pt-4 transition-all duration-300 ease-in-out">
-                          <p className="text-gray-300 font-secondary text-base leading-relaxed transform transition-all duration-500 ease-in-out">
+                      <div className="px-3 md:px-6 pb-3 md:pb-6">
+                        <div className="border-t border-gray-800 pt-2 md:pt-4 transition-all duration-300 ease-in-out">
+                          <p className="text-gray-300 font-secondary text-xs leading-relaxed transform transition-all duration-500 ease-in-out">
                             {formatAnswer(topic.answer)}
                           </p>
                         </div>
@@ -244,7 +243,7 @@ export default function KnowledgeBaseContent() {
 
             {/* Add spacing between categories except for the last one */}
             {categoryIndex < iptvHelpDocumentation.length - 1 && (
-              <div className="pt-8">
+              <div className="pt-4 md:pt-8">
                 <hr className="border-gray-700" />
               </div>
             )}
