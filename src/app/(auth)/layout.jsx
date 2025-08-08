@@ -1,3 +1,5 @@
+import PublicRoute from "@/components/auth/PublicRoute";
+
 export default function AuthLayout({ children }) {
   return (
     <div className="flex flex-col items-center justify-center">
@@ -11,7 +13,9 @@ export default function AuthLayout({ children }) {
         }}
       >
         <div className="absolute inset-0 bg-black/85"></div>
-        <div className="relative z-10 py-16">{children}</div>
+        <div className="relative z-10 py-16">
+          <PublicRoute>{children}</PublicRoute>
+        </div>
       </div>
     </div>
   );

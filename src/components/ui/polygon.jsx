@@ -41,8 +41,6 @@ const Polygon = ({
     if (className) {
       baseClasses.push(className);
     }
-
-    console.log(baseClasses);
     return baseClasses.join(" ");
   };
 

@@ -7,13 +7,11 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
 
   const handleBackToHome = () => {
     // Handle navigation to home page
-    console.log("Navigating to home page");
     onClose();
   };
 
   const handleCreateAccount = () => {
     // Handle create account action
-    console.log("Creating account");
     onClose();
   };
 

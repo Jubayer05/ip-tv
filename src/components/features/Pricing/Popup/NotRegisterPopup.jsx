@@ -3,7 +3,6 @@ import { ArrowRight, Check, User, X } from "lucide-react";
 export default function NotRegisterPopup({ isOpen, onClose }) {
   const handleCreateAccount = () => {
     // Handle create account action
-    console.log("Creating account now");
     onClose();
   };
 

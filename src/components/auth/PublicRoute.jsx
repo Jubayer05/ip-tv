@@ -4,17 +4,15 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export default function ProtectedRoute({ children }) {
+export default function PublicRoute({ children }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     if (!loading) {
-      if (!user) {
-        router.push("/login");
-      } else if (!user.emailVerified) {
-        router.push("/verify-email");
+      if (user && user.emailVerified) {
+        router.push("/dashboard");
       } else {
         setIsChecking(false);
       }
@@ -32,12 +30,8 @@ export default function ProtectedRoute({ children }) {
     );
   }
 
-  if (!user) {
-    return null; // Will redirect to login
-  }
-
-  if (!user.emailVerified) {
-    return null; // Will redirect to verify email
+  if (user && user.emailVerified) {
+    return null; // Will redirect to dashboard
   }
 
   return <>{children}</>;

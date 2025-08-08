@@ -13,6 +13,11 @@ const DeviceLoginTable = () => {
       "iPad Air",
       "Samsung Galaxy S23",
       "Dell XPS 13",
+      "Google Pixel 8",
+      "Surface Laptop",
+      "OnePlus 11",
+      "Xiaomi 13",
+      "ASUS ROG",
     ];
     const statuses = ["Active", "Inactive", "Suspended"];
     const data = [];
@@ -63,31 +68,33 @@ const DeviceLoginTable = () => {
   const columns = [
     {
       title: "Device",
+      width: 120,
       dataIndex: "device",
       key: "device",
-      width: 200,
       render: (text) => (
-        <span className="text-gray-300 text-xs sm:text-sm font-secondary pl-2 sm:pl-5 break-words">
+        <span className="pl-3 text-gray-300 text-xs sm:text-sm font-secondary md:pl-5 break-words">
           {text}
         </span>
       ),
     },
     {
       title: "Login Date",
+      width: 120,
       dataIndex: "loginDate",
       key: "loginDate",
-      width: 150,
+      align: "center",
       render: (text) => (
-        <span className="text-gray-300 text-xs sm:text-sm font-secondary">
+        <span className="text-gray-300 text-xs sm:text-sm font-secondary whitespace-nowrap">
           {text}
         </span>
       ),
     },
     {
       title: "IP Address",
+      width: 100,
       dataIndex: "ipAddress",
       key: "ipAddress",
-      width: 180,
+      align: "center",
       render: (text) => (
         <span className="text-gray-300 text-xs sm:text-sm font-secondary font-mono break-all">
           {text}
@@ -96,13 +103,33 @@ const DeviceLoginTable = () => {
     },
     {
       title: "Last Activity",
+      width: 120,
       dataIndex: "lastActivity",
       key: "lastActivity",
-      width: 200,
       align: "center",
       render: (text) => (
-        <span className="text-gray-300 text-xs sm:text-sm font-secondary">
+        <span className="text-gray-300 text-xs sm:text-sm font-secondary whitespace-nowrap">
           {text}
+        </span>
+      ),
+    },
+    {
+      title: "Status",
+      width: 100,
+      dataIndex: "status",
+      key: "status",
+      align: "center",
+      render: (status) => (
+        <span
+          className={`px-2 sm:px-3 md:px-4 py-1 rounded-full text-xs font-medium font-secondary whitespace-nowrap ${
+            status === "Active"
+              ? "bg-green-500/20 text-green-400 border border-green-500/30"
+              : status === "Inactive"
+              ? "bg-gray-500/20 text-gray-400 border border-gray-500/30"
+              : "bg-red-500/20 text-red-400 border border-red-500/30"
+          }`}
+        >
+          {status}
         </span>
       ),
     },
@@ -111,9 +138,9 @@ const DeviceLoginTable = () => {
   // Show loading state while data is being generated
   if (deviceData.length === 0) {
     return (
-      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 p-4 sm:p-8 w-full max-w-5xl mx-auto font-secondary">
-        <div className="flex items-center justify-center h-24 sm:h-32">
-          <div className="text-gray-400 text-sm sm:text-base">
+      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto font-secondary">
+        <div className="flex items-center justify-center h-20 sm:h-24 md:h-32">
+          <div className="text-gray-400 text-xs sm:text-sm md:text-base text-center">
             Loading device data...
           </div>
         </div>
@@ -122,7 +149,7 @@ const DeviceLoginTable = () => {
   }
 
   return (
-    <div className="mt-4 sm:mt-6 overflow-x-auto">
+    <div className="mt-4 sm:mt-6 max-w-[340px] md:max-w-5xl">
       <TableCustom
         title="DEVICE LOGIN"
         data={deviceData}
@@ -131,7 +158,8 @@ const DeviceLoginTable = () => {
         showButton={false}
         showPagination={true}
         showHeader={true}
-        className="min-w-[500px] sm:min-w-[700px] md:min-w-full"
+        // scroll={{ x: 300 }} // enable horizontal scroll for Antd
+        containerClassName="" // add mobile padding to main container
       />
     </div>
   );

@@ -1,4 +1,5 @@
 "use client";
+import { useAuth } from "@/contexts/AuthContext";
 import { ChevronDown, Globe, Menu, Search, User, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,6 +11,7 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("English");
+  const { user, logout } = useAuth();
 
   const languages = [
     { code: "en", name: "English" },
@@ -44,6 +46,11 @@ const Navbar = () => {
 
   const toggleUserMenu = () => {
     setIsUserMenuOpen(!isUserMenuOpen);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setIsUserMenuOpen(false);
   };
 
   return (
@@ -119,45 +126,64 @@ const Navbar = () => {
               )}
             </div>
 
-            {/* Sign In Button */}
-            <Link href="/login">
-              <Button size="md">Sign In</Button>
-            </Link>
+            {/* Conditional Sign In Button or User Menu */}
+            {user ? (
+              /* User Menu Icon - Show when logged in */
+              <div className="relative">
+                <button
+                  onClick={toggleUserMenu}
+                  className="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-gray-700 text-white rounded-full transition-colors border border-gray-600 relative"
+                >
+                  <User size={20} />
+                  {/* ChevronDown icon at bottom right */}
+                  <span className="absolute bottom-0 right-0">
+                    <ChevronDown
+                      size={16}
+                      className="text-white bg-gray-800 rounded-full border border-gray-600 shadow"
+                    />
+                  </span>
+                </button>
 
-            {/* User Menu Icon */}
-            <div className="relative">
-              <button
-                onClick={toggleUserMenu}
-                className="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-gray-700 text-white rounded-full transition-colors border border-gray-600 relative"
-              >
-                <User size={20} />
-                {/* ChevronDown icon at bottom right */}
-                <span className="absolute bottom-0 right-0">
-                  <ChevronDown
-                    size={16}
-                    className="text-white bg-gray-800 rounded-full border border-gray-600 shadow"
-                  />
-                </span>
-              </button>
+                {/* User Dropdown Menu */}
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white text-black rounded-md shadow-lg z-50">
+                    <div className="py-1">
+                      {/* User Info */}
+                      <div className="px-4 py-2 border-b border-gray-200">
+                        <p className="text-sm font-medium text-gray-900">
+                          {user.displayName || user.email}
+                        </p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
 
-              {/* User Dropdown Menu */}
-              {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white text-black rounded-md shadow-lg z-50">
-                  <div className="py-1">
-                    {userMenuItems.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="block px-4 py-2 hover:bg-gray-100 transition-colors font-secondary text-sm"
+                      {userMenuItems.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="block px-4 py-2 hover:bg-gray-100 transition-colors font-secondary text-sm"
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+
+                      {/* Logout Button */}
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors font-secondary text-sm text-red-600"
                       >
-                        {item.label}
-                      </Link>
-                    ))}
+                        Sign Out
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            ) : (
+              /* Sign In Button - Show when not logged in */
+              <Link href="/login">
+                <Button size="md">Sign In</Button>
+              </Link>
+            )}
           </div>
         </div>
       </nav>
@@ -194,24 +220,35 @@ const Navbar = () => {
                 </a>
               ))}
 
-              {/* Mobile User Menu */}
-              <div className="pt-4 border-t border-gray-700">
-                <div className="space-y-2">
-                  <div className="text-gray-400 text-xs uppercase font-bold mb-3">
-                    User Menu
-                  </div>
-                  {userMenuItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={toggleMobileMenu}
-                      className="block text-white hover:text-primary transition-colors font-secondary text-sm py-2"
+              {/* Mobile User Menu - Only show if logged in */}
+              {user && (
+                <div className="pt-4 border-t border-gray-700">
+                  <div className="space-y-2">
+                    <div className="text-gray-400 text-xs uppercase font-bold mb-3">
+                      User Menu
+                    </div>
+                    {userMenuItems.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={toggleMobileMenu}
+                        className="block text-white hover:text-primary transition-colors font-secondary text-sm py-2"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        toggleMobileMenu();
+                      }}
+                      className="block w-full text-left text-red-400 hover:text-red-300 transition-colors font-secondary text-sm py-2"
                     >
-                      {item.label}
-                    </Link>
-                  ))}
+                      Sign Out
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Mobile Language Selector */}
               <div className="pt-4 border-t border-gray-700">

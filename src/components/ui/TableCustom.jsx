@@ -79,6 +79,7 @@ const TableCustom = ({
               } `,
           }}
           className="custom-table"
+          scroll={{ x: "max-content" }}
         />
       </div>
 

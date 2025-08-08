@@ -35,10 +35,28 @@ export default function Sidebar() {
   // Reset sidebar to collapsed state when pathname changes
   useEffect(() => {
     setIsExpanded(false);
+    // Snap to top on route change (helps mobile)
+    if (typeof window !== "undefined") {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
   }, [pathname]);
 
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded);
+  };
+
+  // Function to handle navigation, scroll to top, and collapse sidebar
+  const handleNavigation = () => {
+    // Scroll to top of the page
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // Collapse sidebar on mobile after navigation
+    if (window.innerWidth < 768) {
+      // md breakpoint
+      setIsExpanded(false);
+    }
   };
 
   return (
@@ -55,6 +73,7 @@ export default function Sidebar() {
       >
         <Link
           href="/"
+          onClick={handleNavigation}
           className="flex items-center gap-2 text-white hover:text-gray-300 transition-colors"
         >
           <ArrowLeft size={20} />
@@ -77,12 +96,16 @@ export default function Sidebar() {
               <li
                 key={item.href}
                 className={`relative flex items-center justify-between gap-3 transition-all duration-200 ${
-                  isActive ? "text-black bg-primary shadow-lg" : "text-white"
+                  isActive
+                    ? "text-black bg-primary shadow-lg rounded-lg md:mx-2"
+                    : "text-white hover:bg-gray-800/50 rounded-lg md:mx-2"
                 }`}
               >
                 <Link
                   href={item.href}
-                  className={`relative flex items-center gap-3 px-4 py-3 transition-all duration-200 w-full`}
+                  scroll={true}
+                  onClick={handleNavigation}
+                  className={`relative flex items-center gap-3 px-4 py-3 transition-all duration-200 w-full rounded-lg`}
                 >
                   {isActive && (
                     <div className="h-[24px] w-[5px] rounded-r-[3px] bg-[#0e0e11] absolute left-0" />
@@ -92,10 +115,11 @@ export default function Sidebar() {
                     {item.label}
                   </span>
                 </Link>
+                {/* List icon only on mobile devices */}
                 {isActive && (
                   <button
                     onClick={toggleExpanded}
-                    className="mr-4 p-1 hover:bg-black/20 rounded transition-colors"
+                    className="mr-4 p-1 hover:bg-black/20 rounded transition-colors md:hidden"
                   >
                     <List
                       className={`transition-transform duration-300 ${
@@ -121,11 +145,13 @@ export default function Sidebar() {
               return (
                 <div
                   key={item.href}
-                  className="relative flex items-center justify-between gap-3 text-black bg-primary shadow-lg h-[48px]"
+                  className="relative flex items-center justify-between gap-3 text-black bg-primary shadow-lg h-[48px] rounded-lg md:mx-2"
                 >
                   <Link
                     href={item.href}
-                    className="relative flex items-center gap-3 px-4 py-3 transition-all duration-200 w-full"
+                    scroll={true}
+                    onClick={handleNavigation}
+                    className="relative flex items-center gap-3 px-4 py-3 transition-all duration-200 w-full rounded-lg"
                   >
                     <div className="h-[24px] w-[5px] rounded-r-[3px] bg-[#0e0e11] absolute left-0" />
                     <Icon size={20} />

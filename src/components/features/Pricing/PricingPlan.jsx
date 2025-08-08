@@ -115,7 +115,6 @@ const PricingPlan = () => {
         <h1 className="text-white text-sm sm:text-base md:text-lg px-2 sm:px-6 font-semibold mb-6 sm:mb-8 tracking-wide text-left">
           SELECT SUBSCRIPTION PERIOD:
         </h1>
-
         {/* Subscription Plans */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 gap-y-6 sm:gap-4 mb-6 sm:mb-8 px-2 sm:px-6">
           {plans.map((plan) => (
@@ -173,7 +172,6 @@ const PricingPlan = () => {
             </div>
           ))}
         </div>
-
         {/* Bottom Control Section */}
         <div className="grid grid-cols-1 lg:grid-cols-12 border-t border-b border-[#FFFFFF26]">
           {/* Select Devices */}
@@ -192,25 +190,6 @@ const PricingPlan = () => {
                   {device}
                 </ControlButton>
               ))}
-            </div>
-            <div className="space-y-2">
-              <p className="text-[#afafaf] font-medium font-secondary text-xs sm:text-sm">
-                Devices Discount Details:
-              </p>
-              <div className="flex flex-col sm:flex-row justify-between font-secondary text-xs sm:text-sm gap-1 sm:gap-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[#00b877]">✓</span>
-                  <span className="text-[#ffffff]">3 = 5% OFF</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[#00b877]">✓</span>
-                  <span className="text-[#ffffff]">5 = 10% OFF</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[#00b877]">✓</span>
-                  <span className="text-[#ffffff]">10 = 15% OFF</span>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -261,28 +240,55 @@ const PricingPlan = () => {
                 Custom
               </ControlButton>
             </div>
-            <div className="space-y-2">
-              <p className="text-[#afafaf] font-medium font-secondary text-xs sm:text-sm">
-                Quantity Discount Details:
-              </p>
-              <div className="flex flex-col sm:flex-row justify-between font-secondary text-xs sm:text-sm gap-1 sm:gap-0 md:pr-8 lg:pr-16">
-                <div className="flex items-center gap-2">
-                  <span className="text-[#00b877]">✓</span>
-                  <span className="text-[#ffffff]">3 = 5% OFF</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[#00b877]">✓</span>
-                  <span className="text-[#ffffff]">5 = 10% OFF</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[#00b877]">✓</span>
-                  <span className="text-[#ffffff]">10 = 15% OFF</span>
-                </div>
+          </div>
+        </div>
+        {/* Bulk Discount Offers */}
+        <div className="max-w-lg ml-4 mr-4 md:mx-auto mt-5 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#00b877]/30 rounded-xl p-4 sm:p-6 shadow-lg shadow-[#00b877]/10">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <div className="w-2 h-2 bg-[#00b877] rounded-full"></div>
+            <span className="text-[#00b877] text-xs sm:text-sm font-semibold uppercase tracking-wide">
+              Bulk Discount Offers
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="flex items-center justify-between bg-[#ffffff]/5 border border-[#00b877]/20 rounded-lg p-3 hover:bg-[#00b877]/5 transition-all duration-200">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-[#00b877] rounded-full"></div>
+                <span className="text-[#ffffff] font-medium text-xs sm:text-sm">
+                  3 Orders
+                </span>
               </div>
+              <span className="text-[#00b877] font-bold text-xs sm:text-sm">
+                5% OFF
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between bg-[#ffffff]/5 border border-[#00b877]/20 rounded-lg p-3 hover:bg-[#00b877]/5 transition-all duration-200">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-[#00b877] rounded-full"></div>
+                <span className="text-[#ffffff] font-medium text-xs sm:text-sm">
+                  5 Orders
+                </span>
+              </div>
+              <span className="text-[#00b877] font-bold text-xs sm:text-sm">
+                10% OFF
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between bg-[#ffffff]/5 border border-[#00b877]/20 rounded-lg p-3 hover:bg-[#00b877]/5 transition-all duration-200">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-[#00b877] rounded-full"></div>
+                <span className="text-[#ffffff] font-medium text-xs sm:text-sm">
+                  10 Orders
+                </span>
+              </div>
+              <span className="text-[#00b877] font-bold text-xs sm:text-sm">
+                15% OFF
+              </span>
             </div>
           </div>
         </div>
-
         {/* Proceed Button */}
         <div className="mt-6 sm:mt-8 flex justify-center px-4 ">
           <Button
