@@ -10,7 +10,9 @@ const AffiliateBanner = () => {
       <div className="relative z-10 flex items-center justify-center px-6 h-polygon">
         <div className="text-center mx-auto">
           {/* Main heading */}
-          <h1 className="polygon_heading">Invite. Earn. Upgrade Your Rank. </h1>
+          <h1 className="polygon_heading uppercase">
+            Invite. Earn. Upgrade Your Rank.{" "}
+          </h1>
 
           <p className="polygon_paragraph">
             Become a part of our Affiliate & Referral Program and earn rewards

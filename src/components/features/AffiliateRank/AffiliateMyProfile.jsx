@@ -76,7 +76,7 @@ export default function AffiliateProfile() {
       </div>
 
       {/* Personalize Button */}
-      <button className="w-full py-2 sm:py-3 border border-cyan-400 text-cyan-400 rounded-full text-xs sm:text-sm font-medium hover:bg-cyan-400 hover:text-gray-900 transition-colors duration-200">
+      <button className="w-full py-2 sm:py-3 border-2 border-cyan-400 text-cyan-400 rounded-full text-xs sm:text-sm font-medium hover:bg-cyan-400 hover:text-gray-900 transition-colors duration-200">
         Personalize your profile
       </button>
     </div>

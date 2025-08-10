@@ -3,7 +3,7 @@ import BillingTable from "@/components/features/Dashboard/OrderHistory/BillingTa
 export default function DeviceManagement() {
   return (
     <div className="">
-      <h2 className="text-2xl font-bold py-4">Order HISTORY</h2>
+      <h2 className="text-2xl font-bold py-4">ORDER HISTORY</h2>
       <BillingTable />
     </div>
   );

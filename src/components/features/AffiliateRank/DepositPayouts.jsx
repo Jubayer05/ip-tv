@@ -35,14 +35,14 @@ export default function DepositPayouts() {
         <div className="space-y-3 mb-4 sm:mb-6 flex-1 sm:flex sm:flex-col sm:items-end">
           <button
             onClick={handleDepositFunds}
-            className="w-full sm:w-[150px] py-2 sm:py-3 border border-cyan-400 text-cyan-400 rounded-full text-xs sm:text-sm font-medium hover:bg-cyan-400 hover:text-gray-900 transition-colors duration-200"
+            className="w-full sm:w-[150px] py-2 sm:py-3 border-2 border-cyan-400 text-cyan-400 rounded-full text-xs sm:text-sm font-bold hover:bg-cyan-400 hover:text-gray-900 transition-colors duration-200"
           >
             Deposit Funds
           </button>
 
           <button
             onClick={handleWithdrawFunds}
-            className="w-full sm:w-[150px] py-2 sm:py-3 bg-cyan-400 text-gray-900 rounded-full text-xs sm:text-sm font-medium hover:bg-cyan-500 transition-colors duration-200"
+            className="w-full sm:w-[150px] py-2 sm:py-3 bg-cyan-400 text-gray-900 rounded-full text-xs sm:text-sm font-bold hover:bg-cyan-500 transition-colors duration-200"
           >
             Withdraw Funds
           </button>

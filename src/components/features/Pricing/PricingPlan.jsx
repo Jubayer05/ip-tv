@@ -204,14 +204,14 @@ const PricingPlan = () => {
                 onClick={() => setAdultChannels(true)}
                 size="medium"
               >
-                Yes
+                On
               </ControlButton>
               <ControlButton
                 isActive={!adultChannels}
                 onClick={() => setAdultChannels(false)}
                 size="medium"
               >
-                No
+                Off
               </ControlButton>
             </div>
           </div>

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { BsFillTrashFill } from "react-icons/bs";
 
 const PaymentMethods = () => {
@@ -65,9 +66,12 @@ const PaymentMethods = () => {
             <div className="flex items-center gap-3 sm:gap-4">
               {/* Visa Card Icon */}
               <div className="bg-white rounded-lg p-2 w-10 h-6 sm:w-12 sm:h-8 flex items-center justify-center flex-shrink-0">
-                <div className="text-blue-600 font-bold text-xs sm:text-sm">
-                  VISA
-                </div>
+                <Image
+                  src="/icons/Rectangle 1131.png"
+                  alt="visa"
+                  width={100}
+                  height={100}
+                />
               </div>
 
               {/* Card Details */}

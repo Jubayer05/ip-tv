@@ -2,6 +2,7 @@ import ScrollToTop from "@/components/common/ScrollToTop";
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import { AuthContextProvider } from "@/contexts/AuthContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { Manrope, Rajdhani } from "next/font/google";
 import "./globals.css";
 
@@ -10,7 +11,7 @@ const rajdhani = Rajdhani({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   display: "swap",
-  fallback: ["Arial", "sans-serif"], // Add fallback
+  fallback: ["Arial", "sans-serif"],
 });
 
 const manrope = Manrope({
@@ -18,7 +19,7 @@ const manrope = Manrope({
   subsets: ["latin"],
   weight: ["200", "300", "400", "500", "600", "700", "800"],
   display: "swap",
-  fallback: ["Arial", "sans-serif"], // Add fallback
+  fallback: ["Arial", "sans-serif"],
 });
 
 export const metadata = {
@@ -32,10 +33,12 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${rajdhani.variable} ${manrope.variable}`}>
       <body className="antialiased font-primary">
         <AuthContextProvider>
-          <Navbar />
-          <ScrollToTop />
-          <main className="min-h-screen">{children}</main>
-          <Footer />
+          <LanguageProvider>
+            <Navbar />
+            <ScrollToTop />
+            <main className="min-h-screen">{children}</main>
+            <Footer />
+          </LanguageProvider>
         </AuthContextProvider>
       </body>
     </html>

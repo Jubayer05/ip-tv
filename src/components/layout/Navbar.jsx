@@ -1,25 +1,68 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ChevronDown, Globe, Menu, Search, User, X } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { ChevronDown, Globe, Menu, Search, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "../ui/button";
 
 const Navbar = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("English");
-  const { user, logout } = useAuth();
 
-  const languages = [
-    { code: "en", name: "English" },
-    { code: "es", name: "Spanish" },
-    { code: "fr", name: "French" },
-    { code: "de", name: "German" },
-    { code: "zh", name: "Chinese" },
+  const { user, logout } = useAuth();
+  const { language, setLanguage, languages, translate } = useLanguage();
+
+  // Originals
+  const ORIGINAL_NAV_LABELS = ["HOME", "EXPLORE", "PACKAGES", "AFFILIATE"];
+  const ORIGINAL_USER_MENU_LABELS = [
+    "Dashboard",
+    "Order History",
+    "Device Management",
+    "Payment Method",
   ];
+  const ORIGINAL_SIGN_IN = "Sign In";
+  const ORIGINAL_SIGN_OUT = "Sign Out";
+  const ORIGINAL_USER_MENU_HEADING = "User Menu";
+
+  // Translated state
+  const [navLabels, setNavLabels] = useState(ORIGINAL_NAV_LABELS);
+  const [userMenuLabels, setUserMenuLabels] = useState(
+    ORIGINAL_USER_MENU_LABELS
+  );
+  const [signInLabel, setSignInLabel] = useState(ORIGINAL_SIGN_IN);
+  const [signOutLabel, setSignOutLabel] = useState(ORIGINAL_SIGN_OUT);
+  const [userMenuHeading, setUserMenuHeading] = useState(
+    ORIGINAL_USER_MENU_HEADING
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      const items = [
+        ...ORIGINAL_NAV_LABELS,
+        ...ORIGINAL_USER_MENU_LABELS,
+        ORIGINAL_SIGN_IN,
+        ORIGINAL_SIGN_OUT,
+        ORIGINAL_USER_MENU_HEADING,
+      ];
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      setNavLabels(translated.slice(0, 4));
+      setUserMenuLabels(translated.slice(4, 8));
+      setSignInLabel(translated[8]);
+      setSignOutLabel(translated[9]);
+      setUserMenuHeading(translated[10]);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+    // Update when language changes
+  }, [language.code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const navigationLinks = [
     { href: "/", label: "HOME" },
@@ -35,8 +78,8 @@ const Navbar = () => {
     { href: "/dashboard/payment", label: "Payment Method" },
   ];
 
-  const handleLanguageSelect = (language) => {
-    setSelectedLanguage(language.name);
+  const handleLanguageSelect = (lang) => {
+    setLanguage(lang);
     setIsLanguageOpen(false);
   };
 
@@ -55,7 +98,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="h-[70px] relative bg-transparent">
+      <nav className="h-[70px] relative bg-transparent px-3">
         <div className="flex items-center justify-between container mx-auto h-full">
           {/* Left Section - Menu and Navigation */}
           <div className="flex items-center space-x-4 lg:space-x-8">
@@ -67,13 +110,13 @@ const Navbar = () => {
             </button>
 
             <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
-              {navigationLinks.map((link) => (
+              {navigationLinks.map((link, i) => (
                 <a
                   key={link.href}
                   href={link.href}
                   className="font-primary text-white hover:text-primary transition-colors uppercase tracking-wide text-base"
                 >
-                  {link.label}
+                  {navLabels[i]}
                 </a>
               ))}
             </div>
@@ -98,8 +141,8 @@ const Navbar = () => {
                 className="flex outline-none items-center space-x-2 font-secondary text-white hover:text-gray-300 transition-colors border border-gray-600 rounded-[30px] px-3 lg:px-5 py-2 lg:py-3 text-xs bg-gray-900"
               >
                 <Globe size={16} className="text-primary" />
-                <span className="hidden lg:inline">{selectedLanguage}</span>
-                <span className="lg:hidden">EN</span>
+                <span className="hidden lg:inline">{language.name}</span>
+                <span className="lg:hidden">{language.code.toUpperCase()}</span>
                 <ChevronDown
                   size={14}
                   className={`transform transition-transform ${
@@ -112,13 +155,13 @@ const Navbar = () => {
               {isLanguageOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white text-black rounded-md shadow-lg z-50">
                   <div className="py-1">
-                    {languages.map((language) => (
+                    {languages.map((lang) => (
                       <button
-                        key={language.code}
-                        onClick={() => handleLanguageSelect(language)}
+                        key={lang.code}
+                        onClick={() => handleLanguageSelect(lang)}
                         className="block w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors font-secondary text-sm"
                       >
-                        {language.name}
+                        {lang.name}
                       </button>
                     ))}
                   </div>
@@ -134,7 +177,12 @@ const Navbar = () => {
                   onClick={toggleUserMenu}
                   className="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-gray-700 text-white rounded-full transition-colors border border-gray-600 relative"
                 >
-                  <User size={20} />
+                  <Image
+                    src="/icons/profile.png"
+                    alt="user"
+                    width={100}
+                    height={100}
+                  />
                   {/* ChevronDown icon at bottom right */}
                   <span className="absolute bottom-0 right-0">
                     <ChevronDown
@@ -156,14 +204,14 @@ const Navbar = () => {
                         <p className="text-xs text-gray-500">{user.email}</p>
                       </div>
 
-                      {userMenuItems.map((item) => (
+                      {userMenuItems.map((item, i) => (
                         <Link
                           key={item.href}
                           href={item.href}
                           onClick={() => setIsUserMenuOpen(false)}
                           className="block px-4 py-2 hover:bg-gray-100 transition-colors font-secondary text-sm"
                         >
-                          {item.label}
+                          {userMenuLabels[i]}
                         </Link>
                       ))}
 
@@ -172,7 +220,7 @@ const Navbar = () => {
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors font-secondary text-sm text-red-600"
                       >
-                        Sign Out
+                        {signOutLabel}
                       </button>
                     </div>
                   </div>
@@ -181,7 +229,7 @@ const Navbar = () => {
             ) : (
               /* Sign In Button - Show when not logged in */
               <Link href="/login">
-                <Button size="md">Sign In</Button>
+                <Button size="md">{signInLabel}</Button>
               </Link>
             )}
           </div>
@@ -209,14 +257,14 @@ const Navbar = () => {
             </div>
 
             <div className="p-4 space-y-4">
-              {navigationLinks.map((link) => (
+              {navigationLinks.map((link, i) => (
                 <a
                   key={link.href}
                   href={link.href}
                   className="block font-primary text-white hover:text-primary transition-colors uppercase tracking-wide text-sm py-2"
                   onClick={toggleMobileMenu}
                 >
-                  {link.label}
+                  {navLabels[i]}
                 </a>
               ))}
 
@@ -225,16 +273,16 @@ const Navbar = () => {
                 <div className="pt-4 border-t border-gray-700">
                   <div className="space-y-2">
                     <div className="text-gray-400 text-xs uppercase font-bold mb-3">
-                      User Menu
+                      {userMenuHeading}
                     </div>
-                    {userMenuItems.map((item) => (
+                    {userMenuItems.map((item, i) => (
                       <Link
                         key={item.href}
                         href={item.href}
                         onClick={toggleMobileMenu}
                         className="block text-white hover:text-primary transition-colors font-secondary text-sm py-2"
                       >
-                        {item.label}
+                        {userMenuLabels[i]}
                       </Link>
                     ))}
                     <button
@@ -244,7 +292,7 @@ const Navbar = () => {
                       }}
                       className="block w-full text-left text-red-400 hover:text-red-300 transition-colors font-secondary text-sm py-2"
                     >
-                      Sign Out
+                      {signOutLabel}
                     </button>
                   </div>
                 </div>
@@ -259,7 +307,7 @@ const Navbar = () => {
                   >
                     <div className="flex items-center space-x-2">
                       <Globe size={18} className="text-primary" />
-                      <span>{selectedLanguage}</span>
+                      <span>{language.name}</span>
                     </div>
                     <ChevronDown
                       size={16}
@@ -272,16 +320,16 @@ const Navbar = () => {
                   {isLanguageOpen && (
                     <div className="mt-2 bg-gray-800 rounded-md shadow-lg">
                       <div className="py-1">
-                        {languages.map((language) => (
+                        {languages.map((lang) => (
                           <button
-                            key={language.code}
+                            key={lang.code}
                             onClick={() => {
-                              handleLanguageSelect(language);
+                              handleLanguageSelect(lang);
                               setIsLanguageOpen(false);
                             }}
                             className="block w-full text-left px-4 py-2 text-white hover:bg-gray-700 transition-colors font-secondary text-sm"
                           >
-                            {language.name}
+                            {lang.name}
                           </button>
                         ))}
                       </div>

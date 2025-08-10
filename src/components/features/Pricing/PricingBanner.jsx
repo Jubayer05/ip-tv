@@ -9,9 +9,9 @@ const PricingBanner = () => {
       className="h-[450px] md:h-[550px]"
     >
       <div className="relative z-10 flex items-center justify-center px-4 md:px-6 h-polygon">
-        <div className="text-center max-w-4xl mx-auto">
+        <div className="text-center max-w-[1000px] mx-auto">
           {/* Main heading */}
-          <h1 className="polygon_heading">
+          <h1 className="polygon_heading uppercase">
             Watch More, Pay Less –{" "}
             <span className="text-primary">Choose Your Streaming Plans</span>
           </h1>

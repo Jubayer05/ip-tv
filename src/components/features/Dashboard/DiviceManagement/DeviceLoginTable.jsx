@@ -151,7 +151,7 @@ const DeviceLoginTable = () => {
   return (
     <div className="mt-4 sm:mt-6 max-w-[340px] md:max-w-5xl">
       <TableCustom
-        title="DEVICE LOGIN"
+        title="Latest LOGIN"
         data={deviceData}
         columns={columns}
         pageSize={5}
