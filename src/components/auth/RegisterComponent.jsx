@@ -2,25 +2,24 @@
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowRight, Eye, EyeOff, Mail } from "lucide-react";
+import { ArrowRight, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function RegisterComponent() {
   const [formData, setFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     email: "",
     username: "",
-    password: "",
-    confirmPassword: "",
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(null);
 
   const { signup } = useAuth();
   const router = useRouter();
@@ -32,6 +31,39 @@ export default function RegisterComponent() {
       [name]: value,
     }));
     setError(""); // Clear error when user types
+
+    // Check username availability when username field changes
+    if (name === "username" && value.trim()) {
+      checkUsernameAvailability(value.trim());
+    } else if (name === "username") {
+      setUsernameAvailable(null);
+    }
+  };
+
+  // Check username availability
+  const checkUsernameAvailability = async (username) => {
+    if (username.length < 3) {
+      setUsernameAvailable(null);
+      return;
+    }
+
+    setUsernameChecking(true);
+    try {
+      const response = await fetch(
+        `/api/users/check-username?username=${encodeURIComponent(username)}`
+      );
+      const data = await response.json();
+
+      if (response.ok) {
+        setUsernameAvailable(data.available);
+      } else {
+        setUsernameAvailable(null);
+      }
+    } catch (error) {
+      setUsernameAvailable(null);
+    } finally {
+      setUsernameChecking(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -39,31 +71,37 @@ export default function RegisterComponent() {
     setLoading(true);
     setError("");
 
-    // Validate passwords match
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+    // Check if username is available before submitting
+    if (formData.username && !usernameAvailable) {
+      setError("Username is not available. Please choose a different one.");
       setLoading(false);
       return;
     }
 
-    // Validate password length
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      setLoading(false);
-      return;
-    }
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          username: formData.username,
+        }),
+      });
 
-    const result = await signup(
-      formData.email,
-      formData.password,
-      formData.fullName
-    );
+      const data = await response.json();
 
-    if (result.success) {
-      setSuccess(true);
-      setVerificationEmail(formData.email);
-    } else {
-      setError(result.error);
+      if (response.ok) {
+        setSuccess(true);
+        setVerificationEmail(formData.email);
+      } else {
+        setError(data.error || "Registration failed. Please try again.");
+      }
+    } catch (error) {
+      setError("Network error. Please check your connection and try again.");
     }
 
     setLoading(false);
@@ -73,16 +111,28 @@ export default function RegisterComponent() {
     setLoading(true);
     setError("");
 
-    const result = await signup(
-      verificationEmail,
-      formData.password,
-      formData.fullName
-    );
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: verificationEmail,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+        }),
+      });
 
-    if (result.success) {
-      setError("Verification email sent again!");
-    } else {
-      setError(result.error);
+      const data = await response.json();
+
+      if (response.ok) {
+        setError("Verification email sent again! Please check your inbox.");
+      } else {
+        setError(data.error || "Failed to resend email. Please try again.");
+      }
+    } catch (error) {
+      setError("Network error. Please check your connection and try again.");
     }
 
     setLoading(false);
@@ -117,7 +167,7 @@ export default function RegisterComponent() {
               <ul className="text-gray-300 text-xs space-y-1">
                 <li>• Check your email inbox (and spam folder)</li>
                 <li>• Click the verification link in the email</li>
-                <li>• Return here and sign in with your account</li>
+                <li>• Set your password and complete account setup</li>
               </ul>
             </div>
           </div>
@@ -177,18 +227,34 @@ export default function RegisterComponent() {
         )}
 
         {/* Register Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-          {/* Full Name Input */}
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y6">
+          {/* First Name Input */}
           <div>
             <label className="block text-white text-xs sm:text-sm font-medium mb-2">
-              Full Name
+              First Name
             </label>
             <Input
               type="text"
-              name="fullName"
-              value={formData.fullName}
+              name="firstName"
+              value={formData.firstName}
               onChange={handleChange}
-              placeholder="Enter your full name"
+              placeholder="Enter your first name"
+              required
+              disabled={loading}
+            />
+          </div>
+
+          {/* Last Name Input */}
+          <div>
+            <label className="block text-white text-xs sm:text-sm font-medium mb-2">
+              Last Name
+            </label>
+            <Input
+              type="text"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleChange}
+              placeholder="Enter your last name"
               required
               disabled={loading}
             />
@@ -224,58 +290,24 @@ export default function RegisterComponent() {
               required
               disabled={loading}
             />
-          </div>
-
-          {/* Password Input */}
-          <div>
-            <label className="block text-white text-xs sm:text-sm font-medium mb-2">
-              Password
-            </label>
-            <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••••••••••"
-                required
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                disabled={loading}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Confirm Password Input */}
-          <div>
-            <label className="block text-white text-xs sm:text-sm font-medium mb-2">
-              Confirm your Password
-            </label>
-            <div className="relative">
-              <Input
-                type={showConfirmPassword ? "text" : "password"}
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="••••••••••••••••"
-                required
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                disabled={loading}
-              >
-                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
+            {/* Username availability indicator */}
+            {formData.username && (
+              <div className="mt-2">
+                {usernameChecking ? (
+                  <span className="text-yellow-400 text-xs">
+                    Checking availability...
+                  </span>
+                ) : usernameAvailable === true ? (
+                  <span className="text-green-400 text-xs">
+                    ✓ Username is available
+                  </span>
+                ) : usernameAvailable === false ? (
+                  <span className="text-red-400 text-xs">
+                    ✗ Username is already taken
+                  </span>
+                ) : null}
+              </div>
+            )}
           </div>
 
           {/* Create Account Button */}
@@ -283,9 +315,11 @@ export default function RegisterComponent() {
             type="submit"
             variant="secondary"
             className="w-full transition-all duration-200 flex items-center justify-center gap-2"
-            disabled={loading}
+            disabled={
+              loading || (formData.username && usernameAvailable === false)
+            }
           >
-            {loading ? "Creating Account..." : "Create An Account"}
+            {loading ? "Sending Verification..." : "Create An Account"}
             {!loading && <ArrowRight size={18} />}
           </Button>
         </form>

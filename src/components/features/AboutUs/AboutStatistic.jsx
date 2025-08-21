@@ -1,5 +1,11 @@
+"use client";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useEffect, useState } from "react";
+
 const AboutStatistics = () => {
-  const stats = [
+  const { language, translate, isLanguageLoaded } = useLanguage();
+
+  const ORIGINAL_STATS = [
     {
       number: "10,000+",
       description: "Active Subscribers Worldwide",
@@ -17,6 +23,31 @@ const AboutStatistics = () => {
       description: "Streamed Devices Daily",
     },
   ];
+
+  const [stats, setStats] = useState(ORIGINAL_STATS);
+
+  useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      const descriptions = ORIGINAL_STATS.map((stat) => stat.description);
+      const translatedDescriptions = await translate(descriptions);
+      if (!isMounted) return;
+
+      const updatedStats = ORIGINAL_STATS.map((stat, index) => ({
+        ...stat,
+        description: translatedDescriptions[index],
+      }));
+
+      setStats(updatedStats);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
 
   return (
     <div className="bg-black text-white py-12 px-8">

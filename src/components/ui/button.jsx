@@ -19,6 +19,8 @@ export default function Button({
       "bg-[#44dcf3] text-black hover:bg-[#3ac8dd] focus:ring-[#44dcf3]/20 active:scale-95",
     cyan: "bg-cyan-400 text-black hover:bg-cyan-300 focus:ring-cyan-400/20 active:scale-95",
     dark: "bg-gray-800 text-white hover:bg-gray-700 focus:ring-gray-800/20 active:scale-95",
+    danger:
+      "bg-red-500 text-white hover:bg-red-600 focus:ring-red-500/20 active:scale-95",
     outline:
       "bg-transparent text-white border-2 border-white hover:bg-white hover:text-black focus:ring-white/20 active:scale-95",
   };

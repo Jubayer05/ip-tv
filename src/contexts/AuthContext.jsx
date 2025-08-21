@@ -15,45 +15,140 @@ import { createContext, useContext, useEffect, useState } from "react";
 const AuthContext = createContext({});
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthContextProvider");
+  }
+  return context;
 };
 
 export const AuthContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Check if user is super admin
+  const isSuperAdmin = (email) => {
+    return email === "jubayer0504@gmail.com";
+  };
+
+  // Check if user has admin privileges
+  const hasAdminAccess = () => {
+    return (
+      userRole === "admin" ||
+      userRole === "support" ||
+      isSuperAdmin(user?.email)
+    );
+  };
+
+  // Check if user is super admin
+  const isSuperAdminUser = () => {
+    return isSuperAdmin(user?.email);
+  };
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUser(user);
-      } else {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      try {
+        if (firebaseUser) {
+          setUser(firebaseUser);
+
+          // Fetch user role from MongoDB using email (since documents don't have firebaseUid)
+          try {
+            const response = await fetch(
+              `/api/users/${firebaseUser.email}/role`
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              setUserRole(data.role);
+            } else {
+              // If no role found, set default role
+              setUserRole("user");
+            }
+          } catch (error) {
+            console.error("Error fetching user role:", error);
+            setUserRole("user");
+          }
+        } else {
+          setUser(null);
+          setUserRole(null);
+        }
+      } catch (error) {
+        // Handle Firebase auth errors gracefully
+        console.error("Firebase auth error:", error);
+
+        // Provide custom error messages instead of Firebase technical errors
+        if (error.code === "auth/invalid-credential") {
+          console.error("Authentication failed: Invalid credentials");
+        } else if (error.code === "auth/user-not-found") {
+          console.error("Authentication failed: User not found");
+        } else if (error.code === "auth/network-request-failed") {
+          console.error("Authentication failed: Network error");
+        } else {
+          console.error("Authentication failed: Unknown error");
+        }
+
+        // Clear user state on error
         setUser(null);
+        setUserRole(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const signup = async (email, password, fullName) => {
+  const signup = async (
+    email,
+    password,
+    firstName,
+    lastName,
+    userName,
+    options = {}
+  ) => {
+    const { skipDb = false } = options;
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
+
+      // Update profile with display name
       await updateProfile(userCredential.user, {
-        displayName: fullName,
+        displayName: `${firstName} ${lastName}`.trim(),
       });
 
-      // Send email verification
-      await sendEmailVerification(userCredential.user);
+      // Create user in MongoDB (unless explicitly skipped for verify flow)
+      if (!skipDb) {
+        const role = isSuperAdmin(email) ? "admin" : "user";
+        const response = await fetch("/api/users", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firebaseUid: userCredential.user.uid,
+            email: email,
+            profile: {
+              firstName: firstName,
+              lastName: lastName,
+              username: userName,
+            },
+            role: role,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to create user in database");
+        }
+      }
 
       return {
         success: true,
         user: userCredential.user,
-        message:
-          "Account created! Please check your email to verify your account.",
+        message: "Account created successfully!",
       };
     } catch (error) {
       return { success: false, error: error.message };
@@ -68,19 +163,38 @@ export const AuthContextProvider = ({ children }) => {
         password
       );
 
-      // Check if email is verified
-      if (!userCredential.user.emailVerified) {
-        await signOut(auth);
-        return {
-          success: false,
-          error:
-            "Please verify your email before signing in. Check your inbox for the verification link.",
-        };
+      // Update last login in MongoDB using email
+      try {
+        await fetch(`/api/users/${userCredential.user.email}/last-login`, {
+          method: "PATCH",
+        });
+      } catch (error) {
+        console.error("Error updating last login:", error);
       }
 
       return { success: true, user: userCredential.user };
     } catch (error) {
-      return { success: false, error: error.message };
+      // Provide custom error messages instead of Firebase technical errors
+      let customError = "Login failed. Please try again.";
+
+      if (error.code === "auth/invalid-credential") {
+        customError =
+          "Invalid email or password. Please check your credentials and try again.";
+      } else if (error.code === "auth/user-not-found") {
+        customError =
+          "No account found with this email address. Please check your email or create a new account.";
+      } else if (error.code === "auth/wrong-password") {
+        customError = "Incorrect password. Please try again.";
+      } else if (error.code === "auth/too-many-requests") {
+        customError = "Too many failed login attempts. Please try again later.";
+      } else if (error.code === "auth/network-request-failed") {
+        customError =
+          "Network error. Please check your internet connection and try again.";
+      } else if (error.code === "auth/user-disabled") {
+        customError = "This account has been disabled. Please contact support.";
+      }
+
+      return { success: false, error: customError };
     }
   };
 
@@ -125,6 +239,9 @@ export const AuthContextProvider = ({ children }) => {
 
   const value = {
     user,
+    userRole,
+    hasAdminAccess,
+    isSuperAdminUser,
     signup,
     login,
     logout,
@@ -134,9 +251,5 @@ export const AuthContextProvider = ({ children }) => {
     loading,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

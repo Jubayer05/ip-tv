@@ -5,7 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useState } from "react";
 
 const MainBanner = () => {
-  const { language, translate } = useLanguage();
+  const { language, translate, isLanguageLoaded } = useLanguage();
 
   const ORIGINAL_HEADING_1 = "YOUR TICKET TO ENDLESS";
   const ORIGINAL_HEADING_2 = "ENTERTAINMENT";
@@ -21,6 +21,9 @@ const MainBanner = () => {
   const [buttonText, setButtonText] = useState(ORIGINAL_BUTTON);
 
   useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
     let isMounted = true;
     (async () => {
       const items = [
@@ -46,8 +49,7 @@ const MainBanner = () => {
     return () => {
       isMounted = false;
     };
-    // Update when language changes
-  }, [language.code]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [language.code, isLanguageLoaded, translate]);
 
   return (
     <Polygon imageBg="/background/banner_bg.webp">

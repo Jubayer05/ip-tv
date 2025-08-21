@@ -1,12 +1,88 @@
+"use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Film, Monitor, Zap } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 const FeatureHome = ({ featureAbout = false }) => {
+  const { language, translate } = useLanguage();
+
+  const ORIGINAL_HEADING = "WATCH WHAT YOU LOVE, ANYTIME, ANYWHERE";
+  const ORIGINAL_PARAGRAPH =
+    "Our multiple 99% uptime servers are strategically located across the globe, ensuring seamless streaming no matter where you are. From the Americas to Europe, Asia, and beyond — we've got you covered for the ultimate viewing experience.";
+  const ORIGINAL_FEATURE_1_TITLE = "Massive Movie Library";
+  const ORIGINAL_FEATURE_1_DESC = "From classics to the latest releases";
+  const ORIGINAL_FEATURE_2_TITLE = "HD & 4K Streaming";
+  const ORIGINAL_FEATURE_2_DESC = "Crystal-clear quality, every time";
+  const ORIGINAL_FEATURE_3_TITLE = "No Contracts, No Hidden Fees";
+  const ORIGINAL_FEATURE_3_DESC = "Cancel anytime";
+  const ORIGINAL_FEATURE_4_TITLE = "Works on Any Device";
+  const ORIGINAL_FEATURE_4_DESC = "Watch on your TV, laptop, phone, or tablet";
+
+  const [heading, setHeading] = useState(ORIGINAL_HEADING);
+  const [paragraph, setParagraph] = useState(ORIGINAL_PARAGRAPH);
+  const [feature1Title, setFeature1Title] = useState(ORIGINAL_FEATURE_1_TITLE);
+  const [feature1Desc, setFeature1Desc] = useState(ORIGINAL_FEATURE_1_DESC);
+  const [feature2Title, setFeature2Title] = useState(ORIGINAL_FEATURE_2_TITLE);
+  const [feature2Desc, setFeature2Desc] = useState(ORIGINAL_FEATURE_2_DESC);
+  const [feature3Title, setFeature3Title] = useState(ORIGINAL_FEATURE_3_TITLE);
+  const [feature3Desc, setFeature3Desc] = useState(ORIGINAL_FEATURE_3_DESC);
+  const [feature4Title, setFeature4Title] = useState(ORIGINAL_FEATURE_4_TITLE);
+  const [feature4Desc, setFeature4Desc] = useState(ORIGINAL_FEATURE_4_DESC);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      const items = [
+        ORIGINAL_HEADING,
+        ORIGINAL_PARAGRAPH,
+        ORIGINAL_FEATURE_1_TITLE,
+        ORIGINAL_FEATURE_1_DESC,
+        ORIGINAL_FEATURE_2_TITLE,
+        ORIGINAL_FEATURE_2_DESC,
+        ORIGINAL_FEATURE_3_TITLE,
+        ORIGINAL_FEATURE_3_DESC,
+        ORIGINAL_FEATURE_4_TITLE,
+        ORIGINAL_FEATURE_4_DESC,
+      ];
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const [
+        tHeading,
+        tParagraph,
+        tFeature1Title,
+        tFeature1Desc,
+        tFeature2Title,
+        tFeature2Desc,
+        tFeature3Title,
+        tFeature3Desc,
+        tFeature4Title,
+        tFeature4Desc,
+      ] = translated;
+
+      setHeading(tHeading);
+      setParagraph(tParagraph);
+      setFeature1Title(tFeature1Title);
+      setFeature1Desc(tFeature1Desc);
+      setFeature2Title(tFeature2Title);
+      setFeature2Desc(tFeature2Desc);
+      setFeature3Title(tFeature3Title);
+      setFeature3Desc(tFeature3Desc);
+      setFeature4Title(tFeature4Title);
+      setFeature4Desc(tFeature4Desc);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div
-      className={`min-h-screen  ${
+      className={`min-h-screen ${
         featureAbout ? "mt-14 md:mt-0" : "bg-black pt-12 -mt-2"
-      } text-white overflow-hidden `}
+      } text-white overflow-hidden`}
     >
       <div className="relative flex items-center justify-center min-h-screen px-4 md:px-8 lg:px-16">
         {/* Main content container */}
@@ -31,14 +107,11 @@ const FeatureHome = ({ featureAbout = false }) => {
                   featureAbout ? "" : "md:text-5xl"
                 }`}
               >
-                WATCH WHAT YOU LOVE, ANYTIME, ANYWHERE
+                {heading}
               </h1>
 
               <p className="text-gray-300 font-secondary text-xs md:text-xl text-left md:text-center leading-relaxed max-w-2xl">
-                Our multiple 99% uptime servers are strategically located across
-                the globe, ensuring seamless streaming no matter where you are.
-                From the Americas to Europe, Asia, and beyond — we've got you
-                covered for the ultimate viewing experience.
+                {paragraph}
               </p>
             </div>
 
@@ -51,10 +124,10 @@ const FeatureHome = ({ featureAbout = false }) => {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-white">
-                    Massive Movie Library
+                    {feature1Title}
                   </h3>
-                  <p className="text-gray-400 text-xs md:text-base  font-secondary">
-                    From classics to the latest releases
+                  <p className="text-gray-400 text-xs md:text-base font-secondary">
+                    {feature1Desc}
                   </p>
                 </div>
               </div>
@@ -66,10 +139,10 @@ const FeatureHome = ({ featureAbout = false }) => {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-white">
-                    HD & 4K Streaming
+                    {feature2Title}
                   </h3>
-                  <p className="text-gray-400 text-xs md:text-base  font-secondary">
-                    Crystal-clear quality, every time
+                  <p className="text-gray-400 text-xs md:text-base font-secondary">
+                    {feature2Desc}
                   </p>
                 </div>
               </div>
@@ -81,10 +154,10 @@ const FeatureHome = ({ featureAbout = false }) => {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-white">
-                    No Contracts, No Hidden Fees
+                    {feature3Title}
                   </h3>
-                  <p className="text-gray-400 text-xs md:text-base  font-secondary">
-                    Cancel anytime
+                  <p className="text-gray-400 text-xs md:text-base font-secondary">
+                    {feature3Desc}
                   </p>
                 </div>
               </div>
@@ -96,10 +169,10 @@ const FeatureHome = ({ featureAbout = false }) => {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-white">
-                    Works on Any Device
+                    {feature4Title}
                   </h3>
-                  <p className="text-gray-400 text-xs md:text-base  font-secondary">
-                    Watch on your TV, laptop, phone, or tablet
+                  <p className="text-gray-400 text-xs md:text-base font-secondary">
+                    {feature4Desc}
                   </p>
                 </div>
               </div>

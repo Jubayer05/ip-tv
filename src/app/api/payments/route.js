@@ -1,1 +1,0 @@
-// Payments management API route

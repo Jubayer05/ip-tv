@@ -1,8 +1,9 @@
 "use client";
 
 import PolygonUpperLine from "@/components/ui/polygonUpperLine";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Plus, Share2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GoDotFill } from "react-icons/go";
 import { IoPlaySharp } from "react-icons/io5";
 import Slider from "react-slick";
@@ -10,10 +11,11 @@ import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
 
 const ExploreChannelBanner = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Sample movie/show data
-  const slides = [
+  // Original text constants
+  const ORIGINAL_SLIDES = [
     {
       id: 1,
       title: "Loki | Season 2",
@@ -48,6 +50,64 @@ const ExploreChannelBanner = () => {
       backgroundImage: "/background/affiliate_bg.webp",
     },
   ];
+
+  const ORIGINAL_BUTTON_TEXTS = {
+    watchNow: "Watch Now",
+    myWishlist: "My Wishlist",
+  };
+
+  // State for translated content
+  const [slides, setSlides] = useState(ORIGINAL_SLIDES);
+  const [buttonTexts, setButtonTexts] = useState(ORIGINAL_BUTTON_TEXTS);
+
+  useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        // Translate slide titles and descriptions
+        const slideTexts = ORIGINAL_SLIDES.flatMap((slide) => [
+          slide.title,
+          slide.description,
+        ]);
+
+        // Translate button texts
+        const buttonTextsArray = [
+          ORIGINAL_BUTTON_TEXTS.watchNow,
+          ORIGINAL_BUTTON_TEXTS.myWishlist,
+        ];
+
+        const allTexts = [...slideTexts, ...buttonTextsArray];
+        const translated = await translate(allTexts);
+
+        if (!isMounted) return;
+
+        // Update slides with translated content
+        const updatedSlides = ORIGINAL_SLIDES.map((slide, index) => ({
+          ...slide,
+          title: translated[index * 2],
+          description: translated[index * 2 + 1],
+        }));
+
+        // Update button texts
+        const [tWatchNow, tMyWishlist] = translated.slice(-2);
+        setButtonTexts({
+          watchNow: tWatchNow,
+          myWishlist: tMyWishlist,
+        });
+
+        setSlides(updatedSlides);
+      } catch (error) {
+        console.error("Translation error:", error);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
 
   const settings = {
     dots: false, // We'll create custom dots
@@ -139,12 +199,12 @@ const ExploreChannelBanner = () => {
                         className="w-4 h-4 sm:w-5 sm:h-5"
                         fill="currentColor"
                       />
-                      Watch Now
+                      {buttonTexts.watchNow}
                     </button>
 
                     <button className="cursor-pointer flex items-center gap-1 sm:gap-2 border border-white/30 text-white px-3 sm:px-6 py-2 rounded-full font-medium hover:border-white bg-white/15 hover:bg-white/25 transition-all duration-200 text-xs sm:text-sm">
                       <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                      My Wishlist
+                      {buttonTexts.myWishlist}
                     </button>
 
                     <button className="cursor-pointer p-2 border border-white/30 text-white rounded-full hover:border-white transition-all duration-200 bg-white/15 hover:bg-white/25 text-xs sm:text-sm">

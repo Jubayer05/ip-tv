@@ -1,4 +1,5 @@
 "use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -40,8 +41,32 @@ const movies = [
 ];
 
 const LatestTrailers = () => {
+  const { language, translate } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+
+  const ORIGINAL_HEADING = "WATCH LATEST";
+  const ORIGINAL_TRAILERS = "TRAILERS";
+
+  const [heading, setHeading] = useState(ORIGINAL_HEADING);
+  const [trailers, setTrailers] = useState(ORIGINAL_TRAILERS);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      const items = [ORIGINAL_HEADING, ORIGINAL_TRAILERS];
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const [tHeading, tTrailers] = translated;
+      setHeading(tHeading);
+      setTrailers(tTrailers);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-play functionality
   useEffect(() => {
@@ -95,9 +120,9 @@ const LatestTrailers = () => {
             id="latest-trailers-heading"
             className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-wide"
           >
-            WATCH LATEST{" "}
+            {heading}{" "}
             <span className="text-cyan-400 bg-gradient-to-r from-cyan-400 to-cyan-600 bg-clip-text">
-              TRAILERS
+              {trailers}
             </span>
           </h2>
         </header>

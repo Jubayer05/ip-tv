@@ -1,5 +1,19 @@
 "use client";
-import { ArrowLeft, CreditCard, History, List, Monitor } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  ArrowLeft,
+  BarChart3,
+  CreditCard,
+  Gift,
+  History,
+  List,
+  Monitor,
+  Package,
+  Settings,
+  Ticket,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -8,8 +22,13 @@ import { MdOutlineDashboard } from "react-icons/md";
 export default function Sidebar() {
   const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(false);
+  const { language, translate } = useLanguage();
+  const { userRole, hasAdminAccess, isSuperAdminUser } = useAuth();
 
-  const menuItems = [
+  const ORIGINAL_BACK_TO_TEXT = "Back to Cheap Stream";
+
+  // User menu items (regular users)
+  const ORIGINAL_USER_MENU_ITEMS = [
     {
       href: "/dashboard",
       label: "Dashboard",
@@ -30,7 +49,105 @@ export default function Sidebar() {
       label: "Payment Methods",
       icon: CreditCard,
     },
+    {
+      href: "/dashboard/settings",
+      label: "Settings",
+      icon: Settings,
+    },
   ];
+
+  // Admin menu items (admin, support, super admin)
+  const ORIGINAL_ADMIN_MENU_ITEMS = [
+    {
+      href: "/dashboard",
+      label: "Dashboard",
+      icon: MdOutlineDashboard,
+    },
+    {
+      href: "/admin",
+      label: "Admin Dashboard",
+      icon: BarChart3,
+    },
+    {
+      href: "/admin/users",
+      label: "User Management",
+      icon: Users,
+    },
+    {
+      href: "/admin/orders",
+      label: "Order Management",
+      icon: History,
+    },
+    {
+      href: "/admin/products",
+      label: "Product Management",
+      icon: Package,
+    },
+    {
+      href: "/admin/coupons",
+      label: "Coupon Management",
+      icon: Gift,
+    },
+    {
+      href: "/admin/support",
+      label: "Support Tickets",
+      icon: Ticket,
+    },
+    {
+      href: "/admin/analytics",
+      label: "Analytics",
+      icon: BarChart3,
+    },
+    {
+      href: "/admin/settings",
+      label: "System Settings",
+      icon: Settings,
+    },
+  ];
+
+  // Determine which menu items to show based on user role
+  const getMenuItems = () => {
+    if (hasAdminAccess()) {
+      return ORIGINAL_ADMIN_MENU_ITEMS;
+    }
+    return ORIGINAL_USER_MENU_ITEMS;
+  };
+
+  const [backToText, setBackToText] = useState(ORIGINAL_BACK_TO_TEXT);
+  const [menuItems, setMenuItems] = useState(getMenuItems());
+
+  useEffect(() => {
+    // Update menu items when user role changes
+    setMenuItems(getMenuItems());
+  }, [userRole, hasAdminAccess]);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      const currentMenuItems = getMenuItems();
+      const items = [
+        ORIGINAL_BACK_TO_TEXT,
+        ...currentMenuItems.map((item) => item.label),
+      ];
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const [tBackToText, ...tMenuLabels] = translated;
+
+      setBackToText(tBackToText);
+
+      // Update menu items with translated labels
+      const updatedMenuItems = currentMenuItems.map((item, index) => ({
+        ...item,
+        label: tMenuLabels[index],
+      }));
+      setMenuItems(updatedMenuItems);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, userRole, hasAdminAccess]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset sidebar to collapsed state when pathname changes
   useEffect(() => {
@@ -77,9 +194,29 @@ export default function Sidebar() {
           className="flex items-center gap-2 text-white hover:text-gray-300 transition-colors"
         >
           <ArrowLeft size={20} />
-          <span className="font-medium">Back to Cheap Stream</span>
+          <span className="font-medium">{backToText}</span>
         </Link>
       </div>
+
+      {/* Role indicator for admin users */}
+      {hasAdminAccess() && (
+        <div
+          className={`px-6 py-3 border-b border-gray-800 transition-all duration-300 ${
+            isExpanded ? "block" : "hidden md:block"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="text-green-400 text-sm font-medium">
+              {isSuperAdminUser()
+                ? "Super Admin"
+                : userRole === "admin"
+                ? "Administrator"
+                : "Support"}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Menu */}
       <nav

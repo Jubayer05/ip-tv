@@ -14,10 +14,13 @@ export default function withAuth(Component) {
       if (!loading) {
         if (!user) {
           router.push("/login");
-        } else if (!user.emailVerified) {
-          router.push("/verify-email");
         } else {
+          // Remove Firebase email verification check since you have custom SMTP system
+          // else if (!user.emailVerified) {
+          //   router.push("/verify-email");
+          // } else {
           setIsChecking(false);
+          // }
         }
       }
     }, [user, loading, router]);
@@ -33,7 +36,8 @@ export default function withAuth(Component) {
       );
     }
 
-    if (!user || !user.emailVerified) {
+    // Remove Firebase email verification check
+    if (!user) {
       return null; // Will redirect
     }
 

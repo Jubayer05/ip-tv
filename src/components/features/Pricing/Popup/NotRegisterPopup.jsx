@@ -1,6 +1,62 @@
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ArrowRight, Check, User, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function NotRegisterPopup({ isOpen, onClose }) {
+  const { language, translate, isLanguageLoaded } = useLanguage();
+
+  // Original text constants
+  const ORIGINAL_TEXTS = {
+    title: "NOT REGISTERED YET?",
+    subtitle: "Create an account to unlock",
+    benefits: [
+      "Affiliate Mode",
+      "Rank-Based Discounts",
+      "Auto Renew & Saved Payment",
+      "Full Dashboard Access",
+    ],
+    buttonText: "Create Account Now",
+  };
+
+  // State for translated content
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = [
+          ORIGINAL_TEXTS.title,
+          ORIGINAL_TEXTS.subtitle,
+          ...ORIGINAL_TEXTS.benefits,
+          ORIGINAL_TEXTS.buttonText,
+        ];
+
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const [tTitle, tSubtitle, ...tBenefits] = translated;
+        const tButtonText = translated[translated.length - 1];
+
+        setTexts({
+          title: tTitle,
+          subtitle: tSubtitle,
+          benefits: tBenefits,
+          buttonText: tButtonText,
+        });
+      } catch (error) {
+        console.error("Translation error:", error);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
+
   const handleCreateAccount = () => {
     // Handle create account action
     onClose();
@@ -43,55 +99,23 @@ export default function NotRegisterPopup({ isOpen, onClose }) {
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-white text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 tracking-wide">
-            NOT REGISTERED YET?
+            {texts.title}
           </h1>
-          <p className="text-gray-300 text-xs sm:text-sm">
-            Create an account to unlock
-          </p>
+          <p className="text-gray-300 text-xs sm:text-sm">{texts.subtitle}</p>
         </div>
 
         {/* Benefits List */}
         <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Check
-              size={16}
-              className="text-green-400 flex-shrink-0 sm:w-5 sm:h-5"
-              strokeWidth={2}
-            />
-            <span className="text-white text-xs sm:text-sm">
-              Affiliate Mode
-            </span>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Check
-              size={16}
-              className="text-green-400 flex-shrink-0 sm:w-5 sm:h-5"
-              strokeWidth={2}
-            />
-            <span className="text-white text-xs sm:text-sm">
-              Rank-Based Discounts
-            </span>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Check
-              size={16}
-              className="text-green-400 flex-shrink-0 sm:w-5 sm:h-5"
-              strokeWidth={2}
-            />
-            <span className="text-white text-xs sm:text-sm">
-              Auto Renew & Saved Payment
-            </span>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Check
-              size={16}
-              className="text-green-400 flex-shrink-0 sm:w-5 sm:h-5"
-              strokeWidth={2}
-            />
-            <span className="text-white text-xs sm:text-sm">
-              Full Dashboard Access
-            </span>
-          </div>
+          {texts.benefits.map((benefit, index) => (
+            <div key={index} className="flex items-center gap-2 sm:gap-3">
+              <Check
+                size={16}
+                className="text-green-400 flex-shrink-0 sm:w-5 sm:h-5"
+                strokeWidth={2}
+              />
+              <span className="text-white text-xs sm:text-sm">{benefit}</span>
+            </div>
+          ))}
         </div>
 
         {/* Create Account Button */}
@@ -99,7 +123,7 @@ export default function NotRegisterPopup({ isOpen, onClose }) {
           onClick={handleCreateAccount}
           className="w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2"
         >
-          Create Account Now
+          {texts.buttonText}
           <ArrowRight size={16} className="sm:w-5 sm:h-5" />
         </button>
       </div>

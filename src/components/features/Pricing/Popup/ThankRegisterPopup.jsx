@@ -1,9 +1,73 @@
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ArrowRight, Check, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PaymentConfirmPopup from "./PaymentConfirmPopup";
 
 export default function ThankRegisterPopup({ isOpen, onClose }) {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
+
+  // Original text constants
+  const ORIGINAL_TEXTS = {
+    title: "THANK YOU FOR YOUR ORDER!",
+    subtitle:
+      "Check your email for IPTV details and a secure link to view your order history.",
+    buttons: {
+      backToHome: "Back To Home Page",
+      paymentConfirm: "Payment Confirm Popup",
+      createAccount: "Create Account To Unlock Even More Benefits.",
+    },
+    footer: {
+      receipt: "A receipt has been sent to your email.",
+      contact: "For questions, contact: info@iptvstore.com",
+    },
+  };
+
+  // State for translated content
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = [
+          ORIGINAL_TEXTS.title,
+          ORIGINAL_TEXTS.subtitle,
+          ...Object.values(ORIGINAL_TEXTS.buttons),
+          ...Object.values(ORIGINAL_TEXTS.footer),
+        ];
+
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const [tTitle, tSubtitle, ...tButtons] = translated;
+        const tFooter = tButtons.slice(3);
+
+        setTexts({
+          title: tTitle,
+          subtitle: tSubtitle,
+          buttons: {
+            backToHome: tButtons[0],
+            paymentConfirm: tButtons[1],
+            createAccount: tButtons[2],
+          },
+          footer: {
+            receipt: tFooter[0],
+            contact: tFooter[1],
+          },
+        });
+      } catch (error) {
+        console.error("Translation error:", error);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
 
   const handleBackToHome = () => {
     // Handle navigation to home page
@@ -52,12 +116,10 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
           {/* Header */}
           <div className="text-center mb-6 sm:mb-8">
             <h1 className="text-white text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 tracking-wide">
-              THANK YOU FOR YOUR ORDER!
+              {texts.title}
             </h1>
             <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
-              Check your email for IPTV details and a secure link to
-              <br className="hidden sm:block" />
-              view your order history.
+              {texts.subtitle}
             </p>
           </div>
 
@@ -68,7 +130,7 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
               onClick={handleBackToHome}
               className="w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2"
             >
-              Back To Home Page
+              {texts.buttons.backToHome}
               <ArrowRight size={16} className="sm:w-5 sm:h-5" />
             </button>
 
@@ -77,7 +139,7 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
               onClick={handlePaymentConfirm}
               className="w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2"
             >
-              Payment Confirm Popup
+              {texts.buttons.paymentConfirm}
               <ArrowRight size={16} className="sm:w-5 sm:h-5" />
             </button>
 
@@ -86,18 +148,14 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
               onClick={handleCreateAccount}
               className="w-full bg-transparent border-2 border-primary text-primary py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-400 hover:text-black transition-colors"
             >
-              Create Account To Unlock Even More Benefits.
+              {texts.buttons.createAccount}
             </button>
           </div>
 
           {/* Footer Text */}
           <div className="text-center mt-6 sm:mt-8 space-y-2">
-            <p className="text-gray-300 text-xs">
-              A receipt has been sent to your email.
-            </p>
-            <p className="text-gray-400 text-xs">
-              For questions, contact: info@iptvstore.com
-            </p>
+            <p className="text-gray-300 text-xs">{texts.footer.receipt}</p>
+            <p className="text-gray-400 text-xs">{texts.footer.contact}</p>
           </div>
         </div>
       </div>

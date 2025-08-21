@@ -1,1 +1,0 @@
-// User logout API route

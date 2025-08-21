@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   createColumnHelper,
   flexRender,
@@ -7,10 +8,26 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function ReferralOrderHistory() {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [sorting, setSorting] = useState([]);
+
+  const ORIGINAL_HEADING = "REFERRAL ORDER HISTORY";
+  const ORIGINAL_SUBTITLE =
+    "Use the dashboard to keep track of your referrals and earnings.";
+  const ORIGINAL_COLUMNS = {
+    orderId: "Order ID",
+    referredUser: "Referred User",
+    plan: "Plan",
+    commission: "Commission Earned",
+    date: "Date",
+  };
+
+  const [heading, setHeading] = useState(ORIGINAL_HEADING);
+  const [subtitle, setSubtitle] = useState(ORIGINAL_SUBTITLE);
+  const [columns, setColumns] = useState(ORIGINAL_COLUMNS);
 
   const orders = [
     {
@@ -50,34 +67,78 @@ export default function ReferralOrderHistory() {
     },
   ];
 
+  useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      const items = [
+        ORIGINAL_HEADING,
+        ORIGINAL_SUBTITLE,
+        ORIGINAL_COLUMNS.orderId,
+        ORIGINAL_COLUMNS.referredUser,
+        ORIGINAL_COLUMNS.plan,
+        ORIGINAL_COLUMNS.commission,
+        ORIGINAL_COLUMNS.date,
+      ];
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const [
+        tHeading,
+        tSubtitle,
+        tOrderId,
+        tReferredUser,
+        tPlan,
+        tCommission,
+        tDate,
+      ] = translated;
+
+      setHeading(tHeading);
+      setSubtitle(tSubtitle);
+      setColumns({
+        orderId: tOrderId,
+        referredUser: tReferredUser,
+        plan: tPlan,
+        commission: tCommission,
+        date: tDate,
+      });
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
+
   const columnHelper = createColumnHelper();
 
-  const columns = [
+  const tableColumns = [
     columnHelper.accessor("id", {
-      header: "Order ID",
+      header: columns.orderId,
       cell: (info) => info.getValue(),
     }),
     columnHelper.accessor("referredUser", {
-      header: "Referred User",
+      header: columns.referredUser,
       cell: (info) => info.getValue(),
     }),
     columnHelper.accessor("plan", {
-      header: "Plan",
+      header: columns.plan,
       cell: (info) => info.getValue(),
     }),
     columnHelper.accessor("commission", {
-      header: "Commission Earned",
+      header: columns.commission,
       cell: (info) => info.getValue(),
     }),
     columnHelper.accessor("date", {
-      header: "Date",
+      header: columns.date,
       cell: (info) => info.getValue(),
     }),
   ];
 
   const table = useReactTable({
     data: orders,
-    columns,
+    columns: tableColumns,
     state: {
       sorting,
     },
@@ -91,11 +152,9 @@ export default function ReferralOrderHistory() {
       {/* Header */}
       <div className="mb-4 sm:mb-6">
         <h2 className="text-lg sm:text-xl font-bold mb-2 tracking-wide">
-          REFERRAL ORDER HISTORY
+          {heading}
         </h2>
-        <p className="text-gray-300 text-xs sm:text-sm">
-          Use the dashboard to keep track of your referrals and earnings.
-        </p>
+        <p className="text-gray-300 text-xs sm:text-sm">{subtitle}</p>
       </div>
 
       {/* Table Container with Border */}

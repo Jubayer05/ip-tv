@@ -13,10 +13,9 @@ export default function ProtectedRoute({ children }) {
     if (!loading) {
       if (!user) {
         router.push("/login");
-      } else if (!user.emailVerified) {
-        router.push("/verify-email");
       } else {
         setIsChecking(false);
+        // }
       }
     }
   }, [user, loading, router]);
@@ -32,12 +31,9 @@ export default function ProtectedRoute({ children }) {
     );
   }
 
+  // Remove Firebase email verification check
   if (!user) {
     return null; // Will redirect to login
-  }
-
-  if (!user.emailVerified) {
-    return null; // Will redirect to verify email
   }
 
   return <>{children}</>;

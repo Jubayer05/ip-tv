@@ -1,13 +1,83 @@
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ArrowRight, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import NotRegisterPopup from "./NotRegisterPopup";
 import ThankRegisterPopup from "./ThankRegisterPopup";
 
 export default function RegisterFormPopup({ isOpen, onClose }) {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [showThankYou, setShowThankYou] = useState(false);
   const [showNotRegister, setShowNotRegister] = useState(false);
+
+  // Original text constants
+  const ORIGINAL_TEXTS = {
+    title: "THANK YOU FOR YOUR ORDER!",
+    subtitle:
+      "Check your email for IPTV details and a secure link to view your order history.",
+    form: {
+      fullName: "Full Name",
+      email: "Email",
+      fullNamePlaceholder: "Enter full name",
+      emailPlaceholder: "Enter email",
+      submitButton: "Proceed With Checkout",
+    },
+    footer: {
+      or: "Or",
+      createAccount: "Create an Account",
+      toUnlock: "to unlock even more benefits",
+    },
+  };
+
+  // State for translated content
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = [
+          ORIGINAL_TEXTS.title,
+          ORIGINAL_TEXTS.subtitle,
+          ...Object.values(ORIGINAL_TEXTS.form),
+          ...Object.values(ORIGINAL_TEXTS.footer),
+        ];
+
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const [tTitle, tSubtitle, ...tForm] = translated;
+        const tFooter = tForm.slice(6);
+
+        setTexts({
+          title: tTitle,
+          subtitle: tSubtitle,
+          form: {
+            fullName: tForm[0],
+            email: tForm[1],
+            fullNamePlaceholder: tForm[2],
+            emailPlaceholder: tForm[3],
+            submitButton: tForm[4],
+          },
+          footer: {
+            or: tFooter[0],
+            createAccount: tFooter[1],
+            toUnlock: tFooter[2],
+          },
+        });
+      } catch (error) {
+        console.error("Translation error:", error);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
 
   const handleSubmit = () => {
     // Handle form submission here
@@ -47,12 +117,10 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
           {/* Header */}
           <div className="text-center mb-6 sm:mb-8">
             <h1 className="text-white text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 tracking-wide">
-              THANK YOU FOR YOUR ORDER!
+              {texts.title}
             </h1>
             <p className="text-gray-300 text-xs sm:text-sm leading-relaxed font-secondary">
-              Check your email for IPTV details and a secure link to
-              <br className="hidden sm:block" />
-              view your order history.
+              {texts.subtitle}
             </p>
           </div>
 
@@ -61,13 +129,13 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
             {/* Full Name Field */}
             <div>
               <label className="block text-white text-xs sm:text-sm font-medium mb-2 sm:mb-3">
-                Full Name
+                {texts.form.fullName}
               </label>
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter full name"
+                placeholder={texts.form.fullNamePlaceholder}
                 className="w-full bg-[#0c171c] border border-[#FFFFFF26] rounded-full px-4 sm:px-6 py-3 sm:py-4 text-white placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-cyan-400 transition-colors text-sm sm:text-base"
               />
             </div>
@@ -75,13 +143,13 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
             {/* Email Field */}
             <div>
               <label className="block text-white text-xs sm:text-sm font-medium mb-2 sm:mb-3">
-                Email
+                {texts.form.email}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter email"
+                placeholder={texts.form.emailPlaceholder}
                 className="w-full bg-[#0c171c] border border-[#FFFFFF26] rounded-full px-4 sm:px-6 py-3 sm:py-4 text-white placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-cyan-400 transition-colors text-sm sm:text-base"
               />
             </div>
@@ -91,20 +159,20 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
               onClick={handleSubmit}
               className="w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2 mt-6 sm:mt-8 font-secondary"
             >
-              Proceed With Checkout
+              {texts.form.submitButton}
               <ArrowRight size={16} className="sm:w-5 sm:h-5" />
             </button>
 
             {/* Footer Text */}
             <p className="text-center text-gray-300 text-xs sm:text-sm mt-4 sm:mt-6 font-secondary">
-              Or{" "}
+              {texts.footer.or}{" "}
               <button
                 onClick={handleCreateAccount}
                 className="text-primary hover:text-cyan-300 underline cursor-pointer"
               >
-                Create an Account
+                {texts.footer.createAccount}
               </button>{" "}
-              to unlock even more benefits
+              {texts.footer.toUnlock}
             </p>
           </div>
         </div>

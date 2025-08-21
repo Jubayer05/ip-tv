@@ -1,7 +1,70 @@
+"use client";
 import Image from "next/image";
 import { BsFillTrashFill } from "react-icons/bs";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useEffect, useState } from "react";
 
 const PaymentMethods = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
+
+  const ORIGINAL_HEADING = "SAVED PAYMENT METHODS";
+  const ORIGINAL_SUBTITLE = "Change how you pay for your plan";
+  const ORIGINAL_ADD_PAYMENT = "Add Payment Method";
+  const ORIGINAL_VISA_ENDING = "Visa ending in";
+  const ORIGINAL_EXPIRED = "Expired";
+  const ORIGINAL_PRIMARY_CARD = "Primary Card";
+  const ORIGINAL_MAKE_PRIMARY = "Make Primary Card";
+
+  const [heading, setHeading] = useState(ORIGINAL_HEADING);
+  const [subtitle, setSubtitle] = useState(ORIGINAL_SUBTITLE);
+  const [addPayment, setAddPayment] = useState(ORIGINAL_ADD_PAYMENT);
+  const [visaEnding, setVisaEnding] = useState(ORIGINAL_VISA_ENDING);
+  const [expired, setExpired] = useState(ORIGINAL_EXPIRED);
+  const [primaryCard, setPrimaryCard] = useState(ORIGINAL_PRIMARY_CARD);
+  const [makePrimary, setMakePrimary] = useState(ORIGINAL_MAKE_PRIMARY);
+
+  useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      const items = [
+        ORIGINAL_HEADING,
+        ORIGINAL_SUBTITLE,
+        ORIGINAL_ADD_PAYMENT,
+        ORIGINAL_VISA_ENDING,
+        ORIGINAL_EXPIRED,
+        ORIGINAL_PRIMARY_CARD,
+        ORIGINAL_MAKE_PRIMARY,
+      ];
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const [
+        tHeading,
+        tSubtitle,
+        tAddPayment,
+        tVisaEnding,
+        tExpired,
+        tPrimaryCard,
+        tMakePrimary,
+      ] = translated;
+
+      setHeading(tHeading);
+      setSubtitle(tSubtitle);
+      setAddPayment(tAddPayment);
+      setVisaEnding(tVisaEnding);
+      setExpired(tExpired);
+      setPrimaryCard(tPrimaryCard);
+      setMakePrimary(tMakePrimary);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
+
   const paymentMethods = [
     {
       id: 1,
@@ -32,10 +95,10 @@ const PaymentMethods = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 gap-4 sm:gap-0">
         <div>
           <h2 className="text-white text-base sm:text-lg font-semibold mb-2">
-            SAVED PAYMENT METHODS
+            {heading}
           </h2>
           <p className="text-gray-400 text-xs sm:text-sm">
-            Change how you pay for your plan
+            {subtitle}
           </p>
         </div>
         <button className="border border-gray-600 text-white px-4 sm:px-6 py-2 rounded-full font-medium text-xs sm:text-sm hover:bg-gray-800 transition-colors flex items-center gap-2 w-full sm:w-auto justify-center">
@@ -52,7 +115,7 @@ const PaymentMethods = () => {
               d="M12 4v16m8-8H4"
             />
           </svg>
-          Add Payment Method
+          {addPayment}
         </button>
       </div>
 
@@ -77,10 +140,10 @@ const PaymentMethods = () => {
               {/* Card Details */}
               <div className="flex-1 min-w-0">
                 <p className="text-white text-sm sm:text-base font-medium mb-1 truncate">
-                  Visa ending in {method.cardNumber}
+                  {visaEnding} {method.cardNumber}
                 </p>
                 <p className="text-gray-400 text-xs sm:text-sm mb-1">
-                  Expired {method.expiry}
+                  {expired} {method.expiry}
                 </p>
                 <div className="flex items-center gap-1">
                   <svg
@@ -102,11 +165,11 @@ const PaymentMethods = () => {
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               {method.isPrimary ? (
                 <span className="bg-cyan-400 text-gray-900 px-3 sm:px-6 py-2 rounded-full font-medium text-xs sm:text-sm">
-                  Primary Card
+                  {primaryCard}
                 </span>
               ) : (
                 <button className="border border-cyan-400 text-cyan-400 px-3 sm:px-6 py-2 rounded-full font-medium text-xs sm:text-sm hover:bg-cyan-400 hover:text-gray-900 transition-colors">
-                  Make Primary Card
+                  {makePrimary}
                 </button>
               )}
 

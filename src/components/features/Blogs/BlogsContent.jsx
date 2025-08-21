@@ -1,13 +1,15 @@
 "use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import Pagination from "@/lib/paginations";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ArticleCard from "./BlogContentItem";
 
 const BlogContent = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6; // Number of articles to show per page
 
-  const articles = [
+  const ORIGINAL_ARTICLES = [
     {
       id: 1,
       image:
@@ -169,6 +171,41 @@ const BlogContent = () => {
         "Build genuine connections with your audience through strategic content creation, community building, and data-driven social media marketing approaches.",
     },
   ];
+
+  const [articles, setArticles] = useState(ORIGINAL_ARTICLES);
+
+  useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      const titles = ORIGINAL_ARTICLES.map((article) => article.title);
+      const descriptions = ORIGINAL_ARTICLES.map(
+        (article) => article.description
+      );
+
+      const allTexts = [...titles, ...descriptions];
+      const translated = await translate(allTexts);
+
+      if (!isMounted) return;
+
+      const translatedTitles = translated.slice(0, titles.length);
+      const translatedDescriptions = translated.slice(titles.length);
+
+      const updatedArticles = ORIGINAL_ARTICLES.map((article, index) => ({
+        ...article,
+        title: translatedTitles[index],
+        description: translatedDescriptions[index],
+      }));
+
+      setArticles(updatedArticles);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
 
   // Calculate pagination values
   const totalPages = Math.ceil(articles.length / itemsPerPage);

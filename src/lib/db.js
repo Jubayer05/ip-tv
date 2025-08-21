@@ -1,18 +1,11 @@
-import { MongoClient } from "mongodb";
+import mongoose from "mongoose";
 
 const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://localhost:27017/ip_tv";
-const MONGODB_DB = process.env.MONGODB_DB || "ip_tv";
 
 if (!MONGODB_URI) {
   throw new Error(
     "Please define the MONGODB_URI environment variable inside .env.local"
-  );
-}
-
-if (!MONGODB_DB) {
-  throw new Error(
-    "Please define the MONGODB_DB environment variable inside .env.local"
   );
 }
 
@@ -21,10 +14,10 @@ if (!MONGODB_DB) {
  * in development. This prevents connections growing exponentially
  * during API Route usage.
  */
-let cached = global.mongo;
+let cached = global.mongoose;
 
 if (!cached) {
-  cached = global.mongo = { conn: null, promise: null };
+  cached = global.mongoose = { conn: null, promise: null };
 }
 
 export async function connectToDatabase() {
@@ -33,12 +26,12 @@ export async function connectToDatabase() {
   }
 
   if (!cached.promise) {
-    // Remove the unsupported bufferCommands option
-    cached.promise = MongoClient.connect(MONGODB_URI).then((client) => {
-      return {
-        client,
-        db: client.db(MONGODB_DB),
-      };
+    const opts = {
+      bufferCommands: false,
+    };
+
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      return mongoose;
     });
   }
 
@@ -52,12 +45,10 @@ export async function connectToDatabase() {
   return cached.conn;
 }
 
-export async function getDatabase() {
-  const { db } = await connectToDatabase();
-  return db;
-}
-
-export async function getCollection(collectionName) {
-  const db = await getDatabase();
-  return db.collection(collectionName);
+export async function disconnectFromDatabase() {
+  if (cached.conn) {
+    await mongoose.disconnect();
+    cached.conn = null;
+    cached.promise = null;
+  }
 }

@@ -4,21 +4,20 @@ import Navbar from "@/components/layout/Navbar";
 import { AuthContextProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { Manrope, Rajdhani } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const rajdhani = Rajdhani({
-  variable: "--font-rajdhani",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
+  variable: "--font-rajdhani",
   fallback: ["Arial", "sans-serif"],
 });
 
 const manrope = Manrope({
-  variable: "--font-manrope",
   subsets: ["latin"],
-  weight: ["200", "300", "400", "500", "600", "700", "800"],
-  display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-manrope",
   fallback: ["Arial", "sans-serif"],
 });
 
@@ -32,6 +31,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${rajdhani.variable} ${manrope.variable}`}>
       <body className="antialiased font-primary">
+        <Script
+          src="https://embed.billgang.store/embed.js"
+          strategy="beforeInteractive"
+        />
         <AuthContextProvider>
           <LanguageProvider>
             <Navbar />

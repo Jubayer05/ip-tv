@@ -1,12 +1,39 @@
 "use client";
 import Button from "@/components/ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
 
 const TrendingMovies = () => {
+  const { language, translate } = useLanguage();
+
+  const ORIGINAL_HEADING = "Trending Movies";
+  const ORIGINAL_BUTTON = "Get More Movies";
+
+  const [heading, setHeading] = useState(ORIGINAL_HEADING);
+  const [buttonText, setButtonText] = useState(ORIGINAL_BUTTON);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      const items = [ORIGINAL_HEADING, ORIGINAL_BUTTON];
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const [tHeading, tButtonText] = translated;
+      setHeading(tHeading);
+      setButtonText(tButtonText);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const movies = [
     {
       id: 1,
@@ -116,10 +143,10 @@ const TrendingMovies = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4 sm:gap-0">
           <h2 className="text-2xl md:text-3xl font-bold tracking-wider uppercase text-center sm:text-left">
-            Trending Movies
+            {heading}
           </h2>
           <Button className="bg-white text-black px-4 sm:px-6 py-1.5 sm:py-2 rounded-full font-medium hover:bg-gray-200 transition-all flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
-            Get More Movies <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />{" "}
+            {buttonText} <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
         </div>
 

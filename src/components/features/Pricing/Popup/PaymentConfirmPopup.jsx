@@ -1,6 +1,91 @@
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Check, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function PaymentConfirmPopup({ isOpen, onClose }) {
+  const { language, translate, isLanguageLoaded } = useLanguage();
+
+  // Original text constants
+  const ORIGINAL_TEXTS = {
+    title: "PAYMENT CONFIRMED",
+    subtitle: "Thank you for your purchase!",
+    orderDetails: {
+      orderId: "Order ID:",
+      date: "Date:",
+      service: "Service:",
+      plan: "Plan:",
+      total: "Total:",
+    },
+    orderValues: {
+      orderId: "#92838239",
+      date: "24 August 2025",
+      service: "Digital Subscription Access",
+      plan: "Premium",
+      total: "$87.93",
+    },
+    footer: {
+      receipt: "A receipt has been sent to your email.",
+      contact: "For questions, contact: info@iptvstore.com",
+    },
+  };
+
+  // State for translated content
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = [
+          ORIGINAL_TEXTS.title,
+          ORIGINAL_TEXTS.subtitle,
+          ...Object.values(ORIGINAL_TEXTS.orderDetails),
+          ...Object.values(ORIGINAL_TEXTS.orderValues),
+          ...Object.values(ORIGINAL_TEXTS.footer),
+        ];
+
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const [tTitle, tSubtitle, ...tOrderDetails] = translated;
+        const tOrderValues = tOrderDetails.slice(5, 10);
+        const tFooter = tOrderDetails.slice(10);
+
+        setTexts({
+          title: tTitle,
+          subtitle: tSubtitle,
+          orderDetails: {
+            orderId: tOrderDetails[0],
+            date: tOrderDetails[1],
+            service: tOrderDetails[2],
+            plan: tOrderDetails[3],
+            total: tOrderDetails[4],
+          },
+          orderValues: {
+            orderId: ORIGINAL_TEXTS.orderValues.orderId, // Keep original values
+            date: ORIGINAL_TEXTS.orderValues.date,
+            service: tOrderValues[0],
+            plan: tOrderValues[1],
+            total: ORIGINAL_TEXTS.orderValues.total,
+          },
+          footer: {
+            receipt: tFooter[0],
+            contact: tFooter[1],
+          },
+        });
+      } catch (error) {
+        console.error("Translation error:", error);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
+
   if (!isOpen) return null;
 
   return (
@@ -29,64 +114,68 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-white text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 tracking-wide">
-            PAYMENT CONFIRMED
+            {texts.title}
           </h1>
-          <p className="text-gray-300 text-xs sm:text-sm">
-            Thank you for your purchase!
-          </p>
+          <p className="text-gray-300 text-xs sm:text-sm">{texts.subtitle}</p>
         </div>
 
         {/* Order Details */}
         <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
           {/* Order ID */}
           <div className="flex justify-between items-center pt-2">
-            <span className="text-white/75 text-xs sm:text-sm">Order ID:</span>
+            <span className="text-white/75 text-xs sm:text-sm">
+              {texts.orderDetails.orderId}
+            </span>
             <span className="text-white text-xs sm:text-sm font-medium">
-              #92838239
+              {texts.orderValues.orderId}
             </span>
           </div>
 
           {/* Date */}
           <div className="flex justify-between items-center pb-3 sm:pb-5 border-b border-[#313131]">
-            <span className="text-white/75 text-xs sm:text-sm">Date:</span>
+            <span className="text-white/75 text-xs sm:text-sm">
+              {texts.orderDetails.date}
+            </span>
             <span className="text-white text-xs sm:text-sm font-medium">
-              24 August 2025
+              {texts.orderValues.date}
             </span>
           </div>
 
           {/* Service */}
           <div className="flex justify-between items-center">
-            <span className="text-white/75 text-xs sm:text-sm">Service:</span>
+            <span className="text-white/75 text-xs sm:text-sm">
+              {texts.orderDetails.service}
+            </span>
             <span className="text-white text-xs sm:text-sm font-medium text-right">
-              Digital Subscription Access
+              {texts.orderValues.service}
             </span>
           </div>
 
           {/* Plan */}
           <div className="flex justify-between items-center">
-            <span className="text-white/75 text-xs sm:text-sm">Plan:</span>
+            <span className="text-white/75 text-xs sm:text-sm">
+              {texts.orderDetails.plan}
+            </span>
             <span className="text-white text-xs sm:text-sm font-medium">
-              Premium
+              {texts.orderValues.plan}
             </span>
           </div>
 
           {/* Total */}
           <div className="flex justify-between items-center border-b border-[#313131] pb-3 sm:pb-5">
-            <span className="text-white/75 text-xs sm:text-sm">Total:</span>
+            <span className="text-white/75 text-xs sm:text-sm">
+              {texts.orderDetails.total}
+            </span>
             <span className="text-white text-xs sm:text-sm font-medium">
-              $87.93
+              {texts.orderValues.total}
             </span>
           </div>
         </div>
 
         {/* Footer Text */}
         <div className="text-center space-y-2">
-          <p className="text-gray-300 text-xs">
-            A receipt has been sent to your email.
-          </p>
-          <p className="text-white/75 text-xs">
-            For questions, contact: info@iptvstore.com
-          </p>
+          <p className="text-gray-300 text-xs">{texts.footer.receipt}</p>
+          <p className="text-white/75 text-xs">{texts.footer.contact}</p>
         </div>
       </div>
     </div>

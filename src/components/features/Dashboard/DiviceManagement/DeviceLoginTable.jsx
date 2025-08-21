@@ -1,12 +1,34 @@
 "use client";
 import TableCustom from "@/components/ui/TableCustom";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useState } from "react";
 
 const DeviceLoginTable = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [deviceData, setDeviceData] = useState([]);
 
+  const ORIGINAL_LOADING = "Loading device data...";
+  const ORIGINAL_TITLE = "Latest LOGIN";
+  const ORIGINAL_COLUMNS = {
+    device: "Device",
+    loginDate: "Login Date",
+    ipAddress: "IP Address",
+    lastActivity: "Last Activity",
+    status: "Status",
+  };
+  const ORIGINAL_STATUSES = {
+    active: "Active",
+    inactive: "Inactive",
+    suspended: "Suspended",
+  };
+
+  const [loading, setLoading] = useState(ORIGINAL_LOADING);
+  const [title, setTitle] = useState(ORIGINAL_TITLE);
+  const [columns, setColumns] = useState(ORIGINAL_COLUMNS);
+  const [statuses, setStatuses] = useState(ORIGINAL_STATUSES);
+
   // Generate dynamic device login data
-  const generateDeviceData = () => {
+  const generateDeviceData = (currentStatuses) => {
     const devices = [
       "iPhone 14 Pro",
       "MacBook Pro",
@@ -19,7 +41,11 @@ const DeviceLoginTable = () => {
       "Xiaomi 13",
       "ASUS ROG",
     ];
-    const statuses = ["Active", "Inactive", "Suspended"];
+    const statuses = [
+      currentStatuses.active,
+      currentStatuses.inactive,
+      currentStatuses.suspended,
+    ];
     const data = [];
 
     for (let i = 1; i <= 15; i++) {
@@ -60,14 +86,69 @@ const DeviceLoginTable = () => {
     return data;
   };
 
+  useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      const items = [
+        ORIGINAL_LOADING,
+        ORIGINAL_TITLE,
+        ORIGINAL_COLUMNS.device,
+        ORIGINAL_COLUMNS.loginDate,
+        ORIGINAL_COLUMNS.ipAddress,
+        ORIGINAL_COLUMNS.lastActivity,
+        ORIGINAL_COLUMNS.status,
+        ORIGINAL_STATUSES.active,
+        ORIGINAL_STATUSES.inactive,
+        ORIGINAL_STATUSES.suspended,
+      ];
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const [
+        tLoading,
+        tTitle,
+        tDevice,
+        tLoginDate,
+        tIpAddress,
+        tLastActivity,
+        tStatus,
+        tActive,
+        tInactive,
+        tSuspended,
+      ] = translated;
+
+      setLoading(tLoading);
+      setTitle(tTitle);
+      setColumns({
+        device: tDevice,
+        loginDate: tLoginDate,
+        ipAddress: tIpAddress,
+        lastActivity: tLastActivity,
+        status: tStatus,
+      });
+      setStatuses({
+        active: tActive,
+        inactive: tInactive,
+        suspended: tSuspended,
+      });
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
+
   // Generate data only on client side to avoid hydration mismatch
   useEffect(() => {
-    setDeviceData(generateDeviceData());
-  }, []);
+    setDeviceData(generateDeviceData(statuses));
+  }, [statuses]);
 
-  const columns = [
+  const tableColumns = [
     {
-      title: "Device",
+      title: columns.device,
       width: 120,
       dataIndex: "device",
       key: "device",
@@ -78,7 +159,7 @@ const DeviceLoginTable = () => {
       ),
     },
     {
-      title: "Login Date",
+      title: columns.loginDate,
       width: 120,
       dataIndex: "loginDate",
       key: "loginDate",
@@ -90,7 +171,7 @@ const DeviceLoginTable = () => {
       ),
     },
     {
-      title: "IP Address",
+      title: columns.ipAddress,
       width: 100,
       dataIndex: "ipAddress",
       key: "ipAddress",
@@ -102,7 +183,7 @@ const DeviceLoginTable = () => {
       ),
     },
     {
-      title: "Last Activity",
+      title: columns.lastActivity,
       width: 120,
       dataIndex: "lastActivity",
       key: "lastActivity",
@@ -114,7 +195,7 @@ const DeviceLoginTable = () => {
       ),
     },
     {
-      title: "Status",
+      title: columns.status,
       width: 100,
       dataIndex: "status",
       key: "status",
@@ -122,9 +203,9 @@ const DeviceLoginTable = () => {
       render: (status) => (
         <span
           className={`px-2 sm:px-3 md:px-4 py-1 rounded-full text-xs font-medium font-secondary whitespace-nowrap ${
-            status === "Active"
+            status === statuses.active
               ? "bg-green-500/20 text-green-400 border border-green-500/30"
-              : status === "Inactive"
+              : status === statuses.inactive
               ? "bg-gray-500/20 text-gray-400 border border-gray-500/30"
               : "bg-red-500/20 text-red-400 border border-red-500/30"
           }`}
@@ -141,7 +222,7 @@ const DeviceLoginTable = () => {
       <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto font-secondary">
         <div className="flex items-center justify-center h-20 sm:h-24 md:h-32">
           <div className="text-gray-400 text-xs sm:text-sm md:text-base text-center">
-            Loading device data...
+            {loading}
           </div>
         </div>
       </div>
@@ -151,9 +232,9 @@ const DeviceLoginTable = () => {
   return (
     <div className="mt-4 sm:mt-6 max-w-[340px] md:max-w-5xl">
       <TableCustom
-        title="Latest LOGIN"
+        title={title}
         data={deviceData}
-        columns={columns}
+        columns={tableColumns}
         pageSize={5}
         showButton={false}
         showPagination={true}

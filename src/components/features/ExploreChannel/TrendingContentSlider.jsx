@@ -1,9 +1,13 @@
 "use client";
 import TrendingCommon from "@/components/ui/TrendingCommon";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useEffect, useState } from "react";
 
 const TrendingContentSlider = () => {
-  // Sample content data for the slider
-  const contentItems = [
+  const { language, translate, isLanguageLoaded } = useLanguage();
+
+  // Original text constants
+  const ORIGINAL_CONTENT_ITEMS = [
     {
       id: 1,
       title: "Loki | Season 2",
@@ -54,7 +58,7 @@ const TrendingContentSlider = () => {
     },
   ];
 
-  const tvShows = [
+  const ORIGINAL_TV_SHOWS = [
     {
       id: 1,
       title: "The Morning Show",
@@ -97,7 +101,7 @@ const TrendingContentSlider = () => {
     },
   ];
 
-  const channels = [
+  const ORIGINAL_CHANNELS = [
     {
       id: 1,
       title: "CNN",
@@ -130,13 +134,12 @@ const TrendingContentSlider = () => {
     },
   ];
 
-  const sports = [
+  const ORIGINAL_SPORTS = [
     {
       id: 1,
       title: "NBA",
       poster: "/movies/sport-1.jpg",
     },
-
     {
       id: 2,
       title: "NBA",
@@ -159,6 +162,133 @@ const TrendingContentSlider = () => {
     },
   ];
 
+  const ORIGINAL_SECTION_TITLES = {
+    movies: "Movies",
+    tvShows: "TV SHOWS",
+    liveChannels: "LIVE CHANNELS",
+    latestSportEvents: "Latest Sport Events",
+  };
+
+  const ORIGINAL_BUTTON_TEXTS = {
+    exploreMoreMovies: "Explore More Movies",
+    exploreMoreTVShows: "Explore More TV Shows",
+    exploreMoreLiveChannels: "Explore More Live Channels",
+    exploreMore: "Explore More",
+  };
+
+  // State for translated content
+  const [contentItems, setContentItems] = useState(ORIGINAL_CONTENT_ITEMS);
+  const [tvShows, setTvShows] = useState(ORIGINAL_TV_SHOWS);
+  const [channels, setChannels] = useState(ORIGINAL_CHANNELS);
+  const [sports, setSports] = useState(ORIGINAL_SPORTS);
+  const [sectionTitles, setSectionTitles] = useState(ORIGINAL_SECTION_TITLES);
+  const [buttonTexts, setButtonTexts] = useState(ORIGINAL_BUTTON_TEXTS);
+
+  useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        // Translate all titles from different sections
+        const allTitles = [
+          ...ORIGINAL_CONTENT_ITEMS.map((item) => item.title),
+          ...ORIGINAL_TV_SHOWS.map((item) => item.title),
+          ...ORIGINAL_CHANNELS.map((item) => item.title),
+          ...ORIGINAL_SPORTS.map((item) => item.title),
+        ];
+
+        // Translate section titles and button texts
+        const sectionAndButtonTexts = [
+          ...Object.values(ORIGINAL_SECTION_TITLES),
+          ...Object.values(ORIGINAL_BUTTON_TEXTS),
+        ];
+
+        const allTexts = [...allTitles, ...sectionAndButtonTexts];
+        const translated = await translate(allTexts);
+
+        if (!isMounted) return;
+
+        const titlesCount = allTitles.length;
+        const sectionButtonCount = sectionAndButtonTexts.length;
+
+        // Update content items with translated titles
+        const updatedContentItems = ORIGINAL_CONTENT_ITEMS.map(
+          (item, index) => ({
+            ...item,
+            title: translated[index],
+          })
+        );
+
+        // Update TV shows with translated titles
+        const updatedTvShows = ORIGINAL_TV_SHOWS.map((item, index) => ({
+          ...item,
+          title: translated[index + ORIGINAL_CONTENT_ITEMS.length],
+        }));
+
+        // Update channels with translated titles
+        const updatedChannels = ORIGINAL_CHANNELS.map((item, index) => ({
+          ...item,
+          title:
+            translated[
+              index + ORIGINAL_CONTENT_ITEMS.length + ORIGINAL_TV_SHOWS.length
+            ],
+        }));
+
+        // Update sports with translated titles
+        const updatedSports = ORIGINAL_SPORTS.map((item, index) => ({
+          ...item,
+          title:
+            translated[
+              index +
+                ORIGINAL_CONTENT_ITEMS.length +
+                ORIGINAL_TV_SHOWS.length +
+                ORIGINAL_CHANNELS.length
+            ],
+        }));
+
+        // Update section titles and button texts
+        const translatedSectionAndButton = translated.slice(titlesCount);
+        const [
+          tMovies,
+          tTvShows,
+          tLiveChannels,
+          tLatestSportEvents,
+          tExploreMoreMovies,
+          tExploreMoreTVShows,
+          tExploreMoreLiveChannels,
+          tExploreMore,
+        ] = translatedSectionAndButton;
+
+        setSectionTitles({
+          movies: tMovies,
+          tvShows: tTvShows,
+          liveChannels: tLiveChannels,
+          latestSportEvents: tLatestSportEvents,
+        });
+
+        setButtonTexts({
+          exploreMoreMovies: tExploreMoreMovies,
+          exploreMoreTVShows: tExploreMoreTVShows,
+          exploreMoreLiveChannels: tExploreMoreLiveChannels,
+          exploreMore: tExploreMore,
+        });
+
+        setContentItems(updatedContentItems);
+        setTvShows(updatedTvShows);
+        setChannels(updatedChannels);
+        setSports(updatedSports);
+      } catch (error) {
+        console.error("Translation error:", error);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
+
   const handleItemClick = (item) => {
     console.log("Content clicked:", item);
     // Add your navigation or modal logic here
@@ -174,8 +304,8 @@ const TrendingContentSlider = () => {
   return (
     <>
       <TrendingCommon
-        title="Movies"
-        buttonText="Explore More Movies"
+        title={sectionTitles.movies}
+        buttonText={buttonTexts.exploreMoreMovies}
         icon="/icons/movies.png"
         items={contentItems}
         cardType="detailed"
@@ -189,8 +319,8 @@ const TrendingContentSlider = () => {
         className=""
       />
       <TrendingCommon
-        title="TV SHOWS"
-        buttonText="Explore More TV Shows"
+        title={sectionTitles.tvShows}
+        buttonText={buttonTexts.exploreMoreTVShows}
         icon="/icons/tv_show.png"
         items={tvShows}
         cardType="detailed"
@@ -205,8 +335,8 @@ const TrendingContentSlider = () => {
       />
 
       <TrendingCommon
-        title="LIVE CHANNELS"
-        buttonText="Explore More Live Channels"
+        title={sectionTitles.liveChannels}
+        buttonText={buttonTexts.exploreMoreLiveChannels}
         icon="/icons/live.png"
         items={channels}
         cardType="channel"
@@ -221,8 +351,8 @@ const TrendingContentSlider = () => {
       />
 
       <TrendingCommon
-        title="Latest Sport Events"
-        buttonText="Explore More"
+        title={sectionTitles.latestSportEvents}
+        buttonText={buttonTexts.exploreMore}
         icon="/icons/sports.png"
         items={sports}
         cardType="sports"

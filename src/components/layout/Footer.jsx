@@ -1,22 +1,30 @@
+"use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Instagram, Linkedin, Twitter, Youtube } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import Polygon from "../ui/polygon";
 
 export default function Footer() {
-  const footerSections = [
+  const { language, translate } = useLanguage();
+
+  const ORIGINAL_DESCRIPTION =
+    "Cheap Stream is a budget-friendly IPTV service that delivers unlimited access to movies, live TV, and entertainment in HD and 4K—without contracts or hidden fees.";
+  const ORIGINAL_COPYRIGHT = "Copyright © Cheap Stream";
+  const ORIGINAL_ALL_RIGHTS = "All rights reserved";
+  const ORIGINAL_DEVELOPED_BY = "Developed by";
+
+  const ORIGINAL_SECTIONS = [
     {
       title: "QUICK LINKS",
-      type: "links",
       items: [
-        { label: "Home", href: "#" },
-        { label: "Pricing", href: "#" },
-        { label: "Package Details", href: "#" },
-        { label: "Features", href: "#" },
+        { label: "Home", href: "/" },
+        { label: "Package Details", href: "/packages" },
+        { label: "Features", href: "/explore" },
       ],
     },
     {
       title: "COMPANY",
-      type: "links",
       items: [
         { label: "About Us", href: "/about-us" },
         { label: "FAQ", href: "/support/faq" },
@@ -26,7 +34,6 @@ export default function Footer() {
     },
     {
       title: "HELP CENTER",
-      type: "links",
       items: [
         { label: "Blogs", href: "/blogs" },
         { label: "Knowledge Base", href: "/knowledge-base" },
@@ -35,13 +42,65 @@ export default function Footer() {
     },
     {
       title: "CONTACT US",
-      type: "contact",
       items: [
         { label: "Phone Number:", value: "+123 456 7890" },
         { label: "Email Address:", value: "help@cheapstream.com" },
       ],
     },
   ];
+
+  const [description, setDescription] = useState(ORIGINAL_DESCRIPTION);
+  const [copyright, setCopyright] = useState(ORIGINAL_COPYRIGHT);
+  const [allRights, setAllRights] = useState(ORIGINAL_ALL_RIGHTS);
+  const [developedBy, setDevelopedBy] = useState(ORIGINAL_DEVELOPED_BY);
+  const [sections, setSections] = useState(ORIGINAL_SECTIONS);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      const items = [
+        ORIGINAL_DESCRIPTION,
+        ORIGINAL_COPYRIGHT,
+        ORIGINAL_ALL_RIGHTS,
+        ORIGINAL_DEVELOPED_BY,
+        ...ORIGINAL_SECTIONS.map((section) => section.title),
+        ...ORIGINAL_SECTIONS.flatMap((section) =>
+          section.items.map((item) => item.label)
+        ),
+      ];
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const [tDescription, tCopyright, tAllRights, tDevelopedBy, ...rest] =
+        translated;
+
+      const tSectionTitles = rest.slice(0, ORIGINAL_SECTIONS.length);
+      const tItemLabels = rest.slice(ORIGINAL_SECTIONS.length);
+
+      setDescription(tDescription);
+      setCopyright(tCopyright);
+      setAllRights(tAllRights);
+      setDevelopedBy(tDevelopedBy);
+
+      // Update sections with translated titles and labels
+      let itemIndex = 0;
+      const updatedSections = ORIGINAL_SECTIONS.map(
+        (section, sectionIndex) => ({
+          ...section,
+          title: tSectionTitles[sectionIndex],
+          items: section.items.map((item) => ({
+            ...item,
+            label: tItemLabels[itemIndex++],
+          })),
+        })
+      );
+      setSections(updatedSections);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const socialLinks = [
     { icon: Twitter, href: "#" },
@@ -51,24 +110,7 @@ export default function Footer() {
   ];
 
   const renderSection = (section) => {
-    if (section.type === "links") {
-      return (
-        <ul className="space-y-0 md:space-y-3 -mt-2 md:mt-0">
-          {section.items.map((item, index) => (
-            <li key={index}>
-              <a
-                href={item.href}
-                className="text-white hover:text-white transition-colors font-secondary text-xs sm:text-sm md:text-base"
-              >
-                {item.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      );
-    }
-
-    if (section.type === "contact") {
+    if (section.title.includes("CONTACT")) {
       return (
         <div className="space-y-0 md:space-y-3 -mt-2 md:mt-0 font-secondary">
           {section.items.map((item, index) => (
@@ -84,6 +126,21 @@ export default function Footer() {
         </div>
       );
     }
+
+    return (
+      <ul className="space-y-0 md:space-y-3 -mt-2 md:mt-0">
+        {section.items.map((item, index) => (
+          <li key={index}>
+            <a
+              href={item.href}
+              className="text-white hover:text-white transition-colors font-secondary text-xs sm:text-sm md:text-base"
+            >
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    );
   };
 
   return (
@@ -105,9 +162,7 @@ export default function Footer() {
 
             {/* Description */}
             <p className="text-gray-300 max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed text-xs sm:text-sm md:text-base px-4 sm:px-0">
-              Cheap Stream is a budget-friendly IPTV service that delivers
-              unlimited access to movies, live TV, and entertainment in HD and
-              4K—without contracts or hidden fees.
+              {description}
             </p>
 
             {/* Social Icons */}
@@ -129,7 +184,7 @@ export default function Footer() {
 
           {/* Bottom Section - Responsive Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-10 sm:gap-8 lg:gap-12">
-            {footerSections.map((section, index) => (
+            {sections.map((section, index) => (
               <div key={index} className="text-left">
                 <h3 className="text-white font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4 md:mb-6 tracking-wide">
                   {section.title}
@@ -144,11 +199,10 @@ export default function Footer() {
       </Polygon>
       <div className="-mt-16 sm:-mt-20 md:-mt-22 -translate-y-0 z-[500] pt-4 sm:pt-6 md:pt-8 text-center px-4 sm:px-6 lg:px-8">
         <p className="text-gray-400 text-[10px] sm:text-sm font-secondary">
-          Copyright © Cheap Stream {new Date().getFullYear()} . All rights
-          reserved
+          {copyright} {new Date().getFullYear()} . {allRights}
         </p>
         <p className="text-gray-400 text-[10px] sm:text-sm font-secondary mt-1 sm:mt-0">
-          Developed by{" "}
+          {developedBy}{" "}
           <a
             href="https://weberspoint.com/"
             target="_blank"

@@ -1,26 +1,87 @@
 "use client";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useEffect, useState } from "react";
 
 const FaqTimeline = () => {
-  const steps = [
-    {
-      number: "1",
-      title: "Choose Your Plan",
-      description:
-        "Pick a monthly plan that fits your needs. Whether you want basic access or the full premium experience, we've got you covered.",
+  const { language, translate, isLanguageLoaded } = useLanguage();
+
+  // Original text constants
+  const ORIGINAL_TEXTS = {
+    header: {
+      title: "STREAMING MADE SIMPLE WITH CHEAP STREAM",
+      subtitle:
+        "We've made watching your favorite movies and live channels easier than ever. No cables, no contracts—just non-stop entertainment at a price you'll love.",
     },
-    {
-      number: "2",
-      title: "Get Instant Access",
-      description:
-        "After signup, you'll receive your login credentials via email within minutes. You'll also get step-by-step setup instructions for your device.",
-    },
-    {
-      number: "3",
-      title: "Start Streaming",
-      description:
-        "Login and start watching! Enjoy 1,000s of movies, TV shows, and live channels from around the world in HD or 4K—on any device.",
-    },
-  ];
+    steps: [
+      {
+        number: "1",
+        title: "Choose Your Plan",
+        description:
+          "Pick a monthly plan that fits your needs. Whether you want basic access or the full premium experience, we've got you covered.",
+      },
+      {
+        number: "2",
+        title: "Get Instant Access",
+        description:
+          "After signup, you'll receive your login credentials via email within minutes. You'll also get step-by-step setup instructions for your device.",
+      },
+      {
+        number: "3",
+        title: "Start Streaming",
+        description:
+          "Login and start watching! Enjoy 1,000s of movies, TV shows, and live channels from around the world in HD or 4K—on any device.",
+      },
+    ],
+  };
+
+  // State for translated content
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        // Collect all translatable text
+        const allTexts = [
+          ORIGINAL_TEXTS.header.title,
+          ORIGINAL_TEXTS.header.subtitle,
+          ...ORIGINAL_TEXTS.steps.flatMap((step) => [
+            step.title,
+            step.description,
+          ]),
+        ];
+
+        const translated = await translate(allTexts);
+        if (!isMounted) return;
+
+        const [tTitle, tSubtitle, ...tStepTexts] = translated;
+
+        // Update steps with translated content
+        const updatedSteps = ORIGINAL_TEXTS.steps.map((step, index) => ({
+          ...step,
+          title: tStepTexts[index * 2],
+          description: tStepTexts[index * 2 + 1],
+        }));
+
+        setTexts({
+          header: {
+            title: tTitle,
+            subtitle: tSubtitle,
+          },
+          steps: updatedSteps,
+        });
+      } catch (error) {
+        console.error("Translation error:", error);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
 
   return (
     <div className="text-white py-8 sm:py-12 md:py-16 px-4 sm:px-6 md:px-8 font-secondary">
@@ -28,12 +89,10 @@ const FaqTimeline = () => {
         {/* Header */}
         <div className="mb-8 sm:mb-12 md:mb-16">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 tracking-wide text-center">
-            STREAMING MADE SIMPLE WITH CHEAP STREAM
+            {texts.header.title}
           </h2>
           <p className="text-gray-300 text-xs sm:text-base md:text-lg max-w-3xl mx-auto leading-relaxed text-center px-2">
-            We've made watching your favorite movies and live channels easier
-            than ever. No cables, no contracts—just non-stop entertainment at a
-            price you'll love.
+            {texts.header.subtitle}
           </p>
         </div>
 
@@ -41,13 +100,13 @@ const FaqTimeline = () => {
         <div className="relative">
           {/* Mobile Layout (Vertical) */}
           <div className="block md:hidden">
-            {steps.map((step, index) => (
+            {texts.steps.map((step, index) => (
               <div
                 key={index}
                 className="relative flex items-start mb-8 last:mb-0"
               >
                 {/* Vertical connecting line */}
-                {index < steps.length - 1 && (
+                {index < texts.steps.length - 1 && (
                   <div className="absolute left-6 sm:left-8 top-12 sm:top-16 w-0.5 h-20 sm:h-12 dotted-line-vertical"></div>
                 )}
 
@@ -81,7 +140,7 @@ const FaqTimeline = () => {
                 </div>
               </div>
 
-              {steps.map((step, index) => (
+              {texts.steps.map((step, index) => (
                 <div key={index} className="relative">
                   {/* Step Number Circle */}
                   <div className="w-16 h-16 bg-cyan-400 rounded-full flex items-center justify-center mb-6 relative z-10 mx-auto md:mx-0">

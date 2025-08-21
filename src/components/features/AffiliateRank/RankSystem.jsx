@@ -1,7 +1,17 @@
 "use client";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useEffect, useState } from "react";
 
 export default function RankSystem() {
-  const ranks = [
+  const { language, translate, isLanguageLoaded } = useLanguage();
+
+  const ORIGINAL_HEADING = "RANK SYSTEM - UNLOCK MORE AS YOU SPEND";
+  const ORIGINAL_SUBTITLE =
+    "Your total spending and referrals unlock rank-based discounts and benefits.";
+  const ORIGINAL_FOOTER =
+    "*Ranks update automatically based on total spending and referral performance.";
+
+  const ORIGINAL_RANKS = [
     {
       name: "NEWBIE",
       benefits: "1% Discount",
@@ -34,17 +44,53 @@ export default function RankSystem() {
     },
   ];
 
+  const [heading, setHeading] = useState(ORIGINAL_HEADING);
+  const [subtitle, setSubtitle] = useState(ORIGINAL_SUBTITLE);
+  const [footer, setFooter] = useState(ORIGINAL_FOOTER);
+  const [ranks, setRanks] = useState(ORIGINAL_RANKS);
+
+  useEffect(() => {
+    // Only translate when language is loaded and not English
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      const items = [
+        ORIGINAL_HEADING,
+        ORIGINAL_SUBTITLE,
+        ORIGINAL_FOOTER,
+        ...ORIGINAL_RANKS.map((rank) => rank.benefits),
+      ];
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const [tHeading, tSubtitle, tFooter, ...tBenefits] = translated;
+
+      setHeading(tHeading);
+      setSubtitle(tSubtitle);
+      setFooter(tFooter);
+
+      const updatedRanks = ORIGINAL_RANKS.map((rank, index) => ({
+        ...rank,
+        benefits: tBenefits[index],
+      }));
+
+      setRanks(updatedRanks);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
+
   return (
     <div className="bg-black border border-[#212121] text-white p-4 sm:p-6 md:p-8 rounded-lg w-full lg:max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 tracking-wide">
-          RANK SYSTEM - UNLOCK MORE AS YOU SPEND
+          {heading}
         </h2>
-        <p className="text-gray-300 text-xs sm:text-sm">
-          Your total spending and referrals unlock rank-based discounts and
-          benefits.
-        </p>
+        <p className="text-gray-300 text-xs sm:text-sm">{subtitle}</p>
       </div>
 
       {/* Rank Grid */}
@@ -70,10 +116,7 @@ export default function RankSystem() {
       </div>
 
       {/* Footer Note */}
-      <p className="text-white text-xs">
-        *Ranks update automatically based on total spending and referral
-        performance.
-      </p>
+      <p className="text-white text-xs">{footer}</p>
     </div>
   );
 }
