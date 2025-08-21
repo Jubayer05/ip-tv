@@ -1,5 +1,5 @@
 "use client";
-import { auth } from "@/lib/firebase";
+import { getFirebaseAuth } from "@/lib/firebase";
 import {
   applyActionCode,
   createUserWithEmailAndPassword,
@@ -47,6 +47,7 @@ export const AuthContextProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    const auth = getFirebaseAuth();
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser) {
