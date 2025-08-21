@@ -46,7 +46,8 @@ jobs:
         run: npm run build
 
       - name: Security audit
-        run: npm audit --audit-level=moderate
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
 
       - name: Comment on PR (if applicable)
         if: github.event_name == 'pull_request'

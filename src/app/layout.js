@@ -4,7 +4,6 @@ import Navbar from "@/components/layout/Navbar";
 import { AuthContextProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { Manrope, Rajdhani } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 
 const rajdhani = Rajdhani({
@@ -31,10 +30,6 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${rajdhani.variable} ${manrope.variable}`}>
       <body className="antialiased font-primary">
-        <Script
-          src="https://embed.billgang.store/embed.js"
-          strategy="beforeInteractive"
-        />
         <AuthContextProvider>
           <LanguageProvider>
             <Navbar />

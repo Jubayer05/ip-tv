@@ -1,5 +1,5 @@
 "use client";
-import { getFirebaseAuth } from "@/lib/firebase";
+import { auth } from "@/lib/firebase"; // Import auth directly
 import {
   applyActionCode,
   createUserWithEmailAndPassword,
@@ -47,7 +47,7 @@ export const AuthContextProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const auth = getFirebaseAuth();
+    // Use auth directly instead of getFirebaseAuth()
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser) {
@@ -111,7 +111,7 @@ export const AuthContextProvider = ({ children }) => {
     const { skipDb = false } = options;
     try {
       const userCredential = await createUserWithEmailAndPassword(
-        auth,
+        auth, // Use auth directly
         email,
         password
       );
@@ -159,7 +159,7 @@ export const AuthContextProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const userCredential = await signInWithEmailAndPassword(
-        auth,
+        auth, // Use auth directly
         email,
         password
       );
@@ -201,7 +201,7 @@ export const AuthContextProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      await signOut(auth); // Use auth directly
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
@@ -210,7 +210,7 @@ export const AuthContextProvider = ({ children }) => {
 
   const resetPassword = async (email) => {
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, email); // Use auth directly
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
@@ -220,6 +220,7 @@ export const AuthContextProvider = ({ children }) => {
   const resendVerificationEmail = async () => {
     try {
       if (auth.currentUser) {
+        // Use auth directly
         await sendEmailVerification(auth.currentUser);
         return { success: true };
       }
@@ -231,7 +232,7 @@ export const AuthContextProvider = ({ children }) => {
 
   const verifyEmail = async (actionCode) => {
     try {
-      await applyActionCode(auth, actionCode);
+      await applyActionCode(auth, actionCode); // Use auth directly
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
