@@ -12,9 +12,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
-export default function VerifyEmail() {
+function VerifyEmailInner() {
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
@@ -354,5 +354,23 @@ export default function VerifyEmail() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmail() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 font-secondary">
+          <div className="bg-black rounded-3xl p-6 sm:p-8 w-full max-w-lg mx-auto relative border border-[#FFFFFF26]">
+            <div className="text-center">
+              <p className="text-gray-300">Loading verification...</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <VerifyEmailInner />
+    </Suspense>
   );
 }
