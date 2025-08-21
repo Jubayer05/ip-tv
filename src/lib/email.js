@@ -6,8 +6,8 @@ const transporter = nodemailer.createTransport({
   port: process.env.SMTP_PORT || 587,
   secure: false, // true for 465, false for other ports
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.SMTP_USER || "",
+    pass: process.env.SMTP_PASS || "",
   },
 });
 
@@ -17,7 +17,7 @@ export async function sendVerificationEmail(email, token, firstName) {
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
 
   const mailOptions = {
-    from: `"Cheap Stream" <${process.env.SMTP_USER}>`,
+    from: `"Cheap Stream" <${process.env.SMTP_USER || ""}>`,
     to: email,
     subject: "Verify Your Email - Cheap Stream",
     html: `
@@ -84,7 +84,7 @@ export async function sendWelcomeEmail(email, firstName) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   const mailOptions = {
-    from: `"Cheap Stream" <${process.env.SMTP_USER}>`,
+    from: `"Cheap Stream" <${process.env.SMTP_USER || ""}>`,
     to: email,
     subject: "Welcome to Cheap Stream! 🎉",
     html: `

@@ -157,7 +157,9 @@ userSchema.virtual("profile.fullName").get(function () {
 // Virtual for referral link
 userSchema.virtual("referral.link").get(function () {
   return this.referral.code
-    ? `${process.env.NEXT_PUBLIC_APP_URL}/register?ref=${this.referral.code}`
+    ? `${process.env.NEXT_PUBLIC_APP_URL || ""}/register?ref=${
+        this.referral.code
+      }`
     : null;
 });
 
