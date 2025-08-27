@@ -3,12 +3,15 @@ import { NextResponse } from "next/server";
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const amount = searchParams.get('amount');
-    const currencyFrom = searchParams.get('currency_from') || 'usd';
-    const currencyTo = searchParams.get('currency_to') || 'btc';
+    const amount = searchParams.get("amount");
+    const currencyFrom = searchParams.get("currency_from") || "usd";
+    const currencyTo = searchParams.get("currency_to") || "btc";
 
     if (!amount) {
-      return NextResponse.json({ error: "Amount is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Amount is required" },
+        { status: 400 }
+      );
     }
 
     const apiKey = process.env.NOWPAYMENTS_API_KEY;
@@ -23,8 +26,8 @@ export async function GET(request) {
       `https://api-sandbox.nowpayments.io/v1/estimate?amount=${amount}&currency_from=${currencyFrom}&currency_to=${currencyTo}`,
       {
         headers: {
-          "x-api-key": apiKey
-        }
+          "x-api-key": apiKey,
+        },
       }
     );
 
@@ -38,7 +41,6 @@ export async function GET(request) {
     }
 
     return NextResponse.json(data);
-
   } catch (e) {
     return NextResponse.json(
       { error: e?.message || "Failed to get estimate" },
@@ -46,5 +48,3 @@ export async function GET(request) {
     );
   }
 }
-```
-
