@@ -1,4 +1,5 @@
 "use client";
+import ManageAddons from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageAddons";
 import ManageBanner from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageBanner";
 import ManageContact from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageContact";
 import ManageSocialMediaContact from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageSocialMedia";
@@ -22,6 +23,11 @@ export default function AdminSettingsPage() {
       id: "banner",
       label: "Banner Management",
       component: <ManageBanner />,
+    },
+    {
+      id: "addons",
+      label: "Addons Management",
+      component: <ManageAddons />,
     },
   ];
 

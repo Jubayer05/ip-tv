@@ -1,6 +1,7 @@
 import ScrollToTop from "@/components/common/ScrollToTop";
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
+import GoogleAnalytics from "@/components/common/GoogleAnalytics";
 import { AuthContextProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { UserSpendingContextProvider } from "@/contexts/UserSpendingContext";
@@ -31,6 +32,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${rajdhani.variable} ${manrope.variable}`}>
       <body className="antialiased font-primary">
+        <GoogleAnalytics />
         <AuthContextProvider>
           <UserSpendingContextProvider>
             <LanguageProvider>

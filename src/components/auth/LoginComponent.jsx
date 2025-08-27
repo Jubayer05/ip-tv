@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 
 export default function LoginComponent() {
@@ -17,10 +17,27 @@ export default function LoginComponent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [recaptchaToken, setRecaptchaToken] = useState(null);
+  const [recaptchaEnabled, setRecaptchaEnabled] = useState(false);
 
   const { login } = useAuth();
   const router = useRouter();
   const recaptchaRef = useRef();
+
+  useEffect(() => {
+    const checkRecaptchaSetting = async () => {
+      try {
+        const response = await fetch("/api/admin/settings");
+        const data = await response.json();
+        if (data.success && data.data.addons) {
+          setRecaptchaEnabled(data.data.addons.recaptcha);
+        }
+      } catch (error) {
+        console.error("Failed to check reCAPTCHA setting:", error);
+      }
+    };
+
+    checkRecaptchaSetting();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,8 +50,8 @@ export default function LoginComponent() {
       return;
     }
 
-    // Check if reCAPTCHA is completed
-    if (!recaptchaToken) {
+    // Check if reCAPTCHA is completed only when it's enabled
+    if (recaptchaEnabled && !recaptchaToken) {
       setError("Please complete the reCAPTCHA verification.");
       setLoading(false);
       return;
@@ -50,9 +67,11 @@ export default function LoginComponent() {
       router.push("/dashboard");
     } else {
       setError(result.error);
-      // Reset reCAPTCHA on error
-      recaptchaRef.current?.reset();
-      setRecaptchaToken(null);
+      // Reset reCAPTCHA on error only when it's enabled
+      if (recaptchaEnabled) {
+        recaptchaRef.current?.reset();
+        setRecaptchaToken(null);
+      }
     }
 
     setLoading(false);
@@ -149,19 +168,21 @@ export default function LoginComponent() {
           </div>
 
           {/* reCAPTCHA */}
-          <div className="flex justify-center">
-            <ReCAPTCHA
-              ref={recaptchaRef}
-              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
-              onChange={handleRecaptchaChange}
-              theme="dark"
-            />
-          </div>
+          {recaptchaEnabled && (
+            <div className="flex justify-center">
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+                onChange={handleRecaptchaChange}
+                theme="dark"
+              />
+            </div>
+          )}
 
           {/* Submit Button */}
           <Button
             type="submit"
-            disabled={loading || !recaptchaToken}
+            disabled={loading || (recaptchaEnabled && !recaptchaToken)}
             className="w-full flex items-center justify-center gap-2"
           >
             {loading ? "Signing in..." : "Sign In"}

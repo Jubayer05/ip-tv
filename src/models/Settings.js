@@ -137,6 +137,17 @@ const settingsSchema = new mongoose.Schema(
         myWishlist: { type: String, default: "My Wishlist" },
       },
     },
+
+    // Addons management
+    addons: {
+      recaptcha: { type: Boolean, default: false },
+      trustPilot: { type: Boolean, default: false },
+      googleAnalytics: { type: Boolean, default: false },
+      microsoftClarity: { type: Boolean, default: false },
+      cloudflare: { type: Boolean, default: false },
+      getButton: { type: Boolean, default: false },
+      tawkTo: { type: Boolean, default: false },
+    },
   },
   { timestamps: true }
 );
@@ -195,6 +206,15 @@ settingsSchema.statics.getSettings = async function () {
           paragraph:
             "Find answers to common questions about our services and platform.",
         },
+      },
+      addons: {
+        recaptcha: false,
+        trustPilot: false,
+        googleAnalytics: false,
+        microsoftClarity: false,
+        cloudflare: false,
+        getButton: false,
+        tawkTo: false,
       },
     });
     return doc;
@@ -272,6 +292,19 @@ settingsSchema.statics.getSettings = async function () {
         }
       }
     }
+  }
+
+  if (!doc.addons) {
+    doc.addons = {
+      recaptcha: false,
+      trustPilot: false,
+      googleAnalytics: false,
+      microsoftClarity: false,
+      cloudflare: false,
+      getButton: false,
+      tawkTo: false,
+    };
+    modified = true;
   }
 
   if (modified) await doc.save();

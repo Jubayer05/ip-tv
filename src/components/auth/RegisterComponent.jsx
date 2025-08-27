@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ArrowRight, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 
 export default function RegisterComponent({ referralCode = "" }) {
@@ -22,10 +22,27 @@ export default function RegisterComponent({ referralCode = "" }) {
   const [usernameChecking, setUsernameChecking] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [recaptchaToken, setRecaptchaToken] = useState(null);
+  const [recaptchaEnabled, setRecaptchaEnabled] = useState(false);
 
   const { signup } = useAuth();
   const router = useRouter();
   const recaptchaRef = useRef();
+
+  useEffect(() => {
+    const checkRecaptchaSetting = async () => {
+      try {
+        const response = await fetch("/api/admin/settings");
+        const data = await response.json();
+        if (data.success && data.data.addons) {
+          setRecaptchaEnabled(data.data.addons.recaptcha);
+        }
+      } catch (error) {
+        console.error("Failed to check reCAPTCHA setting:", error);
+      }
+    };
+
+    checkRecaptchaSetting();
+  }, []);
 
   // Normalize referral code to uppercase
   const normalizedReferralCode = referralCode
@@ -91,8 +108,8 @@ export default function RegisterComponent({ referralCode = "" }) {
       return;
     }
 
-    // Check if reCAPTCHA is completed
-    if (!recaptchaToken) {
+    // Check if reCAPTCHA is completed only when it's enabled
+    if (recaptchaEnabled && !recaptchaToken) {
       setError("Please complete the reCAPTCHA verification.");
       setLoading(false);
       return;
@@ -109,7 +126,7 @@ export default function RegisterComponent({ referralCode = "" }) {
           firstName: formData.firstName,
           lastName: formData.lastName,
           username: formData.username,
-          referralCode: referralCode || null,
+          referralCode: normalizedReferralCode || null,
           recaptchaToken: recaptchaToken,
         }),
       });
@@ -121,15 +138,19 @@ export default function RegisterComponent({ referralCode = "" }) {
         setVerificationEmail(formData.email);
       } else {
         setError(data.error || "Registration failed. Please try again.");
-        // Reset reCAPTCHA on error
-        recaptchaRef.current?.reset();
-        setRecaptchaToken(null);
+        // Reset reCAPTCHA on error only when it's enabled
+        if (recaptchaEnabled) {
+          recaptchaRef.current?.reset();
+          setRecaptchaToken(null);
+        }
       }
     } catch (error) {
       setError("Network error. Please check your connection and try again.");
-      // Reset reCAPTCHA on error
-      recaptchaRef.current?.reset();
-      setRecaptchaToken(null);
+      // Reset reCAPTCHA on error only when it's enabled
+      if (recaptchaEnabled) {
+        recaptchaRef.current?.reset();
+        setRecaptchaToken(null);
+      }
     }
 
     setLoading(false);
@@ -342,14 +363,16 @@ export default function RegisterComponent({ referralCode = "" }) {
           </div>
 
           {/* reCAPTCHA */}
-          <div className="flex justify-center">
-            <ReCAPTCHA
-              ref={recaptchaRef}
-              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
-              onChange={handleRecaptchaChange}
-              theme="dark"
-            />
-          </div>
+          {recaptchaEnabled && (
+            <div className="flex justify-center">
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+                onChange={handleRecaptchaChange}
+                theme="dark"
+              />
+            </div>
+          )}
 
           {/* Create Account Button */}
           <Button
@@ -359,7 +382,7 @@ export default function RegisterComponent({ referralCode = "" }) {
             disabled={
               loading ||
               (formData.username && usernameAvailable === false) ||
-              !recaptchaToken
+              (recaptchaEnabled && !recaptchaToken)
             }
           >
             {loading ? "Sending Verification..." : "Create An Account"}

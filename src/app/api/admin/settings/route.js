@@ -15,6 +15,7 @@ export async function GET() {
         socialMedia: settings.socialMedia,
         contactInfo: settings.contactInfo,
         banners: settings.banners,
+        addons: settings.addons,
       },
     });
   } catch (e) {
@@ -144,6 +145,25 @@ export async function PUT(request) {
       });
     }
 
+    // Addons
+    if (body.addons && typeof body.addons === "object") {
+      const addonFields = [
+        "recaptcha",
+        "trustPilot",
+        "googleAnalytics",
+        "microsoftClarity",
+        "cloudflare",
+        "getButton",
+        "tawkTo",
+      ];
+
+      addonFields.forEach((addon) => {
+        if (body.addons[addon] !== undefined) {
+          updates[`addons.${addon}`] = Boolean(body.addons[addon]);
+        }
+      });
+    }
+
     // Perform update
     if (Object.keys(updates).length > 0) {
       const result = await Settings.updateOne(
@@ -161,6 +181,7 @@ export async function PUT(request) {
         socialMedia: fresh.socialMedia,
         contactInfo: fresh.contactInfo,
         banners: fresh.banners,
+        addons: fresh.addons,
       },
       message: "Settings updated",
     });
