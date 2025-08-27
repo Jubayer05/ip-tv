@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 
 export default function RankSystem() {
   const { language, translate, isLanguageLoaded } = useLanguage();
+  const [rankSystems, setRankSystems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const ORIGINAL_HEADING = "RANK SYSTEM - UNLOCK MORE AS YOU SPEND";
   const ORIGINAL_SUBTITLE =
@@ -11,77 +13,80 @@ export default function RankSystem() {
   const ORIGINAL_FOOTER =
     "*Ranks update automatically based on total spending and referral performance.";
 
-  const ORIGINAL_RANKS = [
-    {
-      name: "NEWBIE",
-      benefits: "1% Discount",
-      spending: "$10 - $999",
-    },
-    {
-      name: "BRONZE",
-      benefits: "2% Discount + 1 Bonus Device",
-      spending: "$1000 - $2999",
-    },
-    {
-      name: "SILVER",
-      benefits: "3% Discount + Early Access to Sales",
-      spending: "$3000 - $4999",
-    },
-    {
-      name: "GOLD",
-      benefits: "5% Discount + VIP Support",
-      spending: "$5000 - $6999",
-    },
-    {
-      name: "PLATINUM",
-      benefits: "7% Discount + Custom Coupon Codes",
-      spending: "$7000 - $9999",
-    },
-    {
-      name: "ELITE",
-      benefits: "10% Lifetime Discount + Exclusive Perks",
-      spending: "$10,000+",
-    },
-  ];
-
   const [heading, setHeading] = useState(ORIGINAL_HEADING);
   const [subtitle, setSubtitle] = useState(ORIGINAL_SUBTITLE);
   const [footer, setFooter] = useState(ORIGINAL_FOOTER);
-  const [ranks, setRanks] = useState(ORIGINAL_RANKS);
 
   useEffect(() => {
-    // Only translate when language is loaded and not English
     if (!isLanguageLoaded || language.code === "en") return;
 
     let isMounted = true;
     (async () => {
-      const items = [
-        ORIGINAL_HEADING,
-        ORIGINAL_SUBTITLE,
-        ORIGINAL_FOOTER,
-        ...ORIGINAL_RANKS.map((rank) => rank.benefits),
-      ];
+      const items = [ORIGINAL_HEADING, ORIGINAL_SUBTITLE, ORIGINAL_FOOTER];
       const translated = await translate(items);
       if (!isMounted) return;
 
-      const [tHeading, tSubtitle, tFooter, ...tBenefits] = translated;
+      const [tHeading, tSubtitle, tFooter] = translated;
 
       setHeading(tHeading);
       setSubtitle(tSubtitle);
       setFooter(tFooter);
-
-      const updatedRanks = ORIGINAL_RANKS.map((rank, index) => ({
-        ...rank,
-        benefits: tBenefits[index],
-      }));
-
-      setRanks(updatedRanks);
     })();
 
     return () => {
       isMounted = false;
     };
   }, [language.code, isLanguageLoaded, translate]);
+
+  useEffect(() => {
+    fetchRankSystems();
+  }, []);
+
+  const fetchRankSystems = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/admin/rank-system");
+      const data = await response.json();
+
+      if (data.success) {
+        setRankSystems(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching rank systems:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatSpending = (spending) => {
+    if (spending.max === 0 || spending.max === null) {
+      return `$${spending.min}+`;
+    }
+    return `$${spending.min} - $${spending.max}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-black border border-[#212121] text-white p-4 sm:p-6 md:p-8 rounded-lg w-full lg:max-w-4xl mx-auto">
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="text-gray-400 mt-2">Loading rank system...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (rankSystems.length === 0) {
+    return (
+      <div className="bg-black border border-[#212121] text-white p-4 sm:p-6 md:p-8 rounded-lg w-full lg:max-w-4xl mx-auto">
+        <div className="text-center py-8">
+          <p className="text-gray-400">
+            No rank systems available at the moment.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-black border border-[#212121] text-white p-4 sm:p-6 md:p-8 rounded-lg w-full lg:max-w-4xl mx-auto">
@@ -95,9 +100,9 @@ export default function RankSystem() {
 
       {/* Rank Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-        {ranks.map((rank, index) => (
+        {rankSystems.map((rank) => (
           <div
-            key={rank.name}
+            key={rank._id}
             className="bg-[#0E0E11] border border-white/15 rounded-lg p-4 sm:p-6 hover:border-white/40 transition-colors duration-200"
           >
             <div className="flex justify-between items-start mb-2 sm:mb-3">
@@ -105,7 +110,7 @@ export default function RankSystem() {
                 {rank.name}
               </h3>
               <span className="text-white font-semibold text-right text-xs sm:text-sm">
-                {rank.spending}
+                {formatSpending(rank.spending)}
               </span>
             </div>
             <p className="text-[#afafaf] text-xs sm:text-sm leading-relaxed">

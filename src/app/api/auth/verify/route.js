@@ -72,7 +72,7 @@ export async function POST(request) {
     // Check if user already exists
     const email = verificationTokenDoc.email.toLowerCase().trim();
     const existingUser = await User.findOne({ email });
-    // Read user data from token.userData
+    // Read user data from token
     const firstNameRaw = verificationTokenDoc.firstName || "";
     const lastNameRaw = verificationTokenDoc.lastName || "";
     let usernameRaw = verificationTokenDoc.username || "";
@@ -81,7 +81,6 @@ export async function POST(request) {
     const lastName = String(lastNameRaw).trim();
     let username = String(usernameRaw).trim();
 
-    // Helper to generate unique username
     const slugify = (s) =>
       s
         .toLowerCase()
@@ -106,7 +105,7 @@ export async function POST(request) {
     }
 
     if (existingUser) {
-      // Update existing user with any missing fields instead of erroring
+      // Update existing user with any missing fields
       existingUser.profile = {
         ...existingUser.profile,
         firstName:
@@ -157,6 +156,16 @@ export async function POST(request) {
       lastLogin: new Date(),
     });
 
+    // If a referral code was provided, set referredBy
+    const rawCode = verificationTokenDoc.referralCode;
+    if (rawCode) {
+      const code = String(rawCode).toUpperCase();
+      const referrer = await User.findOne({ "referral.code": code });
+      if (referrer) {
+        user.referral.referredBy = referrer._id;
+      }
+    }
+
     await user.save();
 
     verificationTokenDoc.used = true;
@@ -206,9 +215,9 @@ export async function GET(_req, { params }) {
 
     return NextResponse.json({
       email: doc.email,
-      firstName: doc.userData?.firstName || "",
-      lastName: doc.userData?.lastName || "",
-      username: doc.userData?.username || null,
+      firstName: doc.firstName || "",
+      lastName: doc.lastName || "",
+      username: doc.username || null,
     });
   } catch (e) {
     console.error("Verify GET error:", e);

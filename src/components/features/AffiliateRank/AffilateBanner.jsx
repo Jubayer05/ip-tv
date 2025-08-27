@@ -6,33 +6,32 @@ import { useEffect, useState } from "react";
 const AffiliateBanner = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
 
-  const ORIGINAL_HEADING = "Invite. Earn. Upgrade Your Rank.";
-  const ORIGINAL_PARAGRAPH =
-    "Become a part of our Affiliate & Referral Program and earn rewards every time someone joins through your link—or when you spend more yourself. Whether you're a casual user or a loyal pro, there's something here for you.";
-
-  const [heading, setHeading] = useState(ORIGINAL_HEADING);
-  const [paragraph, setParagraph] = useState(ORIGINAL_PARAGRAPH);
+  const [heading, setHeading] = useState("Invite. Earn. Upgrade Your Rank.");
+  const [paragraph, setParagraph] = useState(
+    "Become a part of our Affiliate & Referral Program and earn rewards every time someone joins through your link—or when you spend more yourself. Whether you're a casual user or a loyal pro, there's something here for you."
+  );
 
   useEffect(() => {
-    // Only translate when language is loaded and not English
-    if (!isLanguageLoaded || language.code === "en") return;
-
-    let isMounted = true;
-    (async () => {
-      const items = [ORIGINAL_HEADING, ORIGINAL_PARAGRAPH];
-      const translated = await translate(items);
-      if (!isMounted) return;
-
-      const [tHeading, tParagraph] = translated;
-
-      setHeading(tHeading);
-      setParagraph(tParagraph);
-    })();
-
-    return () => {
-      isMounted = false;
+    // Fetch banner content from settings
+    const fetchBannerContent = async () => {
+      try {
+        const response = await fetch("/api/admin/settings");
+        const data = await response.json();
+        if (data.success && data.data.banners?.affiliate) {
+          const affiliateBanner = data.data.banners.affiliate;
+          setHeading(
+            `${affiliateBanner.heading1} ${affiliateBanner.heading2}`.trim() ||
+              heading
+          );
+          setParagraph(affiliateBanner.paragraph || paragraph);
+        }
+      } catch (error) {
+        console.error("Failed to fetch banner content:", error);
+      }
     };
-  }, [language.code, isLanguageLoaded, translate]);
+
+    fetchBannerContent();
+  }, []);
 
   return (
     <Polygon

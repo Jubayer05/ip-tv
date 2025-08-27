@@ -6,43 +6,31 @@ import { useEffect, useState } from "react";
 const TermsOfUseBanner = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
 
-  // Original text constants
-  const ORIGINAL_TEXTS = {
-    heading: "Terms of Use",
-    paragraph:
-      "Welcome to our IPTV platform. By accessing, purchasing from, or using our website and services, you agree to comply with and be bound by the following Terms of Use. Please read them carefully before proceeding.",
-  };
-
-  // State for translated content
-  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+  const [heading, setHeading] = useState("Terms of Use");
+  const [paragraph, setParagraph] = useState(
+    "Welcome to our IPTV platform. By accessing, purchasing from, or using our website and services, you agree to comply with and be bound by the following Terms of Use. Please read them carefully before proceeding."
+  );
 
   useEffect(() => {
-    // Only translate when language is loaded and not English
-    if (!isLanguageLoaded || language.code === "en") return;
-
-    let isMounted = true;
-    (async () => {
+    // Fetch banner content from settings
+    const fetchBannerContent = async () => {
       try {
-        const items = [ORIGINAL_TEXTS.heading, ORIGINAL_TEXTS.paragraph];
-
-        const translated = await translate(items);
-        if (!isMounted) return;
-
-        const [tHeading, tParagraph] = translated;
-
-        setTexts({
-          heading: tHeading,
-          paragraph: tParagraph,
-        });
+        const response = await fetch("/api/admin/settings");
+        const data = await response.json();
+        if (data.success && data.data.banners?.terms) {
+          const termsBanner = data.data.banners.terms;
+          setHeading(
+            `${termsBanner.heading1} ${termsBanner.heading2}`.trim() || heading
+          );
+          setParagraph(termsBanner.paragraph || paragraph);
+        }
       } catch (error) {
-        console.error("Translation error:", error);
+        console.error("Failed to fetch banner content:", error);
       }
-    })();
-
-    return () => {
-      isMounted = false;
     };
-  }, [language.code, isLanguageLoaded, translate]);
+
+    fetchBannerContent();
+  }, []);
 
   return (
     <Polygon
@@ -53,9 +41,9 @@ const TermsOfUseBanner = () => {
       <div className="relative z-10 flex items-center justify-center px-6 h-polygon">
         <div className="text-center max-w-4xl mx-auto">
           {/* Main heading */}
-          <h1 className="polygon_heading">{texts.heading}</h1>
+          <h1 className="polygon_heading">{heading}</h1>
 
-          <p className="polygon_paragraph">{texts.paragraph}</p>
+          <p className="polygon_paragraph">{paragraph}</p>
         </div>
       </div>
     </Polygon>

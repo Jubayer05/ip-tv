@@ -55,6 +55,36 @@ export default function Footer() {
   const [developedBy, setDevelopedBy] = useState(ORIGINAL_DEVELOPED_BY);
   const [sections, setSections] = useState(ORIGINAL_SECTIONS);
 
+  // New state for dynamic social media and contact info
+  const [socialMedia, setSocialMedia] = useState({
+    x: "",
+    linkedin: "",
+    instagram: "",
+    youtube: "",
+  });
+  const [contactInfo, setContactInfo] = useState({
+    phoneNumber: "+123 456 7890",
+    emailAddress: "help@cheapstream.com",
+  });
+
+  useEffect(() => {
+    // Fetch settings for social media and contact info
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch("/api/admin/settings");
+        const data = await response.json();
+        if (data.success) {
+          setSocialMedia(data.data.socialMedia || {});
+          setContactInfo(data.data.contactInfo || {});
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings:", error);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -102,12 +132,34 @@ export default function Footer() {
     };
   }, [language.code]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Update sections with dynamic contact info
+  useEffect(() => {
+    setSections((prevSections) =>
+      prevSections.map((section) => {
+        if (section.title.includes("CONTACT")) {
+          return {
+            ...section,
+            items: [
+              { label: "Phone Number:", value: contactInfo.phoneNumber },
+              { label: "Email Address:", value: contactInfo.emailAddress },
+            ],
+          };
+        }
+        return section;
+      })
+    );
+  }, [contactInfo]);
+
   const socialLinks = [
-    { icon: Twitter, href: "#" },
-    { icon: Linkedin, href: "#" },
-    { icon: Instagram, href: "#" },
-    { icon: Youtube, href: "#" },
-  ];
+    { icon: Twitter, href: socialMedia.x || "#", platform: "x" },
+    { icon: Linkedin, href: socialMedia.linkedin || "#", platform: "linkedin" },
+    {
+      icon: Instagram,
+      href: socialMedia.instagram || "#",
+      platform: "instagram",
+    },
+    { icon: Youtube, href: socialMedia.youtube || "#", platform: "youtube" },
+  ].filter((social) => social.href && social.href !== "#");
 
   const renderSection = (section) => {
     if (section.title.includes("CONTACT")) {

@@ -148,3 +148,82 @@ export async function sendWelcomeEmail(email, firstName) {
     return false;
   }
 }
+
+export async function sendOrderKeysEmail({ toEmail, fullName, order }) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  const keysList = (order.keys || [])
+    .map(
+      (k, i) => `
+        <tr>
+          <td style="padding:8px;border:1px solid #e9ecef;">${i + 1}</td>
+          <td style="padding:8px;border:1px solid #e9ecef;">${k.key}</td>
+          <td style="padding:8px;border:1px solid #e9ecef;">${new Date(
+            k.expiresAt
+          ).toLocaleDateString()}</td>
+        </tr>`
+    )
+    .join("");
+
+  const productLine = order.products?.[0] || {};
+  const mailOptions = {
+    from: `"Cheap Stream" <${process.env.SMTP_USER || ""}>`,
+    to: toEmail,
+    subject: `Your IPTV Access Keys - Order ${order.orderNumber}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #00b877 0%, #0aa86e 100%); padding: 24px; text-align: center; color: white;">
+          <h1 style="margin: 0; font-size: 24px;">Cheap Stream</h1>
+          <p style="margin: 8px 0 0 0;">Order ${order.orderNumber}</p>
+        </div>
+
+        <div style="padding: 24px; background: #ffffff;">
+          <p style="color: #333;">Hi ${fullName || "there"},</p>
+          <p style="color: #555; line-height: 1.6;">
+            Thank you for your order. Below are your IPTV access key(s). Keep them secure.
+          </p>
+
+          <table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding:8px;border:1px solid #e9ecef;">#</th>
+                <th style="text-align:left;padding:8px;border:1px solid #e9ecef;">Key</th>
+                <th style="text-align:left;padding:8px;border:1px solid #e9ecef;">Expires</th>
+              </tr>
+            </thead>
+            <tbody>${keysList}</tbody>
+          </table>
+
+          <p style="color: #555; line-height: 1.6;">
+            Devices Allowed: ${productLine.devicesAllowed || "-"}<br />
+            Adult Channels: ${productLine.adultChannels ? "Yes" : "No"}<br />
+            Duration: ${productLine.duration || 0} month(s)
+          </p>
+
+          <p style="color: #555;">
+            Total Paid (pending): $${(order.totalAmount || 0).toFixed(2)}
+          </p>
+
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="${baseUrl}/dashboard/orders"
+               style="background: #00b877; color: white; padding: 12px 22px; text-decoration: none; border-radius: 24px; display: inline-block; font-weight: bold;">
+              View Orders
+            </a>
+          </div>
+
+          <p style="font-size: 12px; color: #999;">
+            If you didn’t make this purchase, please contact support immediately.
+          </p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error("Email sending failed:", error);
+    return false;
+  }
+}

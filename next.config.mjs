@@ -10,6 +10,14 @@ const nextConfig = {
       },
     ],
   },
+  // Add font optimization settings
+  experimental: {
+    optimizePackageImports: ['@next/font'],
+  },
+  // Ensure fonts are handled properly
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
 };
 
 export default nextConfig;

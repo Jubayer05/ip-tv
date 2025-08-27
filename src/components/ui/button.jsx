@@ -10,7 +10,7 @@ export default function Button({
   ...props
 }) {
   const baseClasses =
-    "font-semibold rounded-full transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 font-secondary cursor-pointer select-none touch-manipulation";
+    "font-semibold rounded-full transition-all duration-300 transform hover:scale-101 focus:outline-none focus:ring-2 focus:ring-offset-2 font-secondary cursor-pointer select-none touch-manipulation";
 
   const variants = {
     primary:

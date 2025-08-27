@@ -1,16 +1,53 @@
-import Link from "next/link";
+"use client";
+import ManageBanner from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageBanner";
+import ManageContact from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageContact";
+import ManageSocialMediaContact from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageSocialMedia";
+import { useState } from "react";
 
 export default function AdminSettingsPage() {
+  const [activeTab, setActiveTab] = useState("social");
+
+  const tabs = [
+    {
+      id: "social",
+      label: "Social Media",
+      component: <ManageSocialMediaContact />,
+    },
+    {
+      id: "contact",
+      label: "Contact Information",
+      component: <ManageContact />,
+    },
+    {
+      id: "banner",
+      label: "Banner Management",
+      component: <ManageBanner />,
+    },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <h1 className="text-3xl font-bold mb-4">System Settings</h1>
-      <p className="text-gray-600 mb-6">Configure system settings</p>
-      <Link
-        href="/"
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-      >
-        Go Home
-      </Link>
+    <div className="space-y-6 font-secondary">
+      {/* Tab Navigation */}
+      <div className="border-b border-[#212121]">
+        <nav className="flex space-x-8">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`cursor-pointer py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === tab.id
+                  ? "border-blue-500 text-blue-500"
+                  : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      <div>{tabs.find((tab) => tab.id === activeTab)?.component}</div>
     </div>
   );
 }

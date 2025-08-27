@@ -9,15 +9,27 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const email = searchParams.get("email");
+    const userId = searchParams.get("userId");
 
-    if (!email) {
+    if (!email && !userId) {
       return NextResponse.json(
-        { success: false, error: "Email is required" },
+        { success: false, error: "Email or userId is required" },
         { status: 400 }
       );
     }
 
-    const user = await User.findOne({ email }).select("profile role email");
+    let user;
+    if (userId) {
+      // Search by MongoDB document ID
+      user = await User.findById(userId).select(
+        "profile role email balance rank referral settings isActive lastLogin createdAt updatedAt"
+      );
+    } else {
+      // Search by email (existing logic)
+      user = await User.findOne({ email }).select(
+        "profile role email balance rank referral settings isActive lastLogin createdAt updatedAt"
+      );
+    }
 
     if (!user) {
       return NextResponse.json(
@@ -29,16 +41,35 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       data: {
+        _id: user._id,
         firstName: user.profile?.firstName || "",
         lastName: user.profile?.lastName || "",
         username: user.profile?.username || "",
-        photoUrl: user.profile?.photoUrl || "",
         dateOfBirth: user.profile?.dateOfBirth || null,
         country: user.profile?.country || "",
         phone: user.profile?.phone || "",
         avatar: user.profile?.avatar || "",
         email: user.email,
         role: user.role,
+        balance: user.balance || 0,
+        rank: user.rank || {
+          level: "bronze",
+          totalSpent: 0,
+          discountPercentage: 5,
+        },
+        referral: user.referral || {
+          code: null,
+          referredBy: null,
+          earnings: 0,
+        },
+        settings: user.settings || {
+          notifications: true,
+          twoFactorEnabled: false,
+        },
+        isActive: user.isActive !== false,
+        lastLogin: user.lastLogin,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
       },
     });
   } catch (error) {
@@ -103,7 +134,7 @@ export async function PUT(request) {
       }
     }
 
-    // Update user profile
+    // Update user profile - remove photoUrl from the update
     const updatedUser = await User.findOneAndUpdate(
       { email },
       {
@@ -111,7 +142,7 @@ export async function PUT(request) {
           "profile.firstName": profile.firstName?.trim() || "",
           "profile.lastName": profile.lastName?.trim() || "",
           "profile.username": profile.username?.trim() || "",
-          "profile.photoUrl": profile.photoUrl || "",
+          // Remove photoUrl from here
           "profile.dateOfBirth": profile.dateOfBirth || null,
           "profile.country": profile.country?.trim() || "",
           "profile.phone": profile.phone || "",

@@ -1,76 +1,265 @@
 "use client";
 import Button from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useUserSpending } from "@/contexts/UserSpendingContext";
 import { useEffect, useState } from "react";
-import { RiFireFill } from "react-icons/ri";
 import RegisterFormPopup from "./Popup/RegisterFormPopup";
+import ThankRegisterPopup from "./Popup/ThankRegisterPopup";
+
+// Import the new components
+import BottomControls from "./components/BottomControls";
+import BulkDiscount from "./components/BulkDiscount";
+import PricingHeader from "./components/PricingHeader";
+import SubscriptionPlans from "./components/SubscriptionPlans";
 
 const PricingPlan = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
-  const [selectedPlan, setSelectedPlan] = useState(2); // Premium plan is recommended
+  const { user, loading: authLoading } = useAuth();
+  const { currentRank, loading: rankLoading } = useUserSpending();
+  const [selectedPlan, setSelectedPlan] = useState(0);
   const [selectedDevices, setSelectedDevices] = useState(1);
   const [adultChannels, setAdultChannels] = useState(false);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [customQuantity, setCustomQuantity] = useState("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showNotRegister, setShowNotRegister] = useState(false);
+  const [showThankYou, setShowThankYou] = useState(false);
+
+  // Add state for coupon
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponResult, setCouponResult] = useState(null);
+  const [couponError, setCouponError] = useState("");
+
+  // Fetch product data from API
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await fetch("/api/admin/products");
+        if (response.ok) {
+          const data = await response.json();
+          setProduct(data[0]);
+          // Set recommended plan as default selected
+          const recommendedIndex = data[0].variants?.findIndex(
+            (v) => v.recommended
+          );
+          if (recommendedIndex !== -1) {
+            setSelectedPlan(recommendedIndex);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching product:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, []);
+
+  // Handle quantity selection
+  const handleQuantityChange = (quantity) => {
+    if (quantity === "custom") {
+      setShowCustomInput(true);
+      setSelectedQuantity("custom");
+    } else {
+      setShowCustomInput(false);
+      setSelectedQuantity(quantity);
+      setCustomQuantity("");
+    }
+  };
+
+  // Handle custom quantity input
+  const handleCustomQuantityChange = (e) => {
+    const value = e.target.value;
+    setCustomQuantity(value);
+    if (value && !isNaN(value) && parseInt(value) > 0) {
+      setSelectedQuantity(parseInt(value));
+    }
+  };
+
+  // Calculate total price with rank discount
+  const calculateTotalPrice = () => {
+    if (!product?.variants?.[selectedPlan]) return 0;
+
+    const plan = product.variants[selectedPlan];
+    const basePrice = plan.price || 0;
+
+    // Get the actual quantity (custom or selected)
+    const actualQuantity =
+      selectedQuantity === "custom"
+        ? parseInt(customQuantity) || 0
+        : selectedQuantity;
+
+    if (actualQuantity <= 0) return 0;
+
+    // Get device pricing from product configuration
+    const devicePricing = product.devicePricing || [
+      { deviceCount: 1, multiplier: 1 },
+      { deviceCount: 2, multiplier: 1.5 },
+      { deviceCount: 3, multiplier: 2 },
+    ];
+
+    // Find the device multiplier for selected devices
+    const deviceRule = devicePricing.find(
+      (d) => d.deviceCount === selectedDevices
+    );
+    const deviceMultiplier = deviceRule ? deviceRule.multiplier : 1;
+
+    // Calculate base price per device
+    const pricePerDevice = basePrice * deviceMultiplier;
+
+    // Calculate subtotal (price per device × quantity)
+    let subtotal = pricePerDevice * actualQuantity;
+
+    // Get bulk discounts from product configuration
+    const bulkDiscounts = product.bulkDiscounts || [
+      { minQuantity: 3, discountPercentage: 5 },
+      { minQuantity: 5, discountPercentage: 10 },
+      { minQuantity: 10, discountPercentage: 15 },
+    ];
+
+    // Find applicable bulk discount
+    const applicableDiscount = bulkDiscounts
+      .filter((d) => actualQuantity >= d.minQuantity)
+      .sort((a, b) => b.minQuantity - a.minQuantity)[0];
+
+    const bulkDiscountPercentage = applicableDiscount
+      ? applicableDiscount.discountPercentage
+      : 0;
+
+    // Calculate bulk discount amount
+    const bulkDiscountAmount = (subtotal * bulkDiscountPercentage) / 100;
+
+    // Apply bulk discount
+    const afterBulkDiscount = subtotal - bulkDiscountAmount;
+
+    // Get rank discount percentage
+    const rankDiscountPercentage = currentRank?.discount || 0;
+
+    // Calculate rank discount amount
+    const rankDiscountAmount =
+      (afterBulkDiscount * rankDiscountPercentage) / 100;
+
+    // Apply rank discount
+    const afterRankDiscount = afterBulkDiscount - rankDiscountAmount;
+
+    // Get adult channels fee percentage from product configuration
+    const adultChannelsFeePercentage = product.adultChannelsFeePercentage || 20;
+
+    // Add adult channels fee if selected
+    let finalTotal = afterRankDiscount;
+    if (adultChannels) {
+      const adultChannelsFee =
+        (afterRankDiscount * adultChannelsFeePercentage) / 100;
+      finalTotal += adultChannelsFee;
+    }
+
+    return {
+      basePrice,
+      pricePerDevice,
+      deviceMultiplier,
+      quantity: actualQuantity,
+      subtotal,
+      bulkDiscountPercentage,
+      bulkDiscountAmount,
+      rankDiscountPercentage,
+      rankDiscountAmount: Math.round(rankDiscountAmount * 100) / 100, // Round to 2 decimal places
+      afterBulkDiscount,
+      afterRankDiscount,
+      adultChannelsFee: adultChannels
+        ? (afterRankDiscount * adultChannelsFeePercentage) / 100
+        : 0,
+      finalTotal: Math.round(finalTotal * 100) / 100, // Round to 2 decimal places
+      currency: "$", // Always use dollar sign instead of "USD"
+      devicePricing,
+      bulkDiscounts,
+      adultChannelsFeePercentage,
+    };
+  };
+
+  // Get current price calculation
+  const priceCalculation = calculateTotalPrice();
+
+  // Helper to compute the amount that coupon applies on (after bulk + rank)
+  const amountEligibleForCoupon = () => {
+    const calc = calculateTotalPrice();
+    return calc.afterRankDiscount; // apply coupon after rank+bulk, before adult fee
+  };
+
+  const applyCoupon = async () => {
+    setCouponError("");
+    setCouponResult(null);
+    setAppliedCoupon(null);
+    const code = (couponCode || "").trim();
+    if (!code) return;
+    try {
+      const amount = amountEligibleForCoupon();
+      if (!amount || amount <= 0) {
+        setCouponError("Amount must be greater than 0");
+        return;
+      }
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, amount }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setCouponError(data.error || "Invalid coupon");
+        return;
+      }
+      setAppliedCoupon(data.coupon);
+      setCouponResult({
+        discountAmount: data.discountAmount,
+        finalOnEligible: data.finalTotal, // after coupon on eligible amount
+      });
+    } catch (e) {
+      setCouponError("Validation failed");
+    }
+  };
+
+  // derive final total incl. adult fee, after coupon if applied
+  const displayTotals = (() => {
+    const pc = calculateTotalPrice();
+    // base line items from existing calculation
+    const base = {
+      ...pc,
+      couponDiscountAmount: 0,
+      finalTotalWithCoupon: pc.finalTotal,
+    };
+
+    if (appliedCoupon && couponResult) {
+      // We applied coupon on afterRankDiscount.
+      // Adult fee is percentage of afterRankDiscount in current logic.
+      // Recompute adult fee based on discounted eligible amount:
+      const afterCouponEligible = couponResult.finalOnEligible; // afterRankDiscount - coupon
+      const adultFee = adultChannels
+        ? (afterCouponEligible * (product?.adultChannelsFeePercentage || 20)) /
+          100
+        : 0;
+
+      const finalTotalWithCoupon =
+        Math.round((afterCouponEligible + adultFee) * 100) / 100;
+
+      return {
+        ...base,
+        couponDiscountAmount:
+          Math.round(couponResult.discountAmount * 100) / 100,
+        finalTotalWithCoupon,
+        adultFeeAfterCoupon: Math.round(adultFee * 100) / 100,
+      };
+    }
+    return base;
+  })();
 
   // Original text constants
   const ORIGINAL_TEXTS = {
     header: "SELECT SUBSCRIPTION PERIOD:",
-    plans: [
-      {
-        id: 0,
-        name: "BASIC PLAN",
-        duration: "1 MONTH",
-        description: "Great for casual streamers.",
-        features: [
-          "17,000+ Live Channels",
-          "120,000+ Movies",
-          "8,000+ Series",
-          "Compatible with all devices & apps",
-          "Standard Support",
-        ],
-      },
-      {
-        id: 1,
-        name: "STANDARD PLAN",
-        duration: "3 MONTHS",
-        description: "Great for casual streamers.",
-        features: [
-          "17,000+ Live Channels",
-          "120,000+ Movies",
-          "8,000+ Series",
-          "Compatible with all devices & apps",
-          "Pro Support",
-        ],
-      },
-      {
-        id: 2,
-        name: "PREMIUM PLAN",
-        duration: "6 MONTHS",
-        description: "Great for casual streamers.",
-        recommended: true,
-        features: [
-          "17,000+ Live Channels",
-          "190,000+ Movies",
-          "8,000+ Series",
-          "Compatible with all devices & apps",
-          "VIP Support",
-        ],
-      },
-      {
-        id: 3,
-        name: "ULTIMATE PLAN",
-        duration: "12 MONTHS",
-        description: "Great for casual streamers.",
-        features: [
-          "17,000+ Live Channels",
-          "120,000+ Movies",
-          "8,000+ Series",
-          "Compatible with all devices & apps",
-          "Priority Support",
-        ],
-      },
-    ],
     controls: {
       devices: {
         title: "Select Devices:",
@@ -110,11 +299,6 @@ const PricingPlan = () => {
         // Collect all translatable text
         const allTexts = [
           ORIGINAL_TEXTS.header,
-          ...ORIGINAL_TEXTS.plans.flatMap((plan) => [
-            plan.name,
-            plan.description,
-            ...plan.features,
-          ]),
           ORIGINAL_TEXTS.controls.devices.title,
           ORIGINAL_TEXTS.controls.devices.recommended,
           ORIGINAL_TEXTS.controls.adultChannels.title,
@@ -137,23 +321,6 @@ const PricingPlan = () => {
 
         // Update header
         const tHeader = translated[currentIndex++];
-
-        // Update plans
-        const updatedPlans = ORIGINAL_TEXTS.plans.map((plan) => {
-          const tName = translated[currentIndex++];
-          const tDescription = translated[currentIndex++];
-          const tFeatures = [];
-          for (let i = 0; i < plan.features.length; i++) {
-            tFeatures.push(translated[currentIndex++]);
-          }
-
-          return {
-            ...plan,
-            name: tName,
-            description: tDescription,
-            features: tFeatures,
-          };
-        });
 
         // Update controls
         const tControls = {
@@ -187,7 +354,6 @@ const PricingPlan = () => {
 
         setTexts({
           header: tHeader,
-          plans: updatedPlans,
           controls: tControls,
           bulkDiscount: {
             title: tBulkDiscountTitle,
@@ -205,213 +371,247 @@ const PricingPlan = () => {
     };
   }, [language.code, isLanguageLoaded, translate]);
 
-  // Reusable button component with responsive sizing
-  const ControlButton = ({
-    children,
-    isActive,
-    onClick,
-    className = "",
-    size = "medium",
-  }) => {
-    const baseClasses =
-      "font-semibold transition-all duration-200 font-secondary";
+  const handleProceedToCheckout = () => {
+    // Get the selected plan details
+    const selectedPlanData = product?.variants[selectedPlan];
 
-    const sizeClasses = {
-      small: "w-10 h-10 text-xs sm:w-12 sm:h-12 sm:text-sm",
-      medium:
-        "px-3 py-2 text-xs sm:px-4 sm:py-2.5 sm:text-sm md:px-6 md:py-3 md:text-base",
-      large:
-        "px-4 py-2.5 text-sm sm:px-5 sm:py-3 sm:text-base md:px-6 md:py-4 md:text-lg",
+    const selectionData = {
+      plan: {
+        name: selectedPlanData?.name || "Unknown",
+        duration: selectedPlanData?.durationMonths || 0,
+        price: selectedPlanData?.price || 0,
+        currency: selectedPlanData?.currency || "USD",
+      },
+      productId: product?.id || product?._id,
+      variantId: selectedPlanData?.id || selectedPlanData?._id,
+      devices: selectedDevices,
+      adultChannels: adultChannels,
+      quantity:
+        selectedQuantity === "custom" ? customQuantity : selectedQuantity,
+      isCustomQuantity: selectedQuantity === "custom",
+      priceCalculation: priceCalculation,
+      timestamp: new Date().toISOString(),
+      coupon: appliedCoupon ? { code: appliedCoupon.code } : null,
     };
 
-    const activeClasses = isActive
-      ? "bg-cyan-400 text-black rounded-[10px]"
-      : "text-white hover:bg-gray-600 border border-[#FFFFFF26] rounded-[10px]";
-
-    return (
-      <button
-        className={`${baseClasses} ${sizeClasses[size]} ${activeClasses} ${className}`}
-        onClick={onClick}
-      >
-        {children}
-      </button>
-    );
-  };
-
-  const handleProceedToCheckout = () => {
-    setIsModalOpen(true);
+    try {
+      localStorage.setItem("cs_order_selection", JSON.stringify(selectionData));
+      if (user) {
+        setShowThankYou(true);
+      } else {
+        setShowNotRegister(true);
+        setIsModalOpen(true);
+      }
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
   };
 
+  if (loading || authLoading) {
+    return <div className="text-center py-8">Loading...</div>;
+  }
+
+  if (!product || !product.variants) {
+    return <div className="text-center py-100">No product data available</div>;
+  }
+
+  const closeNotRegister = () => {
+    setShowNotRegister(false);
+  };
+
+  const closeThankYou = () => {
+    setShowThankYou(false);
+  };
+
   return (
     <div className="px-3 sm:px-6">
       <div className="bg-black text-white min-h-screen py-4 sm:py-6 font-primary max-w-[1280px] mx-auto mt-16 sm:mt-20 rounded-xl sm:rounded-2xl border border-[#FFFFFF26]">
         {/* Header */}
-        <h1 className="text-white text-sm sm:text-base md:text-lg px-2 sm:px-6 font-semibold mb-6 sm:mb-8 tracking-wide text-left">
-          {texts.header}
-        </h1>
+        <PricingHeader texts={texts} />
 
         {/* Subscription Plans */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 gap-y-6 sm:gap-4 mb-6 sm:mb-8 px-2 sm:px-6">
-          {texts.plans.map((plan) => (
-            <div
-              key={plan.id}
-              className={`relative border bg-[#0e0e11] rounded-lg p-3 sm:p-4 md:p-5 cursor-pointer transition-all duration-200 ${
-                selectedPlan === plan.id
-                  ? "border-[#FFFFFF26] md:border-primary"
-                  : "border-[#FFFFFF26]"
-              }`}
-              onClick={() => setSelectedPlan(plan.id)}
-            >
-              {plan.recommended && (
-                <div
-                  className="absolute w-full mx-auto -top-4 sm:-top-5 left-1/2 transform -translate-x-1/2
-                 bg-cyan-400 text-black px-3 sm:px-4 py-1 rounded-t-[20px] text-xs font-semibold flex items-center 
-                 justify-center gap-1 font-secondary"
-                >
-                  <span>
-                    <RiFireFill />
-                  </span>
-                  <span className="hidden sm:inline">
-                    {texts.controls.devices.recommended}
-                  </span>
-                  <span className="sm:hidden">Rec.</span>
-                </div>
-              )}
-
-              <div className="text-left font-secondary">
-                <h3 className="text-white font-bold text-lg sm:text-xl md:text-2xl mb-1 font-primary">
-                  {plan.name}
-                </h3>
-                <p className="text-[#AFAFAF] text-[10px] sm:text-sm mb-2 sm:mb-3">
-                  {plan.description}
-                </p>
-                <div className="text-white text-base sm:text-lg font-bold mb-3 sm:mb-4">
-                  {plan.duration}
-                </div>
-
-                {/* Features Section */}
-                <div className="space-y-2">
-                  <p className="text-[#AFAFAF] text-xs mb-2 sm:mb-3">
-                    Features:
-                  </p>
-                  <div className="space-y-[8px] sm:space-y-[10px]">
-                    {plan.features.map((feature, index) => (
-                      <div key={index} className="flex items-start gap-2">
-                        <span className="text-[#00b877] text-xs mt-0.5">✓</span>
-                        <span className="text-white text-[10px] sm:text-sm leading-tight">
-                          {feature}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <SubscriptionPlans
+          product={product}
+          selectedPlan={selectedPlan}
+          setSelectedPlan={setSelectedPlan}
+          texts={texts}
+        />
 
         {/* Bottom Control Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 border-t border-b border-[#FFFFFF26]">
-          {/* Select Devices */}
-          <div className="p-4 sm:p-6 lg:col-span-4 border-r border-[#FFFFFF26]">
-            <h3 className="text-white font-semibold text-lg sm:text-xl md:text-2xl mb-3 sm:mb-4 font-primary">
-              {texts.controls.devices.title}
-            </h3>
-            <div className="flex gap-2 mb-4 sm:mb-6">
-              {[1, 2, 3].map((device) => (
-                <ControlButton
-                  key={device}
-                  isActive={selectedDevices === device}
-                  onClick={() => setSelectedDevices(device)}
-                  size="small"
-                >
-                  {device}
-                </ControlButton>
-              ))}
-            </div>
-          </div>
-
-          {/* Adult Channels */}
-          <div className="p-4 sm:p-6 lg:col-span-3 border-r border-[#FFFFFF26]">
-            <h3 className="text-white font-semibold text-lg sm:text-xl md:text-2xl mb-3 sm:mb-4 font-primary">
-              {texts.controls.adultChannels.title}
-            </h3>
-            <div className="flex gap-2 sm:gap-3">
-              <ControlButton
-                isActive={adultChannels}
-                onClick={() => setAdultChannels(true)}
-                size="medium"
-              >
-                {texts.controls.adultChannels.on}
-              </ControlButton>
-              <ControlButton
-                isActive={!adultChannels}
-                onClick={() => setAdultChannels(false)}
-                size="medium"
-              >
-                {texts.controls.adultChannels.off}
-              </ControlButton>
-            </div>
-          </div>
-
-          {/* Select Quantity */}
-          <div className="p-4 sm:p-6 lg:col-span-5">
-            <h3 className="text-white font-semibold text-lg sm:text-xl md:text-2xl mb-3 sm:mb-4 font-primary">
-              {texts.controls.quantity.title}
-            </h3>
-            <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
-              {[1, 3, 5].map((quantity) => (
-                <ControlButton
-                  key={quantity}
-                  isActive={selectedQuantity === quantity}
-                  onClick={() => setSelectedQuantity(quantity)}
-                  size="medium"
-                >
-                  {quantity}
-                </ControlButton>
-              ))}
-              <ControlButton
-                isActive={![1, 3, 5].includes(selectedQuantity)}
-                onClick={() => setSelectedQuantity(10)}
-                size="medium"
-              >
-                {texts.controls.quantity.custom}
-              </ControlButton>
-            </div>
-          </div>
-        </div>
+        <BottomControls
+          selectedDevices={selectedDevices}
+          setSelectedDevices={setSelectedDevices}
+          adultChannels={adultChannels}
+          setAdultChannels={setAdultChannels}
+          selectedQuantity={selectedQuantity}
+          setSelectedQuantity={handleQuantityChange}
+          customQuantity={customQuantity}
+          setCustomQuantity={setCustomQuantity}
+          showCustomInput={showCustomInput}
+          setShowCustomInput={setShowCustomInput}
+          texts={texts}
+        />
 
         {/* Bulk Discount Offers */}
-        <div className="max-w-lg ml-4 mr-4 md:mx-auto mt-5 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#00b877]/30 rounded-xl p-4 sm:p-6 shadow-lg shadow-[#00b877]/10">
-          <div className="flex items-center gap-2 mb-3 sm:mb-4">
-            <div className="w-2 h-2 bg-[#00b877] rounded-full"></div>
-            <span className="text-[#00b877] text-xs sm:text-sm font-semibold uppercase tracking-wide">
-              {texts.bulkDiscount.title}
-            </span>
-          </div>
+        <BulkDiscount product={product} />
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            {texts.bulkDiscount.offers.map((offer, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between bg-[#ffffff]/5 border border-[#00b877]/20 rounded-lg p-3 hover:bg-[#00b877]/5 transition-all duration-200"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-[#00b877] rounded-full"></div>
-                  <span className="text-[#ffffff] font-medium text-xs sm:text-sm">
-                    {offer.orders}
-                  </span>
-                </div>
-                <span className="text-[#00b877] font-bold text-xs sm:text-sm">
-                  {offer.discount}
+        {/* Rank Discount Info */}
+        {currentRank && (
+          <div className="font-secondary max-w-3xl mt-4 mx-auto p-4 sm:p-6 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#00b877]/30 rounded-xl">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                <span className="text-black text-xs font-bold">★</span>
+              </div>
+              <h3 className="text-white font-semibold text-lg">
+                {currentRank.name} Rank Discount
+              </h3>
+            </div>
+            <div className="text-center">
+              <p className="text-gray-300 text-sm mb-2">
+                Congratulations! You've earned a {currentRank.discount}%
+                discount on all purchases.
+              </p>
+              <div className="bg-primary/20 border border-primary/30 rounded-lg p-3">
+                <span className="text-primary font-bold text-lg">
+                  {currentRank.discount}% OFF
                 </span>
               </div>
-            ))}
+            </div>
           </div>
+        )}
+
+        {/* Price Summary */}
+        {priceCalculation.finalTotal > 0 && (
+          <div className="font-secondary max-w-3xl mt-6 mx-auto p-4 sm:p-6 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#00b877]/30 rounded-xl">
+            <h3 className="text-white font-semibold text-lg mb-4 text-center">
+              Price Summary
+            </h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Base Price:</span>
+                <span>
+                  {priceCalculation.currency}
+                  {priceCalculation.basePrice}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Devices ({selectedDevices}):</span>
+                <span>
+                  {priceCalculation.currency}
+                  {priceCalculation.pricePerDevice} per device
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Quantity:</span>
+                <span>{priceCalculation.quantity}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span>
+                  {priceCalculation.currency}
+                  {priceCalculation.subtotal}
+                </span>
+              </div>
+              {priceCalculation.bulkDiscountPercentage > 0 && (
+                <div className="flex justify-between text-[#00b877]">
+                  <span>
+                    Bulk Discount ({priceCalculation.bulkDiscountPercentage}%
+                    OFF):
+                  </span>
+                  <span>
+                    -{priceCalculation.currency}
+                    {priceCalculation.bulkDiscountAmount}
+                  </span>
+                </div>
+              )}
+              {priceCalculation.rankDiscountPercentage > 0 && (
+                <div className="flex justify-between text-[#00b877]">
+                  <span>
+                    Rank Discount ({currentRank?.name} -{" "}
+                    {priceCalculation.rankDiscountPercentage}% OFF):
+                  </span>
+                  <span>
+                    -{priceCalculation.currency}
+                    {priceCalculation.rankDiscountAmount}
+                  </span>
+                </div>
+              )}
+              {adultChannels && (
+                <div className="flex justify-between text-orange-400">
+                  <span>Adult Channels Fee:</span>
+                  <span>
+                    +{priceCalculation.currency}
+                    {priceCalculation.adultChannelsFee}
+                  </span>
+                </div>
+              )}
+              {appliedCoupon && couponResult && (
+                <>
+                  <div className="flex justify-between text-[#00b877]">
+                    <span>Coupon ({appliedCoupon.code}):</span>
+                    <span>
+                      -{priceCalculation.currency}
+                      {displayTotals.couponDiscountAmount}
+                    </span>
+                  </div>
+                  {adultChannels && (
+                    <div className="flex justify-between text-orange-400">
+                      <span>Adult Channels Fee (after coupon):</span>
+                      <span>
+                        +{priceCalculation.currency}
+                        {displayTotals.adultFeeAfterCoupon}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+              <div className="border-t border-white/20 pt-2 mt-3">
+                <div className="flex justify-between text-lg font-bold text-[#00b877]">
+                  <span>Final Total:</span>
+                  <span>
+                    {priceCalculation.currency}
+                    {appliedCoupon && couponResult
+                      ? displayTotals.finalTotalWithCoupon
+                      : priceCalculation.finalTotal}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Coupon input */}
+        <div className="max-w-3xl mt-6 mx-auto p-4 sm:p-6 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#00b877]/30 rounded-xl">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              placeholder="Enter coupon code"
+              className="flex-1 bg-black border border-white/20 rounded px-3 py-2 text-white"
+            />
+            <button
+              onClick={applyCoupon}
+              className="bg-primary text-black font-bold px-4 py-2 rounded"
+            >
+              Apply
+            </button>
+          </div>
+          {couponError && (
+            <div className="text-red-400 mt-2 text-sm">{couponError}</div>
+          )}
+          {appliedCoupon && couponResult && (
+            <div className="text-green-400 mt-2 text-sm">
+              Applied {appliedCoupon.code}:{" "}
+              {appliedCoupon.discountType === "percentage"
+                ? `${appliedCoupon.discountValue}%`
+                : `$${appliedCoupon.discountValue}`}{" "}
+              off
+            </div>
+          )}
         </div>
 
         {/* Proceed Button */}
@@ -423,10 +623,12 @@ const PricingPlan = () => {
             {texts.button}
           </Button>
         </div>
-      </div>
 
-      {/* Register Form Modal */}
-      <RegisterFormPopup isOpen={isModalOpen} onClose={closeModal} />
+        {/* Popups */}
+        <ThankRegisterPopup isOpen={showThankYou} onClose={closeThankYou} />
+        {/* Register Form Modal */}
+        <RegisterFormPopup isOpen={isModalOpen} onClose={closeModal} />
+      </div>
     </div>
   );
 };

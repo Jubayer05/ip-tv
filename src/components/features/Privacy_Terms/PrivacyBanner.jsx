@@ -6,43 +6,32 @@ import { useEffect, useState } from "react";
 const PrivacyBanner = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
 
-  // Original text constants
-  const ORIGINAL_TEXTS = {
-    heading: "Privacy Policy",
-    paragraph:
-      "Your privacy matters to us. This Privacy Policy explains how we collect, use, protect, and disclose your information when you visit or use our IPTV website and services.",
-  };
-
-  // State for translated content
-  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+  const [heading, setHeading] = useState("Privacy Policy");
+  const [paragraph, setParagraph] = useState(
+    "Your privacy matters to us. This Privacy Policy explains how we collect, use, protect, and disclose your information when you visit or use our IPTV website and services."
+  );
 
   useEffect(() => {
-    // Only translate when language is loaded and not English
-    if (!isLanguageLoaded || language.code === "en") return;
-
-    let isMounted = true;
-    (async () => {
+    // Fetch banner content from settings
+    const fetchBannerContent = async () => {
       try {
-        const items = [ORIGINAL_TEXTS.heading, ORIGINAL_TEXTS.paragraph];
-
-        const translated = await translate(items);
-        if (!isMounted) return;
-
-        const [tHeading, tParagraph] = translated;
-
-        setTexts({
-          heading: tHeading,
-          paragraph: tParagraph,
-        });
+        const response = await fetch("/api/admin/settings");
+        const data = await response.json();
+        if (data.success && data.data.banners?.privacy) {
+          const privacyBanner = data.data.banners.privacy;
+          setHeading(
+            `${privacyBanner.heading1} ${privacyBanner.heading2}`.trim() ||
+              heading
+          );
+          setParagraph(privacyBanner.paragraph || paragraph);
+        }
       } catch (error) {
-        console.error("Translation error:", error);
+        console.error("Failed to fetch banner content:", error);
       }
-    })();
-
-    return () => {
-      isMounted = false;
     };
-  }, [language.code, isLanguageLoaded, translate]);
+
+    fetchBannerContent();
+  }, []);
 
   return (
     <Polygon
@@ -53,9 +42,9 @@ const PrivacyBanner = () => {
       <div className="relative z-10 flex items-center justify-center px-6 h-polygon">
         <div className="text-center max-w-4xl mx-auto">
           {/* Main heading */}
-          <h1 className="polygon_heading">{texts.heading}</h1>
+          <h1 className="polygon_heading">{heading}</h1>
 
-          <p className="polygon_paragraph">{texts.paragraph}</p>
+          <p className="polygon_paragraph">{paragraph}</p>
         </div>
       </div>
     </Polygon>

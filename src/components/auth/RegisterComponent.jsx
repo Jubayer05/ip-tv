@@ -5,9 +5,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ArrowRight, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import ReCAPTCHA from "react-google-recaptcha";
 
-export default function RegisterComponent() {
+export default function RegisterComponent({ referralCode = "" }) {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -20,9 +21,16 @@ export default function RegisterComponent() {
   const [verificationEmail, setVerificationEmail] = useState("");
   const [usernameChecking, setUsernameChecking] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
 
   const { signup } = useAuth();
   const router = useRouter();
+  const recaptchaRef = useRef();
+
+  // Normalize referral code to uppercase
+  const normalizedReferralCode = referralCode
+    ? String(referralCode).toUpperCase()
+    : "";
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -66,6 +74,11 @@ export default function RegisterComponent() {
     }
   };
 
+  const handleRecaptchaChange = (token) => {
+    setRecaptchaToken(token);
+    setError(""); // Clear any previous errors
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -74,6 +87,13 @@ export default function RegisterComponent() {
     // Check if username is available before submitting
     if (formData.username && !usernameAvailable) {
       setError("Username is not available. Please choose a different one.");
+      setLoading(false);
+      return;
+    }
+
+    // Check if reCAPTCHA is completed
+    if (!recaptchaToken) {
+      setError("Please complete the reCAPTCHA verification.");
       setLoading(false);
       return;
     }
@@ -89,6 +109,8 @@ export default function RegisterComponent() {
           firstName: formData.firstName,
           lastName: formData.lastName,
           username: formData.username,
+          referralCode: referralCode || null,
+          recaptchaToken: recaptchaToken,
         }),
       });
 
@@ -99,9 +121,15 @@ export default function RegisterComponent() {
         setVerificationEmail(formData.email);
       } else {
         setError(data.error || "Registration failed. Please try again.");
+        // Reset reCAPTCHA on error
+        recaptchaRef.current?.reset();
+        setRecaptchaToken(null);
       }
     } catch (error) {
       setError("Network error. Please check your connection and try again.");
+      // Reset reCAPTCHA on error
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
     }
 
     setLoading(false);
@@ -118,9 +146,12 @@ export default function RegisterComponent() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: verificationEmail,
+          email: formData.email,
           firstName: formData.firstName,
           lastName: formData.lastName,
+          username: formData.username,
+          referralCode: normalizedReferralCode || null,
+          recaptchaToken: recaptchaToken,
         }),
       });
 
@@ -227,7 +258,7 @@ export default function RegisterComponent() {
         )}
 
         {/* Register Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* First Name Input */}
           <div>
             <label className="block text-white text-xs sm:text-sm font-medium mb-2">
@@ -310,13 +341,25 @@ export default function RegisterComponent() {
             )}
           </div>
 
+          {/* reCAPTCHA */}
+          <div className="flex justify-center">
+            <ReCAPTCHA
+              ref={recaptchaRef}
+              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+              onChange={handleRecaptchaChange}
+              theme="dark"
+            />
+          </div>
+
           {/* Create Account Button */}
           <Button
             type="submit"
             variant="secondary"
             className="w-full transition-all duration-200 flex items-center justify-center gap-2"
             disabled={
-              loading || (formData.username && usernameAvailable === false)
+              loading ||
+              (formData.username && usernameAvailable === false) ||
+              !recaptchaToken
             }
           >
             {loading ? "Sending Verification..." : "Create An Account"}

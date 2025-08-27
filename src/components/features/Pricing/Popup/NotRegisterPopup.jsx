@@ -1,5 +1,7 @@
+import Button from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ArrowRight, Check, User, X } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function NotRegisterPopup({ isOpen, onClose }) {
@@ -119,13 +121,16 @@ export default function NotRegisterPopup({ isOpen, onClose }) {
         </div>
 
         {/* Create Account Button */}
-        <button
-          onClick={handleCreateAccount}
-          className="w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2"
-        >
-          {texts.buttonText}
-          <ArrowRight size={16} className="sm:w-5 sm:h-5" />
-        </button>
+        <Link href="/register">
+          <Button
+            variant="secondary"
+            onClick={handleCreateAccount}
+            className="w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2"
+          >
+            {texts.buttonText}
+            <ArrowRight size={16} className="sm:w-5 sm:h-5" />
+          </Button>
+        </Link>
       </div>
     </div>
   );

@@ -31,6 +31,13 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
 
   // State for translated content
   const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+  const [orderInfo, setOrderInfo] = useState({
+    orderId: "",
+    date: "",
+    service: "Digital Subscription Access",
+    plan: "",
+    total: "",
+  });
 
   useEffect(() => {
     // Only translate when language is loaded and not English
@@ -86,13 +93,29 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
     };
   }, [language.code, isLanguageLoaded, translate]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    try {
+      const raw = localStorage.getItem("cs_last_order");
+      if (raw) {
+        const order = JSON.parse(raw);
+        const product = order?.products?.[0] || {};
+        setOrderInfo({
+          orderId: order?.orderNumber || "",
+          date: new Date(order?.createdAt || Date.now()).toLocaleDateString(),
+          service: "Digital Subscription Access",
+          plan: product?.duration ? `${product.duration} Months` : "Plan",
+          total: `$${(order?.totalAmount || 0).toFixed(2)}`,
+        });
+      }
+    } catch {}
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-[70] font-secondary">
-      {/* Modal Content */}
-      <div className="bg-black rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 w-full max-w-sm sm:max-w-md md:max-w-lg mx-auto relative border border-[#FFFFFF26]">
-        {/* Close Button */}
+      <div className="bg-black rounded-2xl sm:rounded-3xl p-4 sm:pm-6 md:p-8 w-full max-w-sm sm:max-w-md md:max-w-lg mx-auto relative border border-[#FFFFFF26]">
         <button
           onClick={onClose}
           className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-6 md:right-6 text-white hover:text-gray-300 transition-colors"
@@ -100,7 +123,6 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
           <X size={20} className="sm:w-6 sm:h-6" />
         </button>
 
-        {/* Success Icon */}
         <div className="flex justify-center mb-4 sm:mb-6">
           <div className="bg-cyan-400 rounded-full w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center">
             <Check
@@ -111,7 +133,6 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-white text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 tracking-wide">
             {texts.title}
@@ -119,7 +140,6 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
           <p className="text-gray-300 text-xs sm:text-sm">{texts.subtitle}</p>
         </div>
 
-        {/* Order Details */}
         <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
           {/* Order ID */}
           <div className="flex justify-between items-center pt-2">
@@ -127,7 +147,7 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
               {texts.orderDetails.orderId}
             </span>
             <span className="text-white text-xs sm:text-sm font-medium">
-              {texts.orderValues.orderId}
+              {orderInfo.orderId}
             </span>
           </div>
 
@@ -137,7 +157,7 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
               {texts.orderDetails.date}
             </span>
             <span className="text-white text-xs sm:text-sm font-medium">
-              {texts.orderValues.date}
+              {orderInfo.date}
             </span>
           </div>
 
@@ -157,7 +177,7 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
               {texts.orderDetails.plan}
             </span>
             <span className="text-white text-xs sm:text-sm font-medium">
-              {texts.orderValues.plan}
+              {orderInfo.plan}
             </span>
           </div>
 
@@ -167,14 +187,13 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
               {texts.orderDetails.total}
             </span>
             <span className="text-white text-xs sm:text-sm font-medium">
-              {texts.orderValues.total}
+              {orderInfo.total}
             </span>
           </div>
         </div>
 
-        {/* Footer Text */}
         <div className="text-center space-y-2">
-          <p className="text-gray-300 text-xs">{texts.footer.receipt}</p>
+          <p className="text-white/75 text-xs">{texts.footer.receipt}</p>
           <p className="text-white/75 text-xs">{texts.footer.contact}</p>
         </div>
       </div>

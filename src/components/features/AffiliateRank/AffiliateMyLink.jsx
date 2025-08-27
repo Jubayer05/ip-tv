@@ -1,13 +1,27 @@
 "use client";
 
+import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Check, Copy } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, Copy, ExternalLink } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function ReferralLink() {
   const { language, translate, isLanguageLoaded } = useLanguage();
+  const { user } = useAuth();
   const [copied, setCopied] = useState(false);
-  const referralLink = "cheapstream.com/username.com";
+
+  // Prefer referral code if present; fallback to username
+  const referralCode = user?.referral?.code || "";
+  const username = user?.profile?.username || "";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+
+  const referralLink = useMemo(() => {
+    const id = referralCode || username;
+    if (!id) return "";
+    return `${baseUrl}/register?ref=${encodeURIComponent(id)}`;
+  }, [baseUrl, referralCode, username]);
 
   const ORIGINAL_HEADING = "YOUR UNIQUE REFERRAL LINK";
   const ORIGINAL_SUBTITLE =
@@ -55,12 +69,18 @@ export default function ReferralLink() {
 
   const handleCopy = async () => {
     try {
+      if (!referralLink) return;
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy text: ", err);
     }
+  };
+
+  const openLink = () => {
+    if (!referralLink) return;
+    window.open(referralLink, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -73,6 +93,20 @@ export default function ReferralLink() {
         <p className="text-gray-300 text-xs sm:text-sm">{subtitle}</p>
       </div>
 
+      {/* User/Code Summary */}
+      <div className="mb-3 sm:mb-4 text-xs sm:text-sm text-gray-300">
+        <div className="flex items-center gap-2">
+          <span className="text-gray-400">Username:</span>
+          <span className="text-white font-medium">{username || "-"}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-gray-400">Referral Code:</span>
+          <span className="text-white font-medium">
+            {referralCode || username || "-"}
+          </span>
+        </div>
+      </div>
+
       {/* Referral Link Input */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center bg-[#0c171c] rounded-lg border border-white/15">
@@ -80,8 +114,16 @@ export default function ReferralLink() {
             type="text"
             value={referralLink}
             readOnly
+            placeholder="Your referral link will appear here"
             className="flex-1 bg-transparent text-gray-300 px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm focus:outline-none"
           />
+          <button
+            onClick={openLink}
+            className="p-2 sm:p-3 hover:bg-gray-700 transition-colors duration-200 cursor-pointer"
+            aria-label="Open referral link"
+          >
+            <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+          </button>
           <button
             onClick={handleCopy}
             className="p-2 sm:p-3 hover:bg-gray-700 rounded-r-lg transition-colors duration-200 cursor-pointer"

@@ -1,46 +1,62 @@
 "use client";
 import TableCustom from "@/components/ui/TableCustom";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useState } from "react";
 
 const BillingTable = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
+  const { user, hasAdminAccess } = useAuth();
   const [billingData, setBillingData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const ORIGINAL_LOADING = "Loading billing data...";
   const ORIGINAL_ERROR = "Failed to load billing data";
-  const ORIGINAL_TITLE = "BILLING";
+  const ORIGINAL_TITLE = "ORDER HISTORY";
   const ORIGINAL_COLUMNS = {
-    id: "ID",
+    orderNumber: "Order Number",
+    customerName: "Customer Name",
     customerEmail: "Customer Email",
-    price: "Price",
-    date: "Date",
-    gateway: "Gateway",
-    status: "Status",
-    action: "Action",
+    userType: "User Type", // Add this new column
+    plan: "Plan",
+    devices: "Devices",
+    quantity: "Quantity",
+    totalAmount: "Total Amount",
+    orderStatus: "Order Status",
+    date: "Order Date",
   };
   const ORIGINAL_STATUSES = {
-    success: "Success",
-    failed: "Failed",
     pending: "Pending",
     completed: "Completed",
+    failed: "Failed",
+    refunded: "Refunded",
     cancelled: "Cancelled",
-    processing: "Processing",
   };
+
+  // Add filter state
+  const [userFilter, setUserFilter] = useState("all"); // "all", "registered", "guest"
 
   const [title, setTitle] = useState(ORIGINAL_TITLE);
   const [columns, setColumns] = useState(ORIGINAL_COLUMNS);
   const [statuses, setStatuses] = useState(ORIGINAL_STATUSES);
 
-  // Fetch billing data from BillGang API
-  const fetchBillingData = async () => {
+  // Fetch order data from Order model
+  const fetchOrderData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/payments/billgang/orders");
+      if (!user?.email) {
+        throw new Error("User not authenticated");
+      }
+
+      const isAdmin = hasAdminAccess();
+      const response = await fetch(
+        `/api/orders/user?email=${encodeURIComponent(
+          user.email
+        )}&isAdmin=${isAdmin}`
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -49,51 +65,67 @@ const BillingTable = () => {
       const data = await response.json();
 
       if (data.success && data.orders) {
-        setBillingData(data.orders);
+        // Transform the data to match table structure
+        const transformedData = data.orders.map((order, index) => {
+          const product = order.products?.[0] || {};
+          const customerName =
+            order.contactInfo?.fullName ||
+            (order.userId?.profile
+              ? `${order.userId.profile.firstName || ""} ${
+                  order.userId.profile.lastName || ""
+                }`.trim() ||
+                order.userId.profile.username ||
+                "Guest User"
+              : "Guest User");
+
+          return {
+            key: order._id || index.toString(),
+            orderNumber: order.orderNumber || `#${index + 1}`,
+            customerName: customerName,
+            customerEmail:
+              order.contactInfo?.email || order.guestEmail || "N/A",
+            userType: order.userId ? "Registered" : "Guest", // Add this field
+            plan: product.duration ? `${product.duration} Months` : "Plan",
+            devices: product.devicesAllowed || 1,
+            quantity: product.quantity || 1,
+            totalAmount: `$${(order.totalAmount || 0).toFixed(2)}`,
+            orderStatus: order.status || "completed",
+            date: new Date(order.createdAt || Date.now()).toLocaleDateString(
+              "en-US",
+              {
+                month: "2-digit",
+                day: "2-digit",
+                year: "numeric",
+              }
+            ),
+            // Additional data for potential future use
+            orderId: order._id,
+            contactInfo: order.contactInfo,
+            keys: order.keys,
+            discountAmount: order.discountAmount,
+            couponCode: order.couponCode,
+            userId: order.userId,
+          };
+        });
+        setBillingData(transformedData);
       } else {
         throw new Error(data.error || "Failed to fetch orders");
       }
     } catch (error) {
-      console.error("Error fetching billing data:", error);
+      console.error("Error fetching order data:", error);
       setError(error.message);
-      // Fallback to generated data if API fails
-      setBillingData(generateFallbackData());
+      setBillingData([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Generate fallback data if API fails
-  const generateFallbackData = () => {
-    const data = [];
-    for (let i = 1; i <= 10; i++) {
-      const status =
-        Object.values(statuses)[
-          Math.floor(Math.random() * Object.values(statuses).length)
-        ];
-      const price = (Math.random() * 500 + 50).toFixed(2);
-      const date = new Date();
-      date.setDate(date.getDate() - Math.floor(Math.random() * 365));
-
-      data.push({
-        key: i.toString(),
-        invoice: `#INVC${String(i).padStart(6, "0")}`,
-        price: `$${price}`,
-        date: date.toLocaleDateString("en-US", {
-          month: "2-digit",
-          day: "2-digit",
-          year: "numeric",
-        }),
-        status: status,
-      });
-    }
-    return data;
-  };
-
   useEffect(() => {
-    // Fetch data when component mounts
-    fetchBillingData();
-  }, []);
+    // Fetch data when component mounts or user changes
+    if (user?.email) {
+      fetchOrderData();
+    }
+  }, [user?.email, hasAdminAccess]);
 
   useEffect(() => {
     // Only translate when language is loaded and not English
@@ -105,16 +137,21 @@ const BillingTable = () => {
         ORIGINAL_LOADING,
         ORIGINAL_ERROR,
         ORIGINAL_TITLE,
-        ORIGINAL_COLUMNS.invoice,
-        ORIGINAL_COLUMNS.price,
+        ORIGINAL_COLUMNS.orderNumber,
+        ORIGINAL_COLUMNS.customerName,
+        ORIGINAL_COLUMNS.customerEmail,
+        ORIGINAL_COLUMNS.plan,
+        ORIGINAL_COLUMNS.devices,
+        ORIGINAL_COLUMNS.quantity,
+        ORIGINAL_COLUMNS.totalAmount,
+        ORIGINAL_COLUMNS.orderStatus,
         ORIGINAL_COLUMNS.date,
-        ORIGINAL_COLUMNS.status,
-        ORIGINAL_STATUSES.success,
-        ORIGINAL_STATUSES.failed,
+        ORIGINAL_COLUMNS.userType, // Add this to translation items
         ORIGINAL_STATUSES.pending,
         ORIGINAL_STATUSES.completed,
+        ORIGINAL_STATUSES.failed,
+        ORIGINAL_STATUSES.refunded,
         ORIGINAL_STATUSES.cancelled,
-        ORIGINAL_STATUSES.processing,
       ];
       const translated = await translate(items);
       if (!isMounted) return;
@@ -123,32 +160,42 @@ const BillingTable = () => {
         tLoading,
         tError,
         tTitle,
-        tInvoice,
-        tPrice,
+        tOrderNumber,
+        tCustomerName,
+        tCustomerEmail,
+        tPlan,
+        tDevices,
+        tQuantity,
+        tTotalAmount,
+        tOrderStatus,
         tDate,
-        tStatus,
-        tSuccess,
-        tFailed,
+        tUserType, // Add this to setColumns
         tPending,
         tCompleted,
+        tFailed,
+        tRefunded,
         tCancelled,
-        tProcessing,
       ] = translated;
 
       setTitle(tTitle);
       setColumns({
-        invoice: tInvoice,
-        price: tPrice,
+        orderNumber: tOrderNumber,
+        customerName: tCustomerName,
+        customerEmail: tCustomerEmail,
+        userType: tUserType, // Add this to setColumns
+        plan: tPlan,
+        devices: tDevices,
+        quantity: tQuantity,
+        totalAmount: tTotalAmount,
+        orderStatus: tOrderStatus,
         date: tDate,
-        status: tStatus,
       });
       setStatuses({
-        success: tSuccess,
-        failed: tFailed,
         pending: tPending,
         completed: tCompleted,
+        failed: tFailed,
+        refunded: tRefunded,
         cancelled: tCancelled,
-        processing: tProcessing,
       });
     })();
 
@@ -157,97 +204,161 @@ const BillingTable = () => {
     };
   }, [language.code, isLanguageLoaded, translate]);
 
-  const tableColumns = [
-    {
-      title: columns.invoice,
-      dataIndex: "invoice",
-      key: "invoice",
-      render: (text) => (
-        <span className="text-gray-300 text-xs sm:text-sm font-secondary pl-1 sm:pl-2 md:pl-5 break-all">
-          {text}
-        </span>
-      ),
-    },
-    {
-      title: columns.customerEmail,
-      dataIndex: "customerEmail",
-      key: "customerEmail",
-      render: (text) => (
-        <span className="text-gray-300 text-xs sm:text-sm font-secondary pl-1 sm:pl-2 md:pl-5 break-all">
-          {text}
-        </span>
-      ),
-    },
-    {
-      title: columns.gateway,
-      dataIndex: "gateway",
-      key: "gateway",
-      render: (text) => (
-        <span className="text-gray-300 text-xs sm:text-sm font-secondary pl-1 sm:pl-2 md:pl-5 break-all">
-          {text}
-        </span>
-      ),
-    },
-    {
-      title: columns.price,
-      dataIndex: "price",
-      key: "price",
-      align: "center",
-      render: (text) => (
-        <span className="text-gray-300 text-xs sm:text-sm font-secondary">
-          {text}
-        </span>
-      ),
-    },
-    {
-      title: columns.date,
-      dataIndex: "date",
-      key: "date",
-      align: "center",
-      render: (text) => (
-        <span className="text-gray-300 text-xs sm:text-sm font-secondary">
-          {text}
-        </span>
-      ),
-    },
-    {
-      title: columns.status,
-      dataIndex: "status",
-      key: "status",
-      align: "center",
-      render: (status) => {
-        // Map status to appropriate styling
-        let statusClass =
-          "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30";
-
-        if (status === statuses.success || status === statuses.completed) {
-          statusClass =
-            "bg-green-500/20 text-green-400 border border-green-500/30";
-        } else if (
-          status === statuses.failed ||
-          status === statuses.cancelled
-        ) {
-          statusClass = "bg-red-500/20 text-red-400 border border-red-500/30";
-        } else if (status === statuses.processing) {
-          statusClass =
-            "bg-blue-500/20 text-blue-400 border border-blue-500/30";
-        }
-
-        return (
-          <span
-            className={`px-2 sm:px-3 md:px-4 py-1 rounded-full text-xs font-medium font-secondary whitespace-nowrap ${statusClass}`}
-          >
-            {status}
+  // Build table columns based on user role
+  const buildTableColumns = () => {
+    const baseColumns = [
+      {
+        title: columns.orderNumber,
+        dataIndex: "orderNumber",
+        key: "orderNumber",
+        render: (text) => (
+          <span className="text-gray-300 text-xs sm:text-sm font-secondary pl-1 sm:pl-2 md:pl-5 break-all">
+            {text}
           </span>
-        );
+        ),
       },
-    },
-  ];
+    ];
+
+    // Add customer columns for admin users
+    if (hasAdminAccess()) {
+      baseColumns.push(
+        {
+          title: columns.customerName,
+          dataIndex: "customerName",
+          width: "150px",
+          align: "center",
+          key: "customerName",
+          render: (text) => (
+            <span className="text-gray-300 text-xs sm:text-sm font-secondary break-all">
+              {text}
+            </span>
+          ),
+        },
+        {
+          title: columns.customerEmail,
+          dataIndex: "customerEmail",
+          width: "250px",
+          key: "customerEmail",
+          render: (text) => (
+            <span className="text-gray-300 text-xs sm:text-sm font-secondary break-all">
+              {text}
+            </span>
+          ),
+        },
+        {
+          title: columns.userType,
+          dataIndex: "userType",
+          key: "userType",
+          align: "center",
+          width: "120px",
+          render: (text) => {
+            const isGuest = text === "Guest";
+            const statusClass = isGuest
+              ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+              : "bg-blue-500/20 text-blue-400 border border-blue-500/30";
+
+            return (
+              <span
+                className={`px-2 sm:px-3 md:px-4 py-1 rounded-full text-xs font-medium font-secondary whitespace-nowrap ${statusClass}`}
+              >
+                {text}
+              </span>
+            );
+          },
+        }
+      );
+    }
+
+    // Add remaining columns
+    baseColumns.push(
+      {
+        title: columns.plan,
+        dataIndex: "plan",
+        key: "plan",
+        align: "center",
+        render: (text) => (
+          <span className="text-gray-300 text-xs sm:text-sm font-secondary pl-1 sm:pl-2 md:pl-5 break-all">
+            {text}
+          </span>
+        ),
+      },
+      {
+        title: columns.devices,
+        dataIndex: "devices",
+        key: "devices",
+        align: "center",
+        render: (text) => (
+          <span className="text-gray-300 text-xs sm:text-sm font-secondary">
+            {text}
+          </span>
+        ),
+      },
+      {
+        title: columns.quantity,
+        dataIndex: "quantity",
+        key: "quantity",
+        align: "center",
+        render: (text) => (
+          <span className="text-gray-300 text-xs sm:text-sm font-secondary">
+            {text}
+          </span>
+        ),
+      },
+      {
+        title: columns.totalAmount,
+        dataIndex: "totalAmount",
+        key: "totalAmount",
+        align: "center",
+        render: (text) => (
+          <span className="text-gray-300 text-xs sm:text-sm font-secondary">
+            {text}
+          </span>
+        ),
+      },
+
+      {
+        title: columns.orderStatus,
+        dataIndex: "orderStatus",
+        key: "orderStatus",
+        align: "center",
+        render: (status) => {
+          // Map status to appropriate styling
+          let statusClass =
+            "bg-green-500/20 text-green-400 border border-green-500/30";
+
+          if (status === statuses.cancelled) {
+            statusClass = "bg-red-500/20 text-red-400 border border-red-500/30";
+          }
+
+          return (
+            <span
+              className={`px-2 sm:px-3 md:px-4 py-1 rounded-full text-xs font-medium font-secondary whitespace-nowrap ${statusClass}`}
+            >
+              {status}
+            </span>
+          );
+        },
+      },
+      {
+        title: columns.date,
+        dataIndex: "date",
+        key: "date",
+        align: "center",
+        render: (text) => (
+          <span className="text-gray-300 text-xs sm:text-sm font-secondary">
+            {text}
+          </span>
+        ),
+      }
+    );
+
+    return baseColumns;
+  };
 
   // Show loading state
   if (loading) {
     return (
-      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto font-secondary">
+      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-5xl mx-auto font-secondary">
         <div className="flex items-center justify-center h-20 sm:h-24 md:h-32">
           <div className="text-gray-400 text-xs sm:text-sm md:text-base text-center">
             {ORIGINAL_LOADING}
@@ -260,14 +371,14 @@ const BillingTable = () => {
   // Show error state
   if (error) {
     return (
-      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto font-secondary">
+      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6  w-full max-w-5xl mx-auto font-secondary">
         <div className="flex flex-col items-center justify-center h-20 sm:h-24 md:h-32">
           <div className="text-red-400 text-xs sm:text-sm md:text-base text-center mb-2">
             {ORIGINAL_ERROR}
           </div>
           <div className="text-gray-500 text-xs text-center">{error}</div>
           <button
-            onClick={fetchBillingData}
+            onClick={fetchOrderData}
             className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
           >
             Retry
@@ -280,22 +391,68 @@ const BillingTable = () => {
   // Show empty state
   if (billingData.length === 0) {
     return (
-      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto font-secondary">
+      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-5xl mx-auto font-secondary">
         <div className="flex items-center justify-center h-20 sm:h-24 md:h-32">
           <div className="text-gray-400 text-xs sm:text-sm md:text-base text-center">
-            No billing data available
+            {hasAdminAccess()
+              ? "No orders found in the system"
+              : "No orders found"}
           </div>
         </div>
       </div>
     );
   }
 
+  // Filter data based on user type
+  const filteredData = billingData.filter((order) => {
+    if (userFilter === "all") return true;
+    if (userFilter === "registered") return order.userType === "Registered";
+    if (userFilter === "guest") return order.userType === "Guest";
+    return true;
+  });
+
   return (
-    <div className="mt-4 sm:mt-6">
+    <div className="mt-4 sm:mt-6 font-secondary">
+      {/* Filter Buttons */}
+      {hasAdminAccess() && (
+        <div className="flex flex-wrap gap-2 mb-4 justify-center sm:justify-start">
+          <button
+            onClick={() => setUserFilter("all")}
+            className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              userFilter === "all"
+                ? "bg-cyan-400 text-black"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            }`}
+          >
+            All Users
+          </button>
+          <button
+            onClick={() => setUserFilter("registered")}
+            className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              userFilter === "registered"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            }`}
+          >
+            Registered Users
+          </button>
+          <button
+            onClick={() => setUserFilter("guest")}
+            className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              userFilter === "guest"
+                ? "bg-orange-600 text-white"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            }`}
+          >
+            Guest Users
+          </button>
+        </div>
+      )}
+
       <TableCustom
-        title={title}
-        data={billingData}
-        columns={tableColumns}
+        title={`${title}${hasAdminAccess() ? " - All Orders" : ""}`}
+        data={filteredData} // Use filtered data instead of billingData
+        columns={buildTableColumns()}
         pageSize={5}
         showButton={false}
         showPagination={true}

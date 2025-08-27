@@ -7,65 +7,37 @@ import { useEffect, useState } from "react";
 const PricingBanner = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
 
-  // Original text constants
-  const ORIGINAL_TEXTS = {
-    heading: {
-      main: "Watch More, Pay Less –",
-      highlight: "Choose Your Streaming Plans",
-    },
-    paragraph:
-      "At Cheap Stream, we believe in affordable entertainment without sacrificing quality. Whether you're a casual viewer or a full-on movie marathoner, we've got a plan that fits your lifestyle—and your budget.",
-    button: "Start with a Free Trial!",
-    trialNote: "*Try Cheap Stream free for 24 hours—no credit card required!",
-  };
-
-  // State for translated content
-  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+  const [heading1, setHeading1] = useState("Watch More, Pay Less –");
+  const [heading2, setHeading2] = useState("Choose Your Streaming Plans");
+  const [paragraph, setParagraph] = useState(
+    "At Cheap Stream, we believe in affordable entertainment without sacrificing quality. Whether you're a casual viewer or a full-on movie marathoner, we've got a plan that fits your lifestyle—and your budget."
+  );
+  const [buttonText, setButtonText] = useState("Start with a Free Trial!");
+  const [trialNote, setTrialNote] = useState(
+    "*Try Cheap Stream free for 24 hours—no credit card required!"
+  );
 
   useEffect(() => {
-    // Only translate when language is loaded and not English
-    if (!isLanguageLoaded || language.code === "en") return;
-
-    let isMounted = true;
-    (async () => {
+    // Fetch banner content from settings
+    const fetchBannerContent = async () => {
       try {
-        const items = [
-          ORIGINAL_TEXTS.heading.main,
-          ORIGINAL_TEXTS.heading.highlight,
-          ORIGINAL_TEXTS.paragraph,
-          ORIGINAL_TEXTS.button,
-          ORIGINAL_TEXTS.trialNote,
-        ];
-
-        const translated = await translate(items);
-        if (!isMounted) return;
-
-        const [
-          tHeadingMain,
-          tHeadingHighlight,
-          tParagraph,
-          tButton,
-          tTrialNote,
-        ] = translated;
-
-        setTexts({
-          heading: {
-            main: tHeadingMain,
-            highlight: tHeadingHighlight,
-          },
-          paragraph: tParagraph,
-          button: tButton,
-          trialNote: tTrialNote,
-        });
+        const response = await fetch("/api/admin/settings");
+        const data = await response.json();
+        if (data.success && data.data.banners?.pricing) {
+          const pricingBanner = data.data.banners.pricing;
+          setHeading1(pricingBanner.heading1 || heading1);
+          setHeading2(pricingBanner.heading2 || heading2);
+          setParagraph(pricingBanner.paragraph || paragraph);
+          setButtonText(pricingBanner.buttonText || buttonText);
+          setTrialNote(pricingBanner.trialNote || trialNote);
+        }
       } catch (error) {
-        console.error("Translation error:", error);
+        console.error("Failed to fetch banner content:", error);
       }
-    })();
-
-    return () => {
-      isMounted = false;
     };
-  }, [language.code, isLanguageLoaded, translate]);
+
+    fetchBannerContent();
+  }, []);
 
   return (
     <Polygon
@@ -77,17 +49,16 @@ const PricingBanner = () => {
         <div className="text-center max-w-[1000px] mx-auto">
           {/* Main heading */}
           <h1 className="polygon_heading uppercase">
-            {texts.heading.main}{" "}
-            <span className="text-primary">{texts.heading.highlight}</span>
+            {heading1} <span className="text-primary">{heading2}</span>
           </h1>
 
-          <p className="polygon_paragraph">{texts.paragraph}</p>
+          <p className="polygon_paragraph">{paragraph}</p>
 
           {/* Email input and button */}
           <Button size="md" className="font-secondary mt-4">
-            {texts.button}
+            {buttonText}
           </Button>
-          <p className="mt-4 polygon_paragraph">{texts.trialNote}</p>
+          <p className="mt-4 polygon_paragraph">{trialNote}</p>
         </div>
       </div>
     </Polygon>

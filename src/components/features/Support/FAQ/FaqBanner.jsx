@@ -7,49 +7,33 @@ import { useEffect, useState } from "react";
 const FaqBanner = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
 
-  // Original text constants
-  const ORIGINAL_TEXTS = {
-    heading: "LEARN HOW CHEAP STREAM WORKS",
-    paragraph:
-      "We've made watching your favorite movies and live channels easier than ever. No cables, no contracts—just non-stop entertainment at a price you'll love.",
-    button: "View Pricing Plans",
-  };
-
-  // State for translated content
-  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+  const [heading1, setHeading1] = useState("LEARN HOW CHEAP STREAM");
+  const [heading2, setHeading2] = useState("WORKS");
+  const [paragraph, setParagraph] = useState(
+    "We've made watching your favorite movies and live channels easier than ever. No cables, no contracts—just non-stop entertainment at a price you'll love."
+  );
+  const [buttonText, setButtonText] = useState("View Pricing Plans");
 
   useEffect(() => {
-    // Only translate when language is loaded and not English
-    if (!isLanguageLoaded || language.code === "en") return;
-
-    let isMounted = true;
-    (async () => {
+    // Fetch banner content from settings
+    const fetchBannerContent = async () => {
       try {
-        const items = [
-          ORIGINAL_TEXTS.heading,
-          ORIGINAL_TEXTS.paragraph,
-          ORIGINAL_TEXTS.button,
-        ];
-
-        const translated = await translate(items);
-        if (!isMounted) return;
-
-        const [tHeading, tParagraph, tButton] = translated;
-
-        setTexts({
-          heading: tHeading,
-          paragraph: tParagraph,
-          button: tButton,
-        });
+        const response = await fetch("/api/admin/settings");
+        const data = await response.json();
+        if (data.success && data.data.banners?.faq) {
+          const faqBanner = data.data.banners.faq;
+          setHeading1(faqBanner.heading1 || heading1);
+          setHeading2(faqBanner.heading2 || heading2);
+          setParagraph(faqBanner.paragraph || paragraph);
+          setButtonText(faqBanner.buttonText || buttonText);
+        }
       } catch (error) {
-        console.error("Translation error:", error);
+        console.error("Failed to fetch banner content:", error);
       }
-    })();
-
-    return () => {
-      isMounted = false;
     };
-  }, [language.code, isLanguageLoaded, translate]);
+
+    fetchBannerContent();
+  }, []);
 
   return (
     <Polygon
@@ -60,10 +44,11 @@ const FaqBanner = () => {
       <div className="relative z-10 flex items-center justify-center px-6 h-polygon">
         <div className="text-center max-w-4xl mx-auto">
           {/* Main heading */}
-          <h1 className="polygon_heading">{texts.heading}</h1>
+          <h1 className="polygon_heading">{heading1}</h1>
+          <h2 className="polygon_heading">{heading2}</h2>
 
-          <p className="polygon_paragraph">{texts.paragraph}</p>
-          <Button>{texts.button}</Button>
+          <p className="polygon_paragraph">{paragraph}</p>
+          <Button>{buttonText}</Button>
         </div>
       </div>
     </Polygon>

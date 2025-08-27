@@ -25,6 +25,7 @@ const verificationTokenSchema = new mongoose.Schema(
     firstName: String,
     lastName: String,
     username: String,
+    referralCode: String,
   },
   {
     timestamps: true,
@@ -47,11 +48,6 @@ verificationTokenSchema.statics.createToken = async function (email, userData) {
   // Delete any existing tokens for this email
   await this.deleteMany({ email });
 
-  // Log to debug
-  console.log("=== DEBUGGING TOKEN CREATION ===");
-  console.log("Email:", email);
-  console.log("UserData received:", userData);
-
   // Store data directly in the schema
   const tokenData = {
     email,
@@ -60,27 +56,13 @@ verificationTokenSchema.statics.createToken = async function (email, userData) {
     firstName: userData?.firstName || "",
     lastName: userData?.lastName || "",
     username: userData?.username || null,
+    referralCode: userData?.referralCode
+      ? String(userData.referralCode).toUpperCase()
+      : null,
   };
 
-  console.log("Token data to be created:", JSON.stringify(tokenData, null, 2));
-
-  try {
-    const tokenDoc = await this.create(tokenData);
-
-    // Log the created document to verify
-    console.log("=== TOKEN CREATED SUCCESSFULLY ===");
-    console.log("Created token document:", tokenDoc);
-    console.log("FirstName:", tokenDoc.firstName);
-    console.log("LastName:", tokenDoc.lastName);
-    console.log("Username:", tokenDoc.username);
-
-    return tokenDoc;
-  } catch (error) {
-    console.error("=== ERROR CREATING TOKEN ===");
-    console.error("Error:", error);
-    console.error("Token data that failed:", tokenData);
-    throw error;
-  }
+  const tokenDoc = await this.create(tokenData);
+  return tokenDoc;
 };
 
 // Verify token

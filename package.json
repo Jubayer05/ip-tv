@@ -18,16 +18,19 @@
     "mongodb": "^6.18.0",
     "mongoose": "^8.17.1",
     "next": "15.4.5",
-    "nodemailer": "^7.0.5",
+    "next-auth": "^4.24.11",
+    "nodemailer": "^6.10.1",
     "react": "19.1.0",
     "react-datepicker": "^8.7.0",
     "react-dom": "19.1.0",
+    "react-google-recaptcha": "^3.1.0",
     "react-hook-form": "^7.62.0",
     "react-icons": "^5.5.0",
     "react-modal": "^3.16.3",
     "react-phone-number-input": "^3.4.12",
     "react-slick": "^0.30.3",
-    "slick-carousel": "^1.8.1"
+    "slick-carousel": "^1.8.1",
+    "sweetalert2": "^11.22.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

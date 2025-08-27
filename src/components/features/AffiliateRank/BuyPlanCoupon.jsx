@@ -11,35 +11,33 @@ export default function BuyPlansWithCoupons() {
   const [heading, setHeading] = useState(ORIGINAL_HEADING);
   const [validTill, setValidTill] = useState(ORIGINAL_VALID_TILL);
 
-  const coupons = [
-    {
-      code: "WELCOME5",
-      validTill: "Apr 30, 2025",
-      discount: "5% Off",
-    },
-    {
-      code: "WELCOME5",
-      validTill: "Apr 30, 2025",
-      discount: "5% Off",
-    },
-  ];
+  const [coupons, setCoupons] = useState([]);
 
   useEffect(() => {
-    // Only translate when language is loaded and not English
-    if (!isLanguageLoaded || language.code === "en") return;
+    (async () => {
+      try {
+        const res = await fetch("/api/coupons?active=true&limit=2");
+        const data = await res.json();
+        if (data.success) {
+          setCoupons((data.coupons || []).slice(0, 2));
+        }
+      } catch (e) {
+        console.error("Coupon fetch error:", e);
+      }
+    })();
+  }, []);
 
+  useEffect(() => {
+    if (!isLanguageLoaded || language.code === "en") return;
     let isMounted = true;
     (async () => {
       const items = [ORIGINAL_HEADING, ORIGINAL_VALID_TILL];
       const translated = await translate(items);
       if (!isMounted) return;
-
       const [tHeading, tValidTill] = translated;
-
       setHeading(tHeading);
       setValidTill(tValidTill);
     })();
-
     return () => {
       isMounted = false;
     };
@@ -47,17 +45,15 @@ export default function BuyPlansWithCoupons() {
 
   return (
     <div className="bg-black border border-[#212121] text-white p-4 sm:p-6 rounded-lg w-full lg:max-w-md mx-auto -mt-3">
-      {/* Header with Badge */}
       <div className="flex items-center justify-between mb-4 -mt-2">
         <h2 className="text-base sm:text-lg font-bold tracking-wide">
           {heading}
         </h2>
         <div className="border-2 bg-primary/15 border-primary text-primary px-4 sm:px-6 py-[3px] rounded-full text-xs sm:text-sm font-medium">
-          2
+          {coupons.length}
         </div>
       </div>
 
-      {/* Coupon Cards */}
       <div className="space-y-2">
         {coupons.map((coupon, index) => (
           <div
@@ -70,11 +66,16 @@ export default function BuyPlansWithCoupons() {
                   {coupon.code}
                 </h3>
                 <p className="text-[#afafaf] text-xs">
-                  {validTill} {coupon.validTill}
+                  {validTill}{" "}
+                  {coupon.endDate
+                    ? new Date(coupon.endDate).toLocaleDateString()
+                    : "—"}
                 </p>
               </div>
               <div className="text-white font-bold text-xs sm:text-sm">
-                {coupon.discount}
+                {coupon.discountType === "percentage"
+                  ? `${coupon.discountValue}% Off`
+                  : `$${coupon.discountValue} Off`}
               </div>
             </div>
           </div>

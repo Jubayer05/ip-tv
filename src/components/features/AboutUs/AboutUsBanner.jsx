@@ -6,34 +6,33 @@ import { useEffect, useState } from "react";
 const AboutUsBanner = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
 
-  const ORIGINAL_HEADING =
-    "Streaming Shouldn't Break the Bank. We Make Sure It Doesn't.";
-  const ORIGINAL_PARAGRAPH =
-    "At Cheap Stream, we believe everyone deserves access to top-quality entertainment—without expensive cable bills, long-term contracts, or complicated setups. We're a passionate team of streamers, techies, and movie lovers who were tired of overpriced services and limited content. So, we created a better way.";
-
-  const [heading, setHeading] = useState(ORIGINAL_HEADING);
-  const [paragraph, setParagraph] = useState(ORIGINAL_PARAGRAPH);
+  const [heading1, setHeading1] = useState(
+    "Streaming Shouldn't Break the Bank."
+  );
+  const [heading2, setHeading2] = useState("We Make Sure It Doesn't.");
+  const [paragraph, setParagraph] = useState(
+    "At Cheap Stream, we believe everyone deserves access to top-quality entertainment—without expensive cable bills, long-term contracts, or complicated setups. We're a passionate team of streamers, techies, and movie lovers who were tired of overpriced services and limited content. So, we created a better way."
+  );
 
   useEffect(() => {
-    // Only translate when language is loaded and not English
-    if (!isLanguageLoaded || language.code === "en") return;
-
-    let isMounted = true;
-    (async () => {
-      const items = [ORIGINAL_HEADING, ORIGINAL_PARAGRAPH];
-      const translated = await translate(items);
-      if (!isMounted) return;
-
-      const [tHeading, tParagraph] = translated;
-
-      setHeading(tHeading);
-      setParagraph(tParagraph);
-    })();
-
-    return () => {
-      isMounted = false;
+    // Fetch banner content from settings
+    const fetchBannerContent = async () => {
+      try {
+        const response = await fetch("/api/admin/settings");
+        const data = await response.json();
+        if (data.success && data.data.banners?.about) {
+          const aboutBanner = data.data.banners.about;
+          setHeading1(aboutBanner.heading1 || heading1);
+          setHeading2(aboutBanner.heading2 || heading2);
+          setParagraph(aboutBanner.paragraph || paragraph);
+        }
+      } catch (error) {
+        console.error("Failed to fetch banner content:", error);
+      }
     };
-  }, [language.code, isLanguageLoaded, translate]);
+
+    fetchBannerContent();
+  }, []);
 
   return (
     <Polygon
@@ -45,7 +44,7 @@ const AboutUsBanner = () => {
         <div className="text-center mx-auto">
           {/* Main heading */}
           <h1 className="text-white text-4xl md:text-[40px] font-bold mb-3 leading-tight">
-            {heading}
+            {heading1} {heading2}
           </h1>
 
           <p className="text-white text-sm font-medium mb-6 leading-tight font-secondary">

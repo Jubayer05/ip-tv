@@ -5,7 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function LoginComponent() {
   const [formData, setFormData] = useState({
@@ -15,9 +16,11 @@ export default function LoginComponent() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
 
   const { login } = useAuth();
   const router = useRouter();
+  const recaptchaRef = useRef();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,12 +33,26 @@ export default function LoginComponent() {
       return;
     }
 
-    const result = await login(formData.email, formData.password);
+    // Check if reCAPTCHA is completed
+    if (!recaptchaToken) {
+      setError("Please complete the reCAPTCHA verification.");
+      setLoading(false);
+      return;
+    }
+
+    const result = await login(
+      formData.email,
+      formData.password,
+      recaptchaToken
+    );
 
     if (result.success) {
       router.push("/dashboard");
     } else {
       setError(result.error);
+      // Reset reCAPTCHA on error
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
     }
 
     setLoading(false);
@@ -46,6 +63,11 @@ export default function LoginComponent() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleRecaptchaChange = (token) => {
+    setRecaptchaToken(token);
+    setError(""); // Clear any previous errors
   };
 
   return (
@@ -126,10 +148,20 @@ export default function LoginComponent() {
             </Link>
           </div>
 
+          {/* reCAPTCHA */}
+          <div className="flex justify-center">
+            <ReCAPTCHA
+              ref={recaptchaRef}
+              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+              onChange={handleRecaptchaChange}
+              theme="dark"
+            />
+          </div>
+
           {/* Submit Button */}
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || !recaptchaToken}
             className="w-full flex items-center justify-center gap-2"
           >
             {loading ? "Signing in..." : "Sign In"}
@@ -146,8 +178,8 @@ export default function LoginComponent() {
 
         {/* Register Link */}
         <div className="text-center">
-          <p className="text-gray-400 text-sm">
-            Don't have an account?{" "}
+          <p className="text-gray-400 text-sm font-secondary">
+            Don&apos;t have an account?{" "}
             <Link
               href="/register"
               className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"

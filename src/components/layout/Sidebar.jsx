@@ -6,6 +6,7 @@ import {
   BarChart3,
   CreditCard,
   Gift,
+  HelpCircle,
   History,
   List,
   Monitor,
@@ -23,10 +24,11 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(false);
   const { language, translate } = useLanguage();
-  const { userRole, hasAdminAccess, isSuperAdminUser } = useAuth();
+  const { user, hasAdminAccess, isSuperAdminUser } = useAuth();
 
   const ORIGINAL_BACK_TO_TEXT = "Back to Cheap Stream";
 
+  // User menu items (regular users)
   // User menu items (regular users)
   const ORIGINAL_USER_MENU_ITEMS = [
     {
@@ -50,12 +52,19 @@ export default function Sidebar() {
       icon: CreditCard,
     },
     {
+      href: "/dashboard/support",
+      label: "Support Tickets",
+      icon: Ticket,
+    },
+    {
       href: "/dashboard/settings",
       label: "Settings",
       icon: Settings,
     },
   ];
 
+  // Admin menu items (admin, support, super admin)
+  // ...
   // Admin menu items (admin, support, super admin)
   const ORIGINAL_ADMIN_MENU_ITEMS = [
     {
@@ -89,6 +98,16 @@ export default function Sidebar() {
       icon: Gift,
     },
     {
+      href: "/admin/affiliate",
+      label: "Affiliate Management",
+      icon: Gift,
+    },
+    {
+      href: "/admin/rank-system",
+      label: "Rank System",
+      icon: BarChart3,
+    },
+    {
       href: "/admin/support",
       label: "Support Tickets",
       icon: Ticket,
@@ -99,15 +118,32 @@ export default function Sidebar() {
       icon: BarChart3,
     },
     {
+      href: "/admin/faq", // Add new FAQ management route
+      label: "FAQ Management",
+      icon: HelpCircle, // Use HelpCircle icon for FAQ
+    },
+    {
       href: "/admin/settings",
       label: "System Settings",
       icon: Settings,
     },
   ];
 
+  const SUPPORT_ONLY_MENU = [
+    {
+      href: "/admin/support",
+      label: "Support Tickets",
+      icon: Ticket,
+    },
+  ];
+
   // Determine which menu items to show based on user role
   const getMenuItems = () => {
+    if (user.role === "support") {
+      return SUPPORT_ONLY_MENU;
+    }
     if (hasAdminAccess()) {
+      // If support (and not super admin), show only Support menu
       return ORIGINAL_ADMIN_MENU_ITEMS;
     }
     return ORIGINAL_USER_MENU_ITEMS;
@@ -119,7 +155,7 @@ export default function Sidebar() {
   useEffect(() => {
     // Update menu items when user role changes
     setMenuItems(getMenuItems());
-  }, [userRole, hasAdminAccess]);
+  }, [user.role, hasAdminAccess]);
 
   useEffect(() => {
     let isMounted = true;
@@ -147,7 +183,7 @@ export default function Sidebar() {
     return () => {
       isMounted = false;
     };
-  }, [language.code, userRole, hasAdminAccess]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [language.code, user.role, hasAdminAccess]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset sidebar to collapsed state when pathname changes
   useEffect(() => {
@@ -210,7 +246,7 @@ export default function Sidebar() {
             <span className="text-green-400 text-sm font-medium">
               {isSuperAdminUser()
                 ? "Super Admin"
-                : userRole === "admin"
+                : user.role === "admin"
                 ? "Administrator"
                 : "Support"}
             </span>

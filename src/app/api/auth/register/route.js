@@ -6,11 +6,40 @@ import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
+    const body = await request.json();
+    const {
+      email,
+      firstName,
+      lastName,
+      username,
+      referralCode,
+      recaptchaToken,
+    } = body;
+
+    // Verify reCAPTCHA
+    if (!recaptchaToken) {
+      return NextResponse.json(
+        { error: "reCAPTCHA verification required" },
+        { status: 400 }
+      );
+    }
+
+    // Verify reCAPTCHA with Google
+    const recaptchaResponse = await fetch(
+      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
+      { method: "POST" }
+    );
+
+    const recaptchaData = await recaptchaResponse.json();
+
+    if (!recaptchaData.success) {
+      return NextResponse.json(
+        { error: "reCAPTCHA verification failed" },
+        { status: 400 }
+      );
+    }
+
     await connectToDatabase();
-
-    const { email, firstName, lastName, username } = await request.json();
-
-    
 
     // Validation - firstName and lastName are required
     if (!email || !firstName || !lastName) {
@@ -42,17 +71,12 @@ export async function POST(request) {
       }
     }
 
-    // Create verification token with user data (firstName, lastName, username)
-    console.log("About to create token with userData:", {
-      firstName,
-      lastName,
-      username: username || null,
-    });
-
+    // Create verification token with user data (firstName, lastName, username, referralCode)
     const verificationToken = await VerificationToken.createToken(email, {
       firstName,
       lastName,
       username: username || null,
+      referralCode: referralCode ? String(referralCode).toUpperCase() : null,
     });
 
     // Send verification email

@@ -1,7 +1,9 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ArrowRight, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 import NotRegisterPopup from "./NotRegisterPopup";
+import PaymentConfirmPopup from "./PaymentConfirmPopup";
 import ThankRegisterPopup from "./ThankRegisterPopup";
 
 export default function RegisterFormPopup({ isOpen, onClose }) {
@@ -10,6 +12,7 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
   const [email, setEmail] = useState("");
   const [showThankYou, setShowThankYou] = useState(false);
   const [showNotRegister, setShowNotRegister] = useState(false);
+  const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
 
   // Original text constants
   const ORIGINAL_TEXTS = {
@@ -79,10 +82,64 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
     };
   }, [language.code, isLanguageLoaded, translate]);
 
-  const handleSubmit = () => {
-    // Handle form submission here
-    console.log("Form submitted:", { fullName, email });
-    setShowThankYou(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleGuestOrder = async () => {
+    if (submitting) return;
+    if (!fullName.trim() || !email.trim()) {
+      Swal.fire({
+        icon: "warning",
+        title: "Missing Information",
+        text: "Please enter your full name and email",
+        confirmButtonColor: "#00b877",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const selRaw = localStorage.getItem("cs_order_selection");
+      const sel = selRaw ? JSON.parse(selRaw) : null;
+      if (!sel || !sel.productId || !sel.variantId) {
+        throw new Error("Missing order selection");
+      }
+
+      const payload = {
+        productId: sel.productId,
+        variantId: sel.variantId,
+        quantity: Number(
+          sel.isCustomQuantity ? sel.quantity || 1 : sel.quantity || 1
+        ),
+        devicesAllowed: Number(sel.devices || 1),
+        adultChannels: !!sel.adultChannels,
+        guestEmail: email,
+        contactInfo: { fullName, email, phone: "" },
+        paymentMethod: "Manual",
+        paymentGateway: "None",
+      };
+
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || "Failed to place order");
+      }
+      const data = await res.json();
+      try {
+        localStorage.setItem("cs_last_order", JSON.stringify(data.order));
+      } catch {}
+
+      // SHOW PAYMENT CONFIRM POPUP
+      setShowPaymentConfirm(true);
+    } finally {
+      // reset the initial state
+      setFullName("");
+      setEmail("");
+      setSubmitting(false);
+    }
   };
 
   const closeThankYou = () => {
@@ -97,6 +154,11 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
 
   const closeNotRegister = () => {
     setShowNotRegister(false);
+  };
+
+  const closePaymentConfirm = () => {
+    setShowPaymentConfirm(false);
+    onClose(); // Close the main popup after payment confirmation
   };
 
   if (!isOpen) return null;
@@ -156,11 +218,21 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
 
             {/* Submit Button */}
             <button
-              onClick={handleSubmit}
-              className="w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2 mt-6 sm:mt-8 font-secondary"
+              onClick={handleGuestOrder}
+              disabled={submitting}
+              className="cursor-pointer w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2 mt-6 sm:mt-8 font-secondary disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {texts.form.submitButton}
-              <ArrowRight size={16} className="sm:w-5 sm:h-5" />
+              {submitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  {texts.form.submitButton}
+                  <ArrowRight size={16} className="sm:w-5 sm:h-5" />
+                </>
+              )}
             </button>
 
             {/* Footer Text */}
@@ -168,7 +240,7 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
               {texts.footer.or}{" "}
               <button
                 onClick={handleCreateAccount}
-                className="text-primary hover:text-cyan-300 underline cursor-pointer"
+                className="text-white/75 hover:text-cyan-300 underline cursor-pointer"
               >
                 {texts.footer.createAccount}
               </button>{" "}
@@ -183,6 +255,12 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
 
       {/* Not Register Popup */}
       <NotRegisterPopup isOpen={showNotRegister} onClose={closeNotRegister} />
+
+      {/* Payment Confirm Popup */}
+      <PaymentConfirmPopup
+        isOpen={showPaymentConfirm}
+        onClose={closePaymentConfirm}
+      />
     </>
   );
 }

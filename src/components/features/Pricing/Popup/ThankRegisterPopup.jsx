@@ -1,11 +1,18 @@
+"use client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ArrowRight, Check, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
+import GatewaySelectPopup from "./GatewaySelectPopup";
 import PaymentConfirmPopup from "./PaymentConfirmPopup";
 
 export default function ThankRegisterPopup({ isOpen, onClose }) {
   const { language, translate, isLanguageLoaded } = useLanguage();
+  const { user } = useAuth();
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
+  const [placing, setPlacing] = useState(false);
+  const [showGatewaySelect, setShowGatewaySelect] = useState(false);
 
   // Original text constants
   const ORIGINAL_TEXTS = {
@@ -14,8 +21,8 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
       "Check your email for IPTV details and a secure link to view your order history.",
     buttons: {
       backToHome: "Back To Home Page",
-      paymentConfirm: "Payment Confirm Popup",
-      createAccount: "Create Account To Unlock Even More Benefits.",
+      paymentConfirm: "Confirm Your Payment ",
+      cancel: "Cancel",
     },
     footer: {
       receipt: "A receipt has been sent to your email.",
@@ -69,18 +76,75 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
     };
   }, [language.code, isLanguageLoaded, translate]);
 
-  const handleBackToHome = () => {
-    // Handle navigation to home page
-    onClose();
-  };
+  const handlePaymentConfirm = async () => {
+    if (placing) return;
+    setPlacing(true);
+    try {
+      const selRaw = localStorage.getItem("cs_order_selection");
+      const sel = selRaw ? JSON.parse(selRaw) : null;
+      if (!sel || !sel.productId || !sel.variantId) {
+        throw new Error("Missing order selection");
+      }
 
-  const handleCreateAccount = () => {
-    // Handle create account action
-    onClose();
-  };
+      const payload = {
+        userId: user?._id,
+        productId: sel.productId,
+        variantId: sel.variantId,
+        quantity: Number(
+          sel.isCustomQuantity ? sel.quantity || 1 : sel.quantity || 1
+        ),
+        devicesAllowed: Number(sel.devices || 1),
+        adultChannels: !!sel.adultChannels,
+        couponCode: "",
+        paymentMethod: "Manual",
+        paymentGateway: "None",
+        paymentStatus: "completed", // ensure completion on create
+        contactInfo: {
+          fullName:
+            `${user?.profile?.firstName || ""} ${
+              user?.profile?.lastName || ""
+            }`.trim() ||
+            user?.profile?.username ||
+            user?.email,
+          email: user?.email,
+          phone: user?.profile?.phone || "",
+        },
+      };
 
-  const handlePaymentConfirm = () => {
-    setShowPaymentConfirm(true);
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || "Failed to place order");
+      }
+      const data = await res.json();
+
+      // Fallback: if backend still returns pending, force-complete it
+      if (data?.order?._id && data?.order?.paymentStatus !== "completed") {
+        await fetch(`/api/orders/${data.order._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentStatus: "completed" }),
+        });
+      }
+
+      try {
+        localStorage.setItem("cs_last_order", JSON.stringify(data.order));
+      } catch {}
+      setShowPaymentConfirm(true);
+    } catch (e) {
+      console.error(e);
+      Swal.fire({ 
+        icon: "error", 
+        title: "Order Failed", 
+        text: e?.message || "Failed to place order" 
+      });
+    } finally {
+      setPlacing(false);
+    }
   };
 
   const closePaymentConfirm = () => {
@@ -92,9 +156,7 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50 font-secondary">
-        {/* Modal Content */}
-        <div className="bg-black rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 w-full max-w-sm sm:max-w-md md:max-w-lg mx-auto relative border border-[#FFFFFF26]">
-          {/* Close Button */}
+        <div className="bg-black rounded-2xl sm:rounded-3xl p-4 sm:pm-6 md:p-8 w-full max-w-sm sm:max-w-md md:max-w-[lg] mx-auto relative border border-[#FFFFFF26]">
           <button
             onClick={onClose}
             className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-6 md:right-6 text-white hover:text-gray-300 transition-colors"
@@ -102,7 +164,6 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
             <X size={20} className="sm:w-6 sm:h-6" />
           </button>
 
-          {/* Success Icon */}
           <div className="flex justify-center mb-4 sm:mb-6">
             <div className="bg-cyan-400 rounded-full w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center">
               <Check
@@ -113,7 +174,6 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Header */}
           <div className="text-center mb-6 sm:mb-8">
             <h1 className="text-white text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 tracking-wide">
               {texts.title}
@@ -123,36 +183,24 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
             </p>
           </div>
 
-          {/* Action Buttons */}
           <div className="space-y-3 sm:space-y-4">
-            {/* Back to Home Button */}
             <button
-              onClick={handleBackToHome}
-              className="w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2"
-            >
-              {texts.buttons.backToHome}
-              <ArrowRight size={16} className="sm:w-5 sm:h-5" />
-            </button>
-
-            {/* Payment Confirm Button */}
-            <button
-              onClick={handlePaymentConfirm}
-              className="w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2"
+              onClick={() => setShowGatewaySelect(true)}
+              disabled={placing}
+              className="w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {texts.buttons.paymentConfirm}
               <ArrowRight size={16} className="sm:w-5 sm:h-5" />
             </button>
 
-            {/* Create Account Button */}
             <button
-              onClick={handleCreateAccount}
+              onClick={onClose}
               className="w-full bg-transparent border-2 border-primary text-primary py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-400 hover:text-black transition-colors"
             >
-              {texts.buttons.createAccount}
+              {texts.buttons.cancel}
             </button>
           </div>
 
-          {/* Footer Text */}
           <div className="text-center mt-6 sm:mt-8 space-y-2">
             <p className="text-gray-300 text-xs">{texts.footer.receipt}</p>
             <p className="text-gray-400 text-xs">{texts.footer.contact}</p>
@@ -160,10 +208,15 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* Payment Confirm Popup */}
       <PaymentConfirmPopup
         isOpen={showPaymentConfirm}
         onClose={closePaymentConfirm}
+      />
+
+      <GatewaySelectPopup
+        isOpen={showGatewaySelect}
+        onClose={() => setShowGatewaySelect(false)}
+        onSuccess={handlePaymentConfirm}
       />
     </>
   );

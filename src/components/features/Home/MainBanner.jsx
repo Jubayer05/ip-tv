@@ -7,18 +7,35 @@ import { useEffect, useState } from "react";
 const MainBanner = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
 
-  const ORIGINAL_HEADING_1 = "YOUR TICKET TO ENDLESS";
-  const ORIGINAL_HEADING_2 = "ENTERTAINMENT";
-  const ORIGINAL_PARAGRAPH =
-    "Why pay more when you can stream smarter? Cheap Stream brings you thousands of movies at the best price. Whether you love action, drama, comedy, or horror, we have something for everyone—all in HD & 4K quality with zero buffering.";
-  const ORIGINAL_PLACEHOLDER = "Email Address";
-  const ORIGINAL_BUTTON = "Get Started";
+  const [heading1, setHeading1] = useState("YOUR TICKET TO ENDLESS");
+  const [heading2, setHeading2] = useState("ENTERTAINMENT");
+  const [paragraph, setParagraph] = useState(
+    "Why pay more when you can stream smarter? Cheap Stream brings you thousands of movies at the best price. Whether you love action, drama, comedy, or horror, we have something for everyone—all in HD & 4K quality with zero buffering."
+  );
+  const [placeholder, setPlaceholder] = useState("Email Address");
+  const [buttonText, setButtonText] = useState("Get Started");
 
-  const [heading1, setHeading1] = useState(ORIGINAL_HEADING_1);
-  const [heading2, setHeading2] = useState(ORIGINAL_HEADING_2);
-  const [paragraph, setParagraph] = useState(ORIGINAL_PARAGRAPH);
-  const [placeholder, setPlaceholder] = useState(ORIGINAL_PLACEHOLDER);
-  const [buttonText, setButtonText] = useState(ORIGINAL_BUTTON);
+  useEffect(() => {
+    // Fetch banner content from settings
+    const fetchBannerContent = async () => {
+      try {
+        const response = await fetch("/api/admin/settings");
+        const data = await response.json();
+        if (data.success && data.data.banners?.home) {
+          const homeBanner = data.data.banners.home;
+          setHeading1(homeBanner.heading1 || heading1);
+          setHeading2(homeBanner.heading2 || heading2);
+          setParagraph(homeBanner.paragraph || paragraph);
+          setPlaceholder(homeBanner.placeholder || placeholder);
+          setButtonText(homeBanner.buttonText || buttonText);
+        }
+      } catch (error) {
+        console.error("Failed to fetch banner content:", error);
+      }
+    };
+
+    fetchBannerContent();
+  }, []);
 
   useEffect(() => {
     // Only translate when language is loaded and not English
@@ -26,13 +43,7 @@ const MainBanner = () => {
 
     let isMounted = true;
     (async () => {
-      const items = [
-        ORIGINAL_HEADING_1,
-        ORIGINAL_HEADING_2,
-        ORIGINAL_PARAGRAPH,
-        ORIGINAL_PLACEHOLDER,
-        ORIGINAL_BUTTON,
-      ];
+      const items = [heading1, heading2, paragraph, placeholder, buttonText];
       const translated = await translate(items);
       if (!isMounted) return;
 
@@ -49,7 +60,16 @@ const MainBanner = () => {
     return () => {
       isMounted = false;
     };
-  }, [language.code, isLanguageLoaded, translate]);
+  }, [
+    language.code,
+    isLanguageLoaded,
+    translate,
+    heading1,
+    heading2,
+    paragraph,
+    placeholder,
+    buttonText,
+  ]);
 
   return (
     <Polygon imageBg="/background/banner_bg.webp">

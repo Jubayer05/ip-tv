@@ -3,6 +3,7 @@ import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import { AuthContextProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { UserSpendingContextProvider } from "@/contexts/UserSpendingContext";
 import { Manrope, Rajdhani } from "next/font/google";
 import "./globals.css";
 
@@ -31,12 +32,14 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${rajdhani.variable} ${manrope.variable}`}>
       <body className="antialiased font-primary">
         <AuthContextProvider>
-          <LanguageProvider>
-            <Navbar />
-            <ScrollToTop />
-            <main className="min-h-screen">{children}</main>
-            <Footer />
-          </LanguageProvider>
+          <UserSpendingContextProvider>
+            <LanguageProvider>
+              <Navbar />
+              <ScrollToTop />
+              <main className="min-h-screen">{children}</main>
+              <Footer />
+            </LanguageProvider>
+          </UserSpendingContextProvider>
         </AuthContextProvider>
       </body>
     </html>

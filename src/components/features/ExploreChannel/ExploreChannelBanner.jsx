@@ -14,6 +14,36 @@ const ExploreChannelBanner = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  const [heading1, setHeading1] = useState("Explore Our");
+  const [heading2, setHeading2] = useState("Channel Collection");
+  const [paragraph, setParagraph] = useState(
+    "Discover thousands of channels, movies, and TV shows from around the world. From live sports to blockbuster movies, we have something for everyone."
+  );
+  const [watchNow, setWatchNow] = useState("Watch Now");
+  const [myWishlist, setMyWishlist] = useState("My Wishlist");
+
+  useEffect(() => {
+    // Fetch banner content from settings
+    const fetchBannerContent = async () => {
+      try {
+        const response = await fetch("/api/admin/settings");
+        const data = await response.json();
+        if (data.success && data.data.banners?.explore) {
+          const exploreBanner = data.data.banners.explore;
+          setHeading1(exploreBanner.heading1 || heading1);
+          setHeading2(exploreBanner.heading2 || heading2);
+          setParagraph(exploreBanner.paragraph || paragraph);
+          setWatchNow(exploreBanner.watchNow || watchNow);
+          setMyWishlist(exploreBanner.myWishlist || myWishlist);
+        }
+      } catch (error) {
+        console.error("Failed to fetch banner content:", error);
+      }
+    };
+
+    fetchBannerContent();
+  }, []);
+
   // Original text constants
   const ORIGINAL_SLIDES = [
     {

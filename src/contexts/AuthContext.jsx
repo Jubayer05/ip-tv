@@ -1,5 +1,5 @@
 "use client";
-import { auth } from "@/lib/firebase"; // Import auth directly
+import { auth } from "@/lib/firebase";
 import {
   applyActionCode,
   createUserWithEmailAndPassword,
@@ -24,7 +24,6 @@ export const useAuth = () => {
 
 export const AuthContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Check if user is super admin
@@ -34,11 +33,7 @@ export const AuthContextProvider = ({ children }) => {
 
   // Check if user has admin privileges
   const hasAdminAccess = () => {
-    return (
-      userRole === "admin" ||
-      userRole === "support" ||
-      isSuperAdmin(user?.email)
-    );
+    return user?.role === "admin" || isSuperAdmin(user?.email);
   };
 
   // Check if user is super admin
@@ -46,52 +41,89 @@ export const AuthContextProvider = ({ children }) => {
     return isSuperAdmin(user?.email);
   };
 
+  // Fetch MongoDB user data
+  const fetchUserData = async (email) => {
+    try {
+      const response = await fetch(
+        `/api/users/profile?email=${encodeURIComponent(email)}`
+      );
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Transform the data to match our expected structure
+          return {
+            _id: result.data._id, // MongoDB document ID
+            email: result.data.email,
+            role: result.data.role,
+            profile: {
+              firstName: result.data.firstName,
+              lastName: result.data.lastName,
+              username: result.data.username,
+              avatar: result.data.avatar,
+              dateOfBirth: result.data.dateOfBirth,
+              country: result.data.country,
+              phone: result.data.phone,
+            },
+            // Add other fields that might be available
+            balance: result.data.balance || 0,
+            rank: result.data.rank || {
+              level: "bronze",
+              totalSpent: 0,
+              discountPercentage: 5,
+            },
+            referral: result.data.referral || {
+              code: null,
+              referredBy: null,
+              earnings: 0,
+            },
+            settings: result.data.settings || {
+              notifications: true,
+              twoFactorEnabled: false,
+            },
+            isActive: result.data.isActive !== false,
+            lastLogin: result.data.lastLogin,
+            createdAt: result.data.createdAt,
+            updatedAt: result.data.updatedAt,
+          };
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      return null;
+    }
+  };
+
   useEffect(() => {
-    // Use auth directly instead of getFirebaseAuth()
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser) {
-          setUser(firebaseUser);
+          // Fetch MongoDB user data instead of storing Firebase user
+          const mongoUser = await fetchUserData(firebaseUser.email);
 
-          // Fetch user role from MongoDB using email (since documents don't have firebaseUid)
-          try {
-            const response = await fetch(
-              `/api/users/${firebaseUser.email}/role`
-            );
-
-            if (response.ok) {
-              const data = await response.json();
-              setUserRole(data.role);
-            } else {
-              // If no role found, set default role
-              setUserRole("user");
-            }
-          } catch (error) {
-            console.error("Error fetching user role:", error);
-            setUserRole("user");
+          if (mongoUser) {
+            // Set MongoDB user data as the main user state
+            setUser(mongoUser);
+          } else {
+            // If no MongoDB user found, create a minimal user object
+            setUser({
+              email: firebaseUser.email,
+              role: isSuperAdmin(firebaseUser.email) ? "admin" : "user",
+              profile: {
+                firstName: firebaseUser.displayName?.split(" ")[0] || "",
+                lastName:
+                  firebaseUser.displayName?.split(" ").slice(1).join(" ") || "",
+                username: firebaseUser.displayName || "",
+                avatar: firebaseUser.photoURL || "",
+              },
+            });
           }
         } else {
           setUser(null);
-          setUserRole(null);
         }
       } catch (error) {
-        // Handle Firebase auth errors gracefully
-        console.error("Firebase auth error:", error);
-
-        // Provide custom error messages instead of Firebase technical errors
-        if (error.code === "auth/invalid-credential") {
-          console.error("Authentication failed: Invalid credentials");
-        } else if (error.code === "auth/user-not-found") {
-          console.error("Authentication failed: User not found");
-        } else if (error.code === "auth/network-request-failed") {
-          console.error("Authentication failed: Network error");
-        } else {
-          console.error("Authentication failed: Unknown error");
-        }
-
-        // Clear user state on error
+        console.error("Auth error:", error);
         setUser(null);
-        setUserRole(null);
       } finally {
         setLoading(false);
       }
@@ -111,7 +143,7 @@ export const AuthContextProvider = ({ children }) => {
     const { skipDb = false } = options;
     try {
       const userCredential = await createUserWithEmailAndPassword(
-        auth, // Use auth directly
+        auth,
         email,
         password
       );
@@ -144,6 +176,12 @@ export const AuthContextProvider = ({ children }) => {
         if (!response.ok) {
           throw new Error("Failed to create user in database");
         }
+
+        // Fetch the newly created user data
+        const mongoUser = await fetchUserData(email);
+        if (mongoUser) {
+          setUser(mongoUser);
+        }
       }
 
       return {
@@ -159,7 +197,7 @@ export const AuthContextProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const userCredential = await signInWithEmailAndPassword(
-        auth, // Use auth directly
+        auth,
         email,
         password
       );
@@ -171,6 +209,12 @@ export const AuthContextProvider = ({ children }) => {
         });
       } catch (error) {
         console.error("Error updating last login:", error);
+      }
+
+      // Fetch updated user data after login
+      const mongoUser = await fetchUserData(email);
+      if (mongoUser) {
+        setUser(mongoUser);
       }
 
       return { success: true, user: userCredential.user };
@@ -201,7 +245,8 @@ export const AuthContextProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await signOut(auth); // Use auth directly
+      await signOut(auth);
+      setUser(null);
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
@@ -210,7 +255,7 @@ export const AuthContextProvider = ({ children }) => {
 
   const resetPassword = async (email) => {
     try {
-      await sendPasswordResetEmail(auth, email); // Use auth directly
+      await sendPasswordResetEmail(auth, email);
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
@@ -220,7 +265,6 @@ export const AuthContextProvider = ({ children }) => {
   const resendVerificationEmail = async () => {
     try {
       if (auth.currentUser) {
-        // Use auth directly
         await sendEmailVerification(auth.currentUser);
         return { success: true };
       }
@@ -232,16 +276,26 @@ export const AuthContextProvider = ({ children }) => {
 
   const verifyEmail = async (actionCode) => {
     try {
-      await applyActionCode(auth, actionCode); // Use auth directly
+      await applyActionCode(auth, actionCode);
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
     }
   };
 
+  // Function to refresh user data (useful for profile updates)
+  const refreshUserData = async () => {
+    if (user?.email) {
+      const mongoUser = await fetchUserData(user.email);
+      if (mongoUser) {
+        setUser(mongoUser);
+      }
+    }
+  };
+
   const value = {
     user,
-    userRole,
+    loading,
     hasAdminAccess,
     isSuperAdminUser,
     signup,
@@ -250,7 +304,7 @@ export const AuthContextProvider = ({ children }) => {
     resetPassword,
     resendVerificationEmail,
     verifyEmail,
-    loading,
+    refreshUserData,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

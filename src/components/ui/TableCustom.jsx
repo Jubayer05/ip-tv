@@ -31,7 +31,7 @@ const TableCustom = ({
 
   return (
     <div
-      className={` bg-black rounded-[15px] mt-6 md:p-8 w-full max-w-5xl mx-auto font-secondary ${containerClassName}`}
+      className={` bg-black rounded-[15px] w-full max-w-5xl mx-auto font-secondary ${containerClassName}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
