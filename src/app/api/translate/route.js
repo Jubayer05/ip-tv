@@ -10,7 +10,7 @@ export async function POST(req) {
       api_key = "",
     } = body || {};
 
-    const upstreamUrl = "http://localhost:5000/translate";
+    const upstreamUrl = "http://162.217.249.95:5000/translate";
 
     const translateOne = async (text) => {
       const res = await fetch(upstreamUrl, {
