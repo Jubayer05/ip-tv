@@ -150,7 +150,7 @@ export async function POST(request) {
       balance: 0,
       rank: { level: "bronze", totalSpent: 0, discountPercentage: 5 },
       referral: { code: null, referredBy: null, earnings: 0 },
-      settings: { notifications: true, twoFactorEnabled: false },
+      settings: { notifications: true },
       role: "user",
       isActive: true,
       lastLogin: new Date(),

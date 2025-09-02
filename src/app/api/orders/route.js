@@ -41,25 +41,6 @@ export async function POST(request) {
     await connectToDatabase();
     const body = await request.json();
 
-    console.log("=== ORDER CREATION START ===");
-    console.log("Request body:", JSON.stringify(body, null, 2));
-
-    // Expected minimal payload from client
-    // {
-    //   userId? : string,
-    //   contactInfo?: { fullName, email, phone? }, // required if no userId
-    //   guestEmail?: string, // optional but set if guest
-    //   productId: string,
-    //   variantId: string,
-    //   quantity: number,
-    //   devicesAllowed: number,
-    //   adultChannels: boolean,
-    //   couponCode?: string,
-    //   paymentMethod?: string,
-    //   paymentGateway?: string,
-    //   paymentStatus?: "pending" | "completed" | "failed" | "refunded"
-    // }
-
     const {
       userId,
       contactInfo: contactInfoInput,
@@ -74,9 +55,6 @@ export async function POST(request) {
       paymentGateway = "None",
       paymentStatus: incomingPaymentStatus, // NEW
     } = body || {};
-
-    console.log("Extracted userId:", userId);
-    console.log("Extracted paymentStatus:", incomingPaymentStatus);
 
     if (!productId || !variantId || !quantity || !devicesAllowed) {
       return NextResponse.json(
@@ -96,10 +74,6 @@ export async function POST(request) {
       (v) => v._id.toString() === variantId
     );
     if (!variant) {
-      console.log(
-        "Available variant IDs:",
-        product.variants.map((v) => v._id.toString())
-      );
       return NextResponse.json(
         {
           error: "Variant not found",
@@ -129,11 +103,6 @@ export async function POST(request) {
           phone: user?.profile?.phone || "",
         };
         resolvedGuestEmail = null;
-        console.log("User found:", {
-          id: user._id,
-          email: user.email,
-          referral: user.referral,
-        });
       }
     }
 
@@ -201,33 +170,17 @@ export async function POST(request) {
     let isFirstOrder = false;
 
     if (userId) {
-      console.log("=== CHECKING FIRST ORDER STATUS ===");
       const existingOrders = await Order.countDocuments({ userId });
       isFirstOrder = existingOrders === 0;
-      console.log("Existing orders count:", existingOrders);
-      console.log("Is first order:", isFirstOrder);
 
       if (isFirstOrder) {
-        console.log("=== CHECKING REFERRAL STATUS ===");
         const user = await User.findById(userId);
-        console.log("User referral data:", user?.referral);
         if (user?.referral?.referredBy) {
           referredBy = user.referral.referredBy;
-          console.log("Referral found! referredBy:", referredBy);
         } else {
-          console.log("No referral found for user");
         }
       }
     }
-
-    console.log("=== ORDER DOCUMENT CREATION ===");
-    console.log("Final order data:", {
-      userId,
-      paymentStatus: incomingPaymentStatus || "pending",
-      referredBy,
-      isFirstOrder,
-      totalAmount: finalTotal,
-    });
 
     const orderDoc = new Order({
       userId: userId || null,
@@ -246,35 +199,15 @@ export async function POST(request) {
       isFirstOrder,
     });
 
-    console.log("Order document before save:", {
-      referredBy: orderDoc.referredBy,
-      isFirstOrder: orderDoc.isFirstOrder,
-      paymentStatus: orderDoc.paymentStatus,
-    });
-
     await orderDoc.save();
-    console.log("Order saved with ID:", orderDoc._id);
-
     // Refresh the document to ensure all fields are loaded
     const savedOrder = await Order.findById(orderDoc._id);
-    console.log("Order document after save and refresh:", {
-      referredBy: savedOrder?.referredBy,
-      isFirstOrder: savedOrder?.isFirstOrder,
-      paymentStatus: savedOrder?.paymentStatus,
-    });
-
-    // If order is created as completed and qualifies, credit the referrer now
-    console.log("=== CHECKING REFERRAL COMMISSION ELIGIBILITY ===");
-    console.log("Payment status:", savedOrder?.paymentStatus);
-    console.log("Is first order:", savedOrder?.isFirstOrder);
-    console.log("Referred by:", savedOrder?.referredBy);
 
     if (
       savedOrder?.paymentStatus === "completed" &&
       savedOrder?.isFirstOrder &&
       savedOrder?.referredBy
     ) {
-      console.log("=== PROCESSING REFERRAL COMMISSION ===");
       try {
         const settings = await Settings.getSettings();
         const commissionPct = Number(settings.affiliateCommissionPct || 10);
@@ -283,39 +216,17 @@ export async function POST(request) {
             ((Number(savedOrder.totalAmount || 0) * commissionPct) / 100) * 100
           ) / 100;
 
-        console.log("Commission calculation:", {
-          totalAmount: savedOrder.totalAmount,
-          percentage: commissionPct,
-          commission: commission,
-        });
-
         if (commission > 0) {
           // Update referrer earnings
           const referrer = await User.findById(savedOrder.referredBy);
-          console.log("Referrer found:", referrer ? "yes" : "no");
 
           if (referrer) {
-            console.log("Referrer current data:", {
-              id: referrer._id,
-              currentEarnings: referrer.referral?.earnings || 0,
-              currentBalance: referrer.balance || 0,
-            });
-
             referrer.referral.earnings =
               Number(referrer.referral.earnings || 0) + commission;
             await referrer.save();
 
-            console.log(
-              "Referrer earnings updated to:",
-              referrer.referral.earnings
-            );
-
             // Call balance API so it appears in your logs/flow
             const origin = new URL(request.url).origin;
-            console.log(
-              "Calling balance API:",
-              `${origin}/api/users/${referrer._id}/balance`
-            );
 
             const balanceResponse = await fetch(
               `${origin}/api/users/${referrer._id}/balance`,
@@ -326,21 +237,17 @@ export async function POST(request) {
               }
             );
 
-            console.log("Balance API response status:", balanceResponse.status);
             const balanceData = await balanceResponse.json();
-            console.log("Balance API response:", balanceData);
 
             // Also update balance directly as backup
             referrer.balance = Number(referrer.balance || 0) + commission;
             await referrer.save();
-            console.log("Referrer balance updated to:", referrer.balance);
           }
         }
       } catch (e) {
         console.error("Commission on create error:", e);
       }
     } else {
-      console.log("Order does not qualify for referral commission");
     }
 
     await sendOrderKeysEmail({
@@ -349,7 +256,6 @@ export async function POST(request) {
       order: orderDoc.toObject(),
     });
 
-    console.log("=== ORDER CREATION COMPLETE ===");
     return NextResponse.json(
       { success: true, order: orderDoc },
       { status: 201 }

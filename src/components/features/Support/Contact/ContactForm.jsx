@@ -103,7 +103,6 @@ const ContactForm = () => {
   };
 
   const handleSubmit = () => {
-    console.log("Form submitted:", formData);
   };
 
   return (

@@ -403,7 +403,6 @@ const PricingPlan = () => {
         setIsModalOpen(true);
       }
     } catch (e) {
-      console.log(e);
     }
   };
 

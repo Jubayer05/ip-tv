@@ -5,20 +5,19 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, loading, authToken, is2FAPending } = useAuth();
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     if (!loading) {
-      if (!user) {
+      if (!user || !authToken || is2FAPending) {
         router.push("/login");
       } else {
         setIsChecking(false);
-        // }
       }
     }
-  }, [user, loading, router]);
+  }, [user, loading, authToken, is2FAPending, router]);
 
   if (loading || isChecking) {
     return (
@@ -31,8 +30,7 @@ export default function ProtectedRoute({ children }) {
     );
   }
 
-  // Remove Firebase email verification check
-  if (!user) {
+  if (!user || !authToken || is2FAPending) {
     return null; // Will redirect to login
   }
 

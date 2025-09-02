@@ -6,6 +6,47 @@ import DepositPayouts from "@/components/features/AffiliateRank/DepositPayouts";
 import RankSystem from "@/components/features/AffiliateRank/RankSystem";
 import ReferalOrderHistory from "@/components/features/AffiliateRank/ReferalOrderHistory";
 
+export async function generateMetadata() {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL}/api/admin/settings`,
+      {
+        cache: "no-store",
+      }
+    );
+    const data = await response.json();
+
+    if (data.success && data.data.metaManagement?.affiliate) {
+      const meta = data.data.metaManagement.affiliate;
+      return {
+        title: meta.title,
+        description: meta.description,
+        keywords: meta.keywords,
+        openGraph: {
+          title: meta.openGraph.title,
+          description: meta.openGraph.description,
+        },
+      };
+    }
+  } catch (error) {
+    console.error("Failed to fetch meta settings:", error);
+  }
+
+  // Fallback metadata
+  return {
+    title: "Affiliate Program - Cheap Stream | Earn Money with IPTV",
+    description:
+      "Join Cheap Stream's affiliate program and earn commissions by promoting our premium IPTV services. Start earning money today with our competitive referral system.",
+    keywords:
+      "affiliate program, IPTV affiliate, earn money online, referral program, Cheap Stream affiliate, streaming affiliate, commission program",
+    openGraph: {
+      title: "Affiliate Program - Cheap Stream | Earn Money with IPTV",
+      description:
+        "Join Cheap Stream's affiliate program and earn commissions by promoting our premium IPTV services. Start earning money today with our competitive referral system.",
+    },
+  };
+}
+
 export default function Affiliate() {
   return (
     <div className="-mt-8 md:-mt-14 font-secondary">

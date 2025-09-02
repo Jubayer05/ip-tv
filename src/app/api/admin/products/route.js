@@ -134,8 +134,6 @@ export async function PUT(request) {
       );
     }
 
-    console.log(updatedProduct);
-
     return NextResponse.json(updatedProduct);
   } catch (error) {
     return NextResponse.json(

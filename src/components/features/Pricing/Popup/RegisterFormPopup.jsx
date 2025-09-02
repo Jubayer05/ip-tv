@@ -148,7 +148,6 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
   };
 
   const handleCreateAccount = () => {
-    console.log("Create account clicked"); // Debug log
     setShowNotRegister(true);
   };
 

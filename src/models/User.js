@@ -120,10 +120,7 @@ const userSchema = new mongoose.Schema(
         type: Boolean,
         default: true,
       },
-      twoFactorEnabled: {
-        type: Boolean,
-        default: false,
-      },
+      // Remove the twoFactorEnabled field since 2FA is always required
     },
     role: {
       type: String,
@@ -137,6 +134,34 @@ const userSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
       default: null,
+    },
+    twoFactorCode: {
+      type: String,
+      default: null,
+    },
+    twoFactorCodeExpires: {
+      type: Date,
+      default: null,
+    },
+    // Add free trial tracking
+    freeTrial: {
+      hasUsed: {
+        type: Boolean,
+        default: false,
+      },
+      usedAt: {
+        type: Date,
+        default: null,
+      },
+      trialData: {
+        lineId: String,
+        username: String,
+        password: String,
+        templateId: Number,
+        templateName: String,
+        lineType: Number,
+        expireDate: Date,
+      },
     },
   },
   {
@@ -201,6 +226,27 @@ userSchema.methods.updateRank = function () {
     this.rank.level = "bronze";
     this.rank.discountPercentage = 5;
   }
+};
+
+// Method to check if user can use free trial
+userSchema.methods.canUseFreeTrial = function () {
+  return !this.freeTrial.hasUsed;
+};
+
+// Method to mark free trial as used
+userSchema.methods.markFreeTrialUsed = function (trialData) {
+  this.freeTrial.hasUsed = true;
+  this.freeTrial.usedAt = new Date();
+  this.freeTrial.trialData = {
+    lineId: trialData.lineId,
+    username: trialData.username,
+    password: trialData.password, // Add password field
+    templateId: trialData.templateId,
+    templateName: trialData.templateName,
+    lineType: trialData.lineType,
+    expireDate: new Date(trialData.expire * 1000),
+  };
+  return this.save();
 };
 
 // Static method to find users by role

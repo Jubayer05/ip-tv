@@ -4,6 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import {
   ArrowLeft,
   BarChart3,
+  Bell,
   CreditCard,
   Gift,
   HelpCircle,
@@ -18,7 +19,8 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { MdOutlineDashboard } from "react-icons/md";
+import { IoDocument } from "react-icons/io5";
+import { MdOutlineDashboard, MdReviews } from "react-icons/md";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -121,6 +123,21 @@ export default function Sidebar() {
       href: "/admin/faq", // Add new FAQ management route
       label: "FAQ Management",
       icon: HelpCircle, // Use HelpCircle icon for FAQ
+    },
+    {
+      href: "/admin/bulk-notification",
+      label: "Bulk & Notification",
+      icon: Bell,
+    },
+    {
+      href: "/admin/review",
+      label: "Review Management",
+      icon: MdReviews,
+    },
+    {
+      href: "/admin/blog",
+      label: "Blogs Management",
+      icon: IoDocument,
     },
     {
       href: "/admin/settings",

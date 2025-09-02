@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
+import TwoFactorAuth from "./TwoFactorAuth";
 
 export default function LoginComponent() {
   const [formData, setFormData] = useState({
@@ -18,8 +19,11 @@ export default function LoginComponent() {
   const [error, setError] = useState("");
   const [recaptchaToken, setRecaptchaToken] = useState(null);
   const [recaptchaEnabled, setRecaptchaEnabled] = useState(false);
+  const [show2FA, setShow2FA] = useState(false);
+  const [pendingUser, setPendingUser] = useState(null);
+  const [sending2FACode, setSending2FACode] = useState(false);
 
-  const { login } = useAuth();
+  const { login, send2FACode } = useAuth();
   const router = useRouter();
   const recaptchaRef = useRef();
 
@@ -64,7 +68,25 @@ export default function LoginComponent() {
     );
 
     if (result.success) {
-      router.push("/dashboard");
+      if (result.requires2FA) {
+        // Automatically send 2FA code when 2FA is required
+        setSending2FACode(true);
+        const codeResult = await send2FACode(formData.email);
+
+        if (codeResult.success) {
+          // Show 2FA component
+          setPendingUser(result.user);
+          setShow2FA(true);
+        } else {
+          setError(
+            `Login successful but failed to send 2FA code: ${codeResult.error}`
+          );
+        }
+        setSending2FACode(false);
+      } else {
+        // Direct login success
+        router.push("/dashboard");
+      }
     } else {
       setError(result.error);
       // Reset reCAPTCHA on error only when it's enabled
@@ -88,6 +110,22 @@ export default function LoginComponent() {
     setRecaptchaToken(token);
     setError(""); // Clear any previous errors
   };
+
+  const handleBackToLogin = () => {
+    setShow2FA(false);
+    setPendingUser(null);
+    setError("");
+    // Reset reCAPTCHA if enabled
+    if (recaptchaEnabled) {
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
+    }
+  };
+
+  // Show 2FA component if needed
+  if (show2FA) {
+    return <TwoFactorAuth email={formData.email} onBack={handleBackToLogin} />;
+  }
 
   return (
     <div className="max-w-[530px] mx-auto bg-black p-4 border border-[#ffffff]/15 rounded-2xl">
@@ -182,10 +220,16 @@ export default function LoginComponent() {
           {/* Submit Button */}
           <Button
             type="submit"
-            disabled={loading || (recaptchaEnabled && !recaptchaToken)}
+            disabled={
+              loading || sending2FACode || (recaptchaEnabled && !recaptchaToken)
+            }
             className="w-full flex items-center justify-center gap-2"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading
+              ? "Signing in..."
+              : sending2FACode
+              ? "Sending 2FA code..."
+              : "Sign In"}
             <ArrowRight size={20} />
           </Button>
         </form>

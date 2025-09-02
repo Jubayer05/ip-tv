@@ -77,7 +77,6 @@ export default function RankSystemManagement() {
   }, [language.code, isLanguageLoaded, translate]);
 
   useEffect(() => {
-    console.log("Fetching rank systems...");
     fetchRankSystems();
   }, []);
 

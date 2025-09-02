@@ -49,7 +49,7 @@ const HomeSubscribe = () => {
   }, [language.code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="mt-8 md:mt-20">
+    <div className="mt-8 md:mt-20 mb-4 md:mb-20">
       <Polygon>
         <div className="container mx-auto flex items-center flex-col md:flex-row justify-between h-[400px] md:h-[560px] relative">
           {/* Left Content */}

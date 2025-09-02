@@ -125,7 +125,7 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
             <span className="text-xs">Plisio</span>
             <span className="text-xs text-gray-600">Crypto</span>
           </button>
-          <button
+          {/* <button
             className="aspect-square bg-white text-black py-4 px-3 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-60 flex flex-col items-center justify-center space-y-2"
             onClick={() => startPayment("hoodpay")}
             disabled={loading}
@@ -140,7 +140,7 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
           >
             <span className="text-xs">NOWPayments</span>
             <span className="text-xs text-gray-600">Crypto</span>
-          </button>
+          </button> */}
         </div>
 
         {!!statusText && (

@@ -290,13 +290,10 @@ const TrendingContentSlider = () => {
   }, [language.code, isLanguageLoaded, translate]);
 
   const handleItemClick = (item) => {
-    console.log("Content clicked:", item);
-    // Add your navigation or modal logic here
-    // Example: router.push(`/watch/${item.id}`);
+    
   };
 
   const handleButtonClick = () => {
-    console.log("View all content clicked");
     // Add your navigation logic here
     // Example: router.push('/browse');
   };

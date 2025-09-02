@@ -133,7 +133,7 @@ const PaginationDemo = () => {
           <Pagination
             totalPages={50}
             initialPage={25}
-            onPageChange={(page) => console.log("Page changed to:", page)}
+            onPageChange={(page) => {}}
           />
         </div>
 
@@ -142,7 +142,7 @@ const PaginationDemo = () => {
           <Pagination
             totalPages={5}
             initialPage={3}
-            onPageChange={(page) => console.log("Page changed to:", page)}
+            onPageChange={(page) => {}}
           />
         </div>
       </div>

@@ -103,8 +103,6 @@ export const UserSpendingContextProvider = ({ children }) => {
 
       const ordersData = await ordersResponse.json();
 
-      console.log(ordersData);
-
       if (!ordersData.success) {
         throw new Error(ordersData.error || "Failed to fetch orders");
       }

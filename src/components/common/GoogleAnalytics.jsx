@@ -47,8 +47,6 @@ export default function GoogleAnalytics() {
         page_title: document.title,
         page_location: window.location.href,
       });
-
-      console.log("Google Analytics loaded successfully");
     };
 
     script.onerror = () => {

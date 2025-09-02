@@ -1,4 +1,5 @@
 "use client";
+import NotificationBell from "@/components/ui/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ChevronDown, Globe, Menu, Search, X } from "lucide-react";
@@ -133,7 +134,7 @@ const Navbar = () => {
             <button className="text-white hover:text-gray-300 transition-colors hidden sm:block">
               <Search size={20} />
             </button>
-
+            <NotificationBell />
             {/* Language Dropdown - Hidden on mobile */}
             <div className="relative hidden sm:block">
               <button

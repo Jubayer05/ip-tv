@@ -106,7 +106,6 @@ export default function DepositPayouts() {
   }, [language.code, isLanguageLoaded, translate]);
 
   const handleDepositFunds = () => {
-    console.log("Deposit funds clicked");
   };
 
   const handleWithdrawFunds = () => {

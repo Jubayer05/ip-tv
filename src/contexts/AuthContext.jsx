@@ -25,6 +25,8 @@ export const useAuth = () => {
 export const AuthContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authToken, setAuthToken] = useState(null);
+  const [is2FAPending, setIs2FAPending] = useState(false);
 
   // Check if user is super admin
   const isSuperAdmin = (email) => {
@@ -78,7 +80,11 @@ export const AuthContextProvider = ({ children }) => {
             },
             settings: result.data.settings || {
               notifications: true,
-              twoFactorEnabled: false,
+            },
+            freeTrial: result.data.freeTrial || {
+              hasUsed: false,
+              usedAt: null,
+              trialData: null,
             },
             isActive: result.data.isActive !== false,
             lastLogin: result.data.lastLogin,
@@ -94,18 +100,84 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
+  // Generate JWT token for user
+  const generateAuthToken = async (userData) => {
+    try {
+      const response = await fetch("/api/auth/generate-token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: userData._id,
+          email: userData.email,
+          role: userData.role,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setAuthToken(result.token);
+          // Store token in localStorage for persistence
+          localStorage.setItem("authToken", result.token);
+          return result.token;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("Error generating auth token:", error);
+      return null;
+    }
+  };
+
+  // Get stored auth token
+  const getAuthToken = () => {
+    // Check if we're in the browser environment
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return authToken || localStorage.getItem("authToken");
+  };
+
+  // Clear auth token
+  const clearAuthToken = () => {
+    setAuthToken(null);
+    localStorage.removeItem("authToken");
+  };
+
+  // Refresh auth token
+  const refreshAuthToken = async () => {
+    if (user) {
+      const newToken = await generateAuthToken(user);
+      return newToken;
+    }
+    return null;
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser) {
-          // Fetch MongoDB user data instead of storing Firebase user
+          const storedToken =
+            typeof window !== "undefined"
+              ? localStorage.getItem("authToken")
+              : null;
+
+          if (!storedToken) {
+            setIs2FAPending(true);
+            setUser(null);
+            return;
+          }
+
           const mongoUser = await fetchUserData(firebaseUser.email);
 
           if (mongoUser) {
-            // Set MongoDB user data as the main user state
+            setIs2FAPending(false);
             setUser(mongoUser);
+            setAuthToken(storedToken);
           } else {
-            // If no MongoDB user found, create a minimal user object
+            setIs2FAPending(false);
             setUser({
               email: firebaseUser.email,
               role: isSuperAdmin(firebaseUser.email) ? "admin" : "user",
@@ -117,13 +189,18 @@ export const AuthContextProvider = ({ children }) => {
                 avatar: firebaseUser.photoURL || "",
               },
             });
+            setAuthToken(storedToken);
           }
         } else {
           setUser(null);
+          setIs2FAPending(false);
+          clearAuthToken();
         }
       } catch (error) {
         console.error("Auth error:", error);
         setUser(null);
+        setIs2FAPending(false);
+        clearAuthToken();
       } finally {
         setLoading(false);
       }
@@ -181,6 +258,8 @@ export const AuthContextProvider = ({ children }) => {
         const mongoUser = await fetchUserData(email);
         if (mongoUser) {
           setUser(mongoUser);
+          // Generate auth token for the user
+          await generateAuthToken(mongoUser);
         }
       }
 
@@ -194,7 +273,7 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (email, password, recaptchaToken = null) => {
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
@@ -202,22 +281,13 @@ export const AuthContextProvider = ({ children }) => {
         password
       );
 
-      // Update last login in MongoDB using email
-      try {
-        await fetch(`/api/users/${userCredential.user.email}/last-login`, {
-          method: "PATCH",
-        });
-      } catch (error) {
-        console.error("Error updating last login:", error);
-      }
-
-      // Fetch updated user data after login
-      const mongoUser = await fetchUserData(email);
-      if (mongoUser) {
-        setUser(mongoUser);
-      }
-
-      return { success: true, user: userCredential.user };
+      // Always require 2FA - no need to check user settings
+      return {
+        success: true,
+        user: userCredential.user,
+        requires2FA: true,
+        message: "2FA verification required",
+      };
     } catch (error) {
       // Provide custom error messages instead of Firebase technical errors
       let customError = "Login failed. Please try again.";
@@ -247,6 +317,7 @@ export const AuthContextProvider = ({ children }) => {
     try {
       await signOut(auth);
       setUser(null);
+      clearAuthToken();
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
@@ -283,6 +354,62 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
+  const send2FACode = async (email) => {
+    try {
+      const response = await fetch("/api/auth/2fa/send-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return { success: false, error: "Failed to send 2FA code" };
+    }
+  };
+
+  const verify2FACode = async (email, code) => {
+    try {
+      const response = await fetch("/api/auth/2fa/verify-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, code }),
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return { success: false, error: "Failed to verify 2FA code" };
+    }
+  };
+
+  const complete2FALogin = async (email) => {
+    try {
+      // Update last login in MongoDB
+      await fetch(`/api/users/${email}/last-login`, {
+        method: "PATCH",
+      });
+
+      // Fetch updated user data
+      const mongoUser = await fetchUserData(email);
+      if (mongoUser) {
+        setUser(mongoUser);
+        // Generate auth token for the user
+        await generateAuthToken(mongoUser);
+        setIs2FAPending(false);
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: "Failed to complete 2FA login" };
+    }
+  };
+
   // Function to refresh user data (useful for profile updates)
   const refreshUserData = async () => {
     if (user?.email) {
@@ -293,9 +420,12 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
+  const isAuthenticated = !!(user && getAuthToken());
+
   const value = {
     user,
     loading,
+    authToken,
     hasAdminAccess,
     isSuperAdminUser,
     signup,
@@ -305,6 +435,14 @@ export const AuthContextProvider = ({ children }) => {
     resendVerificationEmail,
     verifyEmail,
     refreshUserData,
+    send2FACode,
+    verify2FACode,
+    complete2FALogin,
+    generateAuthToken,
+    getAuthToken,
+    refreshAuthToken,
+    is2FAPending,
+    isAuthenticated,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,5 +1,13 @@
+import {
+  BarChart3,
+  Gift,
+  History,
+  Package,
+  Settings,
+  Ticket,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
-import { Users, Package, History, BarChart3, Settings, Ticket, Gift } from "lucide-react";
 
 export default function AdminPage() {
   const adminFeatures = [
@@ -58,7 +66,9 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-900 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Admin Dashboard
+          </h1>
           <p className="text-gray-400">
             Manage your system, users, and business operations
           </p>

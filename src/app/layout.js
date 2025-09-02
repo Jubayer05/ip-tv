@@ -1,4 +1,5 @@
 import GoogleAnalytics from "@/components/common/GoogleAnalytics";
+import MicrosoftClarity from "@/components/common/MicrosoftClarity";
 import ScrollToTop from "@/components/common/ScrollToTop";
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
@@ -33,6 +34,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${rajdhani.variable} ${manrope.variable}`}>
       <body className="antialiased font-primary">
         <GoogleAnalytics />
+        <MicrosoftClarity />
         <AuthContextProvider>
           <UserSpendingContextProvider>
             <LanguageProvider>

@@ -4,15 +4,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 const ProtectedAdminRoute = ({ children }) => {
-  const { user, userRole, isSuperAdminUser, loading } = useAuth();
+  const { user, isSuperAdminUser, loading, authToken, is2FAPending } =
+    useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     if (loading) return;
 
-    // Must be logged in
-    if (!user) {
+    if (!user || !authToken || is2FAPending) {
       router.replace("/");
       return;
     }
@@ -29,7 +29,7 @@ const ProtectedAdminRoute = ({ children }) => {
       }
 
       // Non-admin (and not super admin) cannot access admin area
-      if (userRole !== "admin" && !isSuperAdminUser()) {
+      if (user.role !== "admin" && !isSuperAdminUser()) {
         router.replace("/");
         return;
       }

@@ -1,45 +1,123 @@
+import { connectToDatabase } from "@/lib/db";
+import plisioService from "@/lib/paymentServices/plisioService";
+import Order from "@/models/Order";
 import { NextResponse } from "next/server";
 
-export async function GET(_req, { params }) {
+export async function GET(request, { params }) {
   try {
-    const apiKey = process.env.PLISIO_API_KEY;
-    if (!apiKey) {
+    const { id } = await params;
+
+    if (!id) {
       return NextResponse.json(
-        { error: "PLISIO_API_KEY not configured" },
-        { status: 500 }
+        { error: "Invoice ID is required" },
+        { status: 400 }
       );
     }
-    const id = params?.id;
-    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-    const res = await fetch(
-      `https://api.plisio.net/api/v1/invoices/${id}?api_key=${apiKey}`,
-      {
-        method: "GET",
-        cache: "no-store",
-      }
+    await connectToDatabase();
+
+    const result = await plisioService.getInvoiceDetails(id);
+    const invoice = result.data;
+    const statusInfo = plisioService.getStatusDescription(
+      invoice.status,
+      invoice.status_code
     );
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data?.status !== "success") {
-      return NextResponse.json(
-        { error: data?.data || "Failed to fetch Plisio status" },
-        { status: 500 }
+    const attention = plisioService.needsAttention(invoice);
+
+    // Find and update the order with latest Plisio status
+    const order = await Order.findOne({ "plisioPayment.invoiceId": id });
+
+    if (order) {
+      console.log(
+        `Updating order ${order._id} with Plisio status: ${invoice.status}`
       );
+
+      // Update Plisio payment details
+      order.plisioPayment.status = invoice.status;
+      order.plisioPayment.confirmations = invoice.confirmations || 0;
+      order.plisioPayment.actualSum = invoice.actual_sum || "0.00000000";
+      order.plisioPayment.lastStatusUpdate = new Date();
+
+      // Update order payment status based on Plisio status
+      let newPaymentStatus = order.paymentStatus;
+      let newOrderStatus = order.status;
+
+      switch (invoice.status) {
+        case "completed":
+          newPaymentStatus = "completed";
+          newOrderStatus = "completed";
+          console.log(`✅ Payment completed for order ${order.orderNumber}`);
+          break;
+
+        case "pending":
+          newPaymentStatus = "pending";
+          newOrderStatus = "pending";
+          console.log(`⏳ Payment pending for order ${order.orderNumber}`);
+          break;
+
+        case "new":
+          newPaymentStatus = "pending";
+          newOrderStatus = "pending";
+          console.log(`🆕 New payment for order ${order.orderNumber}`);
+          break;
+
+        case "error":
+        case "cancelled":
+          newPaymentStatus = "failed";
+          newOrderStatus = "cancelled";
+          console.log(
+            `❌ Payment ${invoice.status} for order ${order.orderNumber}`
+          );
+          break;
+
+        case "expired":
+          newPaymentStatus = "failed";
+          newOrderStatus = "cancelled";
+          console.log(`⏰ Payment expired for order ${order.orderNumber}`);
+          break;
+
+        default:
+          console.log(
+            `❓ Unknown payment status: ${invoice.status} for order ${order.orderNumber}`
+          );
+      }
+
+      // Update order statuses
+      order.paymentStatus = newPaymentStatus;
+      order.status = newOrderStatus;
+
+      await order.save();
+      console.log(
+        `Order ${order._id} updated: paymentStatus=${newPaymentStatus}, status=${newOrderStatus}`
+      );
+    } else {
+      console.warn(`No order found for Plisio invoice ID: ${id}`);
     }
 
-    // data.data.status: pending | paid | error | canceled | expired | ...
-    const s = data?.data?.status;
-    const normalized =
-      s === "paid" || s === "completed"
-        ? "completed"
-        : s === "error" || s === "canceled" || s === "expired"
-        ? "failed"
-        : "pending";
-
-    return NextResponse.json({ status: normalized, raw: data?.data });
-  } catch (e) {
+    // Return status response for polling
+    return NextResponse.json({
+      success: true,
+      txnId: id,
+      status: invoice.status,
+      statusCode: invoice.status_code,
+      statusDescription: statusInfo.status,
+      isCompleted: statusInfo.isCompleted,
+      isPending: statusInfo.isPending,
+      isWaiting: statusInfo.isWaiting,
+      isFailed: statusInfo.isFailed,
+      isExpired: attention.isExpired,
+      confirmations: invoice.confirmations || 0,
+      actualSum: invoice.actual_sum || "0.00000000",
+      timeRemaining: Math.max(0, invoice.expire_at_utc - Date.now() / 1000),
+      lastUpdated: new Date().toISOString(),
+      orderUpdated: !!order, // Indicate if order was found and updated
+      orderId: order?._id,
+      orderNumber: order?.orderNumber,
+    });
+  } catch (error) {
+    console.error("Plisio status check error:", error);
     return NextResponse.json(
-      { error: e?.message || "Plisio status error" },
+      { error: error?.message || "Failed to check payment status" },
       { status: 500 }
     );
   }

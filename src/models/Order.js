@@ -40,6 +40,29 @@ const ContactInfoSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Add Plisio payment tracking schema
+const PlisioPaymentSchema = new mongoose.Schema(
+  {
+    invoiceId: { type: String, required: true, index: true }, // Plisio transaction ID
+    status: {
+      type: String,
+      enum: ["new", "pending", "completed", "error", "cancelled", "expired"],
+      default: "new",
+    },
+    amount: { type: String, required: true }, // Crypto amount
+    currency: { type: String, required: true }, // Crypto currency (BTC, ETH, etc.)
+    sourceAmount: { type: String, required: true }, // Original fiat amount
+    sourceCurrency: { type: String, default: "USD" }, // Original fiat currency
+    walletAddress: { type: String, required: true },
+    confirmations: { type: Number, default: 0 },
+    actualSum: { type: String, default: "0.00000000" },
+    expiresAt: { type: Date, required: true },
+    callbackReceived: { type: Boolean, default: false },
+    lastStatusUpdate: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
 const OrderSchema = new mongoose.Schema(
   {
     orderNumber: { type: String, unique: true, index: true },
@@ -60,9 +83,11 @@ const OrderSchema = new mongoose.Schema(
     paymentGateway: { type: String, default: "None" },
     paymentStatus: {
       type: String,
-      enum: ["pending", "completed", "failed", "refunded"],
       default: "pending",
     },
+
+    // Add Plisio payment tracking
+    plisioPayment: { type: PlisioPaymentSchema, default: null },
 
     keys: { type: [OrderKeySchema], default: [] },
 
@@ -70,8 +95,8 @@ const OrderSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["completed", "cancelled"],
-      default: "completed",
+      enum: ["new", "pending", "completed", "cancelled"],
+      default: "new",
     },
 
     // Add referral tracking

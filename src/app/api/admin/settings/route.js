@@ -16,6 +16,7 @@ export async function GET() {
         contactInfo: settings.contactInfo,
         banners: settings.banners,
         addons: settings.addons,
+        metaManagement: settings.metaManagement,
       },
     });
   } catch (e) {
@@ -164,6 +165,61 @@ export async function PUT(request) {
       });
     }
 
+    // Meta Management
+    if (body.metaManagement && typeof body.metaManagement === "object") {
+      const pages = [
+        "home",
+        "about",
+        "affiliate",
+        "blogs",
+        "explore",
+        "knowledge",
+        "packages",
+        "privacy",
+        "terms",
+        "contact",
+        "faq",
+      ];
+
+      pages.forEach((page) => {
+        if (
+          body.metaManagement[page] &&
+          typeof body.metaManagement[page] === "object"
+        ) {
+          const pageMeta = body.metaManagement[page];
+
+          // Update title
+          if (pageMeta.title !== undefined) {
+            updates[`metaManagement.${page}.title`] = pageMeta.title || "";
+          }
+
+          // Update description
+          if (pageMeta.description !== undefined) {
+            updates[`metaManagement.${page}.description`] =
+              pageMeta.description || "";
+          }
+
+          // Update keywords
+          if (pageMeta.keywords !== undefined) {
+            updates[`metaManagement.${page}.keywords`] =
+              pageMeta.keywords || "";
+          }
+
+          // Update Open Graph
+          if (pageMeta.openGraph && typeof pageMeta.openGraph === "object") {
+            if (pageMeta.openGraph.title !== undefined) {
+              updates[`metaManagement.${page}.openGraph.title`] =
+                pageMeta.openGraph.title || "";
+            }
+            if (pageMeta.openGraph.description !== undefined) {
+              updates[`metaManagement.${page}.openGraph.description`] =
+                pageMeta.openGraph.description || "";
+            }
+          }
+        }
+      });
+    }
+
     // Perform update
     if (Object.keys(updates).length > 0) {
       const result = await Settings.updateOne(
@@ -182,6 +238,7 @@ export async function PUT(request) {
         contactInfo: fresh.contactInfo,
         banners: fresh.banners,
         addons: fresh.addons,
+        metaManagement: fresh.metaManagement,
       },
       message: "Settings updated",
     });

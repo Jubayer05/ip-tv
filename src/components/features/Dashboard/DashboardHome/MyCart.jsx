@@ -104,7 +104,6 @@ export default function ShoppingCartModal({ onClose, isOpen }) {
   const handleCryptoPayment = async () => {
     try {
       setIsPaying(true);
-      console.log("Starting crypto payment with ChangeNOW...");
 
       // Create exchange: User pays ETH, you receive ETH (for now)
       const exchangeRes = await fetch(
@@ -123,8 +122,6 @@ export default function ShoppingCartModal({ onClose, isOpen }) {
       );
 
       const exchangeData = await exchangeRes.json();
-      console.log("Exchange creation response:", exchangeData);
-
       if (exchangeRes.ok && exchangeData.success) {
         setPaymentData(exchangeData);
         setShowPaymentModal(true);
@@ -166,8 +163,6 @@ export default function ShoppingCartModal({ onClose, isOpen }) {
       overflow: "auto",
     },
   };
-
-  console.log(paymentData);
 
   return (
     <>

@@ -54,6 +54,10 @@
     background-color: #0e0e11;
   }
 
+  button {
+    cursor: pointer;
+  }
+
   /* Dark mode body */
   .dark body {
     color: #f9fafb;

@@ -89,7 +89,7 @@ const BillingTable = () => {
             devices: product.devicesAllowed || 1,
             quantity: product.quantity || 1,
             totalAmount: `$${(order.totalAmount || 0).toFixed(2)}`,
-            orderStatus: order.status || "completed",
+            orderStatus: order.paymentStatus || "completed",
             date: new Date(order.createdAt || Date.now()).toLocaleDateString(
               "en-US",
               {
@@ -322,23 +322,66 @@ const BillingTable = () => {
         key: "orderStatus",
         align: "center",
         render: (status) => {
-          // Map status to appropriate styling
-          let statusClass =
-            "bg-green-500/20 text-green-400 border border-green-500/30";
+          // Map Plisio invoice status to appropriate styling
+          let statusClass = "";
+          let displayText = status;
 
-          if (status === statuses.cancelled) {
-            statusClass = "bg-red-500/20 text-red-400 border border-red-500/30";
+          switch (status) {
+            case "completed":
+            case "success":
+              statusClass =
+                "bg-green-500/20 text-green-400 border border-green-500/30";
+              displayText = "Completed";
+              break;
+
+            case "pending":
+              statusClass =
+                "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30";
+              displayText = "Pending";
+              break;
+
+            case "new":
+              statusClass =
+                "bg-blue-500/20 text-blue-400 border border-blue-500/30";
+              displayText = "New";
+              break;
+
+            case "failed":
+            case "error":
+            case "cancelled":
+              statusClass =
+                "bg-red-500/20 text-red-400 border border-red-500/30";
+              displayText = status === "cancelled" ? "Cancelled" : "Failed";
+              break;
+
+            case "expired":
+              statusClass =
+                "bg-gray-500/20 text-gray-400 border border-gray-500/30";
+              displayText = "Expired";
+              break;
+
+            case "refunded":
+              statusClass =
+                "bg-purple-500/20 text-purple-400 border border-purple-500/30";
+              displayText = "Refunded";
+              break;
+
+            default:
+              statusClass =
+                "bg-gray-500/20 text-gray-400 border border-gray-500/30";
+              displayText = status || "Unknown";
           }
 
           return (
             <span
               className={`px-2 sm:px-3 md:px-4 py-1 rounded-full text-xs font-medium font-secondary whitespace-nowrap ${statusClass}`}
             >
-              {status}
+              {displayText}
             </span>
           );
         },
       },
+
       {
         title: columns.date,
         dataIndex: "date",

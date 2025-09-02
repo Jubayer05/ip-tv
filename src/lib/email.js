@@ -227,3 +227,87 @@ export async function sendOrderKeysEmail({ toEmail, fullName, order }) {
     return false;
   }
 }
+
+export async function send2FACodeEmail(email, code, firstName) {
+  const mailOptions = {
+    from: `"Cheap Stream" <${process.env.SMTP_USER || ""}>`,
+    to: email,
+    subject: "Your 2FA Verification Code - Cheap Stream",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white;">
+          <h1 style="margin: 0; font-size: 28px;">Cheap Stream</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">Two-Factor Authentication</p>
+        </div>
+        
+        <div style="padding: 30px; background: #f8f9fa;">
+          <h2 style="color: #333; margin-bottom: 20px;">Hi ${firstName}!</h2>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
+            You've requested to sign in to your Cheap Stream account. To complete the login process, please use the verification code below:
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <div style="background: #e9ecef; padding: 20px; border-radius: 8px; display: inline-block;">
+              <span style="font-size: 32px; font-weight: bold; color: #333; letter-spacing: 8px;">${code}</span>
+            </div>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+            This code will expire in 5 minutes. If you didn't request this code, please ignore this email and consider changing your password.
+          </p>
+          
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+            <p style="color: #999; font-size: 14px; margin: 0;">
+              Best regards,<br>
+              The Cheap Stream Team
+            </p>
+          </div>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error("2FA email sending failed:", error);
+    return false;
+  }
+}
+
+export async function sendBulkNotificationEmail(emails, subject, htmlContent) {
+  const mailOptions = {
+    from: `"Cheap Stream" <${process.env.SMTP_USER || ""}>`,
+    bcc: emails, // Use BCC to send to multiple recipients
+    subject: subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white;">
+          <h1 style="margin: 0; font-size: 28px;">Cheap Stream</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">Important Update</p>
+        </div>
+        
+        <div style="padding: 30px; background: #f8f9fa;">
+          ${htmlContent}
+          
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+            <p style="color: #999; font-size: 14px; margin: 0;">
+              Best regards,<br>
+              The Cheap Stream Team
+            </p>
+          </div>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error("Bulk email sending failed:", error);
+    return false;
+  }
+}

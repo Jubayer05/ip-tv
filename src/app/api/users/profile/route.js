@@ -22,12 +22,12 @@ export async function GET(request) {
     if (userId) {
       // Search by MongoDB document ID
       user = await User.findById(userId).select(
-        "profile role email balance rank referral settings isActive lastLogin createdAt updatedAt"
+        "profile role email balance rank referral settings isActive lastLogin createdAt updatedAt freeTrial"
       );
     } else {
       // Search by email (existing logic)
       user = await User.findOne({ email }).select(
-        "profile role email balance rank referral settings isActive lastLogin createdAt updatedAt"
+        "profile role email balance rank referral settings isActive lastLogin createdAt updatedAt freeTrial"
       );
     }
 
@@ -62,9 +62,13 @@ export async function GET(request) {
           referredBy: null,
           earnings: 0,
         },
-        settings: user.settings || {
+        settings: {
           notifications: true,
-          twoFactorEnabled: false,
+        },
+        freeTrial: user.freeTrial || {
+          hasUsed: false,
+          usedAt: null,
+          trialData: null,
         },
         isActive: user.isActive !== false,
         lastLogin: user.lastLogin,

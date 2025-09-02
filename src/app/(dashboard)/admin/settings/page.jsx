@@ -3,6 +3,7 @@ import ManageAddons from "@/components/dashboard/AdminDashboard/SystemsSettings/
 import ManageBanner from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageBanner";
 import ManageContact from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageContact";
 import ManageSocialMediaContact from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageSocialMedia";
+import MetaManagement from "@/components/dashboard/AdminDashboard/SystemsSettings/MetaManagement";
 import { useState } from "react";
 
 export default function AdminSettingsPage() {
@@ -23,6 +24,11 @@ export default function AdminSettingsPage() {
       id: "banner",
       label: "Banner Management",
       component: <ManageBanner />,
+    },
+    {
+      id: "meta",
+      label: "Meta Management",
+      component: <MetaManagement />,
     },
     {
       id: "addons",

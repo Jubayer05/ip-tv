@@ -5,19 +5,19 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function PublicRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, loading, authToken, is2FAPending } = useAuth();
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     if (!loading) {
-      if (user && user.emailVerified) {
+      if (user && authToken && !is2FAPending) {
         router.push("/dashboard");
       } else {
         setIsChecking(false);
       }
     }
-  }, [user, loading, router]);
+  }, [user, loading, authToken, is2FAPending, router]);
 
   if (loading || isChecking) {
     return (
@@ -31,6 +31,10 @@ export default function PublicRoute({ children }) {
   }
 
   if (user && user.emailVerified) {
+    return null; // Will redirect to dashboard
+  }
+
+  if (user && authToken && !is2FAPending) {
     return null; // Will redirect to dashboard
   }
 

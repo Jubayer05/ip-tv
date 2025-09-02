@@ -148,6 +148,309 @@ const settingsSchema = new mongoose.Schema(
       getButton: { type: Boolean, default: false },
       tawkTo: { type: Boolean, default: false },
     },
+
+    // Meta management for SEO
+    metaManagement: {
+      home: {
+        title: {
+          type: String,
+          default: "Cheap Stream - Premium IPTV Service Provider",
+        },
+        description: {
+          type: String,
+          default:
+            "Stream thousands of movies, TV shows, and live channels with Cheap Stream. Best IPTV service with HD quality and zero buffering.",
+        },
+        keywords: {
+          type: String,
+          default:
+            "IPTV service, streaming, movies, TV shows, live channels, Cheap Stream",
+        },
+        openGraph: {
+          title: {
+            type: String,
+            default: "Cheap Stream - Premium IPTV Service Provider",
+          },
+          description: {
+            type: String,
+            default:
+              "Stream thousands of movies, TV shows, and live channels with Cheap Stream. Best IPTV service with HD quality and zero buffering.",
+          },
+        },
+      },
+      about: {
+        title: {
+          type: String,
+          default: "About Us - Cheap Stream | Premium IPTV Service Provider",
+        },
+        description: {
+          type: String,
+          default:
+            "Discover Cheap Stream's mission to provide premium IPTV services worldwide. Learn about our commitment to quality, customer satisfaction, and innovative streaming solutions.",
+        },
+        keywords: {
+          type: String,
+          default:
+            "IPTV service provider, streaming service, live TV streaming, movie streaming, Cheap Stream about us, IPTV company, streaming technology, entertainment service",
+        },
+        openGraph: {
+          title: {
+            type: String,
+            default: "About Us - Cheap Stream | Premium IPTV Service Provider",
+          },
+          description: {
+            type: String,
+            default:
+              "Discover Cheap Stream's mission to provide premium IPTV services worldwide. Learn about our commitment to quality, customer satisfaction, and innovative streaming solutions.",
+          },
+        },
+      },
+      affiliate: {
+        title: {
+          type: String,
+          default:
+            "Affiliate Program - Cheap Stream | Earn Money Promoting IPTV",
+        },
+        description: {
+          type: String,
+          default:
+            "Join Cheap Stream's affiliate program and earn money by promoting our premium IPTV services. Refer friends and earn commissions.",
+        },
+        keywords: {
+          type: String,
+          default:
+            "affiliate program, IPTV affiliate, earn money, referral program, Cheap Stream affiliate",
+        },
+        openGraph: {
+          title: {
+            type: String,
+            default:
+              "Affiliate Program - Cheap Stream | Earn Money Promoting IPTV",
+          },
+          description: {
+            type: String,
+            default:
+              "Join Cheap Stream's affiliate program and earn money by promoting our premium IPTV services. Refer friends and earn commissions.",
+          },
+        },
+      },
+      blogs: {
+        title: {
+          type: String,
+          default: "Blog - Cheap Stream | Latest News & Updates",
+        },
+        description: {
+          type: String,
+          default:
+            "Stay informed about the latest movies, TV shows, and platform updates from Cheap Stream. Read our blog for entertainment news and tips.",
+        },
+        keywords: {
+          type: String,
+          default:
+            "IPTV blog, streaming news, entertainment blog, Cheap Stream blog, movie updates",
+        },
+        openGraph: {
+          title: {
+            type: String,
+            default: "Blog - Cheap Stream | Latest News & Updates",
+          },
+          description: {
+            type: String,
+            default:
+              "Stay informed about the latest movies, TV shows, and platform updates from Cheap Stream. Read our blog for entertainment news and tips.",
+          },
+        },
+      },
+      explore: {
+        title: {
+          type: String,
+          default: "Explore Channels - Cheap Stream | Discover Content",
+        },
+        description: {
+          type: String,
+          default:
+            "Explore thousands of channels, movies, and TV shows from around the world with Cheap Stream. Find your favorite content.",
+        },
+        keywords: {
+          type: String,
+          default:
+            "explore channels, IPTV channels, movie library, TV shows, Cheap Stream content",
+        },
+        openGraph: {
+          title: {
+            type: String,
+            default: "Explore Channels - Cheap Stream | Discover Content",
+          },
+          description: {
+            type: String,
+            default:
+              "Explore thousands of channels, movies, and TV shows from around the world with Cheap Stream. Find your favorite content.",
+          },
+        },
+      },
+      knowledge: {
+        title: {
+          type: String,
+          default: "Knowledge Base - Cheap Stream | Help & Support",
+        },
+        description: {
+          type: String,
+          default:
+            "Find answers to common questions, tutorials, and troubleshooting tips in Cheap Stream's comprehensive knowledge base.",
+        },
+        keywords: {
+          type: String,
+          default:
+            "knowledge base, IPTV help, streaming support, tutorials, FAQ, Cheap Stream support",
+        },
+        openGraph: {
+          title: {
+            type: String,
+            default: "Knowledge Base - Cheap Stream | Help & Support",
+          },
+          description: {
+            type: String,
+            default:
+              "Find answers to common questions, tutorials, and troubleshooting tips in Cheap Stream's comprehensive knowledge base.",
+          },
+        },
+      },
+      packages: {
+        title: {
+          type: String,
+          default: "Pricing Plans - Cheap Stream | Affordable IPTV Packages",
+        },
+        description: {
+          type: String,
+          default:
+            "Choose from Cheap Stream's affordable IPTV packages. Watch more, pay less with our flexible streaming plans.",
+        },
+        keywords: {
+          type: String,
+          default:
+            "IPTV pricing, streaming plans, affordable packages, Cheap Stream plans, subscription options",
+        },
+        openGraph: {
+          title: {
+            type: String,
+            default: "Pricing Plans - Cheap Stream | Affordable IPTV Packages",
+          },
+          description: {
+            type: String,
+            default:
+              "Choose from Cheap Stream's affordable IPTV packages. Watch more, pay less with our flexible streaming plans.",
+          },
+        },
+      },
+      privacy: {
+        title: {
+          type: String,
+          default: "Privacy Policy - Cheap Stream | Data Protection",
+        },
+        description: {
+          type: String,
+          default:
+            "Learn about Cheap Stream's privacy policy and how we protect your personal information when using our IPTV services.",
+        },
+        keywords: {
+          type: String,
+          default:
+            "privacy policy, data protection, Cheap Stream privacy, IPTV privacy",
+        },
+        openGraph: {
+          title: {
+            type: String,
+            default: "Privacy Policy - Cheap Stream | Data Protection",
+          },
+          description: {
+            type: String,
+            default:
+              "Learn about Cheap Stream's privacy policy and how we protect your personal information when using our IPTV services.",
+          },
+        },
+      },
+      terms: {
+        title: {
+          type: String,
+          default: "Terms of Use - Cheap Stream | Service Agreement",
+        },
+        description: {
+          type: String,
+          default:
+            "Read Cheap Stream's terms of use and service agreement. Understand the rules and conditions for using our IPTV platform.",
+        },
+        keywords: {
+          type: String,
+          default:
+            "terms of use, service agreement, Cheap Stream terms, IPTV terms",
+        },
+        openGraph: {
+          title: {
+            type: String,
+            default: "Terms of Use - Cheap Stream | Service Agreement",
+          },
+          description: {
+            type: String,
+            default:
+              "Read Cheap Stream's terms of use and service agreement. Understand the rules and conditions for using our IPTV platform.",
+          },
+        },
+      },
+      contact: {
+        title: {
+          type: String,
+          default: "Contact Us - Cheap Stream | Get Support",
+        },
+        description: {
+          type: String,
+          default:
+            "Contact Cheap Stream's support team for help with your account, technical issues, or general inquiries. We're here 24/7.",
+        },
+        keywords: {
+          type: String,
+          default:
+            "contact support, IPTV help, Cheap Stream contact, customer service",
+        },
+        openGraph: {
+          title: {
+            type: String,
+            default: "Contact Us - Cheap Stream | Get Support",
+          },
+          description: {
+            type: String,
+            default:
+              "Contact Cheap Stream's support team for help with your account, technical issues, or general inquiries. We're here 24/7.",
+          },
+        },
+      },
+      faq: {
+        title: {
+          type: String,
+          default: "FAQ - Cheap Stream | Frequently Asked Questions",
+        },
+        description: {
+          type: String,
+          default:
+            "Find answers to frequently asked questions about Cheap Stream's IPTV services, features, and troubleshooting.",
+        },
+        keywords: {
+          type: String,
+          default:
+            "FAQ, frequently asked questions, IPTV help, Cheap Stream FAQ",
+        },
+        openGraph: {
+          title: {
+            type: String,
+            default: "FAQ - Cheap Stream | Frequently Asked Questions",
+          },
+          description: {
+            type: String,
+            default:
+              "Find answers to frequently asked questions about Cheap Stream's IPTV services, features, and troubleshooting.",
+          },
+        },
+      },
+    },
   },
   { timestamps: true }
 );
@@ -215,6 +518,141 @@ settingsSchema.statics.getSettings = async function () {
         cloudflare: false,
         getButton: false,
         tawkTo: false,
+      },
+      metaManagement: {
+        home: {
+          title: "Cheap Stream - Premium IPTV Service Provider",
+          description:
+            "Stream thousands of movies, TV shows, and live channels with Cheap Stream. Best IPTV service with HD quality and zero buffering.",
+          keywords:
+            "IPTV service, streaming, movies, TV shows, live channels, Cheap Stream",
+          openGraph: {
+            title: "Cheap Stream - Premium IPTV Service Provider",
+            description:
+              "Stream thousands of movies, TV shows, and live channels with Cheap Stream. Best IPTV service with HD quality and zero buffering.",
+          },
+        },
+        about: {
+          title: "About Us - Cheap Stream | Premium IPTV Service Provider",
+          description:
+            "Discover Cheap Stream's mission to provide premium IPTV services worldwide. Learn about our commitment to quality, customer satisfaction, and innovative streaming solutions.",
+          keywords:
+            "IPTV service provider, streaming service, live TV streaming, movie streaming, Cheap Stream about us, IPTV company, streaming technology, entertainment service",
+          openGraph: {
+            title: "About Us - Cheap Stream | Premium IPTV Service Provider",
+            description:
+              "Discover Cheap Stream's mission to provide premium IPTV services worldwide. Learn about our commitment to quality, customer satisfaction, and innovative streaming solutions.",
+          },
+        },
+        affiliate: {
+          title: "Affiliate Program - Cheap Stream | Earn Money Promoting IPTV",
+          description:
+            "Join Cheap Stream's affiliate program and earn money by promoting our premium IPTV services. Refer friends and earn commissions.",
+          keywords:
+            "affiliate program, IPTV affiliate, earn money, referral program, Cheap Stream affiliate",
+          openGraph: {
+            title:
+              "Affiliate Program - Cheap Stream | Earn Money Promoting IPTV",
+            description:
+              "Join Cheap Stream's affiliate program and earn money by promoting our premium IPTV services. Refer friends and earn commissions.",
+          },
+        },
+        blogs: {
+          title: "Blog - Cheap Stream | Latest News & Updates",
+          description:
+            "Stay informed about the latest movies, TV shows, and platform updates from Cheap Stream. Read our blog for entertainment news and tips.",
+          keywords:
+            "IPTV blog, streaming news, entertainment blog, Cheap Stream blog, movie updates",
+          openGraph: {
+            title: "Blog - Cheap Stream | Latest News & Updates",
+            description:
+              "Stay informed about the latest movies, TV shows, and platform updates from Cheap Stream. Read our blog for entertainment news and tips.",
+          },
+        },
+        explore: {
+          title: "Explore Channels - Cheap Stream | Discover Content",
+          description:
+            "Explore thousands of channels, movies, and TV shows from around the world with Cheap Stream. Find your favorite content.",
+          keywords:
+            "explore channels, IPTV channels, movie library, TV shows, Cheap Stream content",
+          openGraph: {
+            title: "Explore Channels - Cheap Stream | Discover Content",
+            description:
+              "Explore thousands of channels, movies, and TV shows from around the world with Cheap Stream. Find your favorite content.",
+          },
+        },
+        knowledge: {
+          title: "Knowledge Base - Cheap Stream | Help & Support",
+          description:
+            "Find answers to common questions, tutorials, and troubleshooting tips in Cheap Stream's comprehensive knowledge base.",
+          keywords:
+            "knowledge base, IPTV help, streaming support, tutorials, FAQ, Cheap Stream support",
+          openGraph: {
+            title: "Knowledge Base - Cheap Stream | Help & Support",
+            description:
+              "Find answers to common questions, tutorials, and troubleshooting tips in Cheap Stream's comprehensive knowledge base.",
+          },
+        },
+        packages: {
+          title: "Pricing Plans - Cheap Stream | Affordable IPTV Packages",
+          description:
+            "Choose from Cheap Stream's affordable IPTV packages. Watch more, pay less with our flexible streaming plans.",
+          keywords:
+            "IPTV pricing, streaming plans, affordable packages, Cheap Stream plans, subscription options",
+          openGraph: {
+            title: "Pricing Plans - Cheap Stream | Affordable IPTV Packages",
+            description:
+              "Choose from Cheap Stream's affordable IPTV packages. Watch more, pay less with our flexible streaming plans.",
+          },
+        },
+        privacy: {
+          title: "Privacy Policy - Cheap Stream | Data Protection",
+          description:
+            "Learn about Cheap Stream's privacy policy and how we protect your personal information when using our IPTV services.",
+          keywords:
+            "privacy policy, data protection, Cheap Stream privacy, IPTV privacy",
+          openGraph: {
+            title: "Privacy Policy - Cheap Stream | Data Protection",
+            description:
+              "Learn about Cheap Stream's privacy policy and how we protect your personal information when using our IPTV services.",
+          },
+        },
+        terms: {
+          title: "Terms of Use - Cheap Stream | Service Agreement",
+          description:
+            "Read Cheap Stream's terms of use and service agreement. Understand the rules and conditions for using our IPTV platform.",
+          keywords:
+            "terms of use, service agreement, Cheap Stream terms, IPTV terms",
+          openGraph: {
+            title: "Terms of Use - Cheap Stream | Service Agreement",
+            description:
+              "Read Cheap Stream's terms of use and service agreement. Understand the rules and conditions for using our IPTV platform.",
+          },
+        },
+        contact: {
+          title: "Contact Us - Cheap Stream | Get Support",
+          description:
+            "Contact Cheap Stream's support team for help with your account, technical issues, or general inquiries. We're here 24/7.",
+          keywords:
+            "contact support, IPTV help, Cheap Stream contact, customer service",
+          openGraph: {
+            title: "Contact Us - Cheap Stream | Get Support",
+            description:
+              "Contact Cheap Stream's support team for help with your account, technical issues, or general inquiries. We're here 24/7.",
+          },
+        },
+        faq: {
+          title: "FAQ - Cheap Stream | Frequently Asked Questions",
+          description:
+            "Find answers to frequently asked questions about Cheap Stream's IPTV services, features, and troubleshooting.",
+          keywords:
+            "FAQ, frequently asked questions, IPTV help, Cheap Stream FAQ",
+          openGraph: {
+            title: "FAQ - Cheap Stream | Frequently Asked Questions",
+            description:
+              "Find answers to frequently asked questions about Cheap Stream's IPTV services, features, and troubleshooting.",
+          },
+        },
       },
     });
     return doc;
@@ -303,6 +741,145 @@ settingsSchema.statics.getSettings = async function () {
       cloudflare: false,
       getButton: false,
       tawkTo: false,
+    };
+    modified = true;
+  }
+
+  // Add meta management defaults
+  if (!doc.metaManagement) {
+    doc.metaManagement = {
+      home: {
+        title: "Cheap Stream - Premium IPTV Service Provider",
+        description:
+          "Stream thousands of movies, TV shows, and live channels with Cheap Stream. Best IPTV service with HD quality and zero buffering.",
+        keywords:
+          "IPTV service, streaming, movies, TV shows, live channels, Cheap Stream",
+        openGraph: {
+          title: "Cheap Stream - Premium IPTV Service Provider",
+          description:
+            "Stream thousands of movies, TV shows, and live channels with Cheap Stream. Best IPTV service with HD quality and zero buffering.",
+        },
+      },
+      about: {
+        title: "About Us - Cheap Stream | Premium IPTV Service Provider",
+        description:
+          "Discover Cheap Stream's mission to provide premium IPTV services worldwide. Learn about our commitment to quality, customer satisfaction, and innovative streaming solutions.",
+        keywords:
+          "IPTV service provider, streaming service, live TV streaming, movie streaming, Cheap Stream about us, IPTV company, streaming technology, entertainment service",
+        openGraph: {
+          title: "About Us - Cheap Stream | Premium IPTV Service Provider",
+          description:
+            "Discover Cheap Stream's mission to provide premium IPTV services worldwide. Learn about our commitment to quality, customer satisfaction, and innovative streaming solutions.",
+        },
+      },
+      affiliate: {
+        title: "Affiliate Program - Cheap Stream | Earn Money Promoting IPTV",
+        description:
+          "Join Cheap Stream's affiliate program and earn money by promoting our premium IPTV services. Refer friends and earn commissions.",
+        keywords:
+          "affiliate program, IPTV affiliate, earn money, referral program, Cheap Stream affiliate",
+        openGraph: {
+          title: "Affiliate Program - Cheap Stream | Earn Money Promoting IPTV",
+          description:
+            "Join Cheap Stream's affiliate program and earn money by promoting our premium IPTV services. Refer friends and earn commissions.",
+        },
+      },
+      blogs: {
+        title: "Blog - Cheap Stream | Latest News & Updates",
+        description:
+          "Stay informed about the latest movies, TV shows, and platform updates from Cheap Stream. Read our blog for entertainment news and tips.",
+        keywords:
+          "IPTV blog, streaming news, entertainment blog, Cheap Stream blog, movie updates",
+        openGraph: {
+          title: "Blog - Cheap Stream | Latest News & Updates",
+          description:
+            "Stay informed about the latest movies, TV shows, and platform updates from Cheap Stream. Read our blog for entertainment news and tips.",
+        },
+      },
+      explore: {
+        title: "Explore Channels - Cheap Stream | Discover Content",
+        description:
+          "Explore thousands of channels, movies, and TV shows from around the world with Cheap Stream. Find your favorite content.",
+        keywords:
+          "explore channels, IPTV channels, movie library, TV shows, Cheap Stream content",
+        openGraph: {
+          title: "Explore Channels - Cheap Stream | Discover Content",
+          description:
+            "Explore thousands of channels, movies, and TV shows from around the world with Cheap Stream. Find your favorite content.",
+        },
+      },
+      knowledge: {
+        title: "Knowledge Base - Cheap Stream | Help & Support",
+        description:
+          "Find answers to common questions, tutorials, and troubleshooting tips in Cheap Stream's comprehensive knowledge base.",
+        keywords:
+          "knowledge base, IPTV help, streaming support, tutorials, FAQ, Cheap Stream support",
+        openGraph: {
+          title: "Knowledge Base - Cheap Stream | Help & Support",
+          description:
+            "Find answers to common questions, tutorials, and troubleshooting tips in Cheap Stream's comprehensive knowledge base.",
+        },
+      },
+      packages: {
+        title: "Pricing Plans - Cheap Stream | Affordable IPTV Packages",
+        description:
+          "Choose from Cheap Stream's affordable IPTV packages. Watch more, pay less with our flexible streaming plans.",
+        keywords:
+          "IPTV pricing, streaming plans, affordable packages, Cheap Stream plans, subscription options",
+        openGraph: {
+          title: "Pricing Plans - Cheap Stream | Affordable IPTV Packages",
+          description:
+            "Choose from Cheap Stream's affordable IPTV packages. Watch more, pay less with our flexible streaming plans.",
+        },
+      },
+      privacy: {
+        title: "Privacy Policy - Cheap Stream | Data Protection",
+        description:
+          "Learn about Cheap Stream's privacy policy and how we protect your personal information when using our IPTV services.",
+        keywords:
+          "privacy policy, data protection, Cheap Stream privacy, IPTV privacy",
+        openGraph: {
+          title: "Privacy Policy - Cheap Stream | Data Protection",
+          description:
+            "Learn about Cheap Stream's privacy policy and how we protect your personal information when using our IPTV services.",
+        },
+      },
+      terms: {
+        title: "Terms of Use - Cheap Stream | Service Agreement",
+        description:
+          "Read Cheap Stream's terms of use and service agreement. Understand the rules and conditions for using our IPTV platform.",
+        keywords:
+          "terms of use, service agreement, Cheap Stream terms, IPTV terms",
+        openGraph: {
+          title: "Terms of Use - Cheap Stream | Service Agreement",
+          description:
+            "Read Cheap Stream's terms of use and service agreement. Understand the rules and conditions for using our IPTV platform.",
+        },
+      },
+      contact: {
+        title: "Contact Us - Cheap Stream | Get Support",
+        description:
+          "Contact Cheap Stream's support team for help with your account, technical issues, or general inquiries. We're here 24/7.",
+        keywords:
+          "contact support, IPTV help, Cheap Stream contact, customer service",
+        openGraph: {
+          title: "Contact Us - Cheap Stream | Get Support",
+          description:
+            "Contact Cheap Stream's support team for help with your account, technical issues, or general inquiries. We're here 24/7.",
+        },
+      },
+      faq: {
+        title: "FAQ - Cheap Stream | Frequently Asked Questions",
+        description:
+          "Find answers to frequently asked questions about Cheap Stream's IPTV services, features, and troubleshooting.",
+        keywords:
+          "FAQ, frequently asked questions, IPTV help, Cheap Stream FAQ",
+        openGraph: {
+          title: "FAQ - Cheap Stream | Frequently Asked Questions",
+          description:
+            "Find answers to frequently asked questions about Cheap Stream's IPTV services, features, and troubleshooting.",
+        },
+      },
     };
     modified = true;
   }
