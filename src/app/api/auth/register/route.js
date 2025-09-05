@@ -25,6 +25,7 @@ export async function POST(request) {
     }
 
     // Verify reCAPTCHA with Google
+    // In src/app/api/auth/register/route.js, replace lines 28-40 with:
     const recaptchaResponse = await fetch(
       `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
       { method: "POST" }
@@ -32,9 +33,24 @@ export async function POST(request) {
 
     const recaptchaData = await recaptchaResponse.json();
 
+    // Add detailed logging
+    console.log("reCAPTCHA verification response:", {
+      success: recaptchaData.success,
+      "error-codes": recaptchaData["error-codes"],
+      challenge_ts: recaptchaData.challenge_ts,
+      hostname: recaptchaData.hostname,
+    });
+
     if (!recaptchaData.success) {
+      console.error(
+        "reCAPTCHA verification failed:",
+        recaptchaData["error-codes"]
+      );
       return NextResponse.json(
-        { error: "reCAPTCHA verification failed" },
+        {
+          error: "reCAPTCHA verification failed",
+          details: recaptchaData["error-codes"], // Include error details for debugging
+        },
         { status: 400 }
       );
     }
