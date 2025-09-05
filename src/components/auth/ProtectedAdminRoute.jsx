@@ -34,7 +34,15 @@ const ProtectedAdminRoute = ({ children }) => {
         return;
       }
     }
-  }, [user, userRole, isSuperAdminUser, loading, pathname, router]);
+  }, [
+    user,
+    isSuperAdminUser,
+    loading,
+    pathname,
+    router,
+    authToken,
+    is2FAPending,
+  ]);
 
   if (loading) return null;
 
