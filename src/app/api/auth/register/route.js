@@ -26,7 +26,7 @@ export async function POST(request) {
 
     // Verify reCAPTCHA with Google
     const recaptchaResponse = await fetch(
-      `https://www.google.com/recaptcha/api/siteverify?secret=6LdAb78rAAAAAKUj7PC7u_NqvaFPyruSbxTwBho3&response=${recaptchaToken}`,
+      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
       { method: "POST" }
     );
 
