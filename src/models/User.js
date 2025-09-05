@@ -163,6 +163,50 @@ const userSchema = new mongoose.Schema(
         expireDate: Date,
       },
     },
+    // Add current plan tracking
+    currentPlan: {
+      isActive: {
+        type: Boolean,
+        default: false,
+      },
+      orderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Order",
+        default: null,
+      },
+      planName: {
+        type: String,
+        default: "",
+      },
+      price: {
+        type: Number,
+        default: 0,
+      },
+      duration: {
+        type: Number,
+        default: 0, // months
+      },
+      devicesAllowed: {
+        type: Number,
+        default: 1,
+      },
+      adultChannels: {
+        type: Boolean,
+        default: false,
+      },
+      startDate: {
+        type: Date,
+        default: null,
+      },
+      expireDate: {
+        type: Date,
+        default: null,
+      },
+      autoRenew: {
+        type: Boolean,
+        default: false,
+      },
+    },
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt
@@ -247,6 +291,70 @@ userSchema.methods.markFreeTrialUsed = function (trialData) {
     expireDate: new Date(trialData.expire * 1000),
   };
   return this.save();
+};
+
+// Method to update current plan
+userSchema.methods.updateCurrentPlan = function (orderData) {
+  this.currentPlan = {
+    isActive: true,
+    orderId: orderData.orderId,
+    planName: orderData.planName,
+    price: orderData.price,
+    duration: orderData.duration,
+    devicesAllowed: orderData.devicesAllowed,
+    adultChannels: orderData.adultChannels,
+    startDate: new Date(),
+    expireDate: new Date(
+      Date.now() + orderData.duration * 30 * 24 * 60 * 60 * 1000
+    ), // duration in months
+    autoRenew: false,
+  };
+  return this.save();
+};
+
+// Method to cancel current plan
+userSchema.methods.cancelCurrentPlan = function () {
+  this.currentPlan = {
+    isActive: false,
+    orderId: null,
+    planName: "",
+    price: 0,
+    duration: 0,
+    devicesAllowed: 1,
+    adultChannels: false,
+    startDate: null,
+    expireDate: null,
+    autoRenew: false,
+  };
+  return this.save();
+};
+
+// Method to check if plan is expired
+userSchema.methods.isPlanExpired = function () {
+  if (!this.currentPlan.isActive || !this.currentPlan.expireDate) {
+    return true;
+  }
+  return new Date() > this.currentPlan.expireDate;
+};
+
+// Method to get plan status
+userSchema.methods.getPlanStatus = function () {
+  if (!this.currentPlan.isActive) {
+    return { status: "inactive", message: "No active plan" };
+  }
+
+  if (this.isPlanExpired()) {
+    return { status: "expired", message: "Plan has expired" };
+  }
+
+  const daysLeft = Math.ceil(
+    (this.currentPlan.expireDate - new Date()) / (1000 * 60 * 60 * 24)
+  );
+  return {
+    status: "active",
+    message: `Valid for ${daysLeft} more days`,
+    daysLeft,
+  };
 };
 
 // Static method to find users by role

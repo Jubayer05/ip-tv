@@ -26,6 +26,14 @@ const verificationTokenSchema = new mongoose.Schema(
     lastName: String,
     username: String,
     referralCode: String,
+    country: {
+      type: String,
+      default: "Unknown",
+    },
+    countryCode: {
+      type: String,
+      default: "XX",
+    },
   },
   {
     timestamps: true,
@@ -40,7 +48,6 @@ verificationTokenSchema.statics.generateToken = function () {
   );
 };
 
-// Update createToken method to include user data
 verificationTokenSchema.statics.createToken = async function (email, userData) {
   const token = this.generateToken();
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
@@ -59,6 +66,8 @@ verificationTokenSchema.statics.createToken = async function (email, userData) {
     referralCode: userData?.referralCode
       ? String(userData.referralCode).toUpperCase()
       : null,
+    country: userData?.country || "Unknown",
+    countryCode: userData?.countryCode || "XX",
   };
 
   const tokenDoc = await this.create(tokenData);

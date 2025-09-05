@@ -200,6 +200,34 @@ export async function POST(request) {
     });
 
     await orderDoc.save();
+
+    // Update user's current plan if order is completed and user exists
+    if (userId && orderDoc.paymentStatus === "completed") {
+      try {
+        const user = await User.findById(userId);
+        if (user) {
+          const product = orderDoc.products[0];
+          const productDoc = await Product.findById(product.productId);
+          const variant = productDoc?.variants?.find(
+            (v) => v._id.toString() === product.variantId.toString()
+          );
+
+          if (variant) {
+            await user.updateCurrentPlan({
+              orderId: orderDoc._id,
+              planName: variant.name,
+              price: product.price,
+              duration: product.duration || variant.durationMonths || 1,
+              devicesAllowed: product.devicesAllowed,
+              adultChannels: product.adultChannels,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error updating user's current plan:", error);
+      }
+    }
+
     // Refresh the document to ensure all fields are loaded
     const savedOrder = await Order.findById(orderDoc._id);
 

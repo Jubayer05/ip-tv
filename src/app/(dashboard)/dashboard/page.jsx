@@ -1,4 +1,3 @@
-import PaymentMethodCard from "@/components/features/Dashboard/DashboardHome/PaymentMethod";
 import PremiumPlanCard from "@/components/features/Dashboard/DashboardHome/PremiumPlan";
 import BillingTable from "@/components/features/Dashboard/OrderHistory/BillingTable";
 
@@ -10,7 +9,7 @@ export default function DashboardPage() {
       </h2>
       <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 max-w-5xl mx-auto">
         <PremiumPlanCard />
-        <PaymentMethodCard />
+        {/* <PaymentMethodCard /> */}
       </div>
       <BillingTable />
     </div>

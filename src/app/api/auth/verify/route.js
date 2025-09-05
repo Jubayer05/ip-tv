@@ -2,46 +2,24 @@ import { connectToDatabase } from "@/lib/db";
 import { sendWelcomeEmail } from "@/lib/email";
 import User from "@/models/User";
 import VerificationToken from "@/models/VerificationToken";
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
 import { NextResponse } from "next/server";
 
-// Initialize Firebase (you'll need to add your config)
-const firebaseConfig = {
-  // Your Firebase config here - make sure these match your .env.local
-  apiKey:
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY ||
-    process.env.FIREBASE_API_KEY ||
-    "",
-  authDomain:
-    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ||
-    process.env.FIREBASE_AUTH_DOMAIN ||
-    "",
-  projectId:
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-    process.env.FIREBASE_PROJECT_ID ||
-    "",
-  storageBucket:
-    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
-    process.env.FIREBASE_STORAGE_BUCKET ||
-    "",
-  messagingSenderId:
-    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ||
-    process.env.FIREBASE_MESSAGING_SENDER_ID ||
-    "",
-  appId:
-    process.env.NEXT_PUBLIC_FIREBASE_APP_ID ||
-    process.env.FIREBASE_APP_ID ||
-    "",
-};
+// Helper function to generate unique username
+const slugify = (s) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "")
+    .slice(0, 30) || "user";
 
-let app, auth;
-
-try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-} catch (error) {
-  console.error("Firebase initialization error:", error);
+async function generateUniqueUsername(base) {
+  let candidate = slugify(base);
+  let i = 0;
+  for (; i < 100; i++) {
+    const exists = await User.exists({ "profile.username": candidate });
+    if (!exists) return candidate;
+    candidate = `${slugify(base).slice(0, 25)}${i + 1}`;
+  }
+  return `${slugify(base).slice(0, 24)}${Math.floor(Math.random() * 10000)}`;
 }
 
 export async function POST(request) {
@@ -81,24 +59,6 @@ export async function POST(request) {
     const lastName = String(lastNameRaw).trim();
     let username = String(usernameRaw).trim();
 
-    const slugify = (s) =>
-      s
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "")
-        .slice(0, 30) || "user";
-    async function generateUniqueUsername(base) {
-      let candidate = slugify(base);
-      let i = 0;
-      for (; i < 100; i++) {
-        const exists = await User.exists({ "profile.username": candidate });
-        if (!exists) return candidate;
-        candidate = `${slugify(base).slice(0, 25)}${i + 1}`;
-      }
-      return `${slugify(base).slice(0, 24)}${Math.floor(
-        Math.random() * 10000
-      )}`;
-    }
-
     if (!username) {
       const base = firstName || email.split("@")[0];
       username = await generateUniqueUsername(base);
@@ -112,6 +72,7 @@ export async function POST(request) {
           firstName || existingUser.profile?.firstName || email.split("@")[0],
         lastName: lastName || existingUser.profile?.lastName || "",
         username: existingUser.profile?.username || username,
+        country: verificationTokenDoc.country || "Unknown",
       };
       if (firebaseUid && !existingUser.firebaseUid) {
         existingUser.firebaseUid = firebaseUid;
@@ -146,6 +107,7 @@ export async function POST(request) {
         firstName: firstName || email.split("@")[0],
         lastName: lastName || "",
         username,
+        country: verificationTokenDoc.country || "Unknown",
       },
       balance: 0,
       rank: { level: "bronze", totalSpent: 0, discountPercentage: 5 },
@@ -195,34 +157,38 @@ export async function POST(request) {
 export async function GET(_req, { params }) {
   try {
     await connectToDatabase();
+
     const { token } = params;
+
     if (!token) {
-      return NextResponse.json({ error: "Token is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Verification token is required" },
+        { status: 400 }
+      );
     }
 
-    const doc = await VerificationToken.findOne({
+    const verificationToken = await VerificationToken.findOne({
       token,
       used: false,
       expiresAt: { $gt: new Date() },
     });
 
-    if (!doc) {
+    if (!verificationToken) {
       return NextResponse.json(
-        { error: "Invalid or expired token" },
+        { error: "Invalid or expired verification token" },
         { status: 400 }
       );
     }
 
     return NextResponse.json({
-      email: doc.email,
-      firstName: doc.firstName || "",
-      lastName: doc.lastName || "",
-      username: doc.username || null,
+      success: true,
+      message: "Token is valid",
+      email: verificationToken.email,
     });
-  } catch (e) {
-    console.error("Verify GET error:", e);
+  } catch (error) {
+    console.error("Token verification error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to verify token" },
       { status: 500 }
     );
   }

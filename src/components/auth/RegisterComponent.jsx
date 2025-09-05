@@ -2,11 +2,21 @@
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowRight, Mail } from "lucide-react";
+import { useVPNDetection } from "@/hooks/useVPNDetection";
+import {
+  AlertCircle,
+  ArrowRight,
+  Globe,
+  Mail,
+  Shield,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
+import Swal from "sweetalert2";
 
 export default function RegisterComponent({ referralCode = "" }) {
   const [formData, setFormData] = useState({
@@ -27,6 +37,7 @@ export default function RegisterComponent({ referralCode = "" }) {
   const { signup } = useAuth();
   const router = useRouter();
   const recaptchaRef = useRef();
+  const vpnStatus = useVPNDetection();
 
   useEffect(() => {
     const checkRecaptchaSetting = async () => {
@@ -43,6 +54,35 @@ export default function RegisterComponent({ referralCode = "" }) {
 
     checkRecaptchaSetting();
   }, []);
+
+  // Show VPN blocking overlay if VPN is detected
+  useEffect(() => {
+    if (!vpnStatus.loading && vpnStatus.isBlocked) {
+      Swal.fire({
+        title: "VPN Detected",
+        html: `
+          <div class="text-center">
+            <div class="mb-4">
+              <Shield className="mx-auto text-red-500" size={48} />
+            </div>
+            <p class="text-gray-600 mb-4">
+              We've detected that you're using a VPN or proxy service. 
+              For security reasons, account creation is not allowed through VPN connections.
+            </p>
+            <p class="text-sm text-gray-500">
+              Please disable your VPN and try again.
+            </p>
+          </div>
+        `,
+        icon: "warning",
+        showConfirmButton: true,
+        confirmButtonText: "I Understand",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showCloseButton: false,
+      });
+    }
+  }, [vpnStatus.loading, vpnStatus.isBlocked]);
 
   // Normalize referral code to uppercase
   const normalizedReferralCode = referralCode
@@ -101,6 +141,13 @@ export default function RegisterComponent({ referralCode = "" }) {
     setLoading(true);
     setError("");
 
+    // Check if VPN is detected
+    if (vpnStatus.isBlocked) {
+      setError("Account creation is not allowed through VPN connections.");
+      setLoading(false);
+      return;
+    }
+
     // Check if username is available before submitting
     if (formData.username && !usernameAvailable) {
       setError("Username is not available. Please choose a different one.");
@@ -128,6 +175,8 @@ export default function RegisterComponent({ referralCode = "" }) {
           username: formData.username,
           referralCode: normalizedReferralCode || null,
           recaptchaToken: recaptchaToken,
+          country: vpnStatus.country,
+          countryCode: vpnStatus.countryCode,
         }),
       });
 
@@ -173,13 +222,16 @@ export default function RegisterComponent({ referralCode = "" }) {
           username: formData.username,
           referralCode: normalizedReferralCode || null,
           recaptchaToken: recaptchaToken,
+          country: vpnStatus.country,
+          countryCode: vpnStatus.countryCode,
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setError("Verification email sent again! Please check your inbox.");
+        setSuccess(true);
+        setVerificationEmail(formData.email);
       } else {
         setError(data.error || "Failed to resend email. Please try again.");
       }
@@ -189,6 +241,25 @@ export default function RegisterComponent({ referralCode = "" }) {
 
     setLoading(false);
   };
+
+  // Show loading state while detecting VPN
+  if (vpnStatus.loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 font-secondary">
+        <div className="bg-black rounded-3xl p-6 sm:p-8 w-full max-w-lg mx-auto relative border border-[#FFFFFF26]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4"></div>
+            <h1 className="text-white text-xl sm:text-2xl font-bold mb-3 sm:mb-4 tracking-wide">
+              Verifying Connection
+            </h1>
+            <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
+              Please wait while we verify your connection...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -260,6 +331,35 @@ export default function RegisterComponent({ referralCode = "" }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 font-secondary">
       <div className="bg-black rounded-3xl p-6 sm:p-8 w-full max-w-lg mx-auto relative border border-[#FFFFFF26]">
+        {/* VPN Status Display */}
+        {vpnStatus.error && (
+          <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg flex items-center justify-center gap-2">
+            <AlertCircle className="w-4 h-4 text-yellow-400" />
+            <span className="text-yellow-400 text-sm">
+              VPN detection unavailable. Proceeding with caution.
+            </span>
+          </div>
+        )}
+
+        {vpnStatus.isBlocked && (
+          <div className="mb-4 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center justify-center gap-2">
+            <WifiOff className="w-5 h-5 text-red-400" />
+            <span className="text-red-400 text-sm font-medium">
+              VPN/Proxy/Tor detected! Registration is not available with VPN
+              connections.
+            </span>
+          </div>
+        )}
+
+        {!vpnStatus.isBlocked && !vpnStatus.error && (
+          <div className="mb-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg flex items-center justify-center gap-2">
+            <Wifi className="w-4 h-4 text-green-400" />
+            <span className="text-green-400 text-sm">
+              Connection verified ✓
+            </span>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-white text-xl sm:text-2xl font-bold mb-3 sm:mb-4 tracking-wide">
@@ -269,6 +369,14 @@ export default function RegisterComponent({ referralCode = "" }) {
             Join Cheap Stream in just a few clicks and unlock instant access to
             movies, shows, and live TV.
           </p>
+
+          {/* Location Info */}
+          {vpnStatus.country && vpnStatus.country !== "Unknown" && (
+            <div className="mt-3 flex items-center justify-center gap-2 text-xs text-gray-400">
+              <Globe size={14} />
+              <span>Detected location: {vpnStatus.country}</span>
+            </div>
+          )}
         </div>
 
         {/* Error Message */}
@@ -292,7 +400,7 @@ export default function RegisterComponent({ referralCode = "" }) {
               onChange={handleChange}
               placeholder="Enter your first name"
               required
-              disabled={loading}
+              disabled={loading || vpnStatus.isBlocked}
             />
           </div>
 
@@ -308,7 +416,7 @@ export default function RegisterComponent({ referralCode = "" }) {
               onChange={handleChange}
               placeholder="Enter your last name"
               required
-              disabled={loading}
+              disabled={loading || vpnStatus.isBlocked}
             />
           </div>
 
@@ -324,7 +432,7 @@ export default function RegisterComponent({ referralCode = "" }) {
               onChange={handleChange}
               placeholder="Enter your email address"
               required
-              disabled={loading}
+              disabled={loading || vpnStatus.isBlocked}
             />
           </div>
 
@@ -340,7 +448,7 @@ export default function RegisterComponent({ referralCode = "" }) {
               onChange={handleChange}
               placeholder="Enter your username"
               required
-              disabled={loading}
+              disabled={loading || vpnStatus.isBlocked}
             />
             {/* Username availability indicator */}
             {formData.username && (
@@ -381,12 +489,24 @@ export default function RegisterComponent({ referralCode = "" }) {
             className="w-full transition-all duration-200 flex items-center justify-center gap-2"
             disabled={
               loading ||
+              vpnStatus.isBlocked ||
               (formData.username && usernameAvailable === false) ||
               (recaptchaEnabled && !recaptchaToken)
             }
           >
-            {loading ? "Sending Verification..." : "Create An Account"}
-            {!loading && <ArrowRight size={18} />}
+            {vpnStatus.isBlocked ? (
+              <>
+                <Shield size={18} />
+                VPN Detected - Registration Blocked
+              </>
+            ) : loading ? (
+              "Sending Verification..."
+            ) : (
+              <>
+                Create An Account
+                <ArrowRight size={18} />
+              </>
+            )}
           </Button>
         </form>
 

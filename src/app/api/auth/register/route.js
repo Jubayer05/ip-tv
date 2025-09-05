@@ -14,30 +14,9 @@ export async function POST(request) {
       username,
       referralCode,
       recaptchaToken,
+      country,
+      countryCode,
     } = body;
-
-    // Verify reCAPTCHA
-    if (!recaptchaToken) {
-      return NextResponse.json(
-        { error: "reCAPTCHA verification required" },
-        { status: 400 }
-      );
-    }
-
-    // Verify reCAPTCHA with Google
-    const recaptchaResponse = await fetch(
-      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
-      { method: "POST" }
-    );
-
-    const recaptchaData = await recaptchaResponse.json();
-
-    if (!recaptchaData.success) {
-      return NextResponse.json(
-        { error: "reCAPTCHA verification failed" },
-        { status: 400 }
-      );
-    }
 
     await connectToDatabase();
 
@@ -71,12 +50,31 @@ export async function POST(request) {
       }
     }
 
-    // Create verification token with user data (firstName, lastName, username, referralCode)
+    // Verify reCAPTCHA only if token is provided
+    if (recaptchaToken) {
+      const recaptchaResponse = await fetch(
+        `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
+        { method: "POST" }
+      );
+
+      const recaptchaData = await recaptchaResponse.json();
+
+      if (!recaptchaData.success) {
+        return NextResponse.json(
+          { error: "reCAPTCHA verification failed" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Create verification token with user data
     const verificationToken = await VerificationToken.createToken(email, {
       firstName,
       lastName,
       username: username || null,
       referralCode: referralCode ? String(referralCode).toUpperCase() : null,
+      country: country || "Unknown",
+      countryCode: countryCode || "XX",
     });
 
     // Send verification email
@@ -87,6 +85,8 @@ export async function POST(request) {
     );
 
     if (!emailSent) {
+      // If email fails, clean up the token
+      await VerificationToken.deleteOne({ token: verificationToken.token });
       return NextResponse.json(
         { error: "Failed to send verification email. Please try again." },
         { status: 500 }
