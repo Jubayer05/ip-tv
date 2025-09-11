@@ -375,6 +375,12 @@ const PricingPlan = () => {
     // Get the selected plan details
     const selectedPlanData = product?.variants[selectedPlan];
 
+    // Calculate the final price with coupon discount
+    const finalPrice =
+      appliedCoupon && couponResult
+        ? displayTotals.finalTotalWithCoupon
+        : priceCalculation.finalTotal;
+
     const selectionData = {
       plan: {
         name: selectedPlanData?.name || "Unknown",
@@ -389,9 +395,33 @@ const PricingPlan = () => {
       quantity:
         selectedQuantity === "custom" ? customQuantity : selectedQuantity,
       isCustomQuantity: selectedQuantity === "custom",
-      priceCalculation: priceCalculation,
+      priceCalculation: {
+        ...priceCalculation,
+        // Override the final total with coupon-discounted amount
+        finalTotal: finalPrice,
+        // Add coupon information to price calculation
+        couponApplied: appliedCoupon
+          ? {
+              code: appliedCoupon.code,
+              discountAmount: displayTotals.couponDiscountAmount,
+              discountType: appliedCoupon.discountType,
+              discountValue: appliedCoupon.discountValue,
+            }
+          : null,
+        // Add the display totals for reference
+        displayTotals: displayTotals,
+      },
       timestamp: new Date().toISOString(),
-      coupon: appliedCoupon ? { code: appliedCoupon.code } : null,
+      coupon: appliedCoupon
+        ? {
+            code: appliedCoupon.code,
+            discountAmount: displayTotals.couponDiscountAmount,
+            discountType: appliedCoupon.discountType,
+            discountValue: appliedCoupon.discountValue,
+          }
+        : null,
+      // Add the final price as a separate field for easy access
+      finalPrice: finalPrice,
     };
 
     try {
@@ -402,8 +432,7 @@ const PricingPlan = () => {
         setShowNotRegister(true);
         setIsModalOpen(true);
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   };
 
   const closeModal = () => {
@@ -417,10 +446,6 @@ const PricingPlan = () => {
   if (!product || !product.variants) {
     return <div className="text-center py-100">No product data available</div>;
   }
-
-  const closeNotRegister = () => {
-    setShowNotRegister(false);
-  };
 
   const closeThankYou = () => {
     setShowThankYou(false);

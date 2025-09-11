@@ -1,17 +1,18 @@
-"use client";
 import dynamic from "next/dynamic";
-import { useCallback, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 
-const RichTextEditor = ({ value, onChange, placeholder, className = "" }) => {
+const RichTextEditor = ({ value, title, onDataChange }) => {
   const [content, setContent] = useState(value || "");
+
+  useEffect(() => {
+    onDataChange(content);
+  }, [content, onDataChange]);
 
   const options = [
     "bold",
     "italic",
-    "underline",
-    "strikethrough",
     "|",
     "ul",
     "ol",
@@ -30,7 +31,6 @@ const RichTextEditor = ({ value, onChange, placeholder, className = "" }) => {
     "|",
     "table",
     "link",
-    "image",
     "|",
     "undo",
     "redo",
@@ -39,7 +39,7 @@ const RichTextEditor = ({ value, onChange, placeholder, className = "" }) => {
   const config = useMemo(
     () => ({
       readonly: false,
-      placeholder: placeholder || "Start typing...",
+      placeholder: "Start typing...",
       defaultActionOnPaste: "insert_as_html",
       defaultLineHeight: 1.5,
       enter: "div",
@@ -52,40 +52,44 @@ const RichTextEditor = ({ value, onChange, placeholder, className = "" }) => {
       sizeMD: 700,
       sizeSM: 400,
       toolbarAdaptive: false,
-      height: 300,
-      theme: "default",
-      spellcheck: true,
-      language: "en",
-      showCharsCounter: false,
-      showWordsCounter: false,
-      showXPathInStatusbar: false,
-      askBeforePasteHTML: false,
-      askBeforePasteFromWord: false,
-      uploader: {
-        insertImageAsBase64URI: true,
-      },
-      style: {
-        background: "#ffffff",
-        color: "#000000",
-      },
+      theme: "dark",
+      color: "#ffffff",
+      background: "#000000",
+      editorBackground: "#000000",
+      editorTextColor: "#ffffff",
+      toolbarBackground: "#1f2937",
+      toolbarColor: "#ffffff",
     }),
-    [placeholder]
-  );
-
-  const handleChange = useCallback(
-    (newContent) => {
-      setContent(newContent);
-      if (onChange) {
-        onChange(newContent);
-      }
-    },
-    [onChange]
+    []
   );
 
   return (
-    <div className={className}>
+    <div className="mt-5">
       <div className="jodit-tailwind-wrapper">
-        <JoditEditor config={config} value={content} onChange={handleChange} />
+        <style jsx>{`
+          .jodit-tailwind-wrapper :global(.jodit-container) {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+          }
+          .jodit-tailwind-wrapper :global(.jodit-wysiwyg) {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+          }
+          .jodit-tailwind-wrapper :global(.jodit-toolbar) {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+          }
+          .jodit-tailwind-wrapper :global(.jodit-toolbar-button) {
+            color: #ffffff !important;
+          }
+          .jodit-tailwind-wrapper :global(.jodit-toolbar-button:hover) {
+            background-color: #374151 !important;
+          }
+        `}</style>
+        <JoditEditor
+          config={config}
+          onChange={(newContent) => setContent(newContent)}
+        />
       </div>
     </div>
   );

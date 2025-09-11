@@ -1,4 +1,5 @@
 import { connectToDatabase } from "@/lib/db";
+import { applyPaymentUpdate } from "@/lib/payments/paymentUpdater";
 import plisioService from "@/lib/paymentServices/plisioService";
 import Order from "@/models/Order";
 import { NextResponse } from "next/server";
@@ -31,7 +32,6 @@ export async function POST(request) {
       confirmations,
     } = callbackData;
 
-
     // Find the order by invoice ID or order number
     let order = await Order.findOne({
       $or: [
@@ -56,52 +56,16 @@ export async function POST(request) {
     order.plisioPayment.callbackReceived = true;
     order.plisioPayment.lastStatusUpdate = new Date();
 
-    // Update order payment status based on Plisio status
-    switch (status) {
-      case "completed":
-        order.paymentStatus = "completed";
-
-        // TODO: Additional completion logic
-        // - Send confirmation email
-        // - Activate subscription/keys
-        // - Process referral commissions
-        // - Send notifications
-
-        break;
-
-      case "pending":
-        order.paymentStatus = "pending";
-        break;
-
-      case "new":
-        order.paymentStatus = "pending";
-        break;
-
-      case "error":
-      case "cancelled":
-        order.paymentStatus = "failed";
-        // TODO: Handle failed payments
-        // - Send failure notification
-        // - Update inventory if needed
-        // - Log for manual review
-
-        break;
-
-      case "expired":
-        order.paymentStatus = "failed";
-        // TODO: Handle expired payments
-        // - Clean up pending orders
-        // - Send expiration notification
-
-        break;
-
-      default:
-        
-    }
-
-    await order.save();
-
-    
+    await applyPaymentUpdate({
+      order,
+      gatewayKey: "plisioPayment",
+      rawStatus: status, // from callback
+      gatewayFields: {
+        confirmations: confirmations || 0,
+        actualSum: actual_sum || "0.00000000",
+        callbackReceived: true,
+      },
+    });
 
     return NextResponse.json({
       success: true,

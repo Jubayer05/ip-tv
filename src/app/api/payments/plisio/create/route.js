@@ -1,6 +1,7 @@
 import { connectToDatabase } from "@/lib/db";
 import plisioService from "@/lib/paymentServices/plisioService";
 import Order from "@/models/Order";
+import PaymentSettings from "@/models/PaymentSettings";
 import Product from "@/models/Product";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
@@ -34,6 +35,25 @@ export async function POST(request) {
     }
 
     await connectToDatabase();
+
+    // Get Plisio payment settings from database
+    const paymentSettings = await PaymentSettings.findOne({
+      gateway: "plisio",
+      isActive: true,
+    });
+
+    if (!paymentSettings) {
+      return NextResponse.json(
+        { error: "Plisio payment method is not configured or active" },
+        { status: 400 }
+      );
+    }
+
+    // Update the service with database credentials
+    plisioService.apiKey = paymentSettings.apiKey;
+    if (paymentSettings.apiSecret) {
+      plisioService.apiSecret = paymentSettings.apiSecret;
+    }
 
     const origin = new URL(request.url).origin;
     const orderNumber =

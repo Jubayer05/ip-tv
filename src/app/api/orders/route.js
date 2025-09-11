@@ -1,8 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
-import { sendOrderKeysEmail } from "@/lib/email";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
-import Settings from "@/models/Settings";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
@@ -39,12 +37,12 @@ export async function GET() {
 export async function POST(request) {
   try {
     await connectToDatabase();
-    const body = await request.json();
 
+    const body = await request.json();
     const {
       userId,
-      contactInfo: contactInfoInput,
       guestEmail,
+      contactInfo: contactInfoInput,
       productId,
       variantId,
       quantity,
@@ -54,6 +52,7 @@ export async function POST(request) {
       paymentMethod = "Manual",
       paymentGateway = "None",
       paymentStatus: incomingPaymentStatus, // NEW
+      totalAmount: incomingTotalAmount, // NEW: Accept totalAmount from frontend
     } = body || {};
 
     if (!productId || !variantId || !quantity || !devicesAllowed) {
@@ -113,41 +112,82 @@ export async function POST(request) {
       );
     }
 
-    // Subtotal and fees
-    const deviceRule = (product.devicePricing || []).find(
-      (d) => d.deviceCount === Number(devicesAllowed)
-    );
-    const deviceMultiplier = deviceRule ? deviceRule.multiplier : 1;
+    // Calculate pricing
+    let finalTotal;
+    let discountAmount = 0;
 
-    const basePrice = Number(variant.price || 0);
-    const pricePerDevice = basePrice * deviceMultiplier;
-    const qty = Number(quantity);
+    // If totalAmount is provided from frontend (e.g., with coupon discounts), use it
+    if (incomingTotalAmount && incomingTotalAmount > 0) {
+      finalTotal = Number(incomingTotalAmount);
+      // Calculate discount amount for record keeping
+      const deviceRule = (product.devicePricing || []).find(
+        (d) => d.deviceCount === Number(devicesAllowed)
+      );
+      const deviceMultiplier = deviceRule ? deviceRule.multiplier : 1;
+      const basePrice = Number(variant.price || 0);
+      const pricePerDevice = basePrice * deviceMultiplier;
+      const qty = Number(quantity);
+      let subtotal = pricePerDevice * qty;
 
-    let subtotal = pricePerDevice * qty;
+      const bulkDiscounts = product.bulkDiscounts || [];
+      const applicableDiscount = bulkDiscounts
+        .filter((d) => qty >= d.minQuantity)
+        .sort((a, b) => b.minQuantity - a.minQuantity)[0];
 
-    const bulkDiscounts = product.bulkDiscounts || [];
-    const applicableDiscount = bulkDiscounts
-      .filter((d) => qty >= d.minQuantity)
-      .sort((a, b) => b.minQuantity - a.minQuantity)[0];
+      const discountPercentage = applicableDiscount
+        ? applicableDiscount.discountPercentage
+        : 0;
+      const bulkDiscountAmount =
+        Math.round(((subtotal * discountPercentage) / 100) * 100) / 100;
 
-    const discountPercentage = applicableDiscount
-      ? applicableDiscount.discountPercentage
-      : 0;
-    const discountAmount =
-      Math.round(((subtotal * discountPercentage) / 100) * 100) / 100;
+      let discountedTotal = subtotal - bulkDiscountAmount;
+      const adultFeePct = product.adultChannelsFeePercentage || 0;
+      const adultFee = adultChannels
+        ? (discountedTotal * adultFeePct) / 100
+        : 0;
 
-    let discountedTotal = subtotal - discountAmount;
-    const adultFeePct = product.adultChannelsFeePercentage || 0;
-    const adultFee = adultChannels ? (discountedTotal * adultFeePct) / 100 : 0;
+      const calculatedTotal =
+        Math.round((discountedTotal + adultFee) * 100) / 100;
+      discountAmount = Math.max(0, calculatedTotal - finalTotal);
+    } else {
+      // Original calculation logic when no totalAmount is provided
+      const deviceRule = (product.devicePricing || []).find(
+        (d) => d.deviceCount === Number(devicesAllowed)
+      );
+      const deviceMultiplier = deviceRule ? deviceRule.multiplier : 1;
 
-    const finalTotal = Math.round((discountedTotal + adultFee) * 100) / 100;
+      const basePrice = Number(variant.price || 0);
+      const pricePerDevice = basePrice * deviceMultiplier;
+      const qty = Number(quantity);
+
+      let subtotal = pricePerDevice * qty;
+
+      const bulkDiscounts = product.bulkDiscounts || [];
+      const applicableDiscount = bulkDiscounts
+        .filter((d) => qty >= d.minQuantity)
+        .sort((a, b) => b.minQuantity - a.minQuantity)[0];
+
+      const discountPercentage = applicableDiscount
+        ? applicableDiscount.discountPercentage
+        : 0;
+      discountAmount =
+        Math.round(((subtotal * discountPercentage) / 100) * 100) / 100;
+
+      let discountedTotal = subtotal - discountAmount;
+      const adultFeePct = product.adultChannelsFeePercentage || 0;
+      const adultFee = adultChannels
+        ? (discountedTotal * adultFeePct) / 100
+        : 0;
+
+      finalTotal = Math.round((discountedTotal + adultFee) * 100) / 100;
+    }
 
     const orderProducts = [
       {
         productId: product._id,
         variantId: variant._id,
-        quantity: qty,
-        price: pricePerDevice,
+        quantity: Number(quantity),
+        price: Number(variant.price || 0),
         duration: Number(variant.durationMonths || 0),
         devicesAllowed: Number(devicesAllowed),
         adultChannels: Boolean(adultChannels),
@@ -156,7 +196,7 @@ export async function POST(request) {
 
     const keys = [];
     const expiry = addMonths(new Date(), Number(variant.durationMonths || 0));
-    for (let i = 0; i < qty; i++) {
+    for (let i = 0; i < Number(quantity); i++) {
       keys.push({
         key: generateKey(),
         productId: product._id,
@@ -186,12 +226,12 @@ export async function POST(request) {
       userId: userId || null,
       guestEmail: resolvedGuestEmail,
       products: orderProducts,
-      totalAmount: finalTotal,
+      totalAmount: finalTotal, // Use the final total (either from frontend or calculated)
       discountAmount,
       couponCode,
       paymentMethod,
       paymentGateway,
-      paymentStatus: incomingPaymentStatus || "pending", // NEW
+      paymentStatus: incomingPaymentStatus || "pending",
       keys,
       contactInfo,
       status: "completed",
@@ -223,75 +263,20 @@ export async function POST(request) {
             });
           }
         }
-      } catch (error) {
-        console.error("Error updating user's current plan:", error);
+      } catch (planUpdateError) {
+        console.error("Error updating user plan:", planUpdateError);
       }
     }
 
-    // Refresh the document to ensure all fields are loaded
-    const savedOrder = await Order.findById(orderDoc._id);
-
-    if (
-      savedOrder?.paymentStatus === "completed" &&
-      savedOrder?.isFirstOrder &&
-      savedOrder?.referredBy
-    ) {
-      try {
-        const settings = await Settings.getSettings();
-        const commissionPct = Number(settings.affiliateCommissionPct || 10);
-        const commission =
-          Math.round(
-            ((Number(savedOrder.totalAmount || 0) * commissionPct) / 100) * 100
-          ) / 100;
-
-        if (commission > 0) {
-          // Update referrer earnings
-          const referrer = await User.findById(savedOrder.referredBy);
-
-          if (referrer) {
-            referrer.referral.earnings =
-              Number(referrer.referral.earnings || 0) + commission;
-            await referrer.save();
-
-            // Call balance API so it appears in your logs/flow
-            const origin = new URL(request.url).origin;
-
-            const balanceResponse = await fetch(
-              `${origin}/api/users/${referrer._id}/balance`,
-              {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ amountToAdd: commission }),
-              }
-            );
-
-            const balanceData = await balanceResponse.json();
-
-            // Also update balance directly as backup
-            referrer.balance = Number(referrer.balance || 0) + commission;
-            await referrer.save();
-          }
-        }
-      } catch (e) {
-        console.error("Commission on create error:", e);
-      }
-    } else {
-    }
-
-    await sendOrderKeysEmail({
-      toEmail: contactInfo.email,
-      fullName: contactInfo.fullName,
-      order: orderDoc.toObject(),
+    return NextResponse.json({
+      success: true,
+      order: orderDoc,
+      message: "Order created successfully",
     });
-
-    return NextResponse.json(
-      { success: true, order: orderDoc },
-      { status: 201 }
-    );
   } catch (error) {
-    console.error("Order create error:", error);
+    console.error("Order creation error:", error);
     return NextResponse.json(
-      { error: "Failed to create order", details: error?.message },
+      { error: "Failed to create order", details: error.message },
       { status: 500 }
     );
   }

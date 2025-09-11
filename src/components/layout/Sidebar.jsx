@@ -12,7 +12,9 @@ import {
   List,
   Monitor,
   Package,
+  Scale,
   Settings,
+  Shield,
   Ticket,
   Users,
 } from "lucide-react";
@@ -69,11 +71,6 @@ export default function Sidebar() {
   // ...
   // Admin menu items (admin, support, super admin)
   const ORIGINAL_ADMIN_MENU_ITEMS = [
-    {
-      href: "/dashboard",
-      label: "Dashboard",
-      icon: MdOutlineDashboard,
-    },
     {
       href: "/admin",
       label: "Admin Dashboard",
@@ -138,6 +135,16 @@ export default function Sidebar() {
       href: "/admin/blog",
       label: "Blogs Management",
       icon: IoDocument,
+    },
+    {
+      href: "/admin/legal",
+      label: "Legal Management",
+      icon: Scale,
+    },
+    {
+      href: "/admin/payments",
+      label: "Payment Management",
+      icon: Shield,
     },
     {
       href: "/admin/settings",

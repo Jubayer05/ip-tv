@@ -1,0 +1,408 @@
+"use client";
+import { X } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import Swal from "sweetalert2";
+
+export default function DepositPopup({
+  isOpen,
+  onClose,
+  onSuccess,
+  userId,
+  userEmail,
+}) {
+  const [step, setStep] = useState("amount");
+  const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [statusText, setStatusText] = useState("");
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [loadingMethods, setLoadingMethods] = useState(true);
+  const [selectedGateway, setSelectedGateway] = useState(null);
+  const pollRef = useRef(null);
+
+  // Fetch payment methods when popup opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchPaymentMethods();
+    } else {
+      // Reset state when popup is closed
+      setStep("amount");
+      setAmount("");
+      setLoading(false);
+      setStatusText("");
+      setSelectedGateway(null);
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    }
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [isOpen]);
+
+  const fetchPaymentMethods = async () => {
+    try {
+      setLoadingMethods(true);
+      const response = await fetch("/api/payment-settings");
+      const data = await response.json();
+
+      if (data.success) {
+        // Filter only active payment methods
+        const activeMethods = data.data.filter((method) => method.isActive);
+        setPaymentMethods(activeMethods);
+      }
+    } catch (error) {
+      console.error("Error fetching payment methods:", error);
+    } finally {
+      setLoadingMethods(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const proceedToGateways = () => {
+    const num = Number(amount);
+    if (!num || num <= 0) {
+      Swal.fire({
+        icon: "warning",
+        title: "Invalid amount",
+        text: "Please enter a valid amount greater than 0.",
+        confirmButtonColor: "#00b877",
+      });
+      return;
+    }
+    setStep("gateway");
+  };
+
+  const selectGateway = (method) => {
+    const isAmountValid = Number(amount) >= method.minAmount;
+    if (isAmountValid) {
+      setSelectedGateway(method);
+    }
+  };
+
+  const confirmPayment = async () => {
+    if (!selectedGateway) return;
+
+    if (loading) return;
+    setLoading(true);
+    setStatusText("");
+    try {
+      const payload = {
+        amount: Number(amount),
+        currency: "USD",
+        userId: userId || null,
+        customerEmail: userEmail || "",
+      };
+
+      const res = await fetch(
+        `/api/payments/${selectedGateway.gateway}/deposit`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(
+          err?.error || `Failed to create ${selectedGateway.gateway} deposit`
+        );
+      }
+
+      const data = await res.json();
+      const checkoutUrl = data?.checkoutUrl;
+      const depositId = data?.depositId;
+
+      if (!checkoutUrl || !depositId) {
+        throw new Error("Invalid deposit creation response");
+      }
+
+      window.open(checkoutUrl, "_blank", "noopener,noreferrer");
+
+      setStatusText("Waiting for payment confirmation...");
+      pollRef.current = setInterval(async () => {
+        try {
+          const st = await fetch(`/api/deposits/status/${depositId}`);
+          if (!st.ok) return;
+          const s = await st.json();
+          if (s?.status === "completed") {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+            setStatusText("Payment confirmed.");
+            onSuccess?.();
+            onClose?.();
+          } else if (s?.status === "failed" || s?.status === "cancelled") {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+            setStatusText("Payment failed or canceled.");
+          }
+        } catch {}
+      }, 4000);
+    } catch (e) {
+      setStatusText(e?.message || "Failed to start payment");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper function to get logo path
+  const getLogoPath = (gateway) => {
+    const logoMap = {
+      stripe: "/payment_logo/stripe.png",
+      plisio: "/payment_logo/plisio.png",
+      hoodpay: "/payment_logo/hoodpay.jpeg",
+      nowpayment: "/payment_logo/now_payments.png",
+      changenow: "/payment_logo/changenow.png",
+      cryptomus: "/payment_logo/cryptomus.png",
+    };
+    return logoMap[gateway] || "/payment_logo/default.png";
+  };
+
+  // Helper function to get payment type
+  const getPaymentType = (gateway) => {
+    const typeMap = {
+      stripe: "Card",
+      plisio: "Crypto",
+      hoodpay: "Payment",
+      nowpayment: "Crypto",
+      changenow: "Exchange",
+      cryptomus: "Crypto",
+    };
+    return typeMap[gateway] || "Payment";
+  };
+
+  // Helper function to get all applicable bonuses for a given amount
+  const getApplicableBonuses = (method, amount) => {
+    if (!method.bonusSettings || method.bonusSettings.length === 0) return [];
+
+    const activeBonuses = method.bonusSettings.filter(
+      (bonus) => bonus.isActive
+    );
+    if (activeBonuses.length === 0) return [];
+
+    // Find all applicable bonuses (amount meets minimum requirement)
+    const applicableBonuses = activeBonuses
+      .filter((bonus) => amount >= bonus.minAmount)
+      .sort((a, b) => b.bonusPercentage - a.bonusPercentage); // Sort by highest percentage first
+
+    return applicableBonuses.map((bonus) => ({
+      percentage: bonus.bonusPercentage,
+      amount: (amount * bonus.bonusPercentage) / 100,
+      minAmount: bonus.minAmount,
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-[70] font-secondary">
+      <div className="bg-black rounded-2xl p-5 sm:p-6 w-full max-w-sm sm:max-w-[700px] mx-auto relative border border-[#FFFFFF26] max-h-[90vh] overflow-y-auto">
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-white hover:text-gray-300 transition-colors z-10"
+        >
+          <X size={20} />
+        </button>
+
+        {step === "amount" && (
+          <div>
+            <h3 className="text-white text-lg sm:text-xl font-bold mb-4">
+              Add Funds
+            </h3>
+            <label className="block text-sm text-gray-300 mb-2">
+              Amount ($)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Enter amount"
+              className="w-full bg-[#0c171c] border border-white/15 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
+            />
+            <button
+              onClick={proceedToGateways}
+              className="mt-4 w-full cursor-pointer py-2 bg-cyan-400 text-black rounded font-semibold hover:bg-cyan-300"
+            >
+              Proceed to Pay
+            </button>
+          </div>
+        )}
+
+        {step === "gateway" && (
+          <div>
+            <h3 className="text-white text-lg sm:text-xl font-bold mb-4">
+              Select a Payment Method
+            </h3>
+
+            {loadingMethods ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+              </div>
+            ) : paymentMethods.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-400">No payment methods available</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {paymentMethods.map((method) => {
+                  const bonuses = getApplicableBonuses(method, Number(amount));
+                  const isAmountValid = Number(amount) >= method.minAmount;
+                  const isSelected = selectedGateway?._id === method._id;
+
+                  // Get the highest bonus available for this method (regardless of current amount)
+                  const highestBonus =
+                    method.bonusSettings && method.bonusSettings.length > 0
+                      ? method.bonusSettings
+                          .filter((bonus) => bonus.isActive)
+                          .sort(
+                            (a, b) => b.bonusPercentage - a.bonusPercentage
+                          )[0]
+                      : null;
+
+                  return (
+                    <button
+                      key={method._id}
+                      className={`aspect-square py-4 px-3 rounded-lg font-semibold text-sm transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-60 flex flex-col items-center justify-center space-y-1 ${
+                        isSelected
+                          ? "bg-cyan-400 text-black"
+                          : isAmountValid
+                          ? "bg-white text-black hover:bg-gray-50"
+                          : "bg-gray-600 text-gray-300 cursor-not-allowed"
+                      }`}
+                      onClick={() => selectGateway(method)}
+                      disabled={loading || !isAmountValid}
+                      title={`${method.name} - Min: $${method.minAmount}`}
+                    >
+                      <Image
+                        src={getLogoPath(method.gateway)}
+                        alt={method.name}
+                        width={60}
+                        height={30}
+                        className="object-contain w-[100px]"
+                      />
+                      <span className="text-xs text-gray-600">
+                        {getPaymentType(method.gateway)}
+                      </span>
+
+                      {/* Always show minimum amount */}
+                      <div className="text-xs text-center">
+                        <span className="font-medium text-gray-600">
+                          Min: ${method.minAmount}
+                        </span>
+                        {!isAmountValid && (
+                          <div className="text-red-500 text-xs mt-1">
+                            Need $
+                            {(method.minAmount - Number(amount)).toFixed(2)}{" "}
+                            more
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Always show bonus if available */}
+                      {highestBonus && (
+                        <div className="text-xs text-green-600 font-medium">
+                          +{highestBonus.bonusPercentage}% Bonus
+                        </div>
+                      )}
+
+                      {/* Show minimum amount to get this bonus */}
+                      {highestBonus && (
+                        <div className="text-xs text-gray-500">
+                          Min ${highestBonus.minAmount} to get
+                        </div>
+                      )}
+
+                      {/* Show current bonus if amount is valid and has applicable bonuses */}
+                      {bonuses.length > 0 && isAmountValid && (
+                        <div className="text-xs text-blue-600 font-medium">
+                          You get +{bonuses[0].percentage}%
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Selected Gateway Summary */}
+            {selectedGateway && (
+              <div className="mt-6 p-4 bg-gray-800 rounded-lg">
+                <h4 className="text-white font-semibold mb-3 text-center">
+                  Selected Payment Method
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-300">Method:</span>
+                    <span className="text-white font-medium">
+                      {selectedGateway.name}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-300">Deposit Amount:</span>
+                    <span className="text-white font-medium">
+                      ${Number(amount).toFixed(2)}
+                    </span>
+                  </div>
+
+                  {/* Show bonus for selected gateway */}
+                  {(() => {
+                    const bonuses = getApplicableBonuses(
+                      selectedGateway,
+                      Number(amount)
+                    );
+                    if (bonuses.length > 0) {
+                      // Get only the highest bonus (first one since they're sorted by percentage)
+                      const highestBonus = bonuses[0];
+                      return (
+                        <>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-300">Bonus:</span>
+                            <span className="text-green-400 font-medium">
+                              +${highestBonus.amount.toFixed(2)} (
+                              {highestBonus.percentage}%)
+                            </span>
+                          </div>
+                          <div className="border-t border-gray-600 my-2"></div>
+                          <div className="flex justify-between text-sm font-semibold">
+                            <span className="text-white">
+                              Total You'll Receive:
+                            </span>
+                            <span className="text-cyan-400">
+                              $
+                              {(Number(amount) + highestBonus.amount).toFixed(
+                                2
+                              )}
+                            </span>
+                          </div>
+                        </>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+
+                <button
+                  onClick={confirmPayment}
+                  disabled={loading}
+                  className="mt-4 w-full py-2 bg-cyan-400 text-black rounded font-semibold hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? "Processing..." : "Confirm Payment"}
+                </button>
+              </div>
+            )}
+
+            {!!statusText && (
+              <p className="text-xs text-gray-300 mt-4 text-center">
+                {statusText}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

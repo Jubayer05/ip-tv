@@ -1,9 +1,10 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowRight, Check, X } from "lucide-react";
+import { ArrowRight, Check, Wallet, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import BalanceCheckoutPopup from "./BalanceCheckoutPopup";
 import GatewaySelectPopup from "./GatewaySelectPopup";
 import PaymentConfirmPopup from "./PaymentConfirmPopup";
 
@@ -13,6 +14,7 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [showGatewaySelect, setShowGatewaySelect] = useState(false);
+  const [showBalanceCheckout, setShowBalanceCheckout] = useState(false);
 
   // Original text constants
   const ORIGINAL_TEXTS = {
@@ -21,7 +23,8 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
       "Check your email for IPTV details and a secure link to view your order history.",
     buttons: {
       backToHome: "Back To Home Page",
-      paymentConfirm: "Confirm Your Payment ",
+      paymentConfirm: "Confirm Your Payment",
+      payWithBalance: "Pay with Balance",
       cancel: "Cancel",
     },
     footer: {
@@ -51,7 +54,7 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
         if (!isMounted) return;
 
         const [tTitle, tSubtitle, ...tButtons] = translated;
-        const tFooter = tButtons.slice(3);
+        const tFooter = tButtons.slice(4);
 
         setTexts({
           title: tTitle,
@@ -59,7 +62,8 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
           buttons: {
             backToHome: tButtons[0],
             paymentConfirm: tButtons[1],
-            createAccount: tButtons[2],
+            payWithBalance: tButtons[2],
+            cancel: tButtons[3],
           },
           footer: {
             receipt: tFooter[0],
@@ -137,10 +141,10 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
       setShowPaymentConfirm(true);
     } catch (e) {
       console.error(e);
-      Swal.fire({ 
-        icon: "error", 
-        title: "Order Failed", 
-        text: e?.message || "Failed to place order" 
+      Swal.fire({
+        icon: "error",
+        title: "Order Failed",
+        text: e?.message || "Failed to place order",
       });
     } finally {
       setPlacing(false);
@@ -149,6 +153,10 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
 
   const closePaymentConfirm = () => {
     setShowPaymentConfirm(false);
+  };
+
+  const handleBalancePaymentSuccess = () => {
+    setShowPaymentConfirm(true);
   };
 
   if (!isOpen) return null;
@@ -184,6 +192,21 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
           </div>
 
           <div className="space-y-3 sm:space-y-4">
+            {/* Pay with Balance Button - Only show if user has balance */}
+            {user?.balance > 0 && (
+              <button
+                onClick={() => setShowBalanceCheckout(true)}
+                disabled={placing}
+                className="w-full bg-green-600 text-white py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-green-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                <Wallet size={16} className="sm:w-5 sm:h-5" />
+                {texts.buttons.payWithBalance}
+                <span className="text-xs opacity-75">
+                  (${user?.balance?.toFixed(2)})
+                </span>
+              </button>
+            )}
+
             <button
               onClick={() => setShowGatewaySelect(true)}
               disabled={placing}
@@ -217,6 +240,12 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
         isOpen={showGatewaySelect}
         onClose={() => setShowGatewaySelect(false)}
         onSuccess={handlePaymentConfirm}
+      />
+
+      <BalanceCheckoutPopup
+        isOpen={showBalanceCheckout}
+        onClose={() => setShowBalanceCheckout(false)}
+        onSuccess={handleBalancePaymentSuccess}
       />
     </>
   );

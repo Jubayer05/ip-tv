@@ -3,7 +3,7 @@ import RichTextEditor from "@/components/ui/RichTextEditor";
 import { useAuth } from "@/contexts/AuthContext";
 import { Eye, EyeOff, Mail, Send, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 const BulkNotification = () => {
@@ -53,7 +53,7 @@ const BulkNotification = () => {
     }
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = useCallback((field, value) => {
     if (field.includes(".")) {
       const [parent, child] = field.split(".");
       setFormData((prev) => ({
@@ -66,7 +66,11 @@ const BulkNotification = () => {
     } else {
       setFormData((prev) => ({ ...prev, [field]: value }));
     }
-  };
+  }, []);
+
+  const handleMessageChange = useCallback((value) => {
+    setFormData((prev) => ({ ...prev, message: value }));
+  }, []);
 
   const calculateRecipientCount = () => {
     let count = 0;
@@ -398,8 +402,8 @@ const BulkNotification = () => {
               {!previewMode ? (
                 <RichTextEditor
                   value={formData.message}
-                  onChange={(value) => handleInputChange("message", value)}
-                  placeholder="Write your message here... You can use rich text formatting including bold, italic, lists, colors, and more."
+                  title="Email Message"
+                  onDataChange={handleMessageChange}
                 />
               ) : (
                 <div className="bg-gray-700 border border-gray-600 rounded-lg p-4">

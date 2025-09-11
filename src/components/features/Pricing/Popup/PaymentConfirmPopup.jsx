@@ -1,9 +1,11 @@
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Check, X } from "lucide-react";
+import { Check, Home, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function PaymentConfirmPopup({ isOpen, onClose }) {
   const { language, translate, isLanguageLoaded } = useLanguage();
+  const router = useRouter();
 
   // Original text constants
   const ORIGINAL_TEXTS = {
@@ -22,6 +24,10 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
       service: "Digital Subscription Access",
       plan: "Premium",
       total: "$87.93",
+    },
+    buttons: {
+      backToHome: "Back to Home",
+      close: "Close",
     },
     footer: {
       receipt: "A receipt has been sent to your email.",
@@ -51,6 +57,7 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
           ORIGINAL_TEXTS.subtitle,
           ...Object.values(ORIGINAL_TEXTS.orderDetails),
           ...Object.values(ORIGINAL_TEXTS.orderValues),
+          ...Object.values(ORIGINAL_TEXTS.buttons),
           ...Object.values(ORIGINAL_TEXTS.footer),
         ];
 
@@ -59,7 +66,8 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
 
         const [tTitle, tSubtitle, ...tOrderDetails] = translated;
         const tOrderValues = tOrderDetails.slice(5, 10);
-        const tFooter = tOrderDetails.slice(10);
+        const tButtons = tOrderDetails.slice(10, 12);
+        const tFooter = tOrderDetails.slice(12);
 
         setTexts({
           title: tTitle,
@@ -77,6 +85,10 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
             service: tOrderValues[0],
             plan: tOrderValues[1],
             total: ORIGINAL_TEXTS.orderValues.total,
+          },
+          buttons: {
+            backToHome: tButtons[0],
+            close: tButtons[1],
           },
           footer: {
             receipt: tFooter[0],
@@ -110,6 +122,11 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
       }
     } catch {}
   }, [isOpen]);
+
+  const handleBackToHome = () => {
+    onClose();
+    router.push("/");
+  };
 
   if (!isOpen) return null;
 
@@ -190,6 +207,24 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
               {orderInfo.total}
             </span>
           </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+          <button
+            onClick={handleBackToHome}
+            className="w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2"
+          >
+            <Home size={16} className="sm:w-5 sm:h-5" />
+            {texts.buttons.backToHome}
+          </button>
+
+          <button
+            onClick={onClose}
+            className="w-full bg-transparent border-2 border-primary text-primary py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-400 hover:text-black transition-colors"
+          >
+            {texts.buttons.close}
+          </button>
         </div>
 
         <div className="text-center space-y-2">

@@ -24,6 +24,16 @@ const Navbar = () => {
     "Device Management",
     "Payment Method",
   ];
+  const ORIGINAL_ADMIN_MENU_LABELS = [
+    "Admin Dashboard",
+    "User Management",
+    "Order History",
+    "Product Management",
+    "Coupon Management",
+    "Affiliate Management",
+    "Rank System",
+    "Support Tickets",
+  ];
   const ORIGINAL_SIGN_IN = "Sign In";
   const ORIGINAL_SIGN_OUT = "Sign Out";
   const ORIGINAL_USER_MENU_HEADING = "User Menu";
@@ -32,6 +42,9 @@ const Navbar = () => {
   const [navLabels, setNavLabels] = useState(ORIGINAL_NAV_LABELS);
   const [userMenuLabels, setUserMenuLabels] = useState(
     ORIGINAL_USER_MENU_LABELS
+  );
+  const [adminMenuLabels, setAdminMenuLabels] = useState(
+    ORIGINAL_ADMIN_MENU_LABELS
   );
   const [signInLabel, setSignInLabel] = useState(ORIGINAL_SIGN_IN);
   const [signOutLabel, setSignOutLabel] = useState(ORIGINAL_SIGN_OUT);
@@ -45,6 +58,7 @@ const Navbar = () => {
       const items = [
         ...ORIGINAL_NAV_LABELS,
         ...ORIGINAL_USER_MENU_LABELS,
+        ...ORIGINAL_ADMIN_MENU_LABELS,
         ORIGINAL_SIGN_IN,
         ORIGINAL_SIGN_OUT,
         ORIGINAL_USER_MENU_HEADING,
@@ -54,9 +68,10 @@ const Navbar = () => {
 
       setNavLabels(translated.slice(0, 4));
       setUserMenuLabels(translated.slice(4, 8));
-      setSignInLabel(translated[8]);
-      setSignOutLabel(translated[9]);
-      setUserMenuHeading(translated[10]);
+      setAdminMenuLabels(translated.slice(8, 16));
+      setSignInLabel(translated[16]);
+      setSignOutLabel(translated[17]);
+      setUserMenuHeading(translated[18]);
     })();
 
     return () => {
@@ -77,6 +92,17 @@ const Navbar = () => {
     { href: "/dashboard/orders", label: "Order History" },
     { href: "/dashboard/devices", label: "Device Management" },
     { href: "/dashboard/payment", label: "Payment Method" },
+  ];
+
+  const adminMenuItems = [
+    { href: "/admin", label: "Admin Dashboard" },
+    { href: "/admin/users", label: "User Management" },
+    { href: "/admin/orders", label: "Order History" },
+    { href: "/admin/products", label: "Product Management" },
+    { href: "/admin/coupons", label: "Coupon Management" },
+    { href: "/admin/affiliate", label: "Affiliate Management" },
+    { href: "/admin/rank-system", label: "Rank System" },
+    { href: "/admin/support", label: "Support Tickets" },
   ];
 
   const handleLanguageSelect = (lang) => {
@@ -135,6 +161,15 @@ const Navbar = () => {
               <Search size={20} />
             </button>
             <NotificationBell />
+
+            {user && (
+              <div className="hidden sm:flex items-center">
+                <span className="bg-primary/15 border border-primary text-primary rounded-full px-3 py-1 text-xs font-bold">
+                  ${Number(user.balance || 0).toFixed(2)}
+                </span>
+              </div>
+            )}
+
             {/* Language Dropdown - Hidden on mobile */}
             <div className="relative hidden sm:block">
               <button
@@ -205,16 +240,29 @@ const Navbar = () => {
                         <p className="text-xs text-gray-500">{user.email}</p>
                       </div>
 
-                      {userMenuItems.map((item, i) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="block px-4 py-2 hover:bg-gray-100 transition-colors font-secondary text-sm"
-                        >
-                          {userMenuLabels[i]}
-                        </Link>
-                      ))}
+                      {user.role === "user" &&
+                        userMenuItems.map((item, i) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="block px-4 py-2 hover:bg-gray-100 transition-colors font-secondary text-sm"
+                          >
+                            {userMenuLabels[i]}
+                          </Link>
+                        ))}
+
+                      {user.role === ("admin" || "superadmin") &&
+                        adminMenuItems.map((item, i) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="block px-4 py-2 hover:bg-gray-100 transition-colors font-secondary text-sm"
+                          >
+                            {adminMenuLabels[i]}
+                          </Link>
+                        ))}
 
                       {/* Logout Button */}
                       <button

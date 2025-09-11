@@ -138,6 +138,25 @@ const settingsSchema = new mongoose.Schema(
       },
     },
 
+    // Legal content management
+    legalContent: {
+      termsAndConditions: {
+        title: { type: String, default: "Terms and Conditions" },
+        content: { type: String, default: "" },
+        lastUpdated: { type: Date, default: Date.now },
+      },
+      userGuide: {
+        title: { type: String, default: "User Guide" },
+        content: { type: String, default: "" },
+        lastUpdated: { type: Date, default: Date.now },
+      },
+      privacyPolicy: {
+        title: { type: String, default: "Privacy Policy" },
+        content: { type: String, default: "" },
+        lastUpdated: { type: Date, default: Date.now },
+      },
+    },
+
     // Addons management
     addons: {
       recaptcha: { type: Boolean, default: false },
@@ -510,6 +529,23 @@ settingsSchema.statics.getSettings = async function () {
             "Find answers to common questions about our services and platform.",
         },
       },
+      legalContent: {
+        termsAndConditions: {
+          title: "Terms and Conditions",
+          content: "",
+          lastUpdated: Date.now(),
+        },
+        userGuide: {
+          title: "User Guide",
+          content: "",
+          lastUpdated: Date.now(),
+        },
+        privacyPolicy: {
+          title: "Privacy Policy",
+          content: "",
+          lastUpdated: Date.now(),
+        },
+      },
       addons: {
         recaptcha: false,
         trustPilot: false,
@@ -729,6 +765,52 @@ settingsSchema.statics.getSettings = async function () {
           }
         }
       }
+    }
+  }
+
+  if (!doc.legalContent) {
+    doc.legalContent = {
+      termsAndConditions: {
+        title: "Terms and Conditions",
+        content: "",
+        lastUpdated: Date.now(),
+      },
+      userGuide: {
+        title: "User Guide",
+        content: "",
+        lastUpdated: Date.now(),
+      },
+      privacyPolicy: {
+        title: "Privacy Policy",
+        content: "",
+        lastUpdated: Date.now(),
+      },
+    };
+    modified = true;
+  } else {
+    if (!doc.legalContent.termsAndConditions) {
+      doc.legalContent.termsAndConditions = {
+        title: "Terms and Conditions",
+        content: "",
+        lastUpdated: Date.now(),
+      };
+      modified = true;
+    }
+    if (!doc.legalContent.userGuide) {
+      doc.legalContent.userGuide = {
+        title: "User Guide",
+        content: "",
+        lastUpdated: Date.now(),
+      };
+      modified = true;
+    }
+    if (!doc.legalContent.privacyPolicy) {
+      doc.legalContent.privacyPolicy = {
+        title: "Privacy Policy",
+        content: "",
+        lastUpdated: Date.now(),
+      };
+      modified = true;
     }
   }
 

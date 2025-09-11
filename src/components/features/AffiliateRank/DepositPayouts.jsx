@@ -2,13 +2,15 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useState } from "react";
+import DepositPopup from "./DepositPopup";
 import WithdrawalPopup from "./WithdrawalPopup";
 
 export default function DepositPayouts() {
   const { language, translate, isLanguageLoaded } = useLanguage();
-  const { user } = useAuth();
+  const { user, refreshUserData } = useAuth();
   const [showWithdrawalPopup, setShowWithdrawalPopup] = useState(false);
   const [withdrawals, setWithdrawals] = useState([]);
+  const [showDepositPopup, setShowDepositPopup] = useState(false);
 
   // Get real balance from user data
   const balance = user?.balance || 0;
@@ -66,6 +68,20 @@ export default function DepositPayouts() {
     }
   };
 
+  const handleDepositSuccess = async () => {
+    setShowDepositPopup(false);
+    // Wait a bit to let webhook credit wallet, then refresh
+    setTimeout(async () => {
+      await refreshUserData();
+      Swal.fire({
+        icon: "success",
+        title: "Funds Added",
+        text: "Your wallet has been credited.",
+        confirmButtonColor: "#00b877",
+      });
+    }, 1500);
+  };
+
   useEffect(() => {
     // Only translate when language is loaded and not English
     if (!isLanguageLoaded || language.code === "en") return;
@@ -106,6 +122,7 @@ export default function DepositPayouts() {
   }, [language.code, isLanguageLoaded, translate]);
 
   const handleDepositFunds = () => {
+    setShowDepositPopup(true);
   };
 
   const handleWithdrawFunds = () => {
@@ -215,6 +232,13 @@ export default function DepositPayouts() {
         onSuccess={handleWithdrawalSuccess}
         userBalance={balance}
         userId={user?._id}
+      />
+      <DepositPopup
+        isOpen={showDepositPopup}
+        onClose={() => setShowDepositPopup(false)}
+        onSuccess={handleDepositSuccess}
+        userId={user?._id}
+        userEmail={user?.email}
       />
     </>
   );

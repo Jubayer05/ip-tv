@@ -63,6 +63,151 @@ const PlisioPaymentSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const StripePaymentSchema = new mongoose.Schema(
+  {
+    sessionId: { type: String, index: true },
+    paymentIntentId: { type: String, index: true },
+    status: {
+      type: String,
+      enum: [
+        "new",
+        "pending",
+        "completed",
+        "failed",
+        "cancelled",
+        "requires_action",
+        "processing",
+      ],
+      default: "new",
+    },
+    amount: { type: Number, default: 0 }, // fiat in minor units? you can store cents or dollars; choose one consistently
+    currency: { type: String, default: "usd" },
+    receiptUrl: { type: String, default: "" },
+    callbackReceived: { type: Boolean, default: false },
+    lastStatusUpdate: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
+// Add this schema near the PlisioPaymentSchema
+const HoodPayPaymentSchema = new mongoose.Schema(
+  {
+    paymentId: { type: String, index: true }, // Remove required: true
+    status: {
+      type: String,
+      enum: ["pending", "paid", "failed", "canceled", "expired"],
+      default: "pending",
+    },
+    amount: { type: Number, default: 0 }, // Remove required: true
+    currency: { type: String, default: "USD" }, // Remove required: true
+    customerEmail: { type: String, default: "" },
+    description: { type: String, default: "" },
+    paymentUrl: { type: String }, // Remove required: true
+    callbackReceived: { type: Boolean, default: false },
+    lastStatusUpdate: { type: Date, default: Date.now },
+    metadata: { type: Object, default: {} }, // Add metadata field
+  },
+  { _id: false }
+);
+
+// Add this schema near the other payment schemas
+const NOWPaymentsSchema = new mongoose.Schema(
+  {
+    paymentId: { type: String, index: true },
+    orderId: { type: String, index: true },
+    status: {
+      type: String,
+      enum: [
+        "waiting",
+        "confirming",
+        "confirmed",
+        "finished",
+        "failed",
+        "expired",
+        "refunded",
+        "partially_paid",
+      ],
+      default: "waiting",
+    },
+    priceAmount: { type: Number, required: true },
+    priceCurrency: { type: String, required: true },
+    payAmount: { type: Number, default: 0 },
+    payCurrency: { type: String, default: "" },
+    paymentUrl: { type: String, default: "" },
+    customerEmail: { type: String, default: "" },
+    orderDescription: { type: String, default: "" },
+    callbackReceived: { type: Boolean, default: false },
+    lastStatusUpdate: { type: Date, default: Date.now },
+    metadata: { type: Object, default: {} },
+  },
+  { _id: false }
+);
+
+const ChangeNOWPaymentSchema = new mongoose.Schema(
+  {
+    transactionId: { type: String, index: true },
+    payinAddress: { type: String, required: true },
+    payoutAddress: { type: String, required: true },
+    fromCurrency: { type: String, required: true },
+    toCurrency: { type: String, required: true },
+    fromAmount: { type: Number, required: true },
+    toAmount: { type: Number, required: true },
+    status: {
+      type: String,
+      enum: [
+        "new",
+        "waiting",
+        "confirming",
+        "exchanging",
+        "sending",
+        "finished",
+        "failed",
+        "refunded",
+        "expired",
+        "hold",
+      ],
+      default: "new",
+    },
+    payinExtraId: { type: String, default: "" },
+    refundAddress: { type: String, default: "" },
+    refundExtraId: { type: String, default: "" },
+    userId: { type: String, default: "" },
+    contactEmail: { type: String, default: "" },
+    flow: { type: String, default: "standard" },
+    callbackReceived: { type: Boolean, default: false },
+    lastStatusUpdate: { type: Date, default: Date.now },
+    metadata: { type: Object, default: {} },
+  },
+  { _id: false }
+);
+
+// Add Cryptomus payment schema
+const CryptomusPaymentSchema = new mongoose.Schema(
+  {
+    paymentId: { type: String, required: true, index: true },
+    orderId: { type: String, required: true },
+    amount: { type: String, required: true },
+    currency: { type: String, required: true },
+    toCurrency: { type: String },
+    toAmount: { type: String },
+    address: { type: String },
+    network: { type: String },
+    from: { type: String },
+    status: { type: String, required: true },
+    isFinal: { type: Boolean, default: false },
+    additionalData: { type: String },
+    currencies: [{ type: String }],
+    createdAt: { type: String },
+    updatedAt: { type: String },
+    expiredAt: { type: String },
+    isTest: { type: Boolean, default: false },
+    paymentMethod: { type: String },
+    paymentStatus: { type: String },
+    transactions: [{ type: mongoose.Schema.Types.Mixed }],
+  },
+  { _id: false }
+);
+
 const OrderSchema = new mongoose.Schema(
   {
     orderNumber: { type: String, unique: true, index: true },
@@ -88,6 +233,11 @@ const OrderSchema = new mongoose.Schema(
 
     // Add Plisio payment tracking
     plisioPayment: { type: PlisioPaymentSchema, default: null },
+    stripePayment: { type: StripePaymentSchema, default: null },
+    hoodpayPayment: { type: HoodPayPaymentSchema, default: null },
+    nowpaymentsPayment: { type: NOWPaymentsSchema, default: null },
+    changenowPayment: { type: ChangeNOWPaymentSchema, default: null },
+    cryptomusPayment: { type: CryptomusPaymentSchema, default: null }, // Add this line
 
     keys: { type: [OrderKeySchema], default: [] },
 

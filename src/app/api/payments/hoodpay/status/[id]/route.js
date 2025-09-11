@@ -1,46 +1,77 @@
+import { connectToDatabase } from "@/lib/db";
+import { applyPaymentUpdate } from "@/lib/payments/paymentUpdater";
+import hoodpayService from "@/lib/paymentServices/hoodpayService";
+import Order from "@/models/Order";
 import { NextResponse } from "next/server";
 
-export async function GET(_req, { params }) {
+export async function GET(_request, { params }) {
   try {
-    const apiKey = process.env.HOODPAY_API_KEY;
-    if (!apiKey) {
+    const { id } = await params;
+    if (!id) {
       return NextResponse.json(
-        { error: "HOODPAY_API_KEY not configured" },
-        { status: 500 }
+        { error: "Payment ID is required" },
+        { status: 400 }
       );
     }
-    const id = params?.id;
-    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-    const res = await fetch(`https://api.hoodpay.io/v1/payment/${id}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-      cache: "no-store",
+    await connectToDatabase();
+
+    // First, try to get the order from our database
+    const order = await Order.findOne({
+      $or: [{ "hoodpayPayment.paymentId": id }, { orderNumber: id }],
     });
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: data?.message || "Failed to fetch HoodPay status" },
-        { status: 500 }
-      );
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Normalize statuses to match our client
-    const s = (data?.status || "").toLowerCase();
-    const normalized =
-      s === "paid" || s === "completed"
-        ? "completed"
-        : s === "failed" || s === "canceled"
-        ? "failed"
-        : "pending";
+    // Try to get payment status from HoodPay API
+    let payment;
+    let statusInfo = { isCompleted: false, isPending: true, isFailed: false };
 
-    return NextResponse.json({ status: normalized, raw: data });
-  } catch (e) {
+    try {
+      const result = await hoodpayService.getPayment(id);
+      payment = result.data;
+
+      // Update order with latest status from HoodPay
+      await applyPaymentUpdate({
+        order,
+        gatewayKey: "hoodpayPayment",
+        rawStatus: payment.status || "pending",
+        gatewayFields: {
+          status: payment.status || "pending",
+        },
+      });
+
+      statusInfo = hoodpayService.getStatusDescription(payment.status);
+    } catch (apiError) {
+      console.warn(
+        "HoodPay API error, using stored order status:",
+        apiError.message
+      );
+
+      // If HoodPay API fails, use the stored status from our database
+      const storedStatus = order.hoodpayPayment?.status || "pending";
+      statusInfo = hoodpayService.getStatusDescription(storedStatus);
+    }
+
+    return NextResponse.json({
+      success: true,
+      paymentId: id,
+      status: order.hoodpayPayment?.status || "pending",
+      isCompleted: statusInfo.isCompleted,
+      isPending: statusInfo.isPending,
+      isFailed: statusInfo.isFailed,
+      amount: order.hoodpayPayment?.amount || order.totalAmount,
+      currency: order.hoodpayPayment?.currency || "USD",
+      orderUpdated: true,
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+    });
+  } catch (error) {
+    console.error("HoodPay status error:", error);
     return NextResponse.json(
-      { error: e?.message || "HoodPay status error" },
+      { error: error?.message || "Failed to get HoodPay payment status" },
       { status: 500 }
     );
   }
