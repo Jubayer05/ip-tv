@@ -3,28 +3,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom CSS Variables for Tailwind v4 */
+/* Custom CSS Variables for Tailwind */
 :root {
   --font-family-primary: var(--font-rajdhani), "Rajdhani", sans-serif;
   --font-family-secondary: var(--font-manrope), "Manrope", sans-serif;
-}
-
-@theme {
-  --font-primary: var(--font-rajdhani), "Rajdhani", sans-serif;
-  --font-secondary: var(--font-manrope), "Manrope", sans-serif;
-
-  --color-primary: #44dcf3;
-  --color-secondary: #0e0e11;
-  --color-body: #ffffff;
-  --color-button: #0b0e13;
-
-  --maxWidth-container: 1400px;
-
-  --border-primary: #44dcf3;
-  --border-secondary: #212121;
-
-  --background-primary: #44dcf3;
-  --background-secondary: #0e0e11;
 }
 
 /* Utility classes */
