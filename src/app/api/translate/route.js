@@ -11,8 +11,7 @@ export async function POST(req) {
     } = body || {};
 
     const upstreamUrl =
-      "http://162.217.249.95:5000/translate" ||
-      "http://127.0.0.1:5000/translate";
+      "http://89.116.121.8:5000/translate" || "http://127.0.0.1:5000/translate";
 
     const translateOne = async (text) => {
       const res = await fetch(upstreamUrl, {
