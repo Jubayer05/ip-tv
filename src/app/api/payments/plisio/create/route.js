@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import plisioService from "@/lib/paymentServices/plisioService";
+import { calculateServiceFee, formatFeeInfo } from "@/lib/paymentUtils";
 import Order from "@/models/Order";
 import PaymentSettings from "@/models/PaymentSettings";
 import Product from "@/models/Product";
@@ -49,6 +50,13 @@ export async function POST(request) {
       );
     }
 
+    // Calculate service fee
+    const feeCalculation = calculateServiceFee(
+      amount,
+      paymentSettings.feeSettings
+    );
+    const finalAmount = feeCalculation.totalAmount;
+
     // Update the service with database credentials
     plisioService.apiKey = paymentSettings.apiKey;
     if (paymentSettings.apiSecret) {
@@ -59,16 +67,20 @@ export async function POST(request) {
     const orderNumber =
       providedOrderNumber || `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 
-    // Create Plisio invoice first
+    // Create Plisio invoice with final amount (including fees)
     const result = await plisioService.createInvoice({
       orderName,
       orderNumber,
       sourceCurrency: currency,
-      sourceAmount: amount,
+      sourceAmount: finalAmount, // Use final amount including fees
       currency: "BTC",
       email: customerEmail || "",
       callbackUrl: `${origin}/api/payments/plisio/callback?json=true`,
-      description: `IPTV Subscription - Order ${orderNumber}`,
+      description: `IPTV Subscription - Order ${orderNumber}${
+        feeCalculation.feeAmount > 0
+          ? ` (${formatFeeInfo(feeCalculation)})`
+          : ""
+      }`,
       plugin: "IPTV_PLATFORM",
       version: "1.0",
     });
@@ -157,7 +169,9 @@ export async function POST(request) {
         userId: userId || null,
         guestEmail: resolvedGuestEmail,
         products: orderProducts,
-        totalAmount: amount,
+        totalAmount: finalAmount, // Store final amount including fees
+        originalAmount: amount, // Store original amount before fees
+        serviceFee: feeCalculation.feeAmount, // Store service fee amount
         discountAmount: 0,
         couponCode: couponCode,
         paymentMethod: "Cryptocurrency",
@@ -171,6 +185,9 @@ export async function POST(request) {
       order.paymentMethod = "Cryptocurrency";
       order.paymentGateway = "Plisio";
       order.paymentStatus = invoice.status;
+      order.totalAmount = finalAmount; // Update with final amount
+      order.originalAmount = amount; // Store original amount
+      order.serviceFee = feeCalculation.feeAmount; // Store service fee
     }
 
     // Update order with Plisio payment details
@@ -202,6 +219,15 @@ export async function POST(request) {
       status: invoice.status,
       walletAddress: invoice.wallet_hash,
       expiresAt: new Date(invoice.expire_at_utc * 1000).toISOString(),
+      // Include fee information in response
+      feeInfo: {
+        originalAmount: feeCalculation.originalAmount,
+        serviceFee: feeCalculation.feeAmount,
+        totalAmount: feeCalculation.totalAmount,
+        feeType: feeCalculation.feeType,
+        feePercentage: feeCalculation.feePercentage,
+        feeDescription: formatFeeInfo(feeCalculation),
+      },
     });
   } catch (error) {
     console.error("Plisio create error:", error);

@@ -2,7 +2,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useState } from "react";
-import DepositPopup from "./DepositPopup";
 import WithdrawalPopup from "./WithdrawalPopup";
 
 export default function DepositPayouts() {
@@ -10,24 +9,24 @@ export default function DepositPayouts() {
   const { user, refreshUserData } = useAuth();
   const [showWithdrawalPopup, setShowWithdrawalPopup] = useState(false);
   const [withdrawals, setWithdrawals] = useState([]);
-  const [showDepositPopup, setShowDepositPopup] = useState(false);
+  const [totalReferralEarnings, setTotalReferralEarnings] = useState(0);
 
-  // Get real balance from user data
+  // Get separate balances from user data
   const balance = user?.balance || 0;
-  const referralEarnings = user?.referral?.earnings || 0;
+  const depositBalance = user?.depositBalance || 0;
+  const referralEarnings = user?.referral?.earnings || 0; // This will be used for "Total Withdrawable funds"
 
-  const ORIGINAL_HEADING = "DEPOSIT & PAYOUTS";
-  const ORIGINAL_BALANCE_LABEL = "Affiliate Wallet Balance:";
+  const ORIGINAL_HEADING = "WALLET & EARNINGS";
+  const ORIGINAL_BALANCE_LABEL = "Total Withdrawable Funds:";
+  const ORIGINAL_DEPOSIT_LABEL = "Deposit Balance:";
   const ORIGINAL_EARNINGS_LABEL = "Total Referral Earnings:";
-  const ORIGINAL_DEPOSIT_BUTTON = "Deposit Funds";
   const ORIGINAL_WITHDRAW_BUTTON = "Withdraw Funds";
   const ORIGINAL_DISCLAIMER =
-    "*You can use your balance to buy plans or withdraw to your preferred payment method.";
+    "*You can use your main balance to buy plans or withdraw referral earnings to your preferred payment method.";
 
   const [heading, setHeading] = useState(ORIGINAL_HEADING);
   const [balanceLabel, setBalanceLabel] = useState(ORIGINAL_BALANCE_LABEL);
   const [earningsLabel, setEarningsLabel] = useState(ORIGINAL_EARNINGS_LABEL);
-  const [depositButton, setDepositButton] = useState(ORIGINAL_DEPOSIT_BUTTON);
   const [withdrawButton, setWithdrawButton] = useState(
     ORIGINAL_WITHDRAW_BUTTON
   );
@@ -53,6 +52,26 @@ export default function DepositPayouts() {
     fetchWithdrawals();
   }, [user?._id]);
 
+  // Fetch total referral earnings from referral history
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const fetchTotalReferralEarnings = async () => {
+      try {
+        const response = await fetch(`/api/users/${user._id}/referrals`);
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setTotalReferralEarnings(data.data.totalEarnings || 0);
+        }
+      } catch (err) {
+        console.error("Error fetching total referral earnings:", err);
+      }
+    };
+
+    fetchTotalReferralEarnings();
+  }, [user?._id]);
+
   // Refresh withdrawals after successful submission
   const handleWithdrawalSuccess = () => {
     setShowWithdrawalPopup(false);
@@ -68,20 +87,6 @@ export default function DepositPayouts() {
     }
   };
 
-  const handleDepositSuccess = async () => {
-    setShowDepositPopup(false);
-    // Wait a bit to let webhook credit wallet, then refresh
-    setTimeout(async () => {
-      await refreshUserData();
-      Swal.fire({
-        icon: "success",
-        title: "Funds Added",
-        text: "Your wallet has been credited.",
-        confirmButtonColor: "#00b877",
-      });
-    }, 1500);
-  };
-
   useEffect(() => {
     // Only translate when language is loaded and not English
     if (!isLanguageLoaded || language.code === "en") return;
@@ -91,8 +96,8 @@ export default function DepositPayouts() {
       const items = [
         ORIGINAL_HEADING,
         ORIGINAL_BALANCE_LABEL,
+        ORIGINAL_DEPOSIT_LABEL,
         ORIGINAL_EARNINGS_LABEL,
-        ORIGINAL_DEPOSIT_BUTTON,
         ORIGINAL_WITHDRAW_BUTTON,
         ORIGINAL_DISCLAIMER,
       ];
@@ -102,8 +107,8 @@ export default function DepositPayouts() {
       const [
         tHeading,
         tBalanceLabel,
+        tDepositLabel,
         tEarningsLabel,
-        tDepositButton,
         tWithdrawButton,
         tDisclaimer,
       ] = translated;
@@ -111,7 +116,6 @@ export default function DepositPayouts() {
       setHeading(tHeading);
       setBalanceLabel(tBalanceLabel);
       setEarningsLabel(tEarningsLabel);
-      setDepositButton(tDepositButton);
       setWithdrawButton(tWithdrawButton);
       setDisclaimer(tDisclaimer);
     })();
@@ -120,10 +124,6 @@ export default function DepositPayouts() {
       isMounted = false;
     };
   }, [language.code, isLanguageLoaded, translate]);
-
-  const handleDepositFunds = () => {
-    setShowDepositPopup(true);
-  };
 
   const handleWithdrawFunds = () => {
     setShowWithdrawalPopup(true);
@@ -152,45 +152,40 @@ export default function DepositPayouts() {
           {heading}
         </h2>
 
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Balance Section */}
-          <div className="mb-4 sm:mb-6 flex-1">
+        <div className="space-y-4 mb-6">
+          {/* Total Withdrawable Funds Section */}
+          <div className="mb-4">
             <p className="text-gray-300 text-xs sm:text-sm mb-3">
               {balanceLabel}
             </p>
             <div className="inline-block border-2 bg-primary/15 border-primary text-primary rounded-full px-4 sm:px-6 py-2 sm:py-3">
               <span className="text-xl sm:text-2xl font-bold">
-                ${balance.toFixed(2)}
-              </span>
-            </div>
-
-            {/* Referral Earnings */}
-            <p className="text-gray-300 text-xs sm:text-sm mb-3 mt-4">
-              {earningsLabel}
-            </p>
-            <div className="inline-block border-2 bg-green-500/15 border-green-500 text-green-400 rounded-full px-4 sm:px-6 py-2 sm:py-3">
-              <span className="text-lg sm:text-xl font-bold">
                 ${referralEarnings.toFixed(2)}
               </span>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="space-y-3 mb-4 sm:mb-6 flex-1 sm:flex sm:flex-col sm:items-end">
-            <button
-              onClick={handleDepositFunds}
-              className="w-full sm:w-[150px] cursor-pointer py-2 sm:py-3 border-2 border-cyan-400 text-cyan-400 rounded-full text-xs sm:text-sm font-bold hover:bg-cyan-400 hover:text-gray-900 transition-colors duration-200"
-            >
-              {depositButton}
-            </button>
-
-            <button
-              onClick={handleWithdrawFunds}
-              className="w-full sm:w-[150px] cursor-pointer py-2 sm:py-3 bg-cyan-400 text-gray-900 rounded-full text-xs sm:text-sm font-bold hover:bg-cyan-500 transition-colors duration-200"
-            >
-              {withdrawButton}
-            </button>
+          {/* Total Referral Earnings Section */}
+          <div className="mb-4">
+            <p className="text-gray-300 text-xs sm:text-sm mb-3">
+              {earningsLabel}
+            </p>
+            <div className="inline-block border-2 bg-green-500/15 border-green-500 text-green-400 rounded-full px-4 sm:px-6 py-2 sm:py-3">
+              <span className="text-lg sm:text-xl font-bold">
+                ${totalReferralEarnings.toFixed(2)}
+              </span>
+            </div>
           </div>
+        </div>
+
+        {/* Withdraw Button */}
+        <div className="mb-6">
+          <button
+            onClick={handleWithdrawFunds}
+            className="w-full cursor-pointer py-2 sm:py-3 bg-cyan-400 text-gray-900 rounded-full text-xs sm:text-sm font-bold hover:bg-cyan-500 transition-colors duration-200"
+          >
+            {withdrawButton}
+          </button>
         </div>
 
         {/* Recent Withdrawals */}
@@ -230,15 +225,8 @@ export default function DepositPayouts() {
         isOpen={showWithdrawalPopup}
         onClose={() => setShowWithdrawalPopup(false)}
         onSuccess={handleWithdrawalSuccess}
-        userBalance={balance}
+        userBalance={referralEarnings} // Only allow withdrawal from referral earnings
         userId={user?._id}
-      />
-      <DepositPopup
-        isOpen={showDepositPopup}
-        onClose={() => setShowDepositPopup(false)}
-        onSuccess={handleDepositSuccess}
-        userId={user?._id}
-        userEmail={user?.email}
       />
     </>
   );

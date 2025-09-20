@@ -17,6 +17,7 @@ export async function GET() {
         banners: settings.banners,
         addons: settings.addons,
         metaManagement: settings.metaManagement,
+        freeTrialContent: settings.freeTrialContent, // Add this line
       },
     });
   } catch (e) {
@@ -163,6 +164,11 @@ export async function PUT(request) {
           updates[`addons.${addon}`] = Boolean(body.addons[addon]);
         }
       });
+    }
+
+    // Handle freeTrialContent
+    if (body.freeTrialContent) {
+      updates["freeTrialContent"] = body.freeTrialContent;
     }
 
     // Meta Management

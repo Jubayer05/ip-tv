@@ -1,6 +1,7 @@
 import { connectToDatabase } from "@/lib/db";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
+import Settings from "@/models/Settings";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
@@ -265,6 +266,36 @@ export async function POST(request) {
         }
       } catch (planUpdateError) {
         console.error("Error updating user plan:", planUpdateError);
+      }
+    }
+
+    // Process referral commission if this is a first order and payment is completed
+    if (isFirstOrder && referredBy && orderDoc.paymentStatus === "completed") {
+      try {
+        // Get commission percentage from settings
+        const settings = await Settings.getSettings();
+        const commissionPct = Number(settings.affiliateCommissionPct || 10);
+
+        // Calculate commission
+        const commission =
+          Math.round(((Number(finalTotal) * commissionPct) / 100) * 100) / 100;
+
+        if (commission > 0) {
+          // Find the referrer and update their referral earnings
+          const referrer = await User.findById(referredBy);
+          if (referrer) {
+            // Add commission to existing referral earnings
+            const currentEarnings = Number(referrer.referral?.earnings || 0);
+            referrer.referral.earnings = currentEarnings + commission;
+            await referrer.save();
+
+            console.log(
+              `Added $${commission} commission to referrer ${referrer.email}. New total earnings: $${referrer.referral.earnings}`
+            );
+          }
+        }
+      } catch (commissionError) {
+        console.error("Error processing referral commission:", commissionError);
       }
     }
 

@@ -157,6 +157,7 @@ export default function DepositPopup({
       nowpayment: "/payment_logo/now_payments.png",
       changenow: "/payment_logo/changenow.png",
       cryptomus: "/payment_logo/cryptomus.png",
+      paygate: "/payment_logo/paygate.png",
     };
     return logoMap[gateway] || "/payment_logo/default.png";
   };
@@ -170,8 +171,28 @@ export default function DepositPopup({
       nowpayment: "Crypto",
       changenow: "Exchange",
       cryptomus: "Crypto",
+      paygate: "Crypto",
     };
     return typeMap[gateway] || "Payment";
+  };
+
+  // Helper function to calculate service fee
+  const calculateServiceFee = (method, amount) => {
+    if (!method.feeSettings || !method.feeSettings.isActive) {
+      return { feeAmount: 0, totalAmount: amount };
+    }
+
+    let feeAmount = 0;
+    if (method.feeSettings.feeType === "percentage") {
+      feeAmount = (amount * method.feeSettings.feePercentage) / 100;
+    } else if (method.feeSettings.feeType === "fixed") {
+      feeAmount = method.feeSettings.fixedAmount;
+    }
+
+    return {
+      feeAmount: parseFloat(feeAmount.toFixed(2)),
+      totalAmount: parseFloat((amount + feeAmount).toFixed(2)),
+    };
   };
 
   // Helper function to get all applicable bonuses for a given amount
@@ -249,6 +270,7 @@ export default function DepositPopup({
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {paymentMethods.map((method) => {
                   const bonuses = getApplicableBonuses(method, Number(amount));
+                  const feeInfo = calculateServiceFee(method, Number(amount));
                   const isAmountValid = Number(amount) >= method.minAmount;
                   const isSelected = selectedGateway?._id === method._id;
 
@@ -265,7 +287,7 @@ export default function DepositPopup({
                   return (
                     <button
                       key={method._id}
-                      className={`aspect-square py-4 px-3 rounded-lg font-semibold text-sm transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-60 flex flex-col items-center justify-center space-y-1 ${
+                      className={`aspect-auto py-4 px-3 rounded-lg font-semibold text-sm transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-60 flex flex-col items-center justify-center space-y-1 min-h-[140px] ${
                         isSelected
                           ? "bg-cyan-400 text-black"
                           : isAmountValid
@@ -315,6 +337,23 @@ export default function DepositPopup({
                         </div>
                       )}
 
+                      {/* Show service fee if active */}
+                      {method.feeSettings && method.feeSettings.isActive && (
+                        <div className="text-xs text-red-500 font-medium">
+                          Service Fee:{" "}
+                          {method.feeSettings.feeType === "percentage"
+                            ? `${method.feeSettings.feePercentage}%`
+                            : `$${method.feeSettings.fixedAmount}`}
+                        </div>
+                      )}
+
+                      {/* Show total charge amount */}
+                      {method.feeSettings && method.feeSettings.isActive && (
+                        <div className="text-xs text-red-400 font-medium">
+                          Total: ${feeInfo.totalAmount.toFixed(2)}
+                        </div>
+                      )}
+
                       {/* Show current bonus if amount is valid and has applicable bonuses */}
                       {bonuses.length > 0 && isAmountValid && (
                         <div className="text-xs text-blue-600 font-medium">
@@ -347,6 +386,38 @@ export default function DepositPopup({
                       ${Number(amount).toFixed(2)}
                     </span>
                   </div>
+
+                  {/* Show service fee if active */}
+                  {(() => {
+                    const feeInfo = calculateServiceFee(
+                      selectedGateway,
+                      Number(amount)
+                    );
+                    if (feeInfo.feeAmount > 0) {
+                      return (
+                        <>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-300">Service Fee:</span>
+                            <span className="text-red-400 font-medium">
+                              ${feeInfo.feeAmount.toFixed(2)} (
+                              {selectedGateway.feeSettings.feeType ===
+                              "percentage"
+                                ? `${selectedGateway.feeSettings.feePercentage}%`
+                                : "Fixed"}
+                              )
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-300">Total Charge:</span>
+                            <span className="text-red-300 font-medium">
+                              ${feeInfo.totalAmount.toFixed(2)}
+                            </span>
+                          </div>
+                        </>
+                      );
+                    }
+                    return null;
+                  })()}
 
                   {/* Show bonus for selected gateway */}
                   {(() => {

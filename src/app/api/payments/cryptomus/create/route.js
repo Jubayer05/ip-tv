@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import cryptomusService from "@/lib/paymentServices/cryptomusService";
+import { calculateServiceFee, formatFeeInfo } from "@/lib/paymentUtils";
 import Order from "@/models/Order";
 import PaymentSettings from "@/models/PaymentSettings";
 import User from "@/models/User";
@@ -40,6 +41,13 @@ export async function POST(request) {
       );
     }
 
+    // Calculate service fee
+    const feeCalculation = calculateServiceFee(
+      amount,
+      paymentSettings.feeSettings
+    );
+    const finalAmount = feeCalculation.totalAmount;
+
     // Update the service with database credentials
     cryptomusService.apiKey = paymentSettings.apiKey;
     if (paymentSettings.apiSecret) {
@@ -64,12 +72,12 @@ export async function POST(request) {
       .toString(36)
       .substr(2, 9)}`;
 
-    // Create Cryptomus payment
+    // Create Cryptomus payment with final amount
     const result = await cryptomusService.createPayment({
-      amount: amount.toString(),
+      amount: finalAmount.toString(), // Use final amount including fees
       currency,
       orderId,
-      description: productName,
+      description: `${productName}${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
       urlReturn: `${process.env.NEXT_PUBLIC_BASE_URL}/payment-status/${orderId}`,
       urlCallback: `${process.env.NEXT_PUBLIC_BASE_URL}/api/payments/cryptomus/webhook`,
       isTest: process.env.NODE_ENV !== "production",
@@ -93,7 +101,9 @@ export async function POST(request) {
       userId: user._id,
       productId: productId,
       productName: productName,
-      amount: amount,
+      amount: finalAmount, // Store final amount including fees
+      originalAmount: amount, // Store original amount
+      serviceFee: feeCalculation.feeAmount, // Store service fee
       currency: currency,
       paymentMethod: "cryptomus",
       paymentStatus: "pending",
@@ -134,7 +144,7 @@ export async function POST(request) {
       paymentId: result.paymentId,
       checkoutUrl: result.paymentUrl,
       orderId: order._id,
-      amount: amount,
+      amount: finalAmount, // Return final amount
       currency: currency,
       toCurrency: result.toCurrency,
       toAmount: result.toAmount,
@@ -142,6 +152,15 @@ export async function POST(request) {
       network: result.network,
       status: result.status,
       expiredAt: result.expiredAt,
+      // Include fee information in response
+      feeInfo: {
+        originalAmount: feeCalculation.originalAmount,
+        serviceFee: feeCalculation.feeAmount,
+        totalAmount: feeCalculation.totalAmount,
+        feeType: feeCalculation.feeType,
+        feePercentage: feeCalculation.feePercentage,
+        feeDescription: formatFeeInfo(feeCalculation),
+      },
     });
   } catch (error) {
     console.error("Cryptomus create error:", error);

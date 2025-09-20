@@ -135,6 +135,7 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
       nowpayment: "/payment_logo/now_payments.png",
       changenow: "/payment_logo/changenow.png",
       cryptomus: "/payment_logo/cryptomus.png",
+      paygate: "/payment_logo/paygate.png",
     };
     return logoMap[gateway] || "/payment_logo/default.png";
   };
@@ -148,6 +149,7 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
       nowpayment: "NOWPayments",
       changenow: "ChangeNOW",
       cryptomus: "Cryptomus",
+      paygate: "PayGate",
     };
     return nameMap[gateway] || gateway;
   };
@@ -161,8 +163,28 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
       nowpayment: "Crypto",
       changenow: "Exchange",
       cryptomus: "Crypto",
+      paygate: "Crypto",
     };
     return typeMap[gateway] || "Payment";
+  };
+
+  // Helper function to calculate service fee
+  const calculateServiceFee = (method, amount) => {
+    if (!method.feeSettings || !method.feeSettings.isActive) {
+      return { feeAmount: 0, totalAmount: amount };
+    }
+
+    let feeAmount = 0;
+    if (method.feeSettings.feeType === "percentage") {
+      feeAmount = (amount * method.feeSettings.feePercentage) / 100;
+    } else if (method.feeSettings.feeType === "fixed") {
+      feeAmount = method.feeSettings.fixedAmount;
+    }
+
+    return {
+      feeAmount: parseFloat(feeAmount.toFixed(2)),
+      totalAmount: parseFloat((amount + feeAmount).toFixed(2)),
+    };
   };
 
   return (
@@ -189,31 +211,47 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {paymentMethods.map((method) => (
-              <button
-                key={method._id}
-                className="aspect-square bg-white text-black py-4 px-3 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-60 flex flex-col items-center justify-center space-y-2"
-                onClick={() => startPayment(method.gateway)}
-                disabled={loading}
-                title={`${method.name} - Min: $${method.minAmount}`}
-              >
-                <Image
-                  src={getLogoPath(method.gateway)}
-                  alt={method.name}
-                  width={60}
-                  height={30}
-                  className="object-contain w-[100px]"
-                />
-                <span className="text-xs text-gray-600">
-                  {getPaymentType(method.gateway)}
-                </span>
-                {method.bonusSettings && method.bonusSettings.length > 0 && (
-                  <span className="text-xs text-green-600 font-medium">
-                    Bonus Available
+            {paymentMethods.map((method) => {
+              const selRaw = localStorage.getItem("cs_order_selection");
+              const sel = selRaw ? JSON.parse(selRaw) : null;
+              const amount = sel?.priceCalculation?.finalTotal || 0;
+              const feeInfo = calculateServiceFee(method, amount);
+
+              return (
+                <button
+                  key={method._id}
+                  className="aspect-auto bg-white text-black py-4 px-3 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-60 flex flex-col items-center justify-center space-y-1 min-h-[120px]"
+                  onClick={() => startPayment(method.gateway)}
+                  disabled={loading}
+                  title={`${method.name} - Min: $${method.minAmount}`}
+                >
+                  <Image
+                    src={getLogoPath(method.gateway)}
+                    alt={method.name}
+                    width={60}
+                    height={30}
+                    className="object-contain w-[100px]"
+                  />
+                  <span className="text-xs text-gray-600">
+                    {getPaymentType(method.gateway)}
                   </span>
-                )}
-              </button>
-            ))}
+
+                  {method.feeSettings && method.feeSettings.isActive && (
+                    <span className="text-xs text-red-500 font-medium">
+                      Service Fee:{" "}
+                      {method.feeSettings.feeType === "percentage"
+                        ? `${method.feeSettings.feePercentage}%`
+                        : `$${method.feeSettings.fixedAmount}`}
+                    </span>
+                  )}
+                  {method.feeSettings && method.feeSettings.isActive && (
+                    <span className="text-xs text-red-400 font-medium">
+                      Total: ${feeInfo.totalAmount.toFixed(2)}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
 

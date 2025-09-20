@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import nowpaymentsService from "@/lib/paymentServices/nowpaymentsService";
+import { calculateServiceFee, formatFeeInfo } from "@/lib/paymentUtils";
 import PaymentSettings from "@/models/PaymentSettings";
 import User from "@/models/User";
 import WalletDeposit from "@/models/WalletDeposit";
@@ -40,6 +41,13 @@ export async function POST(request) {
       );
     }
 
+    // Calculate service fee
+    const feeCalculation = calculateServiceFee(
+      amount,
+      paymentSettings.feeSettings
+    );
+    const finalAmount = feeCalculation.totalAmount;
+
     // Update the service with database credentials
     nowpaymentsService.apiKey = paymentSettings.apiKey;
     if (paymentSettings.apiSecret) {
@@ -63,13 +71,13 @@ export async function POST(request) {
       purpose: "deposit",
     };
 
-    // Create NOWPayments payment
+    // Create NOWPayments payment with final amount
     const result = await nowpaymentsService.createPayment({
-      priceAmount: amount,
+      priceAmount: finalAmount, // Use final amount including fees
       priceCurrency: currency,
       payCurrency: "btc", // Specify which crypto to pay with
       orderId: depositId,
-      orderDescription: "Wallet Deposit",
+      orderDescription: `Wallet Deposit${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
       ipnCallbackUrl: `${origin}/api/payments/nowpayment/webhook`,
       successUrl: `${origin}/payment-status/deposit-success`,
       cancelUrl: `${origin}/payment-status/deposit-canceled`,
@@ -84,7 +92,9 @@ export async function POST(request) {
     // Create wallet deposit record
     const deposit = new WalletDeposit({
       userId,
-      amount: Number(amount),
+      amount: Number(amount), // Original amount
+      finalAmount: Number(finalAmount), // Final amount including fees
+      serviceFee: Number(feeCalculation.feeAmount), // Service fee amount
       currency,
       paymentMethod: "Cryptocurrency",
       paymentGateway: "NOWPayments",
@@ -92,13 +102,13 @@ export async function POST(request) {
         paymentId: payment.payment_id,
         orderId: payment.order_id,
         status: payment.payment_status || "waiting",
-        priceAmount: Number(amount),
+        priceAmount: Number(finalAmount), // Store final amount
         priceCurrency: currency.toLowerCase(),
         payAmount: payment.pay_amount || 0,
         payCurrency: payment.pay_currency || "",
         paymentUrl: paymentUrl,
         customerEmail: customerEmail || "",
-        orderDescription: "Wallet Deposit",
+        orderDescription: `Wallet Deposit${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
         callbackReceived: false,
         lastStatusUpdate: new Date(),
         metadata: nowpaymentsMetadata,
@@ -112,9 +122,18 @@ export async function POST(request) {
       depositId: deposit.depositId,
       paymentId: payment.payment_id,
       checkoutUrl: paymentUrl,
-      amount,
+      amount: finalAmount, // Return final amount
       currency,
       status: payment.payment_status || "waiting",
+      // Include fee information in response
+      feeInfo: {
+        originalAmount: feeCalculation.originalAmount,
+        serviceFee: feeCalculation.feeAmount,
+        totalAmount: feeCalculation.totalAmount,
+        feeType: feeCalculation.feeType,
+        feePercentage: feeCalculation.feePercentage,
+        feeDescription: formatFeeInfo(feeCalculation),
+      },
     });
   } catch (error) {
     console.error("NOWPayments deposit error:", error);

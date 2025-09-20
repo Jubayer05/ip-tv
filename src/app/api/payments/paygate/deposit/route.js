@@ -1,6 +1,5 @@
-// src/app/api/payments/hoodpay/deposit/route.js
 import { connectToDatabase } from "@/lib/db";
-import hoodpayService from "@/lib/paymentServices/hoodpayService";
+import paygateService from "@/lib/paymentServices/paygateService";
 import { calculateServiceFee, formatFeeInfo } from "@/lib/paymentUtils";
 import PaymentSettings from "@/models/PaymentSettings";
 import User from "@/models/User";
@@ -14,6 +13,7 @@ export async function POST(request) {
       currency = "USD",
       userId,
       customerEmail,
+      provider = "moonpay",
     } = await request.json();
 
     if (!amount || Number(amount) <= 0) {
@@ -29,15 +29,15 @@ export async function POST(request) {
 
     await connectToDatabase();
 
-    // Get HoodPay payment settings from database
+    // Get PayGate payment settings from database
     const paymentSettings = await PaymentSettings.findOne({
-      gateway: "hoodpay",
+      gateway: "paygate",
       isActive: true,
     });
 
     if (!paymentSettings) {
       return NextResponse.json(
-        { error: "HoodPay payment method is not configured or active" },
+        { error: "PayGate payment method is not configured or active" },
         { status: 400 }
       );
     }
@@ -50,10 +50,8 @@ export async function POST(request) {
     const finalAmount = feeCalculation.totalAmount;
 
     // Update the service with database credentials
-    hoodpayService.apiKey = paymentSettings.apiKey;
-    if (paymentSettings.apiSecret) {
-      hoodpayService.apiSecret = paymentSettings.apiSecret;
-    }
+    paygateService.merchantAddress =
+      paymentSettings.merchantAddress || process.env.PAYGATE_MERCHANT_ADDRESS;
 
     const origin = new URL(request.url).origin;
 
@@ -63,58 +61,53 @@ export async function POST(request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Prepare metadata for HoodPay
-    const hoodpayMetadata = {
+    // Prepare metadata for PayGate
+    const paygateMetadata = {
       user_id: userId,
       purpose: "deposit",
     };
 
     let payment;
-    let hoodpayPaymentData = {
+    let paygatePaymentData = {
       status: "pending",
       amount: Number(finalAmount), // Use final amount including fees
       currency: currency.toUpperCase(),
       customerEmail: customerEmail || "",
-      description: `Wallet Deposit${
-        feeCalculation.feeAmount > 0
-          ? ` (${formatFeeInfo(feeCalculation)})`
-          : ""
-      }`,
+      description: `Wallet Deposit${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
       callbackReceived: false,
       lastStatusUpdate: new Date(),
-      metadata: hoodpayMetadata,
+      metadata: paygateMetadata,
+      provider: provider,
     };
 
     try {
-      // Create HoodPay payment with final amount
-      const result = await hoodpayService.createPayment({
+      // Create PayGate payment with final amount
+      const result = await paygateService.createPayment({
         amount: finalAmount, // Use final amount including fees
         currency,
         customerEmail,
-        description: `Wallet Deposit${
-          feeCalculation.feeAmount > 0
-            ? ` (${formatFeeInfo(feeCalculation)})`
-            : ""
-        }`,
-        callbackUrl: `${origin}/api/payments/hoodpay/webhook`,
+        description: `Wallet Deposit${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
+        callbackUrl: `${origin}/api/payments/paygate/webhook`,
         successUrl: `${origin}/payment-status/deposit-success`,
-        metadata: hoodpayMetadata,
+        provider,
+        metadata: paygateMetadata,
       });
 
       payment = result.data;
 
-      // Update HoodPay payment data with API response
-      hoodpayPaymentData = {
-        ...hoodpayPaymentData,
+      // Update PayGate payment data with API response
+      paygatePaymentData = {
+        ...paygatePaymentData,
         paymentId: payment.id,
         paymentUrl: payment.payment_url,
+        walletData: payment.wallet_data,
       };
     } catch (apiError) {
-      console.error("HoodPay API Error:", apiError);
+      console.error("PayGate API Error:", apiError);
       return NextResponse.json(
         {
           success: false,
-          error: "HoodPay payment creation failed",
+          error: "PayGate payment creation failed",
           details: apiError.message,
         },
         { status: 500 }
@@ -128,9 +121,9 @@ export async function POST(request) {
       finalAmount: Number(finalAmount), // Final amount including fees
       serviceFee: Number(feeCalculation.feeAmount), // Service fee amount
       currency,
-      paymentMethod: "Card",
-      paymentGateway: "HoodPay",
-      hoodpayPayment: hoodpayPaymentData,
+      paymentMethod: "Crypto",
+      paymentGateway: "PayGate",
+      paygatePayment: paygatePaymentData,
     });
 
     await deposit.save();
@@ -154,9 +147,9 @@ export async function POST(request) {
       },
     });
   } catch (error) {
-    console.error("HoodPay deposit error:", error);
+    console.error("PayGate deposit error:", error);
     return NextResponse.json(
-      { error: error?.message || "Failed to create HoodPay deposit" },
+      { error: error?.message || "Failed to create PayGate deposit" },
       { status: 500 }
     );
   }

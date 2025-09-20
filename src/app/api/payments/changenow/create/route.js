@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import changenowService from "@/lib/paymentServices/changenowService";
+import { calculateServiceFee, formatFeeInfo } from "@/lib/paymentUtils";
 import Order from "@/models/Order";
 import PaymentSettings from "@/models/PaymentSettings";
 import Product from "@/models/Product";
@@ -42,6 +43,13 @@ export async function POST(request) {
       );
     }
 
+    // Calculate service fee
+    const feeCalculation = calculateServiceFee(
+      amount,
+      paymentSettings.feeSettings
+    );
+    const finalAmount = feeCalculation.totalAmount;
+
     // Update the service with database credentials
     changenowService.apiKey = paymentSettings.apiKey;
     if (paymentSettings.apiSecret) {
@@ -69,7 +77,7 @@ export async function POST(request) {
     let estimatedAmount = 0;
     try {
       const estimateResult = await changenowService.getEstimatedExchangeAmount(
-        amount,
+        finalAmount, // Use final amount including fees
         currency.toLowerCase(),
         "usdt" // Default to usdt
       );
@@ -80,7 +88,7 @@ export async function POST(request) {
         estimateError.message
       );
       // Use a rough estimate: 1 USD ≈ 0.00002 BTC (this is just a fallback)
-      estimatedAmount = Number(amount) * 0.00002;
+      estimatedAmount = Number(finalAmount) * 0.00002;
     }
 
     console.log(paymentSettings);
@@ -88,19 +96,27 @@ export async function POST(request) {
     // Use wallet address from database or fallback
     const walletAddress = paymentSettings?.merchantId;
 
-    // Create ChangeNOW transaction
-    const result = await changenowService.createTransaction({
-      fromCurrency: "usdt", // Default to usdt
-      toCurrency: "eth", // Default to btc
-      fromAmount: amount.toString(),
-      address: walletAddress,
-      extraId: "",
-      refundAddress: "",
-      refundExtraId: "",
-      userId: userId || "",
-      contactEmail: customerEmail || "",
-      flow: "standard",
-      type: "direct",
+    // Prefer dedicated fiat key; fallback to the standard key if not set
+    const fiatApiKey = paymentSettings?.fiatApiKey || paymentSettings?.apiKey;
+    if (!fiatApiKey) {
+      return NextResponse.json(
+        { error: "ChangeNOW API key missing." },
+        { status: 500 }
+      );
+    }
+
+    // Create fiat transaction (card → crypto) with final amount
+    const result = await changenowService.createFiatTransaction({
+      fromAmount: finalAmount, // Use final amount including fees
+      fromCurrency: currency.toLowerCase(),
+      toCurrency: "usdt",
+      payoutAddress: walletAddress,
+      depositType: "VISA_MC1",
+      payoutType: "CRYPTO_THROUGH_CN",
+      externalPartnerLinkId: paymentSettings?.externalPartnerLinkId || "",
+      customerEmail: customerEmail || "",
+      customerPhone: contactInfo?.phone || "",
+      apiKey: fiatApiKey, // pass fiat key here
     });
 
     if (!result.success) {
@@ -164,7 +180,7 @@ export async function POST(request) {
             productId: null,
             variantId: null,
             quantity: 1,
-            price: Number(amount),
+            price: Number(amount), // Original amount for product price
             duration: 0,
             devicesAllowed: 0,
             adultChannels: false,
@@ -204,7 +220,9 @@ export async function POST(request) {
         userId: userId || null,
         guestEmail: resolvedGuestEmail,
         products: orderProducts,
-        totalAmount: Number(amount),
+        totalAmount: Number(finalAmount), // Store final amount including fees
+        originalAmount: Number(amount), // Store original amount
+        serviceFee: Number(feeCalculation.feeAmount), // Store service fee
         discountAmount: 0,
         couponCode: couponCode,
         paymentMethod: "Cryptocurrency",
@@ -217,6 +235,9 @@ export async function POST(request) {
       order.paymentMethod = "Cryptocurrency";
       order.paymentGateway = "ChangeNOW";
       order.paymentStatus = "pending";
+      order.totalAmount = Number(finalAmount); // Update with final amount
+      order.originalAmount = Number(amount); // Store original amount
+      order.serviceFee = Number(feeCalculation.feeAmount); // Store service fee
     }
 
     order.changenowPayment = {
@@ -244,22 +265,28 @@ export async function POST(request) {
     // Return response in the format expected by frontend
     return NextResponse.json({
       success: true,
-      paymentId: result.transactionId, // Frontend expects paymentId
-      checkoutUrl: `https://changenow.io/exchange/txs/${result.transactionId}`, // Frontend expects checkoutUrl
+      paymentId: result.transactionId,
+      checkoutUrl: result.checkoutUrl,
       orderId: order._id,
-      amount: amount,
-      currency: "USD",
-      instructions: `Send ${result.fromAmount} ${
-        result.fromCurrency
-      } to address: ${result.payinAddress}${
-        result.payinExtraId ? ` with memo: ${result.payinExtraId}` : ""
-      }`,
-      payinAddress: result.payinAddress,
-      payinExtraId: result.payinExtraId,
+      amount: finalAmount, // Return final amount
+      currency: currency,
+      instructions: `Complete payment with your card. ${finalAmount} ${currency} will be converted to ${result.toCurrency} and sent to your wallet.${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
+      payinAddress: result.payoutAddress, // This will be the card payment URL
+      payinExtraId: result.payoutExtraId,
       fromAmount: result.fromAmount,
       toAmount: result.toAmount,
       fromCurrency: result.fromCurrency,
       toCurrency: result.toCurrency,
+      expiresAt: result.expiresAt,
+      // Include fee information in response
+      feeInfo: {
+        originalAmount: feeCalculation.originalAmount,
+        serviceFee: feeCalculation.feeAmount,
+        totalAmount: feeCalculation.totalAmount,
+        feeType: feeCalculation.feeType,
+        feePercentage: feeCalculation.feePercentage,
+        feeDescription: formatFeeInfo(feeCalculation),
+      },
     });
   } catch (error) {
     console.error("ChangeNOW create error:", error);

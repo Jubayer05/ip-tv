@@ -1,5 +1,5 @@
 import { connectToDatabase } from "@/lib/db";
-import nowpaymentsService from "@/lib/paymentServices/nowpaymentsService";
+import paygateService from "@/lib/paymentServices/paygateService";
 import { calculateServiceFee, formatFeeInfo } from "@/lib/paymentUtils";
 import Order from "@/models/Order";
 import PaymentSettings from "@/models/PaymentSettings";
@@ -21,7 +21,10 @@ export async function POST(request) {
       adultChannels = false,
       couponCode = "",
       contactInfo,
+      provider = "moonpay",
       meta = {},
+      userRegion, // Add this
+      preferredProvider = "moonpay",
     } = await request.json();
 
     if (!amount || Number(amount) <= 0) {
@@ -30,15 +33,15 @@ export async function POST(request) {
 
     await connectToDatabase();
 
-    // Get NOWPayments payment settings from database
+    // Get PayGate payment settings from database
     const paymentSettings = await PaymentSettings.findOne({
-      gateway: "nowpayment",
+      gateway: "paygate",
       isActive: true,
     });
 
     if (!paymentSettings) {
       return NextResponse.json(
-        { error: "NOWPayments payment method is not configured or active" },
+        { error: "PayGate payment method is not configured or active" },
         { status: 400 }
       );
     }
@@ -51,47 +54,93 @@ export async function POST(request) {
     const finalAmount = feeCalculation.totalAmount;
 
     // Update the service with database credentials
-    nowpaymentsService.apiKey = paymentSettings.apiKey;
-    if (paymentSettings.apiSecret) {
-      nowpaymentsService.apiSecret = paymentSettings.apiSecret;
+    const merchantAddress =
+      paymentSettings.merchantAddress || process.env.PAYGATE_MERCHANT_ADDRESS;
+
+    if (!merchantAddress) {
+      return NextResponse.json(
+        {
+          error: "PayGate merchant address not configured",
+          details:
+            "Please configure PAYGATE_MERCHANT_ADDRESS in environment variables or payment settings",
+        },
+        { status: 400 }
+      );
     }
+
+    paygateService.setMerchantAddress(merchantAddress);
 
     const origin = new URL(request.url).origin;
 
-    // Generate order ID
-    const orderId =
-      providedOrderNumber ||
-      `nowpay-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
-
-    // Prepare metadata for our database (not sent to NOWPayments API)
-    const nowpaymentsMetadata = {
+    // Prepare metadata for PayGate
+    const paygateMetadata = {
       order_number: providedOrderNumber || "",
       user_id: userId || "",
       purpose: meta?.purpose || "order",
-      product_id: meta?.productId || "",
-      variant_id: meta?.variantId || "",
-      quantity: String(meta?.quantity ?? quantity),
-      devices_allowed: String(meta?.devices ?? devicesAllowed),
-      adult_channels: String(meta?.adultChannels ?? adultChannels),
     };
 
-    // Create NOWPayments payment with final amount
-    const result = await nowpaymentsService.createPayment({
-      priceAmount: finalAmount, // Use final amount including fees
-      priceCurrency: currency,
-      payCurrency: "btc", // Specify which crypto to pay with
-      orderId,
-      orderDescription: `${orderName}${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
-      ipnCallbackUrl: `${origin}/api/payments/nowpayment/webhook`,
-      successUrl: `${origin}/payment-status/${orderId}?status=success`,
-      cancelUrl: `${origin}/payment-status/${orderId}?status=canceled`,
-      customerEmail,
-    });
+    let payment;
+    let paygatePaymentData = {
+      status: "pending",
+      amount: Number(finalAmount), // Use final amount including fees
+      currency: currency.toUpperCase(),
+      customerEmail: customerEmail || "",
+      description: `${orderName}${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
+      callbackReceived: false,
+      lastStatusUpdate: new Date(),
+      metadata: paygateMetadata,
+      provider: provider,
+    };
 
-    const payment = result.data;
+    try {
+      // Create PayGate payment with final amount
+      const result = await paygateService.createPayment({
+        amount: finalAmount, // Use final amount including fees
+        currency,
+        customerEmail,
+        description: `${orderName}${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
+        callbackUrl: `${origin}/api/payments/paygate/webhook`,
+        successUrl: `${origin}/payment-status/paygate-${Date.now()}`,
+        provider: preferredProvider,
+        userRegion, // Pass the region
+        metadata: paygateMetadata,
+      });
+
+      payment = result.data;
+
+      // Update PayGate payment data with API response
+      paygatePaymentData = {
+        ...paygatePaymentData,
+        paymentId: payment.id,
+        paymentUrl: payment.payment_url,
+        walletData: payment.wallet_data,
+      };
+    } catch (apiError) {
+      console.error("PayGate API Error:", apiError);
+
+      // If PayGate API fails, we can still create the order but mark it as failed
+      paygatePaymentData = {
+        ...paygatePaymentData,
+        status: "failed",
+        paymentId: `failed-${Date.now()}`,
+        paymentUrl: "",
+      };
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "PayGate payment creation failed",
+          details: apiError.message,
+          orderCreated: false,
+        },
+        { status: 500 }
+      );
+    }
 
     // Find existing order or create new one
-    let order = await Order.findOne({ orderNumber: orderId });
+    const orderNumber =
+      providedOrderNumber || payment?.id || `paygate-${Date.now()}`;
+    let order = await Order.findOne({ orderNumber });
 
     if (!order) {
       // If not a deposit, validate product info
@@ -180,7 +229,7 @@ export async function POST(request) {
       }
 
       order = new Order({
-        orderNumber: orderId,
+        orderNumber,
         userId: userId || null,
         guestEmail: resolvedGuestEmail,
         products: orderProducts,
@@ -189,39 +238,24 @@ export async function POST(request) {
         serviceFee: Number(feeCalculation.feeAmount), // Store service fee
         discountAmount: 0,
         couponCode: couponCode,
-        paymentMethod: "Cryptocurrency",
-        paymentGateway: "NOWPayments",
-        paymentStatus: "pending",
+        paymentMethod: "Crypto",
+        paymentGateway: "PayGate",
+        paymentStatus:
+          paygatePaymentData.status === "failed" ? "failed" : "pending",
         contactInfo: resolvedContactInfo,
-        status: "new",
+        status: paygatePaymentData.status === "failed" ? "cancelled" : "new",
       });
     } else {
-      order.paymentMethod = "Cryptocurrency";
-      order.paymentGateway = "NOWPayments";
-      order.paymentStatus = "pending";
+      order.paymentMethod = "Crypto";
+      order.paymentGateway = "PayGate";
+      order.paymentStatus =
+        paygatePaymentData.status === "failed" ? "failed" : "pending";
       order.totalAmount = Number(finalAmount); // Update with final amount
       order.originalAmount = Number(amount); // Store original amount
       order.serviceFee = Number(feeCalculation.feeAmount); // Store service fee
     }
 
-    // Try to get payment URL from response first, then fallback to constructed URL
-    const paymentUrl = nowpaymentsService.getPaymentUrlFromResponse(payment);
-
-    order.nowpaymentsPayment = {
-      paymentId: payment.payment_id,
-      orderId: payment.order_id,
-      status: payment.payment_status || "waiting",
-      priceAmount: Number(finalAmount), // Store final amount
-      priceCurrency: currency.toLowerCase(),
-      payAmount: payment.pay_amount || 0,
-      payCurrency: payment.pay_currency || "",
-      paymentUrl: paymentUrl,
-      customerEmail: customerEmail || "",
-      orderDescription: `${orderName}${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
-      callbackReceived: false,
-      lastStatusUpdate: new Date(),
-      metadata: nowpaymentsMetadata,
-    };
+    order.paygatePayment = paygatePaymentData;
 
     await order.save();
 
@@ -229,11 +263,11 @@ export async function POST(request) {
       success: true,
       orderId: order._id,
       orderNumber: order.orderNumber,
-      paymentId: payment.payment_id,
-      checkoutUrl: paymentUrl,
+      paymentId: payment?.id,
+      checkoutUrl: payment?.payment_url || "",
       amount: finalAmount, // Return final amount
       currency,
-      status: payment.payment_status || "waiting",
+      status: payment?.status || "pending",
       // Include fee information in response
       feeInfo: {
         originalAmount: feeCalculation.originalAmount,
@@ -245,9 +279,9 @@ export async function POST(request) {
       },
     });
   } catch (error) {
-    console.error("NOWPayments create error:", error);
+    console.error("PayGate create error:", error);
     return NextResponse.json(
-      { error: error?.message || "Failed to create NOWPayments payment" },
+      { error: error?.message || "Failed to create PayGate payment" },
       { status: 500 }
     );
   }

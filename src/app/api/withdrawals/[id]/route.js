@@ -35,16 +35,17 @@ export async function PATCH(request, { params }) {
       withdrawal.processedAt = new Date();
     }
 
-    // If status changed to "paid", deduct amount from user balance
+    // If status changed to "paid", deduct amount from user referral earnings
     if (prevStatus !== "paid" && status === "paid") {
       const user = await User.findById(withdrawal.userId);
       if (user) {
-        if (user.balance >= withdrawal.amount) {
-          user.balance -= withdrawal.amount;
+        const referralEarnings = Number(user.referral?.earnings || 0);
+        if (referralEarnings >= withdrawal.amount) {
+          user.referral.earnings = referralEarnings - withdrawal.amount;
           await user.save();
         } else {
           return NextResponse.json(
-            { success: false, error: "Insufficient user balance" },
+            { success: false, error: "Insufficient referral earnings" },
             { status: 400 }
           );
         }

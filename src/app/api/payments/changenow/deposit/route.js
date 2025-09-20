@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import changenowService from "@/lib/paymentServices/changenowService";
+import { calculateServiceFee, formatFeeInfo } from "@/lib/paymentUtils";
 import PaymentSettings from "@/models/PaymentSettings";
 import User from "@/models/User";
 import WalletDeposit from "@/models/WalletDeposit";
@@ -40,6 +41,13 @@ export async function POST(request) {
       );
     }
 
+    // Calculate service fee
+    const feeCalculation = calculateServiceFee(
+      amount,
+      paymentSettings.feeSettings
+    );
+    const finalAmount = feeCalculation.totalAmount;
+
     // Update the service with database credentials
     changenowService.apiKey = paymentSettings.apiKey;
     if (paymentSettings.apiSecret) {
@@ -52,9 +60,9 @@ export async function POST(request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Step 1: Convert fiat to crypto with a realistic rate
+    // Step 1: Convert fiat to crypto with a realistic rate using final amount
     // 1 USD = 1 USDT (approximately, for simplicity)
-    const cryptoAmount = Number(amount).toFixed(2); // Keep as USDT amount
+    const cryptoAmount = Number(finalAmount).toFixed(2); // Use final amount including fees
 
     // Check if the amount meets ChangeNOW's minimum requirement
     const minAmount = paymentSettings.minAmount || 2.733971; // Use database min amount
@@ -121,7 +129,9 @@ export async function POST(request) {
     // Step 5: Create wallet deposit record
     const deposit = new WalletDeposit({
       userId,
-      amount: Number(amount),
+      amount: Number(amount), // Original amount
+      finalAmount: Number(finalAmount), // Final amount including fees
+      serviceFee: Number(feeCalculation.feeAmount), // Service fee amount
       currency,
       status: "pending",
       gateway: "changenow",
@@ -170,14 +180,23 @@ export async function POST(request) {
       fromCurrency: result.fromCurrency,
       toCurrency: result.toCurrency,
       status: result.status || "new",
-      amount: amount, // Frontend expects amount
+      amount: finalAmount, // Return final amount
       currency: currency, // Frontend expects currency
       instructions: `Send ${result.fromAmount} ${
         result.fromCurrency
       } to address: ${result.payinAddress}${
         result.payinExtraId ? ` with memo: ${result.payinExtraId}` : ""
-      }`,
-      message: "Deposit initiated. Please send USDT to the provided address.",
+      }${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
+      message: `Deposit initiated. Please send USDT to the provided address.${feeCalculation.feeAmount > 0 ? ` Total amount including ${formatFeeInfo(feeCalculation)}: $${finalAmount}` : ''}`,
+      // Include fee information in response
+      feeInfo: {
+        originalAmount: feeCalculation.originalAmount,
+        serviceFee: feeCalculation.feeAmount,
+        totalAmount: feeCalculation.totalAmount,
+        feeType: feeCalculation.feeType,
+        feePercentage: feeCalculation.feePercentage,
+        feeDescription: formatFeeInfo(feeCalculation),
+      },
     });
   } catch (error) {
     console.error("ChangeNOW deposit error:", error);

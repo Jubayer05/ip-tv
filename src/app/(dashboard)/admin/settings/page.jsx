@@ -2,6 +2,7 @@
 import ManageAddons from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageAddons";
 import ManageBanner from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageBanner";
 import ManageContact from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageContact";
+import ManageFreeTrial from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageFreeTrial";
 import ManageSocialMediaContact from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageSocialMedia";
 import MetaManagement from "@/components/dashboard/AdminDashboard/SystemsSettings/MetaManagement";
 import { useState } from "react";
@@ -34,6 +35,11 @@ export default function AdminSettingsPage() {
       id: "addons",
       label: "Addons Management",
       component: <ManageAddons />,
+    },
+    {
+      id: "free-trial",
+      label: "Free Trial Management",
+      component: <ManageFreeTrial />,
     },
   ];
 

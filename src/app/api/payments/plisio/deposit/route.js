@@ -1,6 +1,7 @@
 // src/app/api/payments/plisio/deposit/route.js
 import { connectToDatabase } from "@/lib/db";
 import plisioService from "@/lib/paymentServices/plisioService";
+import { calculateServiceFee, formatFeeInfo } from "@/lib/paymentUtils";
 import PaymentSettings from "@/models/PaymentSettings";
 import User from "@/models/User";
 import WalletDeposit from "@/models/WalletDeposit";
@@ -41,6 +42,13 @@ export async function POST(request) {
       );
     }
 
+    // Calculate service fee
+    const feeCalculation = calculateServiceFee(
+      amount,
+      paymentSettings.feeSettings
+    );
+    const finalAmount = feeCalculation.totalAmount;
+
     // Update the service with database credentials
     plisioService.apiKey = paymentSettings.apiKey;
     if (paymentSettings.apiSecret) {
@@ -57,16 +65,20 @@ export async function POST(request) {
 
     const depositId = `plisio-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 
-    // Create Plisio invoice
+    // Create Plisio invoice with final amount (including fees)
     const result = await plisioService.createInvoice({
       orderName: "Wallet Deposit",
       orderNumber: depositId,
       sourceCurrency: currency,
-      sourceAmount: amount,
+      sourceAmount: finalAmount, // Use final amount including fees
       currency: "BTC",
       email: customerEmail || "",
       callbackUrl: `${origin}/api/payments/plisio/callback?json=true`,
-      description: `Wallet Deposit - ${depositId}`,
+      description: `Wallet Deposit - ${depositId}${
+        feeCalculation.feeAmount > 0
+          ? ` (${formatFeeInfo(feeCalculation)})`
+          : ""
+      }`,
       plugin: "IPTV_PLATFORM",
       version: "1.0",
     });
@@ -76,7 +88,9 @@ export async function POST(request) {
     // Create wallet deposit record
     const deposit = new WalletDeposit({
       userId,
-      amount: Number(amount),
+      amount: Number(amount), // Original amount
+      finalAmount: Number(finalAmount), // Final amount including fees
+      serviceFee: Number(feeCalculation.feeAmount), // Service fee amount
       currency,
       paymentMethod: "Cryptocurrency",
       paymentGateway: "Plisio",
@@ -108,6 +122,15 @@ export async function POST(request) {
       status: invoice.status,
       walletAddress: invoice.wallet_hash,
       expiresAt: new Date(invoice.expire_at_utc * 1000).toISOString(),
+      // Include fee information in response
+      feeInfo: {
+        originalAmount: feeCalculation.originalAmount,
+        serviceFee: feeCalculation.feeAmount,
+        totalAmount: feeCalculation.totalAmount,
+        feeType: feeCalculation.feeType,
+        feePercentage: feeCalculation.feePercentage,
+        feeDescription: formatFeeInfo(feeCalculation),
+      },
     });
   } catch (error) {
     console.error("Plisio deposit error:", error);

@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import hoodpayService from "@/lib/paymentServices/hoodpayService";
+import { calculateServiceFee, formatFeeInfo } from "@/lib/paymentUtils";
 import Order from "@/models/Order";
 import PaymentSettings from "@/models/PaymentSettings";
 import Product from "@/models/Product";
@@ -42,6 +43,13 @@ export async function POST(request) {
       );
     }
 
+    // Calculate service fee
+    const feeCalculation = calculateServiceFee(
+      amount,
+      paymentSettings.feeSettings
+    );
+    const finalAmount = feeCalculation.totalAmount;
+
     // Update the service with database credentials
     hoodpayService.apiKey = paymentSettings.apiKey;
     if (paymentSettings.apiSecret) {
@@ -60,22 +68,22 @@ export async function POST(request) {
     let payment;
     let hoodpayPaymentData = {
       status: "pending",
-      amount: Number(amount),
+      amount: Number(finalAmount), // Use final amount including fees
       currency: currency.toUpperCase(),
       customerEmail: customerEmail || "",
-      description: orderName,
+      description: `${orderName}${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
       callbackReceived: false,
       lastStatusUpdate: new Date(),
       metadata: hoodpayMetadata,
     };
 
     try {
-      // Create HoodPay payment
+      // Create HoodPay payment with final amount
       const result = await hoodpayService.createPayment({
-        amount,
+        amount: finalAmount, // Use final amount including fees
         currency,
         customerEmail,
-        description: orderName,
+        description: `${orderName}${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
         callbackUrl: `${origin}/api/payments/hoodpay/webhook`,
         successUrl: `${origin}/payment-status/hoodpay-${Date.now()}`,
         metadata: hoodpayMetadata,
@@ -168,7 +176,7 @@ export async function POST(request) {
             productId: null,
             variantId: null,
             quantity: 1,
-            price: Number(amount),
+            price: Number(amount), // Original amount for product price
             duration: 0,
             devicesAllowed: 0,
             adultChannels: false,
@@ -208,7 +216,9 @@ export async function POST(request) {
         userId: userId || null,
         guestEmail: resolvedGuestEmail,
         products: orderProducts,
-        totalAmount: Number(amount),
+        totalAmount: Number(finalAmount), // Store final amount including fees
+        originalAmount: Number(amount), // Store original amount
+        serviceFee: Number(feeCalculation.feeAmount), // Store service fee
         discountAmount: 0,
         couponCode: couponCode,
         paymentMethod: "Card",
@@ -223,6 +233,9 @@ export async function POST(request) {
       order.paymentGateway = "HoodPay";
       order.paymentStatus =
         hoodpayPaymentData.status === "failed" ? "failed" : "pending";
+      order.totalAmount = Number(finalAmount); // Update with final amount
+      order.originalAmount = Number(amount); // Store original amount
+      order.serviceFee = Number(feeCalculation.feeAmount); // Store service fee
     }
 
     order.hoodpayPayment = hoodpayPaymentData;
@@ -235,9 +248,18 @@ export async function POST(request) {
       orderNumber: order.orderNumber,
       paymentId: payment?.id,
       checkoutUrl: payment?.payment_url || "",
-      amount,
+      amount: finalAmount, // Return final amount
       currency,
       status: payment?.status || "pending",
+      // Include fee information in response
+      feeInfo: {
+        originalAmount: feeCalculation.originalAmount,
+        serviceFee: feeCalculation.feeAmount,
+        totalAmount: feeCalculation.totalAmount,
+        feeType: feeCalculation.feeType,
+        feePercentage: feeCalculation.feePercentage,
+        feeDescription: formatFeeInfo(feeCalculation),
+      },
     });
   } catch (error) {
     console.error("HoodPay create error:", error);

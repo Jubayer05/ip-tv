@@ -2,6 +2,7 @@
 import TableCustom from "@/components/ui/TableCustom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const BillingTable = () => {
@@ -36,6 +37,7 @@ const BillingTable = () => {
 
   // Add filter state
   const [userFilter, setUserFilter] = useState("all"); // "all", "registered", "guest"
+  const [searchTerm, setSearchTerm] = useState(""); // Add search term state
 
   const [title, setTitle] = useState(ORIGINAL_TITLE);
   const [columns, setColumns] = useState(ORIGINAL_COLUMNS);
@@ -81,6 +83,7 @@ const BillingTable = () => {
           return {
             key: order._id || index.toString(),
             orderNumber: order.orderNumber || `#${index + 1}`,
+            orderId: order._id, // Add orderId for search
             customerName: customerName,
             customerEmail:
               order.contactInfo?.email || order.guestEmail || "N/A",
@@ -398,6 +401,26 @@ const BillingTable = () => {
     return baseColumns;
   };
 
+  // Filter data based on user type and search term
+  const filteredData = billingData.filter((order) => {
+    // Apply user type filter
+    let userTypeMatch = true;
+    if (userFilter === "registered")
+      userTypeMatch = order.userType === "Registered";
+    if (userFilter === "guest") userTypeMatch = order.userType === "Guest";
+
+    // Apply search filter
+    let searchMatch = true;
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      searchMatch =
+        order.orderNumber?.toLowerCase().includes(searchLower) ||
+        order.orderId?.toString().toLowerCase().includes(searchLower);
+    }
+
+    return userTypeMatch && searchMatch;
+  });
+
   // Show loading state
   if (loading) {
     return (
@@ -446,16 +469,44 @@ const BillingTable = () => {
     );
   }
 
-  // Filter data based on user type
-  const filteredData = billingData.filter((order) => {
-    if (userFilter === "all") return true;
-    if (userFilter === "registered") return order.userType === "Registered";
-    if (userFilter === "guest") return order.userType === "Guest";
-    return true;
-  });
-
   return (
     <div className="mt-4 sm:mt-6 font-secondary">
+      {/* Search Box */}
+      <div className="mb-6 flex justify-start pt-3">
+        <div className="relative w-full max-w-md">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search by Order Number or Order ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 bg-[#0c171c] border border-white/15 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 transition-colors"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Search Results Info */}
+      {searchTerm && (
+        <div className="mb-4 text-center">
+          <p className="text-gray-400 text-sm">
+            Showing {filteredData.length} of {billingData.length} orders
+            {filteredData.length !== billingData.length && (
+              <span className="text-cyan-400"> for "{searchTerm}"</span>
+            )}
+          </p>
+        </div>
+      )}
+
       {/* Filter Buttons */}
       {hasAdminAccess() && (
         <div className="flex flex-wrap gap-2 mb-4 justify-center sm:justify-start">

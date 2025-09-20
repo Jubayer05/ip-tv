@@ -13,6 +13,7 @@ const PaymentSettingsSchema = new mongoose.Schema(
         "nowpayment",
         "changenow",
         "cryptomus",
+        "paygate",
       ],
     },
     name: {
@@ -59,6 +60,29 @@ const PaymentSettingsSchema = new mongoose.Schema(
         },
       },
     ],
+    // Added fee settings
+    feeSettings: {
+      isActive: {
+        type: Boolean,
+        default: false,
+      },
+      feePercentage: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 100,
+      },
+      feeType: {
+        type: String,
+        enum: ["percentage", "fixed"],
+        default: "percentage",
+      },
+      fixedAmount: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+    },
     description: {
       type: String,
       default: "",

@@ -208,6 +208,41 @@ const CryptomusPaymentSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Add PayGate payment schema
+const PayGatePaymentSchema = new mongoose.Schema(
+  {
+    paymentId: { type: String, index: true },
+    status: {
+      type: String,
+      enum: ["pending", "paid", "failed", "unpaid"],
+      default: "pending",
+    },
+    amount: { type: Number, default: 0 },
+    currency: { type: String, default: "USD" },
+    customerEmail: { type: String, default: "" },
+    description: { type: String, default: "" },
+    paymentUrl: { type: String },
+    provider: { type: String, default: "moonpay" },
+    walletData: {
+      address_in: { type: String },
+      polygon_address_in: { type: String },
+      callback_url: { type: String },
+      ipn_token: { type: String },
+    },
+    paymentData: {
+      value_coin: { type: String },
+      coin: { type: String },
+      txid_in: { type: String },
+      txid_out: { type: String },
+      address_in: { type: String },
+    },
+    callbackReceived: { type: Boolean, default: false },
+    lastStatusUpdate: { type: Date, default: Date.now },
+    metadata: { type: Object, default: {} },
+  },
+  { _id: false }
+);
+
 const OrderSchema = new mongoose.Schema(
   {
     orderNumber: { type: String, unique: true, index: true },
@@ -237,7 +272,8 @@ const OrderSchema = new mongoose.Schema(
     hoodpayPayment: { type: HoodPayPaymentSchema, default: null },
     nowpaymentsPayment: { type: NOWPaymentsSchema, default: null },
     changenowPayment: { type: ChangeNOWPaymentSchema, default: null },
-    cryptomusPayment: { type: CryptomusPaymentSchema, default: null }, // Add this line
+    cryptomusPayment: { type: CryptomusPaymentSchema, default: null },
+    paygatePayment: { type: PayGatePaymentSchema, default: null }, // Add this line
 
     keys: { type: [OrderKeySchema], default: [] },
 

@@ -17,7 +17,13 @@ const PaymentMethodsManagement = () => {
     apiSecret: "",
     merchantId: "",
     minAmount: 1,
-    bonusSettings: [], // Changed from discountSettings
+    bonusSettings: [],
+    feeSettings: {
+      isActive: false,
+      feePercentage: 0,
+      feeType: "percentage",
+      fixedAmount: 0,
+    },
     description: "",
     logo: "",
     sortOrder: 0,
@@ -41,6 +47,11 @@ const PaymentMethodsManagement = () => {
       value: "cryptomus",
       label: "Cryptomus",
       logo: "/payment_logo/cryptomus.png",
+    },
+    {
+      value: "paygate",
+      label: "PayGate",
+      logo: "/payment_logo/paygate.png",
     },
   ];
 
@@ -108,11 +119,17 @@ const PaymentMethodsManagement = () => {
     setEditingSetting(setting);
     setFormData({
       ...setting,
-      bonusSettings: (setting.bonusSettings || []).map(bonus => ({
+      bonusSettings: (setting.bonusSettings || []).map((bonus) => ({
         minAmount: bonus.minAmount || 0,
         bonusPercentage: bonus.bonusPercentage || 0,
         isActive: bonus.isActive !== undefined ? bonus.isActive : true,
       })),
+      feeSettings: {
+        isActive: setting.feeSettings?.isActive || false,
+        feePercentage: setting.feeSettings?.feePercentage || 0,
+        feeType: setting.feeSettings?.feeType || "percentage",
+        fixedAmount: setting.feeSettings?.fixedAmount || 0,
+      },
     });
     setShowModal(true);
   };
@@ -179,7 +196,13 @@ const PaymentMethodsManagement = () => {
       apiSecret: "",
       merchantId: "",
       minAmount: 1,
-      bonusSettings: [], // Changed from discountSettings
+      bonusSettings: [],
+      feeSettings: {
+        isActive: false,
+        feePercentage: 0,
+        feeType: "percentage",
+        fixedAmount: 0,
+      },
       description: "",
       logo: "",
       sortOrder: 0,
@@ -193,10 +216,10 @@ const PaymentMethodsManagement = () => {
       bonusSettings: [
         // Changed from discountSettings
         ...prev.bonusSettings,
-        { 
-          minAmount: 0, 
-          bonusPercentage: 0, 
-          isActive: true 
+        {
+          minAmount: 0,
+          bonusPercentage: 0,
+          isActive: true,
         }, // Changed from discountPercentage
       ],
     }));
@@ -220,13 +243,6 @@ const PaymentMethodsManagement = () => {
           i // Changed from discountSettings
         ) => (i === index ? { ...setting, [field]: value } : setting)
       ),
-    }));
-  };
-
-  const toggleSecretVisibility = (id) => {
-    setShowSecrets((prev) => ({
-      ...prev,
-      [id]: !prev[id],
     }));
   };
 
@@ -306,7 +322,9 @@ const PaymentMethodsManagement = () => {
                     <span className="font-medium text-gray-400">
                       Merchant ID / Business ID:
                     </span>{" "}
-                    <span className="text-white">{setting.merchantId}</span>
+                    <span className="text-white wrap-break-word">
+                      {setting.merchantId}
+                    </span>
                   </p>
                 )}
               </div>
@@ -329,6 +347,42 @@ const PaymentMethodsManagement = () => {
                         </span>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Fee Settings Display */}
+              {setting.feeSettings && setting.feeSettings.isActive && (
+                <div className="mt-4">
+                  <h4 className="font-medium text-sm text-gray-400 mb-2">
+                    Service Fee:
+                  </h4>
+                  <div className="text-xs text-gray-300">
+                    {setting.feeSettings.feeType === "percentage" ? (
+                      <span>
+                        <span className="text-red-400">
+                          {setting.feeSettings.feePercentage}% fee
+                        </span>
+                        <span className="text-gray-500 ml-1">
+                          (e.g., $100 → $
+                          {(
+                            100 +
+                            (100 * setting.feeSettings.feePercentage) / 100
+                          ).toFixed(2)}
+                          )
+                        </span>
+                      </span>
+                    ) : (
+                      <span>
+                        <span className="text-red-400">
+                          ${setting.feeSettings.fixedAmount} fixed fee
+                        </span>
+                        <span className="text-gray-500 ml-1">
+                          (e.g., $100 → $
+                          {(100 + setting.feeSettings.fixedAmount).toFixed(2)})
+                        </span>
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
@@ -562,6 +616,108 @@ const PaymentMethodsManagement = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Fee Settings */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="checkbox"
+                    id="feeActive"
+                    checked={formData.feeSettings.isActive}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        feeSettings: {
+                          ...prev.feeSettings,
+                          isActive: e.target.checked,
+                        },
+                      }))
+                    }
+                    className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500"
+                  />
+                  <label
+                    htmlFor="feeActive"
+                    className="text-sm font-medium text-gray-300"
+                  >
+                    Enable Service Fee
+                  </label>
+                </div>
+
+                {formData.feeSettings.isActive && (
+                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-600 space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400 mb-1">
+                        Fee Type
+                      </label>
+                      <select
+                        value={formData.feeSettings.feeType}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            feeSettings: {
+                              ...prev.feeSettings,
+                              feeType: e.target.value,
+                            },
+                          }))
+                        }
+                        className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="percentage">Percentage (%)</option>
+                        <option value="fixed">Fixed Amount ($)</option>
+                      </select>
+                    </div>
+
+                    {formData.feeSettings.feeType === "percentage" ? (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-400 mb-1">
+                          Fee Percentage (%)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          placeholder="Enter fee percentage"
+                          value={formData.feeSettings.feePercentage || 0}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              feeSettings: {
+                                ...prev.feeSettings,
+                                feePercentage: parseFloat(e.target.value) || 0,
+                              },
+                            }))
+                          }
+                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-400 mb-1">
+                          Fixed Fee Amount ($)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="Enter fixed fee amount"
+                          value={formData.feeSettings.fixedAmount || 0}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              feeSettings: {
+                                ...prev.feeSettings,
+                                fixedAmount: parseFloat(e.target.value) || 0,
+                              },
+                            }))
+                          }
+                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">

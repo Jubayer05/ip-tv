@@ -111,6 +111,33 @@ const WalletDepositSchema = new mongoose.Schema(
       callbackReceived: { type: Boolean, default: false },
       lastStatusUpdate: { type: Date, default: Date.now },
     },
+
+    paygatePayment: {
+      paymentId: { type: String, index: true },
+      status: { type: String, default: "pending" },
+      amount: { type: Number, default: 0 },
+      currency: { type: String, default: "USD" },
+      customerEmail: { type: String, default: "" },
+      description: { type: String, default: "" },
+      paymentUrl: { type: String },
+      provider: { type: String, default: "moonpay" },
+      walletData: {
+        address_in: { type: String },
+        polygon_address_in: { type: String },
+        callback_url: { type: String },
+        ipn_token: { type: String },
+      },
+      paymentData: {
+        value_coin: { type: String },
+        coin: { type: String },
+        txid_in: { type: String },
+        txid_out: { type: String },
+        address_in: { type: String },
+      },
+      callbackReceived: { type: Boolean, default: false },
+      lastStatusUpdate: { type: Date, default: Date.now },
+      metadata: { type: Object, default: {} },
+    },
   },
   { timestamps: true }
 );

@@ -168,6 +168,29 @@ const settingsSchema = new mongoose.Schema(
       tawkTo: { type: Boolean, default: false },
     },
 
+    // Free trial content management
+    freeTrialContent: {
+      title: { type: String, default: "Start Your Free Trial" },
+      description: {
+        type: String,
+        default:
+          "Experience premium IPTV content for 24 hours - completely free!",
+      },
+      features: [
+        {
+          id: { type: Number, required: true },
+          title: { type: String, required: true },
+          description: { type: String, required: true },
+          icon: { type: String, required: true },
+        },
+      ],
+      includedTitle: {
+        type: String,
+        default: "What's Included in Your Free Trial?",
+      },
+      includedItems: [{ type: String }],
+    },
+
     // Meta management for SEO
     metaManagement: {
       home: {
@@ -555,6 +578,38 @@ settingsSchema.statics.getSettings = async function () {
         getButton: false,
         tawkTo: false,
       },
+      freeTrialContent: {
+        title: "Start Your Free Trial",
+        description:
+          "Experience premium IPTV content for 24 hours - completely free!",
+        features: [
+          {
+            id: 1,
+            title: "24 Hours Free",
+            description: "Full access to all channels and features",
+            icon: "clock",
+          },
+          {
+            id: 2,
+            title: "Premium Quality",
+            description: "HD and 4K content with no buffering",
+            icon: "star",
+          },
+          {
+            id: 3,
+            title: "No Commitment",
+            description: "Cancel anytime, no hidden fees",
+            icon: "shield",
+          },
+        ],
+        includedTitle: "What's Included in Your Free Trial?",
+        includedItems: [
+          "Access to all channels in your selected template",
+          "HD and 4K quality streaming",
+          "24/7 customer support",
+          "No credit card required",
+        ],
+      },
       metaManagement: {
         home: {
           title: "Cheap Stream - Premium IPTV Service Provider",
@@ -823,6 +878,43 @@ settingsSchema.statics.getSettings = async function () {
       cloudflare: false,
       getButton: false,
       tawkTo: false,
+    };
+    modified = true;
+  }
+
+  // Add free trial content defaults
+  if (!doc.freeTrialContent) {
+    doc.freeTrialContent = {
+      title: "Start Your Free Trial",
+      description:
+        "Experience premium IPTV content for 24 hours - completely free!",
+      features: [
+        {
+          id: 1,
+          title: "24 Hours Free",
+          description: "Full access to all channels and features",
+          icon: "clock",
+        },
+        {
+          id: 2,
+          title: "Premium Quality",
+          description: "HD and 4K content with no buffering",
+          icon: "star",
+        },
+        {
+          id: 3,
+          title: "No Commitment",
+          description: "Cancel anytime, no hidden fees",
+          icon: "shield",
+        },
+      ],
+      includedTitle: "What's Included in Your Free Trial?",
+      includedItems: [
+        "Access to all channels in your selected template",
+        "HD and 4K quality streaming",
+        "24/7 customer support",
+        "No credit card required",
+      ],
     };
     modified = true;
   }

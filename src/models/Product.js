@@ -61,6 +61,17 @@ const productSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     description: { type: String, default: "", trim: true },
 
+    // SEO fields
+    seoTitle: { type: String, trim: true },
+    seoDescription: { type: String, trim: true },
+    seoKeywords: { type: String, trim: true },
+    slug: { type: String, unique: true, trim: true },
+    uniquePath: { type: String, unique: true, trim: true }, // Keep existing for backward compatibility
+
+    // Product images for SEO
+    featuredImage: { type: String, trim: true },
+    ogImage: { type: String, trim: true },
+
     variants: {
       type: [variantSchema],
       validate: {
@@ -149,7 +160,12 @@ function slugify(input) {
     .replace(/(^-|-$)+/g, "");
 }
 
+// Update the slug generation
 productSchema.pre("validate", function (next) {
+  if (!this.slug && this.name) {
+    this.slug = slugify(this.name);
+  }
+  // Keep uniquePath for backward compatibility
   if (!this.uniquePath && this.name) {
     this.uniquePath = slugify(this.name);
   }

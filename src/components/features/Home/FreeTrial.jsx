@@ -5,18 +5,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import {
   AlertCircle,
-  Building2,
   CheckCircle,
   Clock,
   Crown,
-  Flag,
-  Globe,
-  Mountain,
-  Palmtree,
   Play,
   Shield,
   Star,
-  Sun,
   Wifi,
   WifiOff,
   Zap,
@@ -26,7 +20,7 @@ import { useEffect, useState } from "react";
 
 const FreeTrialCard = () => {
   const { user, getAuthToken } = useAuth();
-  const [selectedTemplate, setSelectedTemplate] = useState(5);
+  const [selectedTemplate, setSelectedTemplate] = useState(2); // Europe template (ID 2)
   const [selectedLineType, setSelectedLineType] = useState(0);
   const [macAddress, setMacAddress] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,6 +31,38 @@ const FreeTrialCard = () => {
   const [visitorEligible, setVisitorEligible] = useState(null);
   const [vpnStatus, setVpnStatus] = useState(null);
   const [vpnChecking, setVpnChecking] = useState(false);
+  const [freeTrialContent, setFreeTrialContent] = useState({
+    title: "Start Your Free Trial",
+    description:
+      "Experience premium IPTV content for 24 hours - completely free!",
+    features: [
+      {
+        id: 1,
+        title: "24 Hours Free",
+        description: "Full access to all channels and features",
+        icon: "clock",
+      },
+      {
+        id: 2,
+        title: "Premium Quality",
+        description: "HD and 4K content with no buffering",
+        icon: "star",
+      },
+      {
+        id: 3,
+        title: "No Commitment",
+        description: "Cancel anytime, no hidden fees",
+        icon: "shield",
+      },
+    ],
+    includedTitle: "What's Included in Your Free Trial?",
+    includedItems: [
+      "Access to all channels in your selected template",
+      "HD and 4K quality streaming",
+      "24/7 customer support",
+      "No credit card required",
+    ],
+  });
 
   // Check if user has already used free trial
   const hasUsedFreeTrial =
@@ -151,66 +177,6 @@ const FreeTrialCard = () => {
     checkVpnStatus();
   }, [user, visitorEligible]);
 
-  // Template options
-  const templates = [
-    {
-      id: 1,
-      name: "Bouquet Sorting in Americas",
-      region: "Americas",
-      icon: <Building2 className="w-8 h-8 text-blue-500" />,
-      color: "blue",
-    },
-    {
-      id: 2,
-      name: "Bouquet Sorting in Europe",
-      region: "Europe",
-      icon: <Flag className="w-8 h-8 text-green-500" />,
-      color: "green",
-    },
-    {
-      id: 3,
-      name: "Bouquet Sorting in Middle East",
-      region: "Middle East",
-      icon: <Sun className="w-8 h-8 text-yellow-500" />,
-      color: "yellow",
-    },
-    {
-      id: 4,
-      name: "Bouquet Sorting in Spain",
-      region: "Spain",
-      icon: <Palmtree className="w-8 h-8 text-orange-500" />,
-      color: "orange",
-    },
-    {
-      id: 5,
-      name: "Channels of Arab Countries",
-      region: "Arab Countries",
-      icon: <Mountain className="w-8 h-8 text-red-500" />,
-      color: "red",
-    },
-    {
-      id: 6,
-      name: "Channels of Spain",
-      region: "Spain",
-      icon: <Palmtree className="w-8 h-8 text-orange-500" />,
-      color: "orange",
-    },
-    {
-      id: 7,
-      name: "Channels of Americas",
-      region: "Americas",
-      icon: <Building2 className="w-8 h-8 text-blue-500" />,
-      color: "blue",
-    },
-    {
-      id: 8,
-      name: "Channels of Europe",
-      region: "Europe",
-      icon: <Flag className="w-8 h-8 text-green-500" />,
-      color: "green",
-    },
-  ];
-
   // Line type options
   const lineTypes = [
     {
@@ -308,6 +274,33 @@ const FreeTrialCard = () => {
     if (lineType === 0) {
       setMacAddress(""); // Clear MAC address for M3U
     }
+  };
+
+  // Fetch free trial content
+  useEffect(() => {
+    const fetchFreeTrialContent = async () => {
+      try {
+        const response = await fetch("/api/admin/settings");
+        const data = await response.json();
+        if (data.success && data.data.freeTrialContent) {
+          setFreeTrialContent(data.data.freeTrialContent);
+        }
+      } catch (error) {
+        console.error("Failed to fetch free trial content:", error);
+        // Keep default content if fetch fails
+      }
+    };
+
+    fetchFreeTrialContent();
+  }, []);
+
+  // Icon mapping for dynamic features
+  const iconMap = {
+    clock: Clock,
+    star: Star,
+    shield: Shield,
+    play: Play,
+    checkCircle: CheckCircle,
   };
 
   if (success && trialData) {
@@ -478,75 +471,29 @@ const FreeTrialCard = () => {
           <div className="flex items-center justify-center mb-4">
             <Play className="w-8 h-8 mr-3" />
             <h1 className="text-4xl font-bold text-black">
-              Start Your Free Trial
+              {freeTrialContent.title}
             </h1>
           </div>
           <p className="text-black/80 text-xl font-medium">
-            Experience premium IPTV content for 24 hours - completely free!
+            {freeTrialContent.description}
           </p>
         </div>
 
         {/* Features */}
         <div className="p-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="text-center">
-              <Clock className="w-12 h-12 text-[#00b877] mx-auto mb-3" />
-              <h3 className="text-white font-semibold text-lg mb-2">
-                24 Hours Free
-              </h3>
-              <p className="text-gray-400 text-sm">
-                Full access to all channels and features
-              </p>
-            </div>
-            <div className="text-center">
-              <Star className="w-12 h-12 text-[#44dcf3] mx-auto mb-3" />
-              <h3 className="text-white font-semibold text-lg mb-2">
-                Premium Quality
-              </h3>
-              <p className="text-gray-400 text-sm">
-                HD and 4K content with no buffering
-              </p>
-            </div>
-            <div className="text-center">
-              <Shield className="w-12 h-12 text-[#00b877] mx-auto mb-3" />
-              <h3 className="text-white font-semibold text-lg mb-2">
-                No Commitment
-              </h3>
-              <p className="text-gray-400 text-sm">
-                Cancel anytime, no hidden fees
-              </p>
-            </div>
-          </div>
-
-          {/* Template Selection */}
-          <div className="mb-8">
-            <h3 className="text-white font-semibold text-xl mb-4 flex items-center">
-              <Globe className="w-6 h-6 mr-2 text-[#44dcf3]" />
-              Select Your Region & Template
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              {templates.map((template) => (
-                <div
-                  key={template.id}
-                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                    selectedTemplate === template.id
-                      ? "border-[#00b877] bg-[#00b877]/10"
-                      : "border-[#FFFFFF26] hover:border-[#44dcf3]/50"
-                  }`}
-                  onClick={() => handleTemplateChange(template.id)}
-                >
-                  <div className="flex justify-center mb-2">
-                    {template.icon}
-                  </div>
-                  <h4 className="text-white font-medium text-sm mb-1">
-                    {template.region}
-                  </h4>
-                  <p className="text-gray-400 text-xs leading-tight">
-                    {template.name}
-                  </p>
+            {freeTrialContent.features.map((feature) => {
+              const IconComponent = iconMap[feature.icon] || Clock;
+              return (
+                <div key={feature.id} className="text-center">
+                  <IconComponent className="w-12 h-12 text-[#00b877] mx-auto mb-3" />
+                  <h3 className="text-white font-semibold text-lg mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-400 text-sm">{feature.description}</p>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
           {/* Line Type Selection */}
@@ -672,29 +619,15 @@ const FreeTrialCard = () => {
           {/* Additional Info */}
           <div className="mt-8 p-6 bg-black/30 rounded-xl">
             <h3 className="text-white font-semibold text-lg mb-3">
-              What's Included in Your Free Trial?
+              {freeTrialContent.includedTitle}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div className="flex items-start">
-                <CheckCircle className="w-4 h-4 text-[#00b877] mr-2 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-300">
-                  Access to all channels in your selected template
-                </span>
-              </div>
-              <div className="flex items-start">
-                <CheckCircle className="w-4 h-4 text-[#00b877] mr-2 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-300">
-                  HD and 4K quality streaming
-                </span>
-              </div>
-              <div className="flex items-start">
-                <CheckCircle className="w-4 h-4 text-[#00b877] mr-2 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-300">24/7 customer support</span>
-              </div>
-              <div className="flex items-start">
-                <CheckCircle className="w-4 h-4 text-[#00b877] mr-2 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-300">No credit card required</span>
-              </div>
+              {freeTrialContent.includedItems.map((item, index) => (
+                <div key={index} className="flex items-start">
+                  <CheckCircle className="w-4 h-4 text-[#00b877] mr-2 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-300">{item}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

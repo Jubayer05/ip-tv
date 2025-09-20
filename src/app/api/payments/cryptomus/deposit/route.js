@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import cryptomusService from "@/lib/paymentServices/cryptomusService";
+import { calculateServiceFee, formatFeeInfo } from "@/lib/paymentUtils";
 import PaymentSettings from "@/models/PaymentSettings";
 import User from "@/models/User";
 import WalletDeposit from "@/models/WalletDeposit";
@@ -40,6 +41,13 @@ export async function POST(request) {
       );
     }
 
+    // Calculate service fee
+    const feeCalculation = calculateServiceFee(
+      amount,
+      paymentSettings.feeSettings
+    );
+    const finalAmount = feeCalculation.totalAmount;
+
     // Update the service with database credentials
     cryptomusService.apiKey = paymentSettings.apiKey;
     if (paymentSettings.apiSecret) {
@@ -58,12 +66,12 @@ export async function POST(request) {
       Math.random() * 1e6
     )}`;
 
-    // Create Cryptomus payment for deposit
+    // Create Cryptomus payment for deposit with final amount
     const result = await cryptomusService.createPayment({
-      amount: amount.toString(),
+      amount: finalAmount.toString(), // Use final amount including fees
       currency,
       orderId: depositId,
-      description: "Wallet Deposit",
+      description: `Wallet Deposit${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
       urlReturn: `${origin}/payment-status/deposit-success`,
       urlCallback: `${origin}/api/payments/cryptomus/webhook`,
       isTest: process.env.NODE_ENV !== "production",
@@ -85,7 +93,9 @@ export async function POST(request) {
     // Create wallet deposit record
     const deposit = new WalletDeposit({
       userId,
-      amount: Number(amount),
+      amount: Number(amount), // Original amount
+      finalAmount: Number(finalAmount), // Final amount including fees
+      serviceFee: Number(feeCalculation.feeAmount), // Service fee amount
       currency,
       paymentMethod: "Cryptocurrency",
       paymentGateway: "Cryptomus",
@@ -122,7 +132,7 @@ export async function POST(request) {
       depositId: deposit.depositId,
       paymentId: result.paymentId,
       checkoutUrl: result.paymentUrl,
-      amount,
+      amount: finalAmount, // Return final amount
       currency,
       toCurrency: result.toCurrency,
       toAmount: result.toAmount,
@@ -130,6 +140,15 @@ export async function POST(request) {
       network: result.network,
       status: result.status,
       expiredAt: result.expiredAt,
+      // Include fee information in response
+      feeInfo: {
+        originalAmount: feeCalculation.originalAmount,
+        serviceFee: feeCalculation.feeAmount,
+        totalAmount: feeCalculation.totalAmount,
+        feeType: feeCalculation.feeType,
+        feePercentage: feeCalculation.feePercentage,
+        feeDescription: formatFeeInfo(feeCalculation),
+      },
     });
   } catch (error) {
     console.error("Cryptomus deposit error:", error);

@@ -2,18 +2,20 @@
 import NotificationBell from "@/components/ui/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ChevronDown, Globe, Menu, Search, X } from "lucide-react";
+import { ChevronDown, Globe, Menu, Search, Wallet, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import DepositPopup from "../features/AffiliateRank/DepositPopup";
 import Button from "../ui/button";
 
 const Navbar = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [showDepositPopup, setShowDepositPopup] = useState(false);
 
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUserData } = useAuth();
   const { language, setLanguage, languages, translate } = useLanguage();
 
   // Originals
@@ -37,6 +39,7 @@ const Navbar = () => {
   const ORIGINAL_SIGN_IN = "Sign In";
   const ORIGINAL_SIGN_OUT = "Sign Out";
   const ORIGINAL_USER_MENU_HEADING = "User Menu";
+  const ORIGINAL_DEPOSIT_FUNDS = "Deposit Funds";
 
   // Translated state
   const [navLabels, setNavLabels] = useState(ORIGINAL_NAV_LABELS);
@@ -51,6 +54,9 @@ const Navbar = () => {
   const [userMenuHeading, setUserMenuHeading] = useState(
     ORIGINAL_USER_MENU_HEADING
   );
+  const [depositFundsLabel, setDepositFundsLabel] = useState(
+    ORIGINAL_DEPOSIT_FUNDS
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -62,6 +68,7 @@ const Navbar = () => {
         ORIGINAL_SIGN_IN,
         ORIGINAL_SIGN_OUT,
         ORIGINAL_USER_MENU_HEADING,
+        ORIGINAL_DEPOSIT_FUNDS,
       ];
       const translated = await translate(items);
       if (!isMounted) return;
@@ -72,6 +79,7 @@ const Navbar = () => {
       setSignInLabel(translated[16]);
       setSignOutLabel(translated[17]);
       setUserMenuHeading(translated[18]);
+      setDepositFundsLabel(translated[19]);
     })();
 
     return () => {
@@ -123,6 +131,19 @@ const Navbar = () => {
     setIsUserMenuOpen(false);
   };
 
+  const handleDepositSuccess = async () => {
+    setShowDepositPopup(false);
+    // Wait a bit to let webhook credit wallet, then refresh
+    setTimeout(async () => {
+      await refreshUserData();
+      // You can add SweetAlert notification here if needed
+    }, 1500);
+  };
+
+  const handleDepositFunds = () => {
+    setShowDepositPopup(true);
+  };
+
   return (
     <>
       <nav className="h-[70px] relative bg-transparent px-3">
@@ -155,7 +176,7 @@ const Navbar = () => {
           </div>
 
           {/* Right Section - Search, Language Dropdown, Sign In, and User Menu */}
-          <div className="flex items-center space-x-2 sm:space-x-4 lg:space-x-6">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {/* Search Icon */}
             <button className="text-white hover:text-gray-300 transition-colors hidden sm:block">
               <Search size={20} />
@@ -163,10 +184,20 @@ const Navbar = () => {
             <NotificationBell />
 
             {user && (
-              <div className="hidden sm:flex items-center">
+              <div className="hidden sm:flex items-center space-x-2 sm:space-x-4">
+                {/* Main Balance */}
                 <span className="bg-primary/15 border border-primary text-primary rounded-full px-3 py-1 text-xs font-bold">
                   ${Number(user.balance || 0).toFixed(2)}
                 </span>
+
+                {/* Deposit Funds Button */}
+                <button
+                  onClick={handleDepositFunds}
+                  className="flex items-center font-secondary space-x-1 bg-cyan-400 text-gray-900 rounded-full px-4 py-3 text-xs font-bold hover:bg-cyan-500 transition-colors"
+                >
+                  <Wallet size={14} />
+                  <span>{depositFundsLabel}</span>
+                </button>
               </div>
             )}
 
@@ -174,7 +205,7 @@ const Navbar = () => {
             <div className="relative hidden sm:block">
               <button
                 onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-                className="flex outline-none items-center space-x-2 font-secondary text-white hover:text-gray-300 transition-colors border border-gray-600 rounded-[30px] px-3 lg:px-5 py-2 lg:py-3 text-xs bg-gray-900"
+                className="flex outline-none items-center font-secondary text-white space-x-2 hover:text-gray-300 transition-colors border border-gray-600 rounded-[30px] px-3 lg:px-5 py-2 lg:py-3 text-xs bg-gray-900"
               >
                 <Globe size={16} className="text-primary" />
                 <span className="hidden lg:inline">{language.name}</span>
@@ -238,6 +269,21 @@ const Navbar = () => {
                           {user.displayName || user.email}
                         </p>
                         <p className="text-xs text-gray-500">{user.email}</p>
+                        {/* Show balances in dropdown */}
+                        <div className="mt-2 space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-600">Balance:</span>
+                            <span className="font-bold text-primary">
+                              ${Number(user.balance || 0).toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-600">Deposits:</span>
+                            <span className="font-bold text-green-600">
+                              ${Number(user.depositBalance || 0).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
                       {user.role === "user" &&
@@ -324,6 +370,33 @@ const Navbar = () => {
                     <div className="text-gray-400 text-xs uppercase font-bold mb-3">
                       {userMenuHeading}
                     </div>
+
+                    {/* Mobile Balances */}
+                    <div className="mb-4 space-y-2">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-300">Balance:</span>
+                        <span className="text-primary font-bold">
+                          ${Number(user.balance || 0).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-300">Deposits:</span>
+                        <span className="text-green-400 font-bold">
+                          ${Number(user.depositBalance || 0).toFixed(2)}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          handleDepositFunds();
+                          toggleMobileMenu();
+                        }}
+                        className="w-full flex items-center justify-center space-x-2 bg-cyan-400 text-gray-900 rounded-full px-4 py-2 text-sm font-bold hover:bg-cyan-500 transition-colors"
+                      >
+                        <Wallet size={16} />
+                        <span>{depositFundsLabel}</span>
+                      </button>
+                    </div>
+
                     {userMenuItems.map((item, i) => (
                       <Link
                         key={item.href}
@@ -390,6 +463,15 @@ const Navbar = () => {
           </div>
         </div>
       )}
+
+      {/* Deposit Popup */}
+      <DepositPopup
+        isOpen={showDepositPopup}
+        onClose={() => setShowDepositPopup(false)}
+        onSuccess={handleDepositSuccess}
+        userId={user?._id}
+        userEmail={user?.email}
+      />
     </>
   );
 };
