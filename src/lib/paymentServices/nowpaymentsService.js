@@ -1,8 +1,17 @@
 class NOWPaymentsService {
   constructor() {
-    this.apiKey = process.env.NOWPAYMENTS_API_KEY;
+    this.apiKey = null; // Remove process.env
+    this.apiSecret = null; // Add for completeness
     // Use sandbox API for testing
     this.baseUrl = "https://api-sandbox.nowpayments.io/v1";
+  }
+
+  setApiKey(apiKey) {
+    this.apiKey = apiKey;
+  }
+
+  setApiSecret(apiSecret) {
+    this.apiSecret = apiSecret;
   }
 
   async createPayment({

@@ -1,8 +1,13 @@
 class HoodPayService {
   constructor() {
-    this.apiKey = process.env.HOODPAY_API_KEY;
-    this.businessId = process.env.HOODPAY_BUSINESS_ID;
+    this.apiKey = null; // Remove process.env
+    this.businessId = null; // Remove process.env
     this.baseUrl = "https://api.hoodpay.io/v1";
+  }
+
+  setCredentials(apiKey, businessId) {
+    this.apiKey = apiKey;
+    this.businessId = businessId;
   }
 
   async createPayment({

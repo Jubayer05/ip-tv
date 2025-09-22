@@ -55,7 +55,7 @@ export async function POST(request) {
 
     // Update the service with database credentials
     const merchantAddress =
-      paymentSettings.merchantAddress || process.env.PAYGATE_MERCHANT_ADDRESS;
+      paymentSettings.merchantAddress;
 
     if (!merchantAddress) {
       return NextResponse.json(

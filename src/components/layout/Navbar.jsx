@@ -273,14 +273,8 @@ const Navbar = () => {
                         <div className="mt-2 space-y-1">
                           <div className="flex justify-between text-xs">
                             <span className="text-gray-600">Balance:</span>
-                            <span className="font-bold text-primary">
+                            <span className="font-bold text-green-500">
                               ${Number(user.balance || 0).toFixed(2)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-600">Deposits:</span>
-                            <span className="font-bold text-green-600">
-                              ${Number(user.depositBalance || 0).toFixed(2)}
                             </span>
                           </div>
                         </div>

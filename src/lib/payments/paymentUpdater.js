@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import { sendIPTVCredentialsEmail } from "@/lib/email";
+import { getServerIptvApiKey } from "@/lib/serverApiKeys";
 import Order from "@/models/Order";
 
 // Map duration months to package IDs according to API docs
@@ -29,8 +30,10 @@ async function createIPTVAccount({
 }) {
   const packageId = getPackageId(durationMonths);
 
-  if (!process.env.NEXT_PUBLIC_IPTV_API_KEY) {
-    throw new Error("NEXT_PUBLIC_IPTV_API_KEY environment variable is not set");
+  // Get IPTV API key from database
+  const iptvApiKey = await getServerIptvApiKey();
+  if (!iptvApiKey) {
+    throw new Error("IPTV API key not configured in settings");
   }
 
   console.log("=== CREATING IPTV ACCOUNT (Two-Step Process) ===");
@@ -39,7 +42,7 @@ async function createIPTVAccount({
 
   // Step 1: Create free trial account
   const freeTrialPayload = {
-    key: process.env.NEXT_PUBLIC_IPTV_API_KEY,
+    key: iptvApiKey,
     username: username,
     password: password,
     templateId: templateId,
@@ -85,7 +88,7 @@ async function createIPTVAccount({
     console.log("Upgrading to official account...");
 
     const upgradePayload = {
-      key: process.env.NEXT_PUBLIC_IPTV_API_KEY,
+      key: iptvApiKey,
       username: username,
       password: password,
       action: "update",

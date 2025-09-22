@@ -137,13 +137,37 @@ export async function POST(request) {
     const responseText = await iptvResponse.text();
     console.log("Raw Response Text:", responseText);
 
+    // Check if response is HTML (error page)
+    if (
+      responseText.trim().startsWith("<!DOCTYPE") ||
+      responseText.trim().startsWith("<html")
+    ) {
+      console.error(
+        "IPTV API returned HTML instead of JSON - likely an error page"
+      );
+      return NextResponse.json(
+        {
+          error:
+            "IPTV service returned an error page. Please check the API key and service status.",
+          details: "Response was HTML instead of JSON",
+          responsePreview: responseText.substring(0, 200) + "...",
+        },
+        { status: 500 }
+      );
+    }
+
     let iptvData;
     try {
       iptvData = JSON.parse(responseText);
     } catch (parseError) {
       console.error("Failed to parse IPTV API response:", parseError);
+      console.error("Response text that failed to parse:", responseText);
       return NextResponse.json(
-        { error: "Invalid response from IPTV service" },
+        {
+          error: "Invalid response from IPTV service",
+          details: "Response was not valid JSON",
+          responsePreview: responseText.substring(0, 200) + "...",
+        },
         { status: 500 }
       );
     }

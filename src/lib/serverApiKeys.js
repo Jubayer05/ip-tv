@@ -23,3 +23,14 @@ export const getServerSmtpUser = async () => {
     return "";
   }
 };
+
+// Server-side function to get IPTV API key
+export const getServerIptvApiKey = async () => {
+  try {
+    const settings = await getServerApiKeys();
+    return settings?.otherApiKeys?.iptv?.apiKey || null;
+  } catch (error) {
+    console.error("Failed to fetch IPTV API key:", error);
+    return null;
+  }
+};

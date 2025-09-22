@@ -1,7 +1,15 @@
-class ChangeNOWService {
+import crypto from "crypto";
+
+class PlisioService {
   constructor() {
-    this.apiKey = process.env.CHANGENOW_API_KEY;
-    this.baseUrl = "https://api.changenow.io/v2";
+    this.apiKey = null; // Remove process.env
+    this.secretKey = null; // Remove process.env
+    this.baseUrl = "https://api.plisio.net/api/v1";
+  }
+
+  setCredentials(apiKey, secretKey) {
+    this.apiKey = apiKey;
+    this.secretKey = secretKey;
   }
 
   // Helper method to get the correct network for a currency

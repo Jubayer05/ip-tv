@@ -2,6 +2,7 @@
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { getIptvApiKey } from "@/lib/apiKeys";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import {
   AlertCircle,
@@ -31,6 +32,7 @@ const FreeTrialCard = () => {
   const [visitorEligible, setVisitorEligible] = useState(null);
   const [vpnStatus, setVpnStatus] = useState(null);
   const [vpnChecking, setVpnChecking] = useState(false);
+  const [iptvApiKey, setIptvApiKey] = useState(null);
   const [freeTrialContent, setFreeTrialContent] = useState({
     title: "Start Your Free Trial",
     description:
@@ -177,6 +179,20 @@ const FreeTrialCard = () => {
     checkVpnStatus();
   }, [user, visitorEligible]);
 
+  // Load IPTV API key on component mount
+  useEffect(() => {
+    const loadIptvApiKey = async () => {
+      try {
+        const apiKey = await getIptvApiKey();
+        setIptvApiKey(apiKey);
+      } catch (error) {
+        console.error("Failed to load IPTV API key:", error);
+      }
+    };
+
+    loadIptvApiKey();
+  }, []);
+
   // Line type options
   const lineTypes = [
     {
@@ -212,6 +228,11 @@ const FreeTrialCard = () => {
       return;
     }
 
+    if (!iptvApiKey) {
+      setError("IPTV service configuration error. Please contact support.");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccess(false);
@@ -225,14 +246,6 @@ const FreeTrialCard = () => {
         return;
       }
 
-      // Get the IPTV API key from environment variables
-      const iptvApiKey = process.env.NEXT_PUBLIC_IPTV_API_KEY;
-
-      if (!iptvApiKey) {
-        setError("IPTV service configuration error. Please contact support.");
-        return;
-      }
-
       const response = await fetch("/api/iptv/free-trial-create", {
         method: "POST",
         headers: {
@@ -240,11 +253,11 @@ const FreeTrialCard = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          key: iptvApiKey, // Use the actual API key
+          key: iptvApiKey, // Use the API key from database
           templateId: selectedTemplate,
           lineType: selectedLineType,
           mac: selectedLineType > 0 ? macAddress : undefined,
-          visitorId, // <-- NEW
+          visitorId,
         }),
       });
 

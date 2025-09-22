@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import { sendIPTVCredentialsEmail } from "@/lib/email";
+import { getServerIptvApiKey } from "@/lib/serverApiKeys";
 import Order from "@/models/Order";
 import { NextResponse } from "next/server";
 
@@ -30,13 +31,14 @@ async function createIPTVAccount({
 }) {
   const packageId = getPackageId(durationMonths);
 
-  // Check if API key is available
-  if (!process.env.NEXT_PUBLIC_IPTV_API_KEY) {
-    throw new Error("NEXT_PUBLIC_IPTV_API_KEY environment variable is not set");
+  // Get IPTV API key from database
+  const iptvApiKey = await getServerIptvApiKey();
+  if (!iptvApiKey) {
+    throw new Error("IPTV API key not configured in settings");
   }
 
   const requestPayload = {
-    key: process.env.NEXT_PUBLIC_IPTV_API_KEY, // Changed from IPTV_API_KEY
+    key: iptvApiKey,
     username,
     password,
     templateId,
@@ -50,7 +52,7 @@ async function createIPTVAccount({
   }
 
   console.log("Creating IPTV account with payload:", requestPayload);
-  console.log("IPTV API Key exists:", !!process.env.NEXT_PUBLIC_IPTV_API_KEY); // Updated
+  console.log("IPTV API Key exists:", !!iptvApiKey);
 
   try {
     const response = await fetch("http://zlive.cc/api/create-account", {

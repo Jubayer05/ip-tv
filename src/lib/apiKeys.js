@@ -31,6 +31,11 @@ export const getApiKeys = async () => {
   return null;
 };
 
+export const getIptvApiKey = async () => {
+  const settings = await getApiKeys();
+  return settings?.otherApiKeys?.iptv?.apiKey || null;
+};
+
 export const clearApiKeysCache = () => {
   apiKeysCache = null;
   cacheTimestamp = null;

@@ -2,9 +2,12 @@ import Stripe from "stripe";
 
 class StripeService {
   constructor() {
-    const apiKey = process.env.STRIPE_SECRET_KEY;
+    this.stripe = null; // Remove process.env initialization
+  }
+
+  setApiKey(apiKey) {
     if (!apiKey) {
-      throw new Error("STRIPE_SECRET_KEY not configured");
+      throw new Error("Stripe API key is required");
     }
     this.stripe = new Stripe(apiKey, {
       apiVersion: "2024-06-20",

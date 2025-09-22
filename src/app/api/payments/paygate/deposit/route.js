@@ -50,8 +50,7 @@ export async function POST(request) {
     const finalAmount = feeCalculation.totalAmount;
 
     // Update the service with database credentials
-    paygateService.merchantAddress =
-      paymentSettings.merchantAddress || process.env.PAYGATE_MERCHANT_ADDRESS;
+    paygateService.merchantAddress = paymentSettings.merchantAddress;
 
     const origin = new URL(request.url).origin;
 
@@ -73,7 +72,11 @@ export async function POST(request) {
       amount: Number(finalAmount), // Use final amount including fees
       currency: currency.toUpperCase(),
       customerEmail: customerEmail || "",
-      description: `Wallet Deposit${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
+      description: `Wallet Deposit${
+        feeCalculation.feeAmount > 0
+          ? ` (${formatFeeInfo(feeCalculation)})`
+          : ""
+      }`,
       callbackReceived: false,
       lastStatusUpdate: new Date(),
       metadata: paygateMetadata,
@@ -86,7 +89,11 @@ export async function POST(request) {
         amount: finalAmount, // Use final amount including fees
         currency,
         customerEmail,
-        description: `Wallet Deposit${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
+        description: `Wallet Deposit${
+          feeCalculation.feeAmount > 0
+            ? ` (${formatFeeInfo(feeCalculation)})`
+            : ""
+        }`,
         callbackUrl: `${origin}/api/payments/paygate/webhook`,
         successUrl: `${origin}/payment-status/deposit-success`,
         provider,

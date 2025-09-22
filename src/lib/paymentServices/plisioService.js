@@ -2,9 +2,14 @@ import crypto from "crypto";
 
 class PlisioService {
   constructor() {
-    this.apiKey = process.env.PLISIO_API_KEY;
-    this.secretKey = process.env.PLISIO_SECRET_KEY;
+    this.apiKey = null; // Remove process.env
+    this.secretKey = null; // Remove process.env
     this.baseUrl = "https://api.plisio.net/api/v1";
+  }
+
+  setCredentials(apiKey, secretKey) {
+    this.apiKey = apiKey;
+    this.secretKey = secretKey;
   }
 
   /**

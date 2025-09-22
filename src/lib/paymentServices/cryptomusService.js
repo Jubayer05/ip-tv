@@ -1,8 +1,15 @@
+import crypto from "crypto";
+
 class CryptomusService {
   constructor() {
-    this.apiKey = process.env.CRYPTOMUS_API_KEY;
-    this.merchantId = process.env.CRYPTOMUS_MERCHANT_ID;
+    this.apiKey = null; // Remove process.env
+    this.merchantId = null; // Remove process.env
     this.baseUrl = "https://api.cryptomus.com/v1";
+  }
+
+  setCredentials(apiKey, merchantId) {
+    this.apiKey = apiKey;
+    this.merchantId = merchantId;
   }
 
   // Generate signature for API requests

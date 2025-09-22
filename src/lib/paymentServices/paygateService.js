@@ -1,6 +1,6 @@
 class PayGateService {
   constructor() {
-    this.merchantAddress = process.env.PAYGATE_MERCHANT_ADDRESS;
+    this.merchantAddress = null; // Remove process.env
     this.baseUrl = "https://api.paygate.to";
     this.checkoutUrl = "https://checkout.paygate.to";
   }
@@ -171,19 +171,21 @@ class PayGateService {
     // Provider fallback based on region
     const getProviderForRegion = (region) => {
       const regionProviders = {
-        'US': ['moonpay', 'coinbase', 'transak', 'banxa'],
-        'EU': ['banxa', 'rampnetwork', 'guardarian', 'mercuryo'],
-        'UK': ['banxa', 'rampnetwork', 'guardarian'],
-        'CA': ['moonpay', 'interac', 'transak'],
-        'IN': ['upi', 'transak', 'mercuryo'],
-        'default': ['transak', 'banxa', 'mercuryo', 'utorg', 'transfi']
+        US: ["moonpay", "coinbase", "transak", "banxa"],
+        EU: ["banxa", "rampnetwork", "guardarian", "mercuryo"],
+        UK: ["banxa", "rampnetwork", "guardarian"],
+        CA: ["moonpay", "interac", "transak"],
+        IN: ["upi", "transak", "mercuryo"],
+        default: ["transak", "banxa", "mercuryo", "utorg", "transfi"],
       };
-      
-      const providers = regionProviders[region] || regionProviders['default'];
+
+      const providers = regionProviders[region] || regionProviders["default"];
       return providers[0]; // Use first available provider
     };
 
-    const selectedProvider = userRegion ? getProviderForRegion(userRegion) : provider;
+    const selectedProvider = userRegion
+      ? getProviderForRegion(userRegion)
+      : provider;
 
     const walletResult = await this.createWallet({
       address: this.merchantAddress,
