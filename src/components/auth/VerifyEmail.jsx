@@ -336,7 +336,7 @@ function VerifyEmailInner() {
             onClick={handleResendEmail}
             disabled={loading}
             variant="outline"
-            className="w-full flex items-center justify-center gap-2"
+            className="w-full flex items-center justify-center gap-2 mb-2"
           >
             {loading ? "Sending..." : "Resend Verification Email"}
             <Mail size={18} />
