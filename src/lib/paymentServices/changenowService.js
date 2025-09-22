@@ -1,15 +1,11 @@
-import crypto from "crypto";
-
-class PlisioService {
+class ChangeNOWService {
   constructor() {
     this.apiKey = null; // Remove process.env
-    this.secretKey = null; // Remove process.env
-    this.baseUrl = "https://api.plisio.net/api/v1";
+    this.baseUrl = "https://api.changenow.io/v2";
   }
 
-  setCredentials(apiKey, secretKey) {
+  setApiKey(apiKey) {
     this.apiKey = apiKey;
-    this.secretKey = secretKey;
   }
 
   // Helper method to get the correct network for a currency
@@ -503,4 +499,5 @@ class PlisioService {
   }
 }
 
-export default new ChangeNOWService();
+const changenowService = new ChangeNOWService();
+export default changenowService;
