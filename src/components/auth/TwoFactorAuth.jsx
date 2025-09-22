@@ -54,8 +54,11 @@ export default function TwoFactorAuth({ email, onBack }) {
       // Complete the login process
       const loginResult = await complete2FALogin(email);
       if (loginResult.success) {
-        // Force page reload to ensure auth token is properly set
-        window.location.href = "/dashboard";
+        // Wait a bit for the auth context to update
+        setTimeout(() => {
+          // Force page reload to ensure auth token is properly set
+          window.location.href = "/dashboard";
+        }, 1000);
       } else {
         setError(
           "Login completed but failed to set session. Please try again."

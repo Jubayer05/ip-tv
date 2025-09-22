@@ -399,12 +399,14 @@ export const AuthContextProvider = ({ children }) => {
       const mongoUser = await fetchUserData(email);
       if (mongoUser) {
         setUser(mongoUser);
-        // Generate auth token for the user
-        await generateAuthToken(mongoUser);
+        // Generate auth token for the user and wait for it
+        const token = await generateAuthToken(mongoUser);
         setIs2FAPending(false);
+
+        return { success: true, token };
       }
 
-      return { success: true };
+      return { success: false, error: "Failed to fetch user data" };
     } catch (error) {
       return { success: false, error: "Failed to complete 2FA login" };
     }
