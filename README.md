@@ -86,7 +86,7 @@ Pre-built component classes:
 .spinner
 
 /* Effects */
-.glass, .gradient-text
+.glass, .gradient-text;
 ```
 
 ### Custom Animations
@@ -107,28 +107,32 @@ Pre-built component classes:
 ## 🛠️ Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd ip_tv
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Install Tailwind CSS plugins**
+
    ```bash
    npm install @tailwindcss/forms @tailwindcss/typography @tailwindcss/aspect-ratio @tailwindcss/line-clamp
    ```
 
 4. **Start the development server**
+
    ```bash
    npm run dev
    ```
 
 5. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
+   Navigate to [https://www.cheapstreamtv.com](https://www.cheapstreamtv.com)
 
 ## 🎯 Usage Examples
 
@@ -163,15 +167,19 @@ Pre-built component classes:
 ### Using Custom Components
 
 ```jsx
-{/* Button */}
-<button className="btn-primary">
-  Primary Button
-</button>
+{
+  /* Button */
+}
+<button className="btn-primary">Primary Button</button>;
 
-{/* Input */}
-<input type="text" className="input" placeholder="Enter text..." />
+{
+  /* Input */
+}
+<input type="text" className="input" placeholder="Enter text..." />;
 
-{/* Card */}
+{
+  /* Card */
+}
 <div className="card">
   <div className="card-header">
     <h3>Card Title</h3>
@@ -179,15 +187,17 @@ Pre-built component classes:
   <div className="card-body">
     <p>Card content goes here</p>
   </div>
-</div>
+</div>;
 
-{/* Badge */}
-<span className="badge-success">Success</span>
+{
+  /* Badge */
+}
+<span className="badge-success">Success</span>;
 
-{/* Alert */}
-<div className="alert-info">
-  This is an info alert
-</div>
+{
+  /* Alert */
+}
+<div className="alert-info">This is an info alert</div>;
 ```
 
 ### Using Custom Animations
@@ -205,17 +215,13 @@ Pre-built component classes:
 ### Using Glass Effect
 
 ```jsx
-<div className="glass p-6 rounded-lg">
-  Glass effect element
-</div>
+<div className="glass p-6 rounded-lg">Glass effect element</div>
 ```
 
 ### Using Gradient Text
 
 ```jsx
-<h1 className="gradient-text text-4xl font-bold">
-  Gradient text heading
-</h1>
+<h1 className="gradient-text text-4xl font-bold">Gradient text heading</h1>
 ```
 
 ## 🌙 Dark Mode
