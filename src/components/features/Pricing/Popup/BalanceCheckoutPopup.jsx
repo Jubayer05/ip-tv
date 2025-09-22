@@ -130,6 +130,14 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
         paymentGateway: "Balance",
         paymentStatus: "completed",
         totalAmount: totalAmount, // Use the discounted amount
+
+        // IPTV Configuration - include all fields from selection
+        lineType: sel.lineType || 0,
+        templateId: sel.templateId || 2,
+        macAddresses: sel.macAddresses || [],
+        adultChannelsConfig: sel.adultChannelsConfig || [],
+        generatedCredentials: sel.generatedCredentials || [],
+
         contactInfo: {
           fullName:
             `${user?.profile?.firstName || ""} ${
@@ -170,6 +178,30 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
       if (!balanceResponse.ok) {
         const balanceErr = await balanceResponse.json().catch(() => ({}));
         throw new Error(balanceErr?.error || "Failed to deduct balance");
+      }
+
+      // Create IPTV accounts after successful payment
+      try {
+        const iptvResponse = await fetch("/api/iptv/create-accounts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderNumber: data.order.orderNumber,
+          }),
+        });
+
+        if (iptvResponse.ok) {
+          const iptvData = await iptvResponse.json();
+          console.log("IPTV accounts created:", iptvData);
+        } else {
+          console.error(
+            "Failed to create IPTV accounts:",
+            await iptvResponse.text()
+          );
+        }
+      } catch (iptvError) {
+        console.error("Error creating IPTV accounts:", iptvError);
+        // Don't fail the entire process if IPTV creation fails
       }
 
       // Send confirmation email

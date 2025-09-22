@@ -15,7 +15,7 @@ export const useUserSpending = () => {
 };
 
 export const UserSpendingContextProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user, getAuthToken } = useAuth();
   const [userSpending, setUserSpending] = useState({
     totalSpent: 0,
     currentRank: null,
@@ -92,9 +92,21 @@ export const UserSpendingContextProvider = ({ children }) => {
     try {
       setUserSpending((prev) => ({ ...prev, loading: true, error: null }));
 
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error("No authentication token available");
+      }
+
       // Fetch user's completed orders
       const ordersResponse = await fetch(
-        `/api/orders/user?email=${encodeURIComponent(user.email)}&isAdmin=false`
+        `/api/orders/user?email=${encodeURIComponent(
+          user.email
+        )}&isAdmin=false`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       if (!ordersResponse.ok) {

@@ -52,8 +52,17 @@ export async function POST(request) {
       couponCode = "",
       paymentMethod = "Manual",
       paymentGateway = "None",
-      paymentStatus: incomingPaymentStatus, // NEW
-      totalAmount: incomingTotalAmount, // NEW: Accept totalAmount from frontend
+      paymentStatus: incomingPaymentStatus,
+      totalAmount: incomingTotalAmount,
+
+      // IPTV Configuration
+      lineType = 0,
+      templateId = 2,
+      macAddresses = [],
+      adultChannelsConfig = [],
+
+      // Generated credentials from frontend
+      generatedCredentials = [],
     } = body || {};
 
     if (!productId || !variantId || !quantity || !devicesAllowed) {
@@ -63,13 +72,82 @@ export async function POST(request) {
       );
     }
 
+    // Validate IPTV configuration
+    if (![0, 1, 2].includes(lineType)) {
+      return NextResponse.json(
+        { error: "Invalid lineType. Must be 0 (M3U), 1 (MAG), or 2 (Enigma2)" },
+        { status: 400 }
+      );
+    }
+
+    // Validate MAC addresses for MAG/Enigma2
+    if (lineType > 0) {
+      if (macAddresses.length !== quantity) {
+        return NextResponse.json(
+          { error: "MAC addresses required for all MAG/Enigma2 devices" },
+          { status: 400 }
+        );
+      }
+
+      for (let i = 0; i < quantity; i++) {
+        if (!macAddresses[i] || macAddresses[i].trim() === "") {
+          return NextResponse.json(
+            { error: `MAC address required for device #${i + 1}` },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    // Validate generated credentials
+    if (generatedCredentials.length === 0) {
+      // return NextResponse.json(
+      //   { error: "Generated credentials are required" },
+      //   { status: 400 }
+      // );
+    }
+
+    // Update the validation to make generatedCredentials optional
+    // Remove or comment out this validation:
+    /*
+    if (generatedCredentials.length === 0) {
+      return NextResponse.json(
+        { error: "Generated credentials are required" },
+        { status: 400 }
+      );
+    }
+    */
+
+    // Update the validation for credentials match quantity to handle empty array
+    if (generatedCredentials.length > 0) {
+      if (lineType === 0) {
+        // M3U - should have 1 credential
+        if (generatedCredentials.length !== 1) {
+          return NextResponse.json(
+            { error: "M3U line type requires exactly 1 credential" },
+            { status: 400 }
+          );
+        }
+      } else {
+        // MAG/Enigma2 - should have credentials for each device
+        if (generatedCredentials.length !== quantity) {
+          return NextResponse.json(
+            {
+              error:
+                "MAG/Enigma2 line type requires credentials for each device",
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     // Fetch product and find variant
     const product = await Product.findById(productId);
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // Fix: Use find() instead of .id() for regular arrays
     const variant = product.variants.find(
       (v) => v._id.toString() === variantId
     );
@@ -117,7 +195,6 @@ export async function POST(request) {
     let finalTotal;
     let discountAmount = 0;
 
-    // If totalAmount is provided from frontend (e.g., with coupon discounts), use it
     if (incomingTotalAmount && incomingTotalAmount > 0) {
       finalTotal = Number(incomingTotalAmount);
       // Calculate discount amount for record keeping
@@ -143,9 +220,24 @@ export async function POST(request) {
 
       let discountedTotal = subtotal - bulkDiscountAmount;
       const adultFeePct = product.adultChannelsFeePercentage || 0;
-      const adultFee = adultChannels
-        ? (discountedTotal * adultFeePct) / 100
-        : 0;
+
+      // Calculate adult fee based on line type
+      let adultFee = 0;
+      if (lineType === 0) {
+        // M3U
+        if (adultChannels) {
+          adultFee = (discountedTotal * adultFeePct) / 100;
+        }
+      } else {
+        // MAG/Enigma2
+        const adultEnabledCount = adultChannelsConfig.filter(
+          (enabled) => enabled
+        ).length;
+        if (adultEnabledCount > 0) {
+          const pricePerLine = discountedTotal / qty;
+          adultFee = (pricePerLine * adultEnabledCount * adultFeePct) / 100;
+        }
+      }
 
       const calculatedTotal =
         Math.round((discountedTotal + adultFee) * 100) / 100;
@@ -176,13 +268,29 @@ export async function POST(request) {
 
       let discountedTotal = subtotal - discountAmount;
       const adultFeePct = product.adultChannelsFeePercentage || 0;
-      const adultFee = adultChannels
-        ? (discountedTotal * adultFeePct) / 100
-        : 0;
+
+      // Calculate adult fee based on line type
+      let adultFee = 0;
+      if (lineType === 0) {
+        // M3U
+        if (adultChannels) {
+          adultFee = (discountedTotal * adultFeePct) / 100;
+        }
+      } else {
+        // MAG/Enigma2
+        const adultEnabledCount = adultChannelsConfig.filter(
+          (enabled) => enabled
+        ).length;
+        if (adultEnabledCount > 0) {
+          const pricePerLine = discountedTotal / qty;
+          adultFee = (pricePerLine * adultEnabledCount * adultFeePct) / 100;
+        }
+      }
 
       finalTotal = Math.round((discountedTotal + adultFee) * 100) / 100;
     }
 
+    // Update the orderProducts to include generatedCredentials only if provided
     const orderProducts = [
       {
         productId: product._id,
@@ -191,7 +299,17 @@ export async function POST(request) {
         price: Number(variant.price || 0),
         duration: Number(variant.durationMonths || 0),
         devicesAllowed: Number(devicesAllowed),
-        adultChannels: Boolean(adultChannels),
+        adultChannels: lineType === 0 ? Boolean(adultChannels) : false,
+
+        // IPTV Configuration
+        lineType: Number(lineType),
+        templateId: Number(templateId),
+        macAddresses: lineType > 0 ? macAddresses : [],
+        adultChannelsConfig: lineType > 0 ? adultChannelsConfig : [],
+
+        // Generated credentials (optional)
+        generatedCredentials:
+          generatedCredentials.length > 0 ? generatedCredentials : [],
       },
     ];
 
@@ -218,7 +336,6 @@ export async function POST(request) {
         const user = await User.findById(userId);
         if (user?.referral?.referredBy) {
           referredBy = user.referral.referredBy;
-        } else {
         }
       }
     }
@@ -227,7 +344,7 @@ export async function POST(request) {
       userId: userId || null,
       guestEmail: resolvedGuestEmail,
       products: orderProducts,
-      totalAmount: finalTotal, // Use the final total (either from frontend or calculated)
+      totalAmount: finalTotal,
       discountAmount,
       couponCode,
       paymentMethod,
@@ -272,19 +389,15 @@ export async function POST(request) {
     // Process referral commission if this is a first order and payment is completed
     if (isFirstOrder && referredBy && orderDoc.paymentStatus === "completed") {
       try {
-        // Get commission percentage from settings
         const settings = await Settings.getSettings();
         const commissionPct = Number(settings.affiliateCommissionPct || 10);
 
-        // Calculate commission
         const commission =
           Math.round(((Number(finalTotal) * commissionPct) / 100) * 100) / 100;
 
         if (commission > 0) {
-          // Find the referrer and update their referral earnings
           const referrer = await User.findById(referredBy);
           if (referrer) {
-            // Add commission to existing referral earnings
             const currentEarnings = Number(referrer.referral?.earnings || 0);
             referrer.referral.earnings = currentEarnings + commission;
             await referrer.save();

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 export default function MicrosoftClarity() {
   const [clarityEnabled, setClarityEnabled] = useState(false);
+  const [projectId, setProjectId] = useState("");
 
   useEffect(() => {
     const checkClaritySetting = async () => {
@@ -11,6 +12,9 @@ export default function MicrosoftClarity() {
         const data = await response.json();
         if (data.success && data.data.addons) {
           setClarityEnabled(data.data.addons.microsoftClarity);
+          if (data.data.apiKeys?.microsoftClarity?.projectId) {
+            setProjectId(data.data.apiKeys.microsoftClarity.projectId);
+          }
         }
       } catch (error) {
         console.error("Failed to check Microsoft Clarity setting:", error);
@@ -21,7 +25,7 @@ export default function MicrosoftClarity() {
   }, []);
 
   useEffect(() => {
-    if (!clarityEnabled) return;
+    if (!clarityEnabled || !projectId) return;
 
     // Microsoft Clarity tracking code
     (function (c, l, a, r, i, t, y) {
@@ -35,8 +39,8 @@ export default function MicrosoftClarity() {
       t.src = "https://www.clarity.ms/tag/" + i;
       y = l.getElementsByTagName(r)[0];
       y.parentNode.insertBefore(t, y);
-    })(window, document, "clarity", "script", "t1cst9meyh");
-  }, [clarityEnabled]);
+    })(window, document, "clarity", "script", projectId);
+  }, [clarityEnabled, projectId]);
 
   return null;
 }

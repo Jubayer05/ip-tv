@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 
 const BillingTable = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
-  const { user, hasAdminAccess } = useAuth();
+  const { user, hasAdminAccess, getAuthToken } = useAuth();
   const [billingData, setBillingData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,14 +37,44 @@ const BillingTable = () => {
 
   // Add filter state
   const [userFilter, setUserFilter] = useState("all"); // "all", "registered", "guest"
-  const [searchTerm, setSearchTerm] = useState(""); // Add search term state
+  // Update the fetchOrderData function to support admin features
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 50,
+    total: 0,
+    pages: 0,
+  });
 
   const [title, setTitle] = useState(ORIGINAL_TITLE);
   const [columns, setColumns] = useState(ORIGINAL_COLUMNS);
   const [statuses, setStatuses] = useState(ORIGINAL_STATUSES);
 
+  // Add search and filter handlers
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    setPagination((prev) => ({ ...prev, current: 1 })); // Reset to first page
+    fetchOrderData(1, value, statusFilter);
+  };
+
+  const handleStatusFilter = (status) => {
+    setStatusFilter(status);
+    setPagination((prev) => ({ ...prev, current: 1 })); // Reset to first page
+    fetchOrderData(1, searchTerm, status);
+  };
+
+  const handlePageChange = (page) => {
+    setPagination((prev) => ({ ...prev, current: page }));
+    fetchOrderData(page, searchTerm, statusFilter);
+  };
+
   // Fetch order data from Order model
-  const fetchOrderData = async () => {
+  const fetchOrderData = async (
+    page = 1,
+    searchTerm = "",
+    statusFilter = "all"
+  ) => {
     try {
       setLoading(true);
       setError(null);
@@ -53,12 +83,36 @@ const BillingTable = () => {
         throw new Error("User not authenticated");
       }
 
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error("No authentication token available");
+      }
+
       const isAdmin = hasAdminAccess();
-      const response = await fetch(
-        `/api/orders/user?email=${encodeURIComponent(
-          user.email
-        )}&isAdmin=${isAdmin}`
-      );
+
+      // Build query parameters
+      const params = new URLSearchParams({
+        email: user.email,
+        isAdmin: isAdmin.toString(),
+        page: page.toString(),
+        limit: "50",
+      });
+
+      // Add search and status filters for admin
+      if (isAdmin) {
+        if (searchTerm) {
+          params.append("search", searchTerm);
+        }
+        if (statusFilter && statusFilter !== "all") {
+          params.append("status", statusFilter);
+        }
+      }
+
+      const response = await fetch(`/api/orders/user?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -83,39 +137,42 @@ const BillingTable = () => {
           return {
             key: order._id || index.toString(),
             orderNumber: order.orderNumber || `#${index + 1}`,
-            orderId: order._id, // Add orderId for search
+            orderId: order._id,
             customerName: customerName,
             customerEmail:
               order.contactInfo?.email || order.guestEmail || "N/A",
-            userType: order.userId ? "Registered" : "Guest", // Add this field
+            userType: order.userId ? "Registered" : "Guest",
             plan: product.duration ? `${product.duration} Months` : "Plan",
             devices: product.devicesAllowed || 1,
             quantity: product.quantity || 1,
             totalAmount: `$${(order.totalAmount || 0).toFixed(2)}`,
-            orderStatus: order.paymentStatus || "completed",
-            date: new Date(order.createdAt || Date.now()).toLocaleDateString(
-              "en-US",
-              {
-                month: "2-digit",
-                day: "2-digit",
-                year: "numeric",
-              }
-            ),
-            // Additional data for potential future use
-            orderId: order._id,
-            contactInfo: order.contactInfo,
-            keys: order.keys,
-            discountAmount: order.discountAmount,
-            couponCode: order.couponCode,
-            userId: order.userId,
+            paymentMethod: order.paymentMethod || "N/A",
+            paymentStatus: order.paymentStatus || "Unknown",
+            orderDate: new Date(order.createdAt).toLocaleDateString(),
+            createdAt: order.createdAt,
+            // Add more fields as needed
+            lineType: product.lineType || 0,
+            adultChannels: product.adultChannels || false,
+            iptvCredentials: order.iptvCredentials || [],
           };
         });
+
         setBillingData(transformedData);
+
+        // Set pagination info if available (for admin)
+        if (data.pagination) {
+          setPagination({
+            current: data.pagination.page,
+            pageSize: data.pagination.limit,
+            total: data.pagination.total,
+            pages: data.pagination.pages,
+          });
+        }
       } else {
         throw new Error(data.error || "Failed to fetch orders");
       }
     } catch (error) {
-      console.error("Error fetching order data:", error);
+      console.error("Error fetching orders:", error);
       setError(error.message);
       setBillingData([]);
     } finally {
@@ -126,7 +183,7 @@ const BillingTable = () => {
   useEffect(() => {
     // Fetch data when component mounts or user changes
     if (user?.email) {
-      fetchOrderData();
+      fetchOrderData(1, "", "all");
     }
   }, [user?.email, hasAdminAccess]);
 
@@ -387,7 +444,7 @@ const BillingTable = () => {
 
       {
         title: columns.date,
-        dataIndex: "date",
+        dataIndex: "orderDate", // Changed from "date" to "orderDate"
         key: "date",
         align: "center",
         render: (text) => (
@@ -444,7 +501,7 @@ const BillingTable = () => {
           </div>
           <div className="text-gray-500 text-xs text-center">{error}</div>
           <button
-            onClick={fetchOrderData}
+            onClick={() => fetchOrderData(1, searchTerm, statusFilter)}
             className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
           >
             Retry
@@ -481,12 +538,12 @@ const BillingTable = () => {
             type="text"
             placeholder="Search by Order Number or Order ID..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-[#0c171c] border border-white/15 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 transition-colors"
           />
           {searchTerm && (
             <button
-              onClick={() => setSearchTerm("")}
+              onClick={() => handleSearch("")}
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
             >
               <X className="h-5 w-5" />
@@ -511,34 +568,64 @@ const BillingTable = () => {
       {hasAdminAccess() && (
         <div className="flex flex-wrap gap-2 mb-4 justify-center sm:justify-start">
           <button
-            onClick={() => setUserFilter("all")}
+            onClick={() => handleStatusFilter("all")}
             className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              userFilter === "all"
+              statusFilter === "all"
                 ? "bg-cyan-400 text-black"
                 : "bg-gray-700 text-gray-300 hover:bg-gray-600"
             }`}
           >
-            All Users
+            All Statuses
           </button>
           <button
-            onClick={() => setUserFilter("registered")}
+            onClick={() => handleStatusFilter("completed")}
             className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              userFilter === "registered"
-                ? "bg-blue-600 text-white"
+              statusFilter === "completed"
+                ? "bg-green-600 text-white"
                 : "bg-gray-700 text-gray-300 hover:bg-gray-600"
             }`}
           >
-            Registered Users
+            Completed
           </button>
           <button
-            onClick={() => setUserFilter("guest")}
+            onClick={() => handleStatusFilter("pending")}
             className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              userFilter === "guest"
-                ? "bg-orange-600 text-white"
+              statusFilter === "pending"
+                ? "bg-yellow-600 text-white"
                 : "bg-gray-700 text-gray-300 hover:bg-gray-600"
             }`}
           >
-            Guest Users
+            Pending
+          </button>
+          <button
+            onClick={() => handleStatusFilter("failed")}
+            className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              statusFilter === "failed"
+                ? "bg-red-600 text-white"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            }`}
+          >
+            Failed
+          </button>
+          <button
+            onClick={() => handleStatusFilter("cancelled")}
+            className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              statusFilter === "cancelled"
+                ? "bg-red-600 text-white"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            }`}
+          >
+            Cancelled
+          </button>
+          <button
+            onClick={() => handleStatusFilter("refunded")}
+            className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              statusFilter === "refunded"
+                ? "bg-purple-600 text-white"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            }`}
+          >
+            Refunded
           </button>
         </div>
       )}
@@ -552,6 +639,12 @@ const BillingTable = () => {
         showPagination={true}
         showHeader={true}
         className="overflow-x-auto"
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          onChange: handlePageChange,
+        }}
       />
     </div>
   );

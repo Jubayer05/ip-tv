@@ -25,6 +25,16 @@ const ManageAddons = () => {
     tawkTo: false,
   });
 
+  const [apiKeys, setApiKeys] = useState({
+    recaptcha: { siteKey: "", secretKey: "" },
+    trustPilot: { businessId: "", apiKey: "" },
+    googleAnalytics: { measurementId: "" },
+    microsoftClarity: { projectId: "" },
+    cloudflare: { token: "" },
+    getButton: { widgetId: "" },
+    tawkTo: { propertyId: "" },
+  });
+
   const addonConfigs = [
     {
       key: "recaptcha",
@@ -32,6 +42,18 @@ const ManageAddons = () => {
       description: "Protect login and registration forms from bots",
       icon: Shield,
       color: "text-blue-500",
+      fields: [
+        {
+          key: "siteKey",
+          label: "Site Key",
+          placeholder: "Enter reCAPTCHA site key",
+        },
+        {
+          key: "secretKey",
+          label: "Secret Key",
+          placeholder: "Enter reCAPTCHA secret key",
+        },
+      ],
     },
     {
       key: "trustPilot",
@@ -39,6 +61,18 @@ const ManageAddons = () => {
       description: "Display customer reviews and ratings",
       icon: Star,
       color: "text-green-500",
+      fields: [
+        {
+          key: "businessId",
+          label: "Business ID",
+          placeholder: "Enter TrustPilot business ID",
+        },
+        {
+          key: "apiKey",
+          label: "API Key",
+          placeholder: "Enter TrustPilot API key",
+        },
+      ],
     },
     {
       key: "googleAnalytics",
@@ -46,6 +80,13 @@ const ManageAddons = () => {
       description: "Track website traffic and user behavior",
       icon: BarChart3,
       color: "text-orange-500",
+      fields: [
+        {
+          key: "measurementId",
+          label: "Measurement ID",
+          placeholder: "Enter Google Analytics measurement ID",
+        },
+      ],
     },
     {
       key: "microsoftClarity",
@@ -53,6 +94,13 @@ const ManageAddons = () => {
       description: "Heatmaps and user session recordings",
       icon: Eye,
       color: "text-purple-500",
+      fields: [
+        {
+          key: "projectId",
+          label: "Project ID",
+          placeholder: "Enter Microsoft Clarity project ID",
+        },
+      ],
     },
     {
       key: "cloudflare",
@@ -60,6 +108,9 @@ const ManageAddons = () => {
       description: "CDN, security, and performance optimization",
       icon: Cloud,
       color: "text-yellow-500",
+      fields: [
+        { key: "token", label: "Token", placeholder: "Enter Cloudflare token" },
+      ],
     },
     {
       key: "getButton",
@@ -67,6 +118,13 @@ const ManageAddons = () => {
       description: "Live chat and customer support widget",
       icon: MessageCircle,
       color: "text-pink-500",
+      fields: [
+        {
+          key: "widgetId",
+          label: "Widget ID",
+          placeholder: "Enter GetButton widget ID",
+        },
+      ],
     },
     {
       key: "tawkTo",
@@ -74,6 +132,13 @@ const ManageAddons = () => {
       description: "Free live chat for customer support",
       icon: MessageCircle,
       color: "text-indigo-500",
+      fields: [
+        {
+          key: "propertyId",
+          label: "Property ID",
+          placeholder: "Enter Tawk.to property ID",
+        },
+      ],
     },
   ];
 
@@ -86,8 +151,13 @@ const ManageAddons = () => {
       setLoading(true);
       setError("");
       const response = await apiCall("/api/admin/settings", "GET");
-      if (response.success && response.data.addons) {
-        setAddons(response.data.addons);
+      if (response.success) {
+        if (response.data.addons) {
+          setAddons(response.data.addons);
+        }
+        if (response.data.apiKeys) {
+          setApiKeys(response.data.apiKeys);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch settings:", error);
@@ -104,6 +174,16 @@ const ManageAddons = () => {
     }));
   };
 
+  const handleApiKeyChange = (addonKey, fieldKey, value) => {
+    setApiKeys((prev) => ({
+      ...prev,
+      [addonKey]: {
+        ...prev[addonKey],
+        [fieldKey]: value,
+      },
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -113,6 +193,7 @@ const ManageAddons = () => {
     try {
       const response = await apiCall("/api/admin/settings", "PUT", {
         addons: addons,
+        apiKeys: apiKeys,
       });
 
       if (response.success) {
@@ -137,13 +218,15 @@ const ManageAddons = () => {
         </h2>
         <p className="text-gray-300 text-sm mb-6 text-center">
           Enable or disable various third-party services and integrations for
-          your website.
+          your website. Configure API keys for enabled services.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {addonConfigs.map((addon) => {
               const IconComponent = addon.icon;
+              const isEnabled = addons[addon.key];
+
               return (
                 <div
                   key={addon.key}
@@ -164,7 +247,7 @@ const ManageAddons = () => {
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={addons[addon.key]}
+                        checked={isEnabled}
                         onChange={(e) =>
                           handleAddonToggle(addon.key, e.target.checked)
                         }
@@ -174,6 +257,36 @@ const ManageAddons = () => {
                       <div className="w-11 h-6 bg-[#333] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
                   </div>
+
+                  {/* API Key Fields - Only show when addon is enabled */}
+                  {isEnabled && addon.fields && (
+                    <div className="mt-4 space-y-3 border-t border-[#333] pt-3">
+                      <p className="text-xs text-gray-400 font-medium">
+                        Configuration:
+                      </p>
+                      {addon.fields.map((field) => (
+                        <div key={field.key}>
+                          <label className="block text-xs text-gray-300 mb-1">
+                            {field.label}
+                          </label>
+                          <input
+                            type="text"
+                            value={apiKeys[addon.key]?.[field.key] || ""}
+                            onChange={(e) =>
+                              handleApiKeyChange(
+                                addon.key,
+                                field.key,
+                                e.target.value
+                              )
+                            }
+                            placeholder={field.placeholder}
+                            className="w-full px-3 py-2 bg-[#0c171c] border border-[#333] rounded-md text-white text-xs placeholder-gray-500 focus:outline-none focus:border-cyan-400 transition-colors"
+                            disabled={loading}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}

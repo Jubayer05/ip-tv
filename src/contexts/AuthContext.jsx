@@ -422,6 +422,18 @@ export const AuthContextProvider = ({ children }) => {
 
   const isAuthenticated = !!(user && getAuthToken());
 
+  const setUserFromSocialLogin = async (userData, token) => {
+    try {
+      setUser(userData);
+      setAuthToken(token);
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("user", JSON.stringify(userData));
+      setIs2FAPending(false);
+    } catch (error) {
+      console.error("Error setting user from social login:", error);
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -441,6 +453,7 @@ export const AuthContextProvider = ({ children }) => {
     generateAuthToken,
     getAuthToken,
     refreshAuthToken,
+    setUserFromSocialLogin,
     is2FAPending,
     isAuthenticated,
   };

@@ -1,5 +1,5 @@
 import { connectToDatabase } from "@/lib/db";
-import { applyPaymentUpdate } from "@/lib/payments/paymentUpdater";
+import { handlePaymentCompleted } from "@/lib/payments/paymentUpdater";
 import stripeService from "@/lib/paymentServices/stripeService";
 import Order from "@/models/Order";
 import User from "@/models/User";
@@ -78,37 +78,51 @@ export async function POST(request) {
             return NextResponse.json({ received: true });
           }
 
-          const userIdMeta =
-            session?.metadata?.userId || order.userId?.toString() || "";
+          // Update order payment status
+          order.paymentStatus = "completed";
+          order.status = "completed";
+          order.stripePayment = {
+            ...order.stripePayment,
+            sessionId: session.id,
+            paymentIntentId:
+              typeof session.payment_intent === "string"
+                ? session.payment_intent
+                : null,
+            status: "completed",
+            callbackReceived: true,
+            lastStatusUpdate: new Date(),
+          };
 
-          await applyPaymentUpdate({
-            order,
-            gatewayKey: "stripePayment",
-            rawStatus: "completed",
-            gatewayFields: {
-              paymentIntentId:
-                typeof session.payment_intent === "string"
-                  ? session.payment_intent
-                  : null,
-              status: "completed",
-              callbackReceived: true,
-            },
-            onCompleted: async ({ order }) => {
-              if (purpose === "deposit") {
-                // Credit user balance with order.totalAmount
-                const userId = userIdMeta || order.userId?.toString();
-                if (userId) {
-                  const user = await User.findById(userId);
-                  if (user) {
-                    user.balance =
-                      Number(user.balance || 0) +
-                      Number(order.totalAmount || 0);
-                    await user.save();
-                  }
-                }
+          // Credit user balance if it's a deposit
+          if (purpose === "deposit") {
+            const userId =
+              session?.metadata?.userId || order.userId?.toString();
+            if (userId) {
+              const user = await User.findById(userId);
+              if (user) {
+                user.balance =
+                  Number(user.balance || 0) + Number(order.totalAmount || 0);
+                await user.save();
               }
-            },
-          });
+            }
+          }
+
+          await order.save();
+
+          // Handle IPTV account creation and email sending
+          if (order.products && order.products.length > 0) {
+            const result = await handlePaymentCompleted(order.orderNumber);
+            if (result.success) {
+              console.log(
+                `IPTV accounts created for order ${order.orderNumber}`
+              );
+            } else {
+              console.error(
+                `Failed to create IPTV accounts for order ${order.orderNumber}:`,
+                result.error
+              );
+            }
+          }
         }
         break;
       }
@@ -119,16 +133,31 @@ export async function POST(request) {
           "stripePayment.paymentIntentId": pi.id,
         });
         if (order) {
-          await applyPaymentUpdate({
-            order,
-            gatewayKey: "stripePayment",
-            rawStatus: "completed",
-            gatewayFields: {
-              paymentIntentId: pi.id,
-              status: "completed",
-              callbackReceived: true,
-            },
-          });
+          order.paymentStatus = "completed";
+          order.status = "completed";
+          order.stripePayment = {
+            ...order.stripePayment,
+            paymentIntentId: pi.id,
+            status: "completed",
+            callbackReceived: true,
+            lastStatusUpdate: new Date(),
+          };
+          await order.save();
+
+          // Handle IPTV account creation and email sending
+          if (order.products && order.products.length > 0) {
+            const result = await handlePaymentCompleted(order.orderNumber);
+            if (result.success) {
+              console.log(
+                `IPTV accounts created for order ${order.orderNumber}`
+              );
+            } else {
+              console.error(
+                `Failed to create IPTV accounts for order ${order.orderNumber}:`,
+                result.error
+              );
+            }
+          }
         }
         break;
       }
@@ -139,16 +168,16 @@ export async function POST(request) {
           "stripePayment.paymentIntentId": pi.id,
         });
         if (order) {
-          await applyPaymentUpdate({
-            order,
-            gatewayKey: "stripePayment",
-            rawStatus: "failed",
-            gatewayFields: {
-              paymentIntentId: pi.id,
-              status: "failed",
-              callbackReceived: true,
-            },
-          });
+          order.paymentStatus = "failed";
+          order.status = "cancelled";
+          order.stripePayment = {
+            ...order.stripePayment,
+            paymentIntentId: pi.id,
+            status: "failed",
+            callbackReceived: true,
+            lastStatusUpdate: new Date(),
+          };
+          await order.save();
         }
         break;
       }
@@ -162,12 +191,15 @@ export async function POST(request) {
           ],
         });
         if (order) {
-          await applyPaymentUpdate({
-            order,
-            gatewayKey: "stripePayment",
-            rawStatus: "cancelled",
-            gatewayFields: { status: "cancelled", callbackReceived: true },
-          });
+          order.paymentStatus = "cancelled";
+          order.status = "cancelled";
+          order.stripePayment = {
+            ...order.stripePayment,
+            status: "cancelled",
+            callbackReceived: true,
+            lastStatusUpdate: new Date(),
+          };
+          await order.save();
         }
         break;
       }

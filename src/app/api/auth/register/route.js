@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import { sendVerificationEmail } from "@/lib/email";
+import Settings from "@/models/Settings";
 import User from "@/models/User";
 import VerificationToken from "@/models/VerificationToken";
 import { NextResponse } from "next/server";
@@ -52,8 +53,19 @@ export async function POST(request) {
 
     // Verify reCAPTCHA only if token is provided
     if (recaptchaToken) {
+      // Get reCAPTCHA secret key from database
+      const settings = await Settings.getSettings();
+      const secretKey = settings.apiKeys?.recaptcha?.secretKey;
+
+      if (!secretKey) {
+        return NextResponse.json(
+          { error: "reCAPTCHA secret key not configured" },
+          { status: 500 }
+        );
+      }
+
       const recaptchaResponse = await fetch(
-        `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
+        `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`,
         { method: "POST" }
       );
 

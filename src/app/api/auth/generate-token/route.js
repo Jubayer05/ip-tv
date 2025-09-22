@@ -23,10 +23,7 @@ export async function POST(request) {
     };
 
     // Generate JWT token
-    const token = jwt.sign(
-      payload,
-      process.env.JWT_SECRET || "your-secret-key"
-    );
+    const token = jwt.sign(payload, process.env.JWT_SECRET);
 
     return NextResponse.json({
       success: true,

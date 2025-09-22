@@ -1,8 +1,19 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import {
+  FacebookAuthProvider,
+  getAuth,
+  getRedirectResult,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  TwitterAuthProvider,
+} from "firebase/auth";
 
 let app;
 let auth;
+let googleProvider;
+let facebookProvider;
+let twitterProvider;
 
 // Only initialize Firebase if we're in the browser and have valid config
 if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
@@ -18,6 +29,17 @@ if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
   try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
+
+    // Initialize social auth providers
+    googleProvider = new GoogleAuthProvider();
+    facebookProvider = new FacebookAuthProvider();
+    twitterProvider = new TwitterAuthProvider();
+
+    // Add scopes if needed
+    googleProvider.addScope("email");
+    googleProvider.addScope("profile");
+    facebookProvider.addScope("email");
+    twitterProvider.addScope("email");
   } catch (error) {
     console.error("Firebase initialization failed:", error);
     auth = createMockAuth();
@@ -45,4 +67,33 @@ function createMockAuth() {
   };
 }
 
-export { auth };
+// Social auth functions
+export const signInWithGoogle = () => {
+  if (!auth || !googleProvider) {
+    throw new Error("Firebase not configured");
+  }
+  return signInWithPopup(auth, googleProvider);
+};
+
+export const signInWithFacebook = () => {
+  if (!auth || !facebookProvider) {
+    throw new Error("Firebase not configured");
+  }
+  return signInWithPopup(auth, facebookProvider);
+};
+
+export const signInWithTwitter = () => {
+  if (!auth || !twitterProvider) {
+    throw new Error("Firebase not configured");
+  }
+  return signInWithRedirect(auth, twitterProvider);
+};
+
+export const getTwitterRedirectResult = () => {
+  if (!auth) {
+    throw new Error("Firebase not configured");
+  }
+  return getRedirectResult(auth);
+};
+
+export { auth, facebookProvider, googleProvider, twitterProvider };

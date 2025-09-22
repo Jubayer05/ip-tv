@@ -13,6 +13,33 @@ const OrderProductSchema = new mongoose.Schema(
     duration: { type: Number, default: 0, min: 0 }, // months
     devicesAllowed: { type: Number, required: true, min: 1 },
     adultChannels: { type: Boolean, default: false },
+
+    // IPTV Configuration
+    lineType: { type: Number, default: 0 }, // 0: M3U, 1: MAG, 2: Enigma2
+    templateId: { type: Number, default: 2 },
+    macAddresses: [{ type: String, default: "" }], // For MAG/Enigma2
+    adultChannelsConfig: [{ type: Boolean, default: false }], // Per-device adult config
+  },
+  { _id: false }
+);
+
+// IPTV Credentials Schema
+const IPTVCredentialSchema = new mongoose.Schema(
+  {
+    lineId: { type: Number },
+    username: { type: String, required: true },
+    password: { type: String, required: true },
+    expire: { type: Number }, // Unix timestamp
+    packageId: { type: Number },
+    packageName: { type: String, default: "" },
+    templateId: { type: Number },
+    templateName: { type: String, default: "" },
+    lineType: { type: Number, default: 0 }, // 0: M3U, 1: MAG, 2: Enigma2
+    macAddress: { type: String, default: "" }, // For MAG/Enigma2
+    adultChannels: { type: Boolean, default: false },
+    lineInfo: { type: String, default: "" }, // Raw line info from API
+    isActive: { type: Boolean, default: true },
+    createdAt: { type: Date, default: Date.now },
   },
   { _id: false }
 );
@@ -276,6 +303,10 @@ const OrderSchema = new mongoose.Schema(
     paygatePayment: { type: PayGatePaymentSchema, default: null }, // Add this line
 
     keys: { type: [OrderKeySchema], default: [] },
+
+    // IPTV Credentials
+    iptvCredentials: { type: [IPTVCredentialSchema], default: [] },
+    credentialsEmailSent: { type: Boolean, default: false },
 
     contactInfo: { type: ContactInfoSchema, required: true },
 

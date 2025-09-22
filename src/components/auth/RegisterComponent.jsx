@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 import Select from "react-select";
 import countryList from "react-select-country-list";
+import SocialLogin from "./SocialLogin";
 
 export default function RegisterComponent({ referralCode = "" }) {
   const [formData, setFormData] = useState({
@@ -25,6 +26,7 @@ export default function RegisterComponent({ referralCode = "" }) {
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [recaptchaToken, setRecaptchaToken] = useState(null);
   const [recaptchaEnabled, setRecaptchaEnabled] = useState(false);
+  const [socialError, setSocialError] = useState("");
 
   const recaptchaRef = useRef();
   const countryOptions = useMemo(() => countryList().getData(), []);
@@ -36,6 +38,10 @@ export default function RegisterComponent({ referralCode = "" }) {
         const data = await response.json();
         if (data.success && data.data.addons) {
           setRecaptchaEnabled(data.data.addons.recaptcha);
+          // Store the site key for later use
+          if (data.data.apiKeys?.recaptcha?.siteKey) {
+            window.RECAPTCHA_SITE_KEY = data.data.apiKeys.recaptcha.siteKey;
+          }
         }
       } catch (error) {
         console.error("Failed to check reCAPTCHA setting:", error);
@@ -210,6 +216,25 @@ export default function RegisterComponent({ referralCode = "" }) {
     }
 
     setLoading(false);
+  };
+
+  const handleSocialSuccess = (data) => {
+    // Store token and user data
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    // Redirect to dashboard
+    // Assuming you have a router object available, otherwise use window.location.href
+    // For now, we'll just show a success message or redirect manually if no router
+    // If you're using Next.js, you might need to use next/router or similar
+    // For now, we'll just show a success message
+    alert("Social login successful!");
+    // Example: window.location.href = '/dashboard';
+  };
+
+  const handleSocialError = (error) => {
+    setSocialError(error);
+    setTimeout(() => setSocialError(""), 5000);
   };
 
   if (success) {
@@ -439,7 +464,10 @@ export default function RegisterComponent({ referralCode = "" }) {
             <div className="flex justify-center">
               <ReCAPTCHA
                 ref={recaptchaRef}
-                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+                sitekey={
+                  window.RECAPTCHA_SITE_KEY ||
+                  process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+                }
                 onChange={handleRecaptchaChange}
                 theme="dark"
               />
@@ -478,6 +506,20 @@ export default function RegisterComponent({ referralCode = "" }) {
           </span>
           <div className="flex-1 h-px bg-gray-700"></div>
         </div>
+
+        {/* Social Login */}
+        <SocialLogin
+          onSuccess={handleSocialSuccess}
+          onError={handleSocialError}
+          loading={loading}
+        />
+
+        {/* Social Error */}
+        {socialError && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-red-400 text-xs sm:text-sm">{socialError}</p>
+          </div>
+        )}
 
         {/* Login Link */}
         <div className="text-center">

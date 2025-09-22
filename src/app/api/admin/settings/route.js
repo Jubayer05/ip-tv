@@ -16,8 +16,13 @@ export async function GET() {
         contactInfo: settings.contactInfo,
         banners: settings.banners,
         addons: settings.addons,
+        apiKeys: settings.apiKeys || {},
+        loginOptions: settings.loginOptions || {},
+        socialApiKeys: settings.socialApiKeys || {},
+        smtp: settings.smtp || {},
+        otherApiKeys: settings.otherApiKeys || {},
         metaManagement: settings.metaManagement,
-        freeTrialContent: settings.freeTrialContent, // Add this line
+        freeTrialContent: settings.freeTrialContent,
       },
     });
   } catch (e) {
@@ -226,6 +231,98 @@ export async function PUT(request) {
       });
     }
 
+    // API Keys
+    if (body.apiKeys && typeof body.apiKeys === "object") {
+      const apiKeyFields = [
+        "recaptcha",
+        "trustPilot",
+        "googleAnalytics",
+        "microsoftClarity",
+        "cloudflare",
+        "getButton",
+        "tawkTo",
+      ];
+
+      apiKeyFields.forEach((addon) => {
+        if (body.apiKeys[addon] && typeof body.apiKeys[addon] === "object") {
+          Object.keys(body.apiKeys[addon]).forEach((field) => {
+            if (body.apiKeys[addon][field] !== undefined) {
+              updates[`apiKeys.${addon}.${field}`] =
+                body.apiKeys[addon][field] || "";
+            }
+          });
+        }
+      });
+    }
+
+    // Login Options
+    if (body.loginOptions && typeof body.loginOptions === "object") {
+      const loginOptionFields = ["google", "facebook", "twitter"];
+
+      loginOptionFields.forEach((option) => {
+        if (body.loginOptions[option] !== undefined) {
+          updates[`loginOptions.${option}`] = Boolean(
+            body.loginOptions[option]
+          );
+        }
+      });
+    }
+
+    // Social API Keys
+    if (body.socialApiKeys && typeof body.socialApiKeys === "object") {
+      const socialApiKeyFields = ["google", "facebook", "twitter"];
+
+      socialApiKeyFields.forEach((provider) => {
+        if (
+          body.socialApiKeys[provider] &&
+          typeof body.socialApiKeys[provider] === "object"
+        ) {
+          Object.keys(body.socialApiKeys[provider]).forEach((field) => {
+            if (body.socialApiKeys[provider][field] !== undefined) {
+              updates[`socialApiKeys.${provider}.${field}`] =
+                body.socialApiKeys[provider][field] || "";
+            }
+          });
+        }
+      });
+    }
+
+    // SMTP Configuration
+    if (body.smtp && typeof body.smtp === "object") {
+      const smtpFields = ["host", "port", "user", "pass", "secure"];
+
+      smtpFields.forEach((field) => {
+        if (body.smtp[field] !== undefined) {
+          if (field === "port") {
+            updates[`smtp.${field}`] = parseInt(body.smtp[field]) || 587;
+          } else if (field === "secure") {
+            updates[`smtp.${field}`] = Boolean(body.smtp[field]);
+          } else {
+            updates[`smtp.${field}`] = body.smtp[field] || "";
+          }
+        }
+      });
+    }
+
+    // Other API Keys
+    if (body.otherApiKeys && typeof body.otherApiKeys === "object") {
+      const apiKeySections = ["iptv", "jwt"];
+
+      apiKeySections.forEach((section) => {
+        if (
+          body.otherApiKeys[section] &&
+          typeof body.otherApiKeys[section] === "object"
+        ) {
+          Object.keys(body.otherApiKeys[section]).forEach((field) => {
+            if (body.otherApiKeys[section][field] !== undefined) {
+              updates[`otherApiKeys.${section}.${field}`] =
+                body.otherApiKeys[section][field] || "";
+            }
+          });
+        }
+      });
+    }
+
     // Perform update
     if (Object.keys(updates).length > 0) {
       const result = await Settings.updateOne(
@@ -244,7 +341,13 @@ export async function PUT(request) {
         contactInfo: fresh.contactInfo,
         banners: fresh.banners,
         addons: fresh.addons,
+        apiKeys: fresh.apiKeys || {},
+        loginOptions: fresh.loginOptions || {},
+        socialApiKeys: fresh.socialApiKeys || {},
+        smtp: fresh.smtp || {},
+        otherApiKeys: fresh.otherApiKeys || {},
         metaManagement: fresh.metaManagement,
+        freeTrialContent: fresh.freeTrialContent,
       },
       message: "Settings updated",
     });

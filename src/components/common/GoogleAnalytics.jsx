@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 export default function GoogleAnalytics() {
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
+  const [measurementId, setMeasurementId] = useState("");
 
   useEffect(() => {
     const checkAnalyticsSetting = async () => {
@@ -11,6 +12,9 @@ export default function GoogleAnalytics() {
         const data = await response.json();
         if (data.success && data.data.addons) {
           setAnalyticsEnabled(data.data.addons.googleAnalytics);
+          if (data.data.apiKeys?.googleAnalytics?.measurementId) {
+            setMeasurementId(data.data.apiKeys.googleAnalytics.measurementId);
+          }
         }
       } catch (error) {
         console.error("Failed to check Google Analytics setting:", error);
@@ -21,7 +25,7 @@ export default function GoogleAnalytics() {
   }, []);
 
   useEffect(() => {
-    if (!analyticsEnabled) return;
+    if (!analyticsEnabled || !measurementId) return;
 
     // Initialize dataLayer
     window.dataLayer = window.dataLayer || [];
@@ -36,14 +40,14 @@ export default function GoogleAnalytics() {
 
     // Load Google Analytics script
     const script = document.createElement("script");
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
     script.async = true;
 
     // Wait for script to load before initializing
     script.onload = () => {
       // Initialize gtag after script loads
       gtag("js", new Date());
-      gtag("config", process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, {
+      gtag("config", measurementId, {
         page_title: document.title,
         page_location: window.location.href,
       });
@@ -63,15 +67,15 @@ export default function GoogleAnalytics() {
       // Clean up global gtag
       delete window.gtag;
     };
-  }, [analyticsEnabled]);
+  }, [analyticsEnabled, measurementId]);
 
   // Track page views when route changes
   useEffect(() => {
-    if (!analyticsEnabled || !window.gtag) return;
+    if (!analyticsEnabled || !window.gtag || !measurementId) return;
 
     const handleRouteChange = () => {
       if (window.gtag) {
-        window.gtag("config", process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, {
+        window.gtag("config", measurementId, {
           page_title: document.title,
           page_location: window.location.href,
         });
@@ -84,7 +88,7 @@ export default function GoogleAnalytics() {
     return () => {
       window.removeEventListener("popstate", handleRouteChange);
     };
-  }, [analyticsEnabled]);
+  }, [analyticsEnabled, measurementId]);
 
   // Don't render anything - this component only handles script injection
   return null;

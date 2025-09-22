@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 export default function GetButton() {
   const [getButtonEnabled, setGetButtonEnabled] = useState(false);
+  const [widgetId, setWidgetId] = useState("");
 
   useEffect(() => {
     const checkGetButtonSetting = async () => {
@@ -11,6 +12,9 @@ export default function GetButton() {
         const data = await response.json();
         if (data.success && data.data.addons) {
           setGetButtonEnabled(data.data.addons.getButton);
+          if (data.data.apiKeys?.getButton?.widgetId) {
+            setWidgetId(data.data.apiKeys.getButton.widgetId);
+          }
         }
       } catch (error) {
         console.error("Failed to check GetButton setting:", error);
@@ -21,12 +25,12 @@ export default function GetButton() {
   }, []);
 
   useEffect(() => {
-    if (!getButtonEnabled) return;
+    if (!getButtonEnabled || !widgetId) return;
 
     // GetButton.io chat widget
     const script = document.createElement("script");
     script.src = "https://w.app/widget.js";
-    script.setAttribute("data-id", process.env.NEXT_PUBLIC_GETBUTTON_ID);
+    script.setAttribute("data-id", widgetId);
     script.async = true;
 
     // Customize widget appearance
@@ -36,7 +40,7 @@ export default function GetButton() {
 
     document.head.appendChild(script);
 
-  }, [getButtonEnabled]);
+  }, [getButtonEnabled, widgetId]);
 
   return null;
 }

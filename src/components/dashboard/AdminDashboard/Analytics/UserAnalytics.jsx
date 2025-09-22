@@ -83,7 +83,7 @@ const AnalyticsSummary = ({ analytics }) => (
         <div>
           <p className="text-gray-400 text-sm">Total Balance</p>
           <p className="text-2xl font-bold text-white">
-            ${analytics.totalBalance || 0}
+            ${analytics.totalBalance?.toFixed(2) || 0}
           </p>
         </div>
         <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
@@ -109,7 +109,7 @@ const AnalyticsSummary = ({ analytics }) => (
         <div>
           <p className="text-gray-400 text-sm">Total Spending</p>
           <p className="text-2xl font-bold text-white">
-            ${analytics.totalSpending || 0}
+            ${analytics.totalSpending?.toFixed(2) || 0}
           </p>
         </div>
         <div className="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
@@ -295,7 +295,9 @@ const UserAnalytics = () => {
       dataIndex: "balance",
       key: "balance",
       render: (balance) => (
-        <span className="text-green-400 text-sm font-medium">${balance}</span>
+        <span className="text-green-400 text-sm font-medium">
+          ${balance?.toFixed(2)}
+        </span>
       ),
     },
     {
@@ -305,7 +307,7 @@ const UserAnalytics = () => {
       key: "totalSpent",
       render: (rank) => (
         <span className="text-yellow-400 text-sm font-medium">
-          ${rank?.totalSpent || 0}
+          ${rank?.totalSpent?.toFixed(2) || 0}
         </span>
       ),
     },
@@ -377,7 +379,7 @@ const UserAnalytics = () => {
       key: "referralEarnings",
       render: (referral) => (
         <span className="text-green-400 text-sm font-medium">
-          ${referral?.earnings || 0}
+          ${referral?.earnings?.toFixed(2) || 0}
         </span>
       ),
     },

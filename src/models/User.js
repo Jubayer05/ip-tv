@@ -14,10 +14,10 @@ const userSchema = new mongoose.Schema(
         "Please enter a valid email",
       ],
     },
-    firebaseUid: {
-      type: String,
-      required: true,
-      unique: true,
+    firebase: {
+      uid: { type: String, default: null },
+      provider: { type: String, default: null },
+      emailVerified: { type: Boolean, default: false },
     },
     profile: {
       firstName: {

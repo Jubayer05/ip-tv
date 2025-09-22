@@ -5,10 +5,10 @@ import {
   ArrowLeft,
   BarChart3,
   Bell,
-  CreditCard,
   Gift,
   HelpCircle,
   History,
+  Key,
   List,
   Monitor,
   Package,
@@ -50,11 +50,11 @@ export default function Sidebar() {
       label: "Device Management",
       icon: Monitor,
     },
-    {
-      href: "/dashboard/payment",
-      label: "Payment Methods",
-      icon: CreditCard,
-    },
+    // {
+    //   href: "/dashboard/payment",
+    //   label: "Payment Methods",
+    //   icon: CreditCard,
+    // },
     {
       href: "/dashboard/support",
       label: "Support Tickets",
@@ -145,6 +145,11 @@ export default function Sidebar() {
       href: "/admin/payments",
       label: "Payment Management",
       icon: Shield,
+    },
+    {
+      href: "/admin/login-api",
+      label: "Login & API Management",
+      icon: Key,
     },
     {
       href: "/admin/settings",

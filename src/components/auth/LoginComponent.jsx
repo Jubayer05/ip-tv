@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
+import SocialLogin from "./SocialLogin";
 import TwoFactorAuth from "./TwoFactorAuth";
 
 export default function LoginComponent() {
@@ -22,6 +23,7 @@ export default function LoginComponent() {
   const [show2FA, setShow2FA] = useState(false);
   const [pendingUser, setPendingUser] = useState(null);
   const [sending2FACode, setSending2FACode] = useState(false);
+  const [socialError, setSocialError] = useState("");
 
   const { login, send2FACode } = useAuth();
   const router = useRouter();
@@ -34,6 +36,10 @@ export default function LoginComponent() {
         const data = await response.json();
         if (data.success && data.data.addons) {
           setRecaptchaEnabled(data.data.addons.recaptcha);
+          // Store the site key for later use
+          if (data.data.apiKeys?.recaptcha?.siteKey) {
+            window.RECAPTCHA_SITE_KEY = data.data.apiKeys.recaptcha.siteKey;
+          }
         }
       } catch (error) {
         console.error("Failed to check reCAPTCHA setting:", error);
@@ -120,6 +126,17 @@ export default function LoginComponent() {
       recaptchaRef.current?.reset();
       setRecaptchaToken(null);
     }
+  };
+
+  const handleSocialSuccess = (data) => {
+    // The SocialLogin component now handles AuthContext updates
+    // Just redirect to dashboard
+    router.push("/dashboard");
+  };
+
+  const handleSocialError = (error) => {
+    setSocialError(error);
+    setTimeout(() => setSocialError(""), 5000);
   };
 
   // Show 2FA component if needed
@@ -210,7 +227,10 @@ export default function LoginComponent() {
             <div className="flex justify-center">
               <ReCAPTCHA
                 ref={recaptchaRef}
-                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+                sitekey={
+                  window.RECAPTCHA_SITE_KEY ||
+                  process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+                }
                 onChange={handleRecaptchaChange}
                 theme="dark"
               />
@@ -240,6 +260,20 @@ export default function LoginComponent() {
           <span className="px-4 text-gray-400 text-sm">OR</span>
           <div className="flex-1 h-px bg-gray-700"></div>
         </div>
+
+        {/* Social Login */}
+        <SocialLogin
+          onSuccess={handleSocialSuccess}
+          onError={handleSocialError}
+          loading={loading || sending2FACode}
+        />
+
+        {/* Social Error */}
+        {socialError && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+            <p className="text-red-400 text-sm">{socialError}</p>
+          </div>
+        )}
 
         {/* Register Link */}
         <div className="text-center">

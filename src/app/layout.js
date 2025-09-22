@@ -83,10 +83,6 @@ export const metadata = {
       "max-snippet": -1,
     },
   },
-  verification: {
-    google: process.env.GOOGLE_SITE_VERIFICATION,
-    // Add other search engine verifications if needed
-  },
 };
 
 export default function RootLayout({ children }) {

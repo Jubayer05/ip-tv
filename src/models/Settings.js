@@ -168,6 +168,56 @@ const settingsSchema = new mongoose.Schema(
       tawkTo: { type: Boolean, default: false },
     },
 
+    // Add API keys section after addons
+    apiKeys: {
+      recaptcha: {
+        siteKey: { type: String, default: "" },
+        secretKey: { type: String, default: "" },
+      },
+      trustPilot: {
+        businessId: { type: String, default: "" },
+        apiKey: { type: String, default: "" },
+      },
+      googleAnalytics: {
+        measurementId: { type: String, default: "" },
+      },
+      microsoftClarity: {
+        projectId: { type: String, default: "" },
+      },
+      cloudflare: {
+        token: { type: String, default: "" },
+      },
+      getButton: {
+        widgetId: { type: String, default: "" },
+      },
+      tawkTo: {
+        propertyId: { type: String, default: "" },
+      },
+    },
+
+    // Login options management
+    loginOptions: {
+      google: { type: Boolean, default: false },
+      facebook: { type: Boolean, default: false },
+      twitter: { type: Boolean, default: false },
+    },
+
+    // Social API keys
+    socialApiKeys: {
+      google: {
+        clientId: { type: String, default: "" },
+        clientSecret: { type: String, default: "" },
+      },
+      facebook: {
+        appId: { type: String, default: "" },
+        appSecret: { type: String, default: "" },
+      },
+      twitter: {
+        apiKey: { type: String, default: "" },
+        apiSecret: { type: String, default: "" },
+      },
+    },
+
     // Free trial content management
     freeTrialContent: {
       title: { type: String, default: "Start Your Free Trial" },
@@ -189,6 +239,27 @@ const settingsSchema = new mongoose.Schema(
         default: "What's Included in Your Free Trial?",
       },
       includedItems: [{ type: String }],
+    },
+
+    // SMTP Configuration
+    smtp: {
+      host: { type: String, default: "" },
+      port: { type: Number, default: 587 },
+      user: { type: String, default: "" },
+      pass: { type: String, default: "" },
+      secure: { type: Boolean, default: false },
+    },
+
+    // Other API Keys
+    otherApiKeys: {
+      iptv: {
+        apiKey: { type: String, default: "" },
+        baseUrl: { type: String, default: "" },
+      },
+      jwt: {
+        secret: { type: String, default: "" },
+        expiresIn: { type: String, default: "7d" },
+      },
     },
 
     // Meta management for SEO
@@ -578,6 +649,50 @@ settingsSchema.statics.getSettings = async function () {
         getButton: false,
         tawkTo: false,
       },
+      apiKeys: {
+        recaptcha: {
+          siteKey: "",
+          secretKey: "",
+        },
+        trustPilot: {
+          businessId: "",
+          apiKey: "",
+        },
+        googleAnalytics: {
+          measurementId: "",
+        },
+        microsoftClarity: {
+          projectId: "",
+        },
+        cloudflare: {
+          token: "",
+        },
+        getButton: {
+          widgetId: "",
+        },
+        tawkTo: {
+          propertyId: "",
+        },
+      },
+      loginOptions: {
+        google: false,
+        facebook: false,
+        twitter: false,
+      },
+      socialApiKeys: {
+        google: {
+          clientId: "",
+          clientSecret: "",
+        },
+        facebook: {
+          appId: "",
+          appSecret: "",
+        },
+        twitter: {
+          apiKey: "",
+          apiSecret: "",
+        },
+      },
       freeTrialContent: {
         title: "Start Your Free Trial",
         description:
@@ -609,6 +724,23 @@ settingsSchema.statics.getSettings = async function () {
           "24/7 customer support",
           "No credit card required",
         ],
+      },
+      smtp: {
+        host: "",
+        port: 587,
+        user: "",
+        pass: "",
+        secure: false,
+      },
+      otherApiKeys: {
+        iptv: {
+          apiKey: "",
+          baseUrl: "",
+        },
+        jwt: {
+          secret: "",
+          expiresIn: "7d",
+        },
       },
       metaManagement: {
         home: {

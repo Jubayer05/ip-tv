@@ -1,5 +1,6 @@
 "use client";
 import Button from "@/components/ui/button";
+import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserSpending } from "@/contexts/UserSpendingContext";
@@ -8,7 +9,6 @@ import RegisterFormPopup from "./Popup/RegisterFormPopup";
 import ThankRegisterPopup from "./Popup/ThankRegisterPopup";
 
 // Import the new components
-import BottomControls from "./components/BottomControls";
 import BulkDiscount from "./components/BulkDiscount";
 import PricingHeader from "./components/PricingHeader";
 import SubscriptionPlans from "./components/SubscriptionPlans";
@@ -34,6 +34,49 @@ const PricingPlan = () => {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponResult, setCouponResult] = useState(null);
   const [couponError, setCouponError] = useState("");
+
+  // Add state for line type (M3U, MAG, Enigma2)
+  const [selectedLineType, setSelectedLineType] = useState(0); // 0: M3U, 1: MAG, 2: Enigma2
+  const [macAddresses, setMacAddresses] = useState([]); // For MAG/Enigma2 devices
+  const [adultChannelsConfig, setAdultChannelsConfig] = useState([]); // Per-device adult channel config
+
+  // Line type options
+  const lineTypes = [
+    {
+      id: 0,
+      name: "M3U Playlist",
+      description: "Compatible with most IPTV players",
+      icon: "📱",
+      supportsMultiDevice: true,
+    },
+    {
+      id: 1,
+      name: "MAG Device",
+      description: "For MAG set-top boxes",
+      icon: "📺",
+      supportsMultiDevice: false,
+    },
+    {
+      id: 2,
+      name: "Enigma2",
+      description: "For Enigma2 receivers",
+      icon: "📡",
+      supportsMultiDevice: false,
+    },
+  ];
+
+  // Template options for IPTV API
+  const templateOptions = [
+    { id: 1, name: "Bouquet Sorting in Americas" },
+    { id: 2, name: "Bouquet Sorting in Europe" },
+    { id: 3, name: "Bouquet Sorting in Middle East" },
+    { id: 4, name: "Bouquet Sorting in Spain" },
+    { id: 5, name: "Channels of Arab Countries" },
+    { id: 6, name: "Channels of Spain" },
+    { id: 7, name: "Channels of Americas" },
+    { id: 8, name: "Channels of Europe" },
+  ];
+  const [selectedTemplate, setSelectedTemplate] = useState(2); // Default to Europe
 
   // Fetch product data from API
   useEffect(() => {
@@ -61,6 +104,36 @@ const PricingPlan = () => {
     fetchProduct();
   }, []);
 
+  // Handle line type change
+  const handleLineTypeChange = (lineType) => {
+    setSelectedLineType(lineType);
+
+    // Reset devices to 1 for MAG/Enigma2 since they don't support multi-device
+    if (lineType > 0) {
+      setSelectedDevices(1);
+    }
+
+    // Initialize MAC addresses and adult config arrays based on quantity
+    const actualQuantity =
+      selectedQuantity === "custom"
+        ? parseInt(customQuantity) || 1
+        : selectedQuantity;
+    initializeDeviceArrays(actualQuantity);
+  };
+
+  // Initialize MAC addresses and adult config arrays
+  const initializeDeviceArrays = (quantity) => {
+    if (selectedLineType > 0) {
+      // MAG or Enigma2
+      setMacAddresses(Array(quantity).fill(""));
+      setAdultChannelsConfig(Array(quantity).fill(false));
+    } else {
+      // M3U
+      setMacAddresses([]);
+      setAdultChannelsConfig([]);
+    }
+  };
+
   // Handle quantity selection
   const handleQuantityChange = (quantity) => {
     if (quantity === "custom") {
@@ -70,6 +143,9 @@ const PricingPlan = () => {
       setShowCustomInput(false);
       setSelectedQuantity(quantity);
       setCustomQuantity("");
+
+      // Initialize device arrays for the new quantity
+      initializeDeviceArrays(quantity);
     }
   };
 
@@ -78,8 +154,24 @@ const PricingPlan = () => {
     const value = e.target.value;
     setCustomQuantity(value);
     if (value && !isNaN(value) && parseInt(value) > 0) {
-      setSelectedQuantity(parseInt(value));
+      const qty = parseInt(value);
+      setSelectedQuantity(qty);
+      initializeDeviceArrays(qty);
     }
+  };
+
+  // Handle MAC address change for specific device
+  const handleMacAddressChange = (index, value) => {
+    const newMacAddresses = [...macAddresses];
+    newMacAddresses[index] = value;
+    setMacAddresses(newMacAddresses);
+  };
+
+  // Handle adult channels config for specific device
+  const handleAdultChannelsConfigChange = (index, enabled) => {
+    const newAdultConfig = [...adultChannelsConfig];
+    newAdultConfig[index] = enabled;
+    setAdultChannelsConfig(newAdultConfig);
   };
 
   // Calculate total price with rank discount
@@ -97,6 +189,9 @@ const PricingPlan = () => {
 
     if (actualQuantity <= 0) return 0;
 
+    // For MAG/Enigma2, devices are always 1 per line
+    const effectiveDevices = selectedLineType > 0 ? 1 : selectedDevices;
+
     // Get device pricing from product configuration
     const devicePricing = product.devicePricing || [
       { deviceCount: 1, multiplier: 1 },
@@ -106,7 +201,7 @@ const PricingPlan = () => {
 
     // Find the device multiplier for selected devices
     const deviceRule = devicePricing.find(
-      (d) => d.deviceCount === selectedDevices
+      (d) => d.deviceCount === effectiveDevices
     );
     const deviceMultiplier = deviceRule ? deviceRule.multiplier : 1;
 
@@ -151,34 +246,51 @@ const PricingPlan = () => {
     // Get adult channels fee percentage from product configuration
     const adultChannelsFeePercentage = product.adultChannelsFeePercentage || 20;
 
-    // Add adult channels fee if selected
-    let finalTotal = afterRankDiscount;
-    if (adultChannels) {
-      const adultChannelsFee =
-        (afterRankDiscount * adultChannelsFeePercentage) / 100;
-      finalTotal += adultChannelsFee;
+    // Calculate adult channels fee
+    let adultChannelsFee = 0;
+    if (selectedLineType === 0) {
+      // M3U
+      // For M3U, adult channels apply to all devices if enabled
+      if (adultChannels) {
+        adultChannelsFee =
+          (afterRankDiscount * adultChannelsFeePercentage) / 100;
+      }
+    } else {
+      // MAG or Enigma2
+      // For MAG/Enigma2, calculate fee per device based on individual adult config
+      const adultEnabledCount = adultChannelsConfig.filter(
+        (enabled) => enabled
+      ).length;
+      if (adultEnabledCount > 0) {
+        const pricePerLine = afterRankDiscount / actualQuantity;
+        adultChannelsFee =
+          (pricePerLine * adultEnabledCount * adultChannelsFeePercentage) / 100;
+      }
     }
+
+    const finalTotal = afterRankDiscount + adultChannelsFee;
 
     return {
       basePrice,
       pricePerDevice,
       deviceMultiplier,
       quantity: actualQuantity,
+      effectiveDevices,
       subtotal,
       bulkDiscountPercentage,
       bulkDiscountAmount,
       rankDiscountPercentage,
-      rankDiscountAmount: Math.round(rankDiscountAmount * 100) / 100, // Round to 2 decimal places
+      rankDiscountAmount: Math.round(rankDiscountAmount * 100) / 100,
       afterBulkDiscount,
       afterRankDiscount,
-      adultChannelsFee: adultChannels
-        ? (afterRankDiscount * adultChannelsFeePercentage) / 100
-        : 0,
-      finalTotal: Math.round(finalTotal * 100) / 100, // Round to 2 decimal places
-      currency: "$", // Always use dollar sign instead of "USD"
+      adultChannelsFee: Math.round(adultChannelsFee * 100) / 100,
+      finalTotal: Math.round(finalTotal * 100) / 100,
+      currency: "$",
       devicePricing,
       bulkDiscounts,
       adultChannelsFeePercentage,
+      lineType: selectedLineType,
+      adultChannelsConfig: selectedLineType > 0 ? adultChannelsConfig : null,
     };
   };
 
@@ -216,7 +328,7 @@ const PricingPlan = () => {
       setAppliedCoupon(data.coupon);
       setCouponResult({
         discountAmount: data.discountAmount,
-        finalOnEligible: data.finalTotal, // after coupon on eligible amount
+        finalOnEligible: data.finalTotal,
       });
     } catch (e) {
       setCouponError("Validation failed");
@@ -226,7 +338,6 @@ const PricingPlan = () => {
   // derive final total incl. adult fee, after coupon if applied
   const displayTotals = (() => {
     const pc = calculateTotalPrice();
-    // base line items from existing calculation
     const base = {
       ...pc,
       couponDiscountAmount: 0,
@@ -234,14 +345,32 @@ const PricingPlan = () => {
     };
 
     if (appliedCoupon && couponResult) {
-      // We applied coupon on afterRankDiscount.
-      // Adult fee is percentage of afterRankDiscount in current logic.
-      // Recompute adult fee based on discounted eligible amount:
-      const afterCouponEligible = couponResult.finalOnEligible; // afterRankDiscount - coupon
-      const adultFee = adultChannels
-        ? (afterCouponEligible * (product?.adultChannelsFeePercentage || 20)) /
-          100
-        : 0;
+      const afterCouponEligible = couponResult.finalOnEligible;
+
+      // Recalculate adult fee based on discounted amount
+      let adultFee = 0;
+      if (selectedLineType === 0) {
+        // M3U
+        if (adultChannels) {
+          adultFee =
+            (afterCouponEligible *
+              (product?.adultChannelsFeePercentage || 20)) /
+            100;
+        }
+      } else {
+        // MAG or Enigma2
+        const adultEnabledCount = adultChannelsConfig.filter(
+          (enabled) => enabled
+        ).length;
+        if (adultEnabledCount > 0) {
+          const pricePerLine = afterCouponEligible / pc.quantity;
+          adultFee =
+            (pricePerLine *
+              adultEnabledCount *
+              (product?.adultChannelsFeePercentage || 20)) /
+            100;
+        }
+      }
 
       const finalTotalWithCoupon =
         Math.round((afterCouponEligible + adultFee) * 100) / 100;
@@ -261,9 +390,15 @@ const PricingPlan = () => {
   const ORIGINAL_TEXTS = {
     header: "SELECT SUBSCRIPTION PERIOD:",
     controls: {
+      lineType: {
+        title: "Select Device Type:",
+      },
       devices: {
         title: "Select Devices:",
         recommended: "Recommended",
+      },
+      template: {
+        title: "Select Template:",
       },
       adultChannels: {
         title: "Adult Channels:",
@@ -273,6 +408,10 @@ const PricingPlan = () => {
       quantity: {
         title: "Select Quantity:",
         custom: "Custom",
+      },
+      macAddress: {
+        title: "MAC Address:",
+        placeholder: "Enter MAC address (e.g., 1A:2B:3C:4D:5E:6F)",
       },
     },
     bulkDiscount: {
@@ -299,13 +438,17 @@ const PricingPlan = () => {
         // Collect all translatable text
         const allTexts = [
           ORIGINAL_TEXTS.header,
+          ORIGINAL_TEXTS.controls.lineType.title,
           ORIGINAL_TEXTS.controls.devices.title,
           ORIGINAL_TEXTS.controls.devices.recommended,
+          ORIGINAL_TEXTS.controls.template.title,
           ORIGINAL_TEXTS.controls.adultChannels.title,
           ORIGINAL_TEXTS.controls.adultChannels.on,
           ORIGINAL_TEXTS.controls.adultChannels.off,
           ORIGINAL_TEXTS.controls.quantity.title,
           ORIGINAL_TEXTS.controls.quantity.custom,
+          ORIGINAL_TEXTS.controls.macAddress.title,
+          ORIGINAL_TEXTS.controls.macAddress.placeholder,
           ORIGINAL_TEXTS.bulkDiscount.title,
           ...ORIGINAL_TEXTS.bulkDiscount.offers.flatMap((offer) => [
             offer.orders,
@@ -319,47 +462,41 @@ const PricingPlan = () => {
 
         let currentIndex = 0;
 
-        // Update header
-        const tHeader = translated[currentIndex++];
-
-        // Update controls
-        const tControls = {
-          devices: {
-            title: translated[currentIndex++],
-            recommended: translated[currentIndex++],
-          },
-          adultChannels: {
-            title: translated[currentIndex++],
-            on: translated[currentIndex++],
-            off: translated[currentIndex++],
-          },
-          quantity: {
-            title: translated[currentIndex++],
-            custom: translated[currentIndex++],
-          },
-        };
-
-        // Update bulk discount
-        const tBulkDiscountTitle = translated[currentIndex++];
-        const tBulkDiscountOffers = [];
-        for (let i = 0; i < ORIGINAL_TEXTS.bulkDiscount.offers.length; i++) {
-          tBulkDiscountOffers.push({
-            orders: translated[currentIndex++],
-            discount: translated[currentIndex++],
-          });
-        }
-
-        // Update button
-        const tButton = translated[currentIndex++];
-
         setTexts({
-          header: tHeader,
-          controls: tControls,
-          bulkDiscount: {
-            title: tBulkDiscountTitle,
-            offers: tBulkDiscountOffers,
+          header: translated[currentIndex++],
+          controls: {
+            lineType: {
+              title: translated[currentIndex++],
+            },
+            devices: {
+              title: translated[currentIndex++],
+              recommended: translated[currentIndex++],
+            },
+            template: {
+              title: translated[currentIndex++],
+            },
+            adultChannels: {
+              title: translated[currentIndex++],
+              on: translated[currentIndex++],
+              off: translated[currentIndex++],
+            },
+            quantity: {
+              title: translated[currentIndex++],
+              custom: translated[currentIndex++],
+            },
+            macAddress: {
+              title: translated[currentIndex++],
+              placeholder: translated[currentIndex++],
+            },
           },
-          button: tButton,
+          bulkDiscount: {
+            title: translated[currentIndex++],
+            offers: ORIGINAL_TEXTS.bulkDiscount.offers.map(() => ({
+              orders: translated[currentIndex++],
+              discount: translated[currentIndex++],
+            })),
+          },
+          button: translated[currentIndex++],
         });
       } catch (error) {
         console.error("Translation error:", error);
@@ -371,6 +508,18 @@ const PricingPlan = () => {
     };
   }, [language.code, isLanguageLoaded, translate]);
 
+  // Generate random username and password
+  const generateRandomCredentials = (orderNumber, index = 0) => {
+    // Generate shorter username (8 characters max)
+    const randomString = Math.random().toString(36).substring(2, 10);
+    const username = index > 0 ? `${randomString}${index}` : randomString;
+
+    // Generate shorter password (8 characters max)
+    const password = Math.random().toString(36).substring(2, 10);
+
+    return { username, password };
+  };
+
   const handleProceedToCheckout = () => {
     // Get the selected plan details
     const selectedPlanData = product?.variants[selectedPlan];
@@ -381,6 +530,48 @@ const PricingPlan = () => {
         ? displayTotals.finalTotalWithCoupon
         : priceCalculation.finalTotal;
 
+    // Validate MAC addresses for MAG/Enigma2
+    if (selectedLineType > 0) {
+      const actualQuantity =
+        selectedQuantity === "custom"
+          ? parseInt(customQuantity) || 0
+          : selectedQuantity;
+      for (let i = 0; i < actualQuantity; i++) {
+        if (!macAddresses[i] || macAddresses[i].trim() === "") {
+          alert(
+            `Please enter MAC address for ${
+              lineTypes[selectedLineType].name
+            } #${i + 1}`
+          );
+          return;
+        }
+      }
+    }
+
+    // Generate random credentials for each account
+    const actualQuantity =
+      selectedQuantity === "custom"
+        ? parseInt(customQuantity) || 0
+        : selectedQuantity;
+
+    const generatedCredentials = [];
+    const orderNumber = `ORD${Date.now()}`; // Generate a temporary order number for credential generation
+
+    if (selectedLineType === 0) {
+      // M3U - one account for multiple devices
+      const { username, password } = generateRandomCredentials(orderNumber);
+      generatedCredentials.push({ username, password });
+    } else {
+      // MAG/Enigma2 - separate account for each device
+      for (let i = 0; i < actualQuantity; i++) {
+        const { username, password } = generateRandomCredentials(
+          orderNumber,
+          i
+        );
+        generatedCredentials.push({ username, password });
+      }
+    }
+
     const selectionData = {
       plan: {
         name: selectedPlanData?.name || "Unknown",
@@ -390,16 +581,23 @@ const PricingPlan = () => {
       },
       productId: product?.id || product?._id,
       variantId: selectedPlanData?.id || selectedPlanData?._id,
-      devices: selectedDevices,
-      adultChannels: adultChannels,
-      quantity:
-        selectedQuantity === "custom" ? customQuantity : selectedQuantity,
+      devices: selectedLineType > 0 ? 1 : selectedDevices, // Always 1 for MAG/Enigma2
+      adultChannels: selectedLineType === 0 ? adultChannels : false, // For M3U only
+      quantity: actualQuantity,
       isCustomQuantity: selectedQuantity === "custom",
+
+      // IPTV Configuration
+      lineType: selectedLineType,
+      templateId: selectedTemplate,
+      macAddresses: selectedLineType > 0 ? macAddresses : [],
+      adultChannelsConfig: selectedLineType > 0 ? adultChannelsConfig : [],
+
+      // Generated credentials
+      generatedCredentials: generatedCredentials,
+
       priceCalculation: {
         ...priceCalculation,
-        // Override the final total with coupon-discounted amount
         finalTotal: finalPrice,
-        // Add coupon information to price calculation
         couponApplied: appliedCoupon
           ? {
               code: appliedCoupon.code,
@@ -408,7 +606,6 @@ const PricingPlan = () => {
               discountValue: appliedCoupon.discountValue,
             }
           : null,
-        // Add the display totals for reference
         displayTotals: displayTotals,
       },
       timestamp: new Date().toISOString(),
@@ -420,7 +617,6 @@ const PricingPlan = () => {
             discountValue: appliedCoupon.discountValue,
           }
         : null,
-      // Add the final price as a separate field for easy access
       finalPrice: finalPrice,
     };
 
@@ -451,6 +647,11 @@ const PricingPlan = () => {
     setShowThankYou(false);
   };
 
+  const actualQuantity =
+    selectedQuantity === "custom"
+      ? parseInt(customQuantity) || 0
+      : selectedQuantity;
+
   return (
     <div className="px-3 sm:px-6">
       <div className="bg-black text-white min-h-screen py-4 sm:py-6 font-primary max-w-[1280px] mx-auto mt-16 sm:mt-20 rounded-xl sm:rounded-2xl border border-[#FFFFFF26]">
@@ -465,20 +666,236 @@ const PricingPlan = () => {
           texts={texts}
         />
 
-        {/* Bottom Control Section */}
-        <BottomControls
-          selectedDevices={selectedDevices}
-          setSelectedDevices={setSelectedDevices}
-          adultChannels={adultChannels}
-          setAdultChannels={setAdultChannels}
-          selectedQuantity={selectedQuantity}
-          setSelectedQuantity={handleQuantityChange}
-          customQuantity={customQuantity}
-          setCustomQuantity={setCustomQuantity}
-          showCustomInput={showCustomInput}
-          setShowCustomInput={setShowCustomInput}
-          texts={texts}
-        />
+        {/* Line Type Selection */}
+        <div className="font-secondary max-w-3xl mt-6 mx-auto p-4 sm:p-6 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#00b877]/30 rounded-xl">
+          <h3 className="text-white font-semibold text-lg mb-4 text-center">
+            {texts.controls.lineType.title}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {lineTypes.map((type) => (
+              <div
+                key={type.id}
+                className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                  selectedLineType === type.id
+                    ? "border-[#00b877] bg-[#00b877]/10"
+                    : "border-[#FFFFFF26] hover:border-[#44dcf3]/50"
+                }`}
+                onClick={() => handleLineTypeChange(type.id)}
+              >
+                <div className="text-2xl mb-2">{type.icon}</div>
+                <h4 className="text-white font-medium text-base mb-1">
+                  {type.name}
+                </h4>
+                <p className="text-gray-400 text-sm">{type.description}</p>
+                {!type.supportsMultiDevice && (
+                  <p className="text-yellow-400 text-xs mt-2">
+                    Single device only
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Template Selection */}
+        <div className="font-secondary max-w-3xl mt-6 mx-auto p-4 sm:p-6 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#00b877]/30 rounded-xl">
+          <h3 className="text-white font-semibold text-lg mb-4 text-center">
+            {texts.controls.template.title}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {templateOptions.map((template) => (
+              <div
+                key={template.id}
+                className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
+                  selectedTemplate === template.id
+                    ? "border-[#00b877] bg-[#00b877]/10"
+                    : "border-[#FFFFFF26] hover:border-[#44dcf3]/50"
+                }`}
+                onClick={() => setSelectedTemplate(template.id)}
+              >
+                <span className="text-white text-sm">{template.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom Control Section - Modified for line type support */}
+        <div className="font-secondary max-w-3xl mt-6 mx-auto p-4 sm:p-6 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#00b877]/30 rounded-xl">
+          {/* Device Selection - Only for M3U */}
+          {selectedLineType === 0 && (
+            <div className="mb-6">
+              <h3 className="text-white font-semibold text-lg mb-4 text-center">
+                {texts.controls.devices.title}
+              </h3>
+              <div className="flex flex-wrap justify-center gap-3">
+                {[1, 2, 3].map((deviceCount) => (
+                  <button
+                    key={deviceCount}
+                    onClick={() => setSelectedDevices(deviceCount)}
+                    className={`px-4 py-2 rounded-lg border transition-all duration-200 ${
+                      selectedDevices === deviceCount
+                        ? "border-[#00b877] bg-[#00b877]/20 text-[#00b877]"
+                        : "border-[#FFFFFF26] text-gray-300 hover:border-[#44dcf3]/50"
+                    }`}
+                  >
+                    {deviceCount} Device{deviceCount > 1 ? "s" : ""}
+                    {deviceCount === 2 && (
+                      <span className="ml-2 text-xs text-[#44dcf3]">
+                        ({texts.controls.devices.recommended})
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Adult Channels - For M3U only */}
+          {selectedLineType === 0 && (
+            <div className="mb-6">
+              <h3 className="text-white font-semibold text-lg mb-4 text-center">
+                {texts.controls.adultChannels.title}
+              </h3>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={() => setAdultChannels(false)}
+                  className={`px-6 py-2 rounded-lg border transition-all duration-200 ${
+                    !adultChannels
+                      ? "border-[#00b877] bg-[#00b877]/20 text-[#00b877]"
+                      : "border-[#FFFFFF26] text-gray-300 hover:border-[#44dcf3]/50"
+                  }`}
+                >
+                  {texts.controls.adultChannels.off}
+                </button>
+                <button
+                  onClick={() => setAdultChannels(true)}
+                  className={`px-6 py-2 rounded-lg border transition-all duration-200 ${
+                    adultChannels
+                      ? "border-[#00b877] bg-[#00b877]/20 text-[#00b877]"
+                      : "border-[#FFFFFF26] text-gray-300 hover:border-[#44dcf3]/50"
+                  }`}
+                >
+                  {texts.controls.adultChannels.on}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Quantity Selection */}
+          <div className="mb-6">
+            <h3 className="text-white font-semibold text-lg mb-4 text-center">
+              {texts.controls.quantity.title}
+            </h3>
+            <div className="flex flex-wrap justify-center gap-3 mb-4">
+              {[1, 3, 5, 10].map((qty) => (
+                <button
+                  key={qty}
+                  onClick={() => handleQuantityChange(qty)}
+                  className={`px-4 py-2 rounded-lg border transition-all duration-200 ${
+                    selectedQuantity === qty
+                      ? "border-[#00b877] bg-[#00b877]/20 text-[#00b877]"
+                      : "border-[#FFFFFF26] text-gray-300 hover:border-[#44dcf3]/50"
+                  }`}
+                >
+                  {qty}
+                </button>
+              ))}
+              <button
+                onClick={() => handleQuantityChange("custom")}
+                className={`px-4 py-2 rounded-lg border transition-all duration-200 ${
+                  selectedQuantity === "custom"
+                    ? "border-[#00b877] bg-[#00b877]/20 text-[#00b877]"
+                    : "border-[#FFFFFF26] text-gray-300 hover:border-[#44dcf3]/50"
+                }`}
+              >
+                {texts.controls.quantity.custom}
+              </button>
+            </div>
+
+            {showCustomInput && (
+              <div className="flex justify-center">
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="Enter quantity"
+                  value={customQuantity}
+                  onChange={handleCustomQuantityChange}
+                  className="max-w-xs text-center"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* MAC Address and Adult Config for MAG/Enigma2 */}
+        {selectedLineType > 0 && actualQuantity > 0 && (
+          <div className="font-secondary max-w-3xl mt-6 mx-auto p-4 sm:p-6 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#00b877]/30 rounded-xl">
+            <h3 className="text-white font-semibold text-lg mb-4 text-center">
+              {lineTypes[selectedLineType].name} Configuration
+            </h3>
+            <div className="space-y-4">
+              {Array.from({ length: actualQuantity }, (_, index) => (
+                <div
+                  key={index}
+                  className="p-4 bg-black/30 rounded-lg border border-[#FFFFFF26]"
+                >
+                  <h4 className="text-white font-medium mb-3">
+                    {lineTypes[selectedLineType].name} #{index + 1}
+                  </h4>
+
+                  {/* MAC Address Input */}
+                  <div className="mb-3">
+                    <label className="block text-gray-300 text-sm mb-2">
+                      {texts.controls.macAddress.title}
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder={texts.controls.macAddress.placeholder}
+                      value={macAddresses[index] || ""}
+                      onChange={(e) =>
+                        handleMacAddressChange(index, e.target.value)
+                      }
+                      className="w-full"
+                    />
+                  </div>
+
+                  {/* Adult Channels Toggle */}
+                  <div>
+                    <label className="block text-gray-300 text-sm mb-2">
+                      {texts.controls.adultChannels.title}
+                    </label>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() =>
+                          handleAdultChannelsConfigChange(index, false)
+                        }
+                        className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${
+                          !adultChannelsConfig[index]
+                            ? "border-[#00b877] bg-[#00b877]/20 text-[#00b877]"
+                            : "border-[#FFFFFF26] text-gray-300 hover:border-[#44dcf3]/50"
+                        }`}
+                      >
+                        Non Adult
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleAdultChannelsConfigChange(index, true)
+                        }
+                        className={`px-4 py-2 rounded-lg border text-sm transition-all duration-200 ${
+                          adultChannelsConfig[index]
+                            ? "border-[#00b877] bg-[#00b877]/20 text-[#00b877]"
+                            : "border-[#FFFFFF26] text-gray-300 hover:border-[#44dcf3]/50"
+                        }`}
+                      >
+                        Adult Enabled
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Bulk Discount Offers */}
         <BulkDiscount product={product} />
@@ -522,13 +939,17 @@ const PricingPlan = () => {
                   {priceCalculation.basePrice}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span>Devices ({selectedDevices}):</span>
-                <span>
-                  {priceCalculation.currency}
-                  {priceCalculation.pricePerDevice} per device
-                </span>
-              </div>
+
+              {selectedLineType === 0 && (
+                <div className="flex justify-between">
+                  <span>Devices ({selectedDevices}):</span>
+                  <span>
+                    {priceCalculation.currency}
+                    {priceCalculation.pricePerDevice} per device
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between">
                 <span>Quantity:</span>
                 <span>{priceCalculation.quantity}</span>
@@ -564,15 +985,31 @@ const PricingPlan = () => {
                   </span>
                 </div>
               )}
-              {adultChannels && (
+
+              {/* Adult Channels Fee Display */}
+              {priceCalculation.adultChannelsFee > 0 && (
                 <div className="flex justify-between text-orange-400">
-                  <span>Adult Channels Fee:</span>
+                  <span>
+                    Adult Channels Fee
+                    {selectedLineType > 0 && (
+                      <span className="text-xs ml-1">
+                        (
+                        {
+                          adultChannelsConfig.filter((enabled) => enabled)
+                            .length
+                        }{" "}
+                        devices)
+                      </span>
+                    )}
+                    :
+                  </span>
                   <span>
                     +{priceCalculation.currency}
                     {priceCalculation.adultChannelsFee}
                   </span>
                 </div>
               )}
+
               {appliedCoupon && couponResult && (
                 <>
                   <div className="flex justify-between text-[#00b877]">
@@ -582,7 +1019,7 @@ const PricingPlan = () => {
                       {displayTotals.couponDiscountAmount}
                     </span>
                   </div>
-                  {adultChannels && (
+                  {displayTotals.adultFeeAfterCoupon > 0 && (
                     <div className="flex justify-between text-orange-400">
                       <span>Adult Channels Fee (after coupon):</span>
                       <span>
@@ -605,6 +1042,35 @@ const PricingPlan = () => {
                 </div>
               </div>
             </div>
+
+            {/* Device Configuration Summary for MAG/Enigma2 */}
+            {selectedLineType > 0 && actualQuantity > 0 && (
+              <div className="mt-4 pt-4 border-t border-white/20">
+                <h4 className="text-white font-medium mb-3">
+                  Configuration Summary:
+                </h4>
+                <div className="space-y-2 text-sm">
+                  {Array.from({ length: actualQuantity }, (_, index) => (
+                    <div key={index} className="flex justify-between">
+                      <span>
+                        {lineTypes[selectedLineType].name} #{index + 1}:
+                      </span>
+                      <span
+                        className={
+                          adultChannelsConfig[index]
+                            ? "text-orange-400"
+                            : "text-gray-300"
+                        }
+                      >
+                        {adultChannelsConfig[index]
+                          ? "Adult Enabled"
+                          : "Non Adult"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

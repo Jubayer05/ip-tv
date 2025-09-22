@@ -143,6 +143,36 @@ export default async function Pricing() {
     console.error("Error fetching product for schema:", error);
   }
 
+  // Serialize the product data to make it safe for Client Components
+  const serializedProduct = product
+    ? {
+        _id: product._id.toString(),
+        name: product.name,
+        description: product.description,
+        variants: product.variants?.map((variant) => ({
+          ...variant,
+          _id: variant._id?.toString(),
+          // Handle any other nested ObjectIds in variants
+          features: variant.features?.map((feature) => ({
+            ...feature,
+            _id: feature._id?.toString(),
+          })),
+        })),
+        allowAnyQuantity: product.allowAnyQuantity,
+        createdAt: product.createdAt?.toISOString(),
+        updatedAt: product.updatedAt?.toISOString(),
+        adultChannelsFeePercentage: product.adultChannelsFeePercentage,
+        bulkDiscounts: product.bulkDiscounts?.map((discount) => ({
+          ...discount,
+          _id: discount._id?.toString(),
+        })),
+        devicePricing: product.devicePricing?.map((pricing) => ({
+          ...pricing,
+          _id: pricing._id?.toString(),
+        })),
+      }
+    : null;
+
   return (
     <div className="-mt-8 md:-mt-14">
       <div className="mt-14 md:mt-0 md:py-16">
@@ -152,7 +182,7 @@ export default async function Pricing() {
         <FAQ />
       </div>
       {/* Add JSON-LD Schema for product-level SEO */}
-      {product && <ProductSchema product={product} />}
+      {serializedProduct && <ProductSchema product={serializedProduct} />}
     </div>
   );
 }
