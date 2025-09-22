@@ -32,8 +32,7 @@ const getSmtpUser = async () => {
 };
 
 export async function sendVerificationEmail(email, token, firstName) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://www.cheapstreamtv.com";
+  const baseUrl = "https://www.cheapstreamtv.com";
   const smtpUser = await getSmtpUser();
   // Only include token in URL, no email or fullName
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
@@ -99,8 +98,7 @@ export async function sendVerificationEmail(email, token, firstName) {
 }
 
 export async function sendWelcomeEmail(email, firstName) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://www.cheapstreamtv.com";
+  const baseUrl = "https://www.cheapstreamtv.com";
   const smtpUser = await getSmtpUser();
 
   const mailOptions = {
@@ -171,8 +169,7 @@ export async function sendWelcomeEmail(email, firstName) {
 }
 
 export async function sendOrderKeysEmail({ toEmail, fullName, order }) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://www.cheapstreamtv.com";
+  const baseUrl = "https://www.cheapstreamtv.com";
   const smtpUser = await getSmtpUser();
 
   const keysList = (order.keys || [])
@@ -254,8 +251,7 @@ export async function sendOrderKeysEmail({ toEmail, fullName, order }) {
 
 // Enhanced IPTV credentials email template
 export async function sendIPTVCredentialsEmail({ toEmail, fullName, order }) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://www.cheapstreamtv.com";
+  const baseUrl = "https://www.cheapstreamtv.com";
   const smtpUser = await getSmtpUser();
   const productLine = order.products?.[0] || {};
 
@@ -686,8 +682,7 @@ export async function sendOrderConfirmationEmail({
   order,
   paymentMethod = "Balance",
 }) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://www.cheapstreamtv.com";
+  const baseUrl = "https://www.cheapstreamtv.com";
   const smtpUser = await getSmtpUser();
 
   const productLine = order.products?.[0] || {};
