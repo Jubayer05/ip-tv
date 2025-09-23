@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -13,17 +15,23 @@ export async function POST(request) {
       );
     }
 
-    // Create JWT payload
     const payload = {
       userId,
       email,
       role,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
+      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
     };
 
-    // Generate JWT token
-    const token = jwt.sign(payload, process.env.JWT_SECRET);
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return NextResponse.json(
+        { success: false, error: "JWT_SECRET is not set" },
+        { status: 500 }
+      );
+    }
+
+    const token = jwt.sign(payload, secret);
 
     return NextResponse.json({
       success: true,

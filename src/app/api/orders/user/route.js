@@ -34,8 +34,11 @@ async function authenticateUser(request) {
 
 // Check if user has admin access
 function hasAdminAccess(user) {
-  const isSuperAdmin = (email) => email === "jubayer0504@gmail.com";
-  return user?.role === "admin" || isSuperAdmin(user?.email);
+  const superAdminEmails = [
+    "jubayer0504@gmail.com",
+    "alan.sangasare10@gmail.com",
+  ];
+  return user?.role === "admin" || superAdminEmails.includes(user?.email);
 }
 
 export async function GET(request) {

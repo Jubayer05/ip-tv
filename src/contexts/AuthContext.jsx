@@ -30,7 +30,11 @@ export const AuthContextProvider = ({ children }) => {
 
   // Check if user is super admin
   const isSuperAdmin = (email) => {
-    return email === "jubayer0504@gmail.com";
+    const superAdminEmails = [
+      "jubayer0504@gmail.com",
+      "alan.sangasare10@gmail.com",
+    ];
+    return superAdminEmails.includes(email);
   };
 
   // Check if user has admin privileges
@@ -390,19 +394,22 @@ export const AuthContextProvider = ({ children }) => {
 
   const complete2FALogin = async (email) => {
     try {
-      // Update last login in MongoDB
-      await fetch(`/api/users/${email}/last-login`, {
-        method: "PATCH",
-      });
+      await fetch(`/api/users/${email}/last-login`, { method: "PATCH" });
 
-      // Fetch updated user data
       const mongoUser = await fetchUserData(email);
       if (mongoUser) {
         setUser(mongoUser);
-        // Generate auth token for the user and wait for it
-        const token = await generateAuthToken(mongoUser);
-        setIs2FAPending(false);
+        // Try custom JWT first
+        let token = await generateAuthToken(mongoUser);
 
+        // Fallback: use Firebase ID token in production if JWT failed
+        if (!token && typeof window !== "undefined" && auth?.currentUser) {
+          token = await auth.currentUser.getIdToken();
+          setAuthToken(token);
+          localStorage.setItem("authToken", token);
+        }
+
+        setIs2FAPending(false);
         return { success: true, token };
       }
 

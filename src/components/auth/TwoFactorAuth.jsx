@@ -51,14 +51,14 @@ export default function TwoFactorAuth({ email, onBack }) {
     const result = await verify2FACode(email, code);
 
     if (result.success) {
-      // Complete the login process
       const loginResult = await complete2FALogin(email);
       if (loginResult.success) {
-        // Wait a bit for the auth context to update
+        if (loginResult.token) {
+          localStorage.setItem("authToken", loginResult.token);
+        }
         setTimeout(() => {
-          // Force page reload to ensure auth token is properly set
           window.location.href = "/dashboard";
-        }, 1000);
+        }, 500);
       } else {
         setError(
           "Login completed but failed to set session. Please try again."

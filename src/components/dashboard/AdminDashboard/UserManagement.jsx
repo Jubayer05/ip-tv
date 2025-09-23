@@ -50,6 +50,15 @@ const UserManagement = () => {
     search: "",
   });
 
+  // Helper function to check if email is super admin
+  const isSuperAdminEmail = (email) => {
+    const superAdminEmails = [
+      "jubayer0504@gmail.com",
+      "alan.sangasare10@gmail.com",
+    ];
+    return superAdminEmails.includes(email);
+  };
+
   // Check admin access only once on mount
   useEffect(() => {
     if (!hasAdminAccess()) {
@@ -186,9 +195,7 @@ const UserManagement = () => {
               ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
               : "bg-gray-500/20 text-gray-400 border-gray-500/30"
           }`}
-          disabled={
-            !isSuperAdminUser() && record.email === "jubayer0504@gmail.com"
-          }
+          disabled={!isSuperAdminUser() && isSuperAdminEmail(record.email)}
         >
           <option value="user">User</option>
           <option value="support">Support</option>
