@@ -12,15 +12,14 @@ import {
   Play,
   Shield,
   Star,
-  Wifi,
   WifiOff,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const FreeTrialCard = () => {
-  const { user, getAuthToken } = useAuth();
+  const { user } = useAuth();
   const [selectedTemplate, setSelectedTemplate] = useState(2); // Europe template (ID 2)
   const [selectedLineType, setSelectedLineType] = useState(0);
   const [macAddress, setMacAddress] = useState("");
@@ -66,9 +65,10 @@ const FreeTrialCard = () => {
     ],
   });
 
-  // Check if user has already used free trial
-  const hasUsedFreeTrial =
-    user?.freeTrial?.hasUsed || visitorEligible === false;
+  // Memoize hasUsedFreeTrial to prevent dependency array changes
+  const hasUsedFreeTrial = useMemo(() => {
+    return user?.freeTrial?.hasUsed || visitorEligible === false;
+  }, [user?.freeTrial?.hasUsed, visitorEligible]);
 
   // Check if VPN is detected and blocking
   const isVpnBlocked = vpnStatus?.isVPN === true;
@@ -138,7 +138,8 @@ const FreeTrialCard = () => {
 
   // Check VPN status when user is logged in and visitor is eligible
   useEffect(() => {
-    if (!user || visitorEligible === false) return;
+    // Only check VPN if user hasn't used free trial yet
+    if (!user || visitorEligible === false || hasUsedFreeTrial) return;
 
     const checkVpnStatus = async () => {
       setVpnChecking(true);
@@ -177,7 +178,7 @@ const FreeTrialCard = () => {
     };
 
     checkVpnStatus();
-  }, [user, visitorEligible]);
+  }, [user, visitorEligible, hasUsedFreeTrial]); // Now hasUsedFreeTrial is stable
 
   // Load IPTV API key on component mount
   useEffect(() => {
@@ -221,7 +222,8 @@ const FreeTrialCard = () => {
       return;
     }
 
-    if (isVpnBlocked) {
+    // Only check VPN if user hasn't used free trial yet
+    if (!hasUsedFreeTrial && isVpnBlocked) {
       setError(
         "VPN, Proxy, or Tor connections are not allowed for free trials. Please disable your VPN and try again."
       );
@@ -276,10 +278,6 @@ const FreeTrialCard = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleTemplateChange = (templateId) => {
-    setSelectedTemplate(templateId);
   };
 
   const handleLineTypeChange = (lineType) => {
@@ -443,16 +441,16 @@ const FreeTrialCard = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 font-secondary text-center">
-      {/* VPN Status Display */}
-      {vpnChecking && (
+    <div className="max-w-4xl mx-auto p-6 font-secondary text-center mt-5">
+      {/* VPN Status Display - Only show if user hasn't used free trial */}
+      {!hasUsedFreeTrial && vpnChecking && (
         <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg flex items-center justify-center gap-2">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
           <span className="text-blue-400 text-sm">Checking VPN status...</span>
         </div>
       )}
 
-      {vpnStatus && vpnStatus.status === "error" && (
+      {!hasUsedFreeTrial && vpnStatus && vpnStatus.status === "error" && (
         <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg flex items-center justify-center gap-2">
           <AlertCircle className="w-4 h-4 text-yellow-400" />
           <span className="text-yellow-400 text-sm">
@@ -461,20 +459,13 @@ const FreeTrialCard = () => {
         </div>
       )}
 
-      {vpnStatus && isVpnBlocked && (
+      {!hasUsedFreeTrial && vpnStatus && isVpnBlocked && (
         <div className="mb-4 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center justify-center gap-2">
           <WifiOff className="w-5 h-5 text-red-400" />
           <span className="text-red-400 text-sm font-medium">
             VPN/Proxy/Tor detected! Free trials are not available with VPN
             connections.
           </span>
-        </div>
-      )}
-
-      {vpnStatus && !isVpnBlocked && vpnStatus.status !== "error" && (
-        <div className="mb-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg flex items-center justify-center gap-2">
-          <Wifi className="w-4 h-4 text-green-400" />
-          <span className="text-green-400 text-sm">Connection verified ✓</span>
         </div>
       )}
 
@@ -570,7 +561,7 @@ const FreeTrialCard = () => {
               <Link href="/packages">
                 <Button
                   variant="primary"
-                  size="xl"
+                  size="md"
                   className="w-full md:w-auto"
                 >
                   <div className="flex items-center">
@@ -583,13 +574,13 @@ const FreeTrialCard = () => {
               // Show start trial button if user hasn't used free trial
               <Button
                 variant="primary"
-                size="xl"
+                size="md"
                 onClick={handleStartTrial}
                 disabled={
                   visitorEligible === null ||
                   loading ||
-                  vpnChecking ||
-                  (vpnStatus && isVpnBlocked) ||
+                  (!hasUsedFreeTrial && vpnChecking) ||
+                  (!hasUsedFreeTrial && vpnStatus && isVpnBlocked) ||
                   (selectedLineType > 0 && !macAddress)
                 }
                 className="w-full md:w-auto"
@@ -621,7 +612,7 @@ const FreeTrialCard = () => {
               </p>
             )}
 
-            {isVpnBlocked && (
+            {!hasUsedFreeTrial && isVpnBlocked && (
               <p className="text-red-400 text-sm mt-3">
                 Please disable your VPN, proxy, or Tor connection to continue
                 with the free trial.
@@ -643,6 +634,11 @@ const FreeTrialCard = () => {
               ))}
             </div>
           </div>
+          <Link href="/packages">
+            <Button variant="primary" size="md" className="mt-5">
+              Buy Packages
+            </Button>
+          </Link>
         </div>
       </div>
     </div>

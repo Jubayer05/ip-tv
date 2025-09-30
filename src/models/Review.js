@@ -5,7 +5,10 @@ const reviewSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: function () {
+        // Only require userId if it's not a bulk generated review
+        return !this.isBulkGenerated;
+      },
     },
     rating: {
       type: Number,
@@ -36,6 +39,32 @@ const reviewSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // New fields for bulk scheduling
+    uniqueNameId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "UniqueName",
+      default: null,
+    },
+    uniqueName: {
+      type: String,
+      default: null,
+    },
+    scheduledFor: {
+      type: Date,
+      default: null,
+    },
+    postedAt: {
+      type: Date,
+      default: null,
+    },
+    isBulkGenerated: {
+      type: Boolean,
+      default: false,
+    },
+    errorMessage: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -48,6 +77,8 @@ const reviewSchema = new mongoose.Schema(
 reviewSchema.index({ userId: 1, isApproved: 1 });
 reviewSchema.index({ isApproved: 1, isActive: 1, createdAt: -1 });
 reviewSchema.index({ rating: 1 });
+reviewSchema.index({ uniqueNameId: 1 });
+reviewSchema.index({ isBulkGenerated: 1 });
 
 // Virtual for user full name
 reviewSchema.virtual("userFullName").get(function () {
@@ -109,6 +140,29 @@ reviewSchema.statics.getAverageRating = function () {
       },
     },
   ]);
+};
+
+// Static method to get pending scheduled reviews ready to post
+reviewSchema.statics.getReadyToPost = function () {
+  return this.find({
+    scheduledFor: { $lte: new Date() },
+    isBulkGenerated: true,
+  }).populate("uniqueNameId");
+};
+
+// Method to mark as posted
+reviewSchema.methods.markAsPosted = function (userId) {
+  this.userId = userId;
+  this.postedAt = new Date();
+  this.isApproved = true;
+  this.isActive = true;
+  return this.save();
+};
+
+// Method to mark as failed
+reviewSchema.methods.markAsFailed = function (errorMessage) {
+  this.errorMessage = errorMessage;
+  return this.save();
 };
 
 // Force recompile to avoid stale schema

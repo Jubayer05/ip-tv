@@ -1,4 +1,5 @@
 "use client";
+import GuideManagement from "@/components/dashboard/AdminDashboard/Legal/GuideManagement";
 import PaymentMethodsManagement from "@/components/dashboard/AdminDashboard/PaymentManagement/PaymentMethodsManagement";
 import UsersBalance from "@/components/dashboard/AdminDashboard/PaymentManagement/UsersBalances";
 import { useState } from "react";
@@ -12,11 +13,11 @@ export default function paymentManagement() {
       label: "Payment Methods",
       component: <PaymentMethodsManagement />,
     },
-    // {
-    //   id: "guide",
-    //   label: "User Guide",
-    //   component: <GuideManagement />,
-    // },
+    {
+      id: "guide",
+      label: "User Guide",
+      component: <GuideManagement />,
+    },
     {
       id: "users_balance",
       label: "Users Balances",

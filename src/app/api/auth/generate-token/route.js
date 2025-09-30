@@ -15,14 +15,6 @@ export async function POST(request) {
       );
     }
 
-    const payload = {
-      userId,
-      email,
-      role,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
-    };
-
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       return NextResponse.json(
@@ -31,12 +23,34 @@ export async function POST(request) {
       );
     }
 
-    const token = jwt.sign(payload, secret);
+    // Generate access token (7 days)
+    const accessToken = jwt.sign(
+      {
+        userId,
+        email,
+        role,
+      },
+      secret,
+      { expiresIn: "7d" }
+    );
+
+    // Generate refresh token (30 days)
+    const refreshToken = jwt.sign(
+      {
+        userId,
+        email,
+        role,
+        type: "refresh",
+      },
+      secret,
+      { expiresIn: "30d" }
+    );
 
     return NextResponse.json({
       success: true,
-      token,
-      message: "Auth token generated successfully",
+      accessToken,
+      refreshToken,
+      message: "Auth tokens generated successfully",
     });
   } catch (error) {
     console.error("Token generation error:", error);

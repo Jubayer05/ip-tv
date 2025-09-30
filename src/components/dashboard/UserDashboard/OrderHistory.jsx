@@ -1,7 +1,8 @@
 "use client";
+import PaymentConfirmPopup from "@/components/features/Pricing/Popup/PaymentConfirmPopup";
 import Button from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail } from "lucide-react";
+import { BookOpen, Mail, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -10,12 +11,29 @@ const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [redownloadingOrder, setRedownloadingOrder] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [guideContent, setGuideContent] = useState("");
 
   useEffect(() => {
     if (user) {
       fetchOrders();
+      fetchGuideContent();
     }
   }, [user]);
+
+  const fetchGuideContent = async () => {
+    try {
+      const response = await fetch("/api/admin/settings/email-content");
+      const data = await response.json();
+      if (data.success) {
+        setGuideContent(data.data.content || "");
+      }
+    } catch (error) {
+      console.error("Failed to fetch guide content:", error);
+    }
+  };
 
   const fetchOrders = async () => {
     try {
@@ -77,6 +95,11 @@ const OrderHistory = () => {
     } finally {
       setRedownloadingOrder(null);
     }
+  };
+
+  const handleShowGuide = (order) => {
+    setSelectedOrder(order);
+    setShowGuide(true);
   };
 
   const getLineTypeName = (lineType) => {
@@ -141,7 +164,11 @@ const OrderHistory = () => {
           return (
             <div
               key={order._id}
-              className="bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#FFFFFF26] rounded-xl p-6"
+              className="bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#FFFFFF26] rounded-xl p-6 cursor-pointer"
+              onClick={() => {
+                setSelectedOrder(order);
+                setPopupOpen(true);
+              }}
             >
               {/* Order Header */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -247,31 +274,42 @@ const OrderHistory = () => {
                   </div>
 
                   {/* Action Buttons */}
-                  {
-                    <div className="flex gap-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          handleRedownloadCredentials(order.orderNumber)
-                        }
-                        disabled={redownloadingOrder === order.orderNumber}
-                        className="flex items-center gap-2"
-                      >
-                        {redownloadingOrder === order.orderNumber ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Sending...
-                          </>
-                        ) : (
-                          <>
-                            <Mail className="w-4 h-4" />
-                            Resend to Email
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  }
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShowGuide(order);
+                      }}
+                      className="flex items-center gap-2"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      View Guide
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRedownloadCredentials(order.orderNumber);
+                      }}
+                      disabled={redownloadingOrder === order.orderNumber}
+                      className="flex items-center gap-2"
+                    >
+                      {redownloadingOrder === order.orderNumber ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-4 h-4" />
+                          Resend to Email
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -288,6 +326,49 @@ const OrderHistory = () => {
           );
         })}
       </div>
+
+      {/* Guide Modal */}
+      {showGuide && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-black border border-[#FFFFFF26] rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-white">
+                  IPTV Setup Guide
+                </h3>
+                <button
+                  onClick={() => setShowGuide(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {guideContent ? (
+                  <div className="bg-gray-900 rounded-lg p-6">
+                    <div
+                      className="text-gray-300 prose prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: guideContent }}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-400">No guide available yet.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <PaymentConfirmPopup
+        isOpen={popupOpen}
+        onClose={() => setPopupOpen(false)}
+        order={selectedOrder}
+      />
     </div>
   );
 };

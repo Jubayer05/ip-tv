@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 export async function GET(_req, { params }) {
   try {
     await connectToDatabase();
-    const { id } = params;
+    const { id } = await params;
     const ticket = await SupportTicket.findById(id).select("-__v");
     if (!ticket) {
       return NextResponse.json(
@@ -31,7 +31,7 @@ export async function GET(_req, { params }) {
 export async function PATCH(request, { params }) {
   try {
     await connectToDatabase();
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     const ticket = await SupportTicket.findById(id);

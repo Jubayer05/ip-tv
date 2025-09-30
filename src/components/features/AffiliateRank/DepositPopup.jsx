@@ -158,6 +158,7 @@ export default function DepositPopup({
       changenow: "/payment_logo/changenow.png",
       cryptomus: "/payment_logo/cryptomus.png",
       paygate: "/payment_logo/paygate.png",
+      volet: "/payment_logo/volet.png",
     };
     return logoMap[gateway] || "/payment_logo/default.png";
   };
@@ -172,6 +173,7 @@ export default function DepositPopup({
       changenow: "Exchange",
       cryptomus: "Crypto",
       paygate: "Crypto",
+      volet: "Crypto",
     };
     return typeMap[gateway] || "Payment";
   };

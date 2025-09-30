@@ -1,3 +1,4 @@
+import TrustPilotWidget from "@/components/common/TrustPilotWidget";
 import FAQ from "@/components/features/Home/FaqHome";
 import FeatureHome from "@/components/features/Home/FeatureHome";
 import FreeTrialCard from "@/components/features/Home/FreeTrial";
@@ -58,6 +59,7 @@ export default function Home() {
         <FeatureHome />
         <LatestTrailers />
         <HomeSubscribe />
+        <TrustPilotWidget />
         <ReviewShowHome />
         <FAQ />
       </div>

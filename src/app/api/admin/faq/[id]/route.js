@@ -7,7 +7,7 @@ export async function GET(request, { params }) {
   try {
     await connectToDatabase();
 
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
@@ -49,7 +49,7 @@ export async function PUT(request, { params }) {
 
     await connectToDatabase();
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     if (!id) {
@@ -129,7 +129,7 @@ export async function PATCH(request, { params }) {
 
     await connectToDatabase();
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     if (!id) {
@@ -199,7 +199,7 @@ export async function DELETE(request, { params }) {
 
     await connectToDatabase();
 
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(

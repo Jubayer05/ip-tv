@@ -6,6 +6,8 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import ErrorNotification from "@/components/common/ErrorNotification";
+import { getCustomErrorMessage } from "@/lib/firebaseErrorHandler";
 
 export default function ForgotPasswordComponent() {
   const [email, setEmail] = useState("");
@@ -28,13 +30,26 @@ export default function ForgotPasswordComponent() {
     }
 
     try {
-      await sendPasswordResetEmail(auth, email);
-      setSuccess(true);
-    } catch (error) {
-      setError(error.message);
-    }
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
 
-    setLoading(false);
+      const data = await response.json();
+
+      if (response.ok) {
+        setSuccess(true);
+      } else {
+        setError(data.error || getCustomErrorMessage('PASSWORD_RESET_FAILED'));
+      }
+    } catch (error) {
+      setError(getCustomErrorMessage('NETWORK_ERROR'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBackToLogin = () => {

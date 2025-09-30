@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserSpending } from "@/contexts/UserSpendingContext";
 import { useEffect, useState } from "react";
+import GuestCheckoutPopup from "./Popup/GuestCheckoutPopup";
 import RegisterFormPopup from "./Popup/RegisterFormPopup";
 import ThankRegisterPopup from "./Popup/ThankRegisterPopup";
 
@@ -26,8 +27,9 @@ const PricingPlan = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showNotRegister, setShowNotRegister] = useState(false);
+  const [showGuestCheckout, setShowGuestCheckout] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
 
   // Add state for coupon
   const [couponCode, setCouponCode] = useState("");
@@ -625,8 +627,7 @@ const PricingPlan = () => {
       if (user) {
         setShowThankYou(true);
       } else {
-        setShowNotRegister(true);
-        setIsModalOpen(true);
+        setShowGuestCheckout(true);
       }
     } catch (e) {}
   };
@@ -645,6 +646,10 @@ const PricingPlan = () => {
 
   const closeThankYou = () => {
     setShowThankYou(false);
+  };
+
+  const closeGuestCheckout = () => {
+    setShowGuestCheckout(false);
   };
 
   const actualQuantity =
@@ -1116,8 +1121,16 @@ const PricingPlan = () => {
 
         {/* Popups */}
         <ThankRegisterPopup isOpen={showThankYou} onClose={closeThankYou} />
+        <GuestCheckoutPopup
+          isOpen={showGuestCheckout}
+          onClose={closeGuestCheckout}
+          setShowRegisterForm={setShowRegisterForm}
+        />
         {/* Register Form Modal */}
-        <RegisterFormPopup isOpen={isModalOpen} onClose={closeModal} />
+        <RegisterFormPopup
+          isOpen={showRegisterForm}
+          onClose={() => setShowRegisterForm(false)}
+        />
       </div>
     </div>
   );

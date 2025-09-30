@@ -1,6 +1,8 @@
 "use client";
+import { Rating } from "@smastrom/react-rating";
+import "@smastrom/react-rating/style.css";
 import { useEffect, useState } from "react";
-import { FaCheck, FaEdit, FaStar, FaTimes, FaTrash } from "react-icons/fa";
+import { FaCheck, FaEdit, FaPlus, FaTimes, FaTrash } from "react-icons/fa";
 import Swal from "sweetalert2";
 
 const ReviewManagement = () => {
@@ -10,9 +12,20 @@ const ReviewManagement = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [filter, setFilter] = useState("all"); // all, pending, approved
   const [editingReview, setEditingReview] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [editForm, setEditForm] = useState({
     rating: 5,
     comment: "",
+    isApproved: true,
+    createdAt: new Date().toISOString().split("T")[0], // YYYY-MM-DD format
+  });
+  const [addForm, setAddForm] = useState({
+    rating: 5,
+    comment: "",
+    isApproved: true,
+    createdAt: new Date().toISOString().split("T")[0],
+    userId: "", // For selecting existing user or creating new one
+    reviewerName: "", // For display name
   });
 
   useEffect(() => {
@@ -46,10 +59,58 @@ const ReviewManagement = () => {
     }
   };
 
+  const handleAddReview = async () => {
+    try {
+      const response = await fetch("/api/reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...addForm,
+          createdAt: new Date(addForm.createdAt).toISOString(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Review Added!",
+          text: "Review has been successfully added.",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+        setShowAddForm(false);
+        setAddForm({
+          rating: 5,
+          comment: "",
+          isApproved: true,
+          createdAt: new Date().toISOString().split("T")[0],
+          userId: "",
+          reviewerName: "",
+        });
+        fetchReviews();
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Add Failed",
+          text: data.error,
+        });
+      }
+    } catch (error) {
+      console.error("Error adding review:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Network Error",
+        text: "Please try again later.",
+      });
+    }
+  };
+
   const handleApprove = async (reviewId, approve = true) => {
     try {
-      // You need to get the actual admin user ID from your auth context
-      // For now, I'll remove the adminId since it's not required for approval
       const response = await fetch(`/api/reviews/${reviewId}`, {
         method: "PUT",
         headers: {
@@ -57,8 +118,6 @@ const ReviewManagement = () => {
         },
         body: JSON.stringify({
           isApproved: approve,
-          // Remove adminId for now - you can add it back when you have proper admin authentication
-          // adminId: "currentAdminId", // This was causing the error
         }),
       });
 
@@ -95,6 +154,8 @@ const ReviewManagement = () => {
     setEditForm({
       rating: review.rating,
       comment: review.comment,
+      isApproved: review.isApproved,
+      createdAt: new Date(review.createdAt).toISOString().split("T")[0],
     });
   };
 
@@ -105,7 +166,10 @@ const ReviewManagement = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({
+          ...editForm,
+          createdAt: new Date(editForm.createdAt).toISOString(),
+        }),
       });
 
       const data = await response.json();
@@ -183,16 +247,6 @@ const ReviewManagement = () => {
     }
   };
 
-  const renderStars = (rating) => {
-    return [...Array(5)].map((star, index) => (
-      <FaStar
-        key={index}
-        color={index < rating ? "#00b877" : "#ffffff40"}
-        size={16}
-      />
-    ));
-  };
-
   if (loading) {
     return (
       <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-7xl mx-auto font-secondary">
@@ -215,19 +269,138 @@ const ReviewManagement = () => {
             Customer Reviews
           </h3>
 
-          <select
-            value={filter}
-            onChange={(e) => {
-              setFilter(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="px-4 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition-colors"
-          >
-            <option value="all">All Reviews</option>
-            <option value="pending">Pending Approval</option>
-            <option value="approved">Approved</option>
-          </select>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+            >
+              <FaPlus className="mr-2" /> Add Review
+            </button>
+
+            <select
+              value={filter}
+              onChange={(e) => {
+                setFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-4 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition-colors"
+            >
+              <option value="all">All Reviews</option>
+              <option value="pending">Pending Approval</option>
+              <option value="approved">Approved</option>
+            </select>
+          </div>
         </div>
+
+        {/* Add Review Form */}
+        {showAddForm && (
+          <div className="bg-[#0c171c] rounded-lg border border-[#212121] p-6 mb-6">
+            <h4 className="text-white font-medium mb-4">Add New Review</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Reviewer Name
+                </label>
+                <input
+                  type="text"
+                  value={addForm.reviewerName}
+                  onChange={(e) =>
+                    setAddForm({ ...addForm, reviewerName: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                  placeholder="Enter reviewer name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Rating
+                </label>
+                <div className="flex items-center space-x-4">
+                  <Rating
+                    value={addForm.rating}
+                    onChange={(value) =>
+                      setAddForm({ ...addForm, rating: value })
+                    }
+                    style={{ maxWidth: 150 }}
+                  />
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="1"
+                    max="5"
+                    value={addForm.rating}
+                    onChange={(e) =>
+                      setAddForm({
+                        ...addForm,
+                        rating: parseFloat(e.target.value) || 1,
+                      })
+                    }
+                    className="w-20 px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Created Date
+                </label>
+                <input
+                  type="date"
+                  value={addForm.createdAt}
+                  onChange={(e) =>
+                    setAddForm({ ...addForm, createdAt: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Status
+                </label>
+                <select
+                  value={addForm.isApproved}
+                  onChange={(e) =>
+                    setAddForm({
+                      ...addForm,
+                      isApproved: e.target.value === "true",
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                >
+                  <option value="true">Approved</option>
+                  <option value="false">Pending</option>
+                </select>
+              </div>
+            </div>
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Comment
+              </label>
+              <textarea
+                value={addForm.comment}
+                onChange={(e) =>
+                  setAddForm({ ...addForm, comment: e.target.value })
+                }
+                rows="3"
+                className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                placeholder="Enter review comment"
+              />
+            </div>
+            <div className="flex space-x-2 mt-4">
+              <button
+                onClick={handleAddReview}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+              >
+                Add Review
+              </button>
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {reviews.length === 0 ? (
           <div className="text-center py-12">
@@ -243,12 +416,16 @@ const ReviewManagement = () => {
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center space-x-4">
                     <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center text-white font-semibold">
-                      {review.userId?.profile?.firstName?.charAt(0) || "A"}
+                      {review.userId?.profile?.firstName?.charAt(0) ||
+                        review.uniqueName?.charAt(0) ||
+                        "A"}
                     </div>
                     <div>
                       <h3 className="font-semibold text-white text-sm">
-                        {review.userId?.profile?.firstName}{" "}
-                        {review.userId?.profile?.lastName}
+                        {review.userId?.profile?.firstName &&
+                        review.userId?.profile?.lastName
+                          ? `${review.userId.profile.firstName} ${review.userId.profile.lastName}`
+                          : review.uniqueName || "Anonymous"}
                       </h3>
                       <p className="text-xs text-gray-400">
                         {new Date(review.createdAt).toLocaleDateString()}
@@ -271,26 +448,69 @@ const ReviewManagement = () => {
 
                 {editingReview === review._id ? (
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Rating
-                      </label>
-                      <select
-                        value={editForm.rating}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            rating: parseInt(e.target.value),
-                          })
-                        }
-                        className="w-20 px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
-                      >
-                        {[1, 2, 3, 4, 5].map((num) => (
-                          <option key={num} value={num}>
-                            {num}
-                          </option>
-                        ))}
-                      </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Rating
+                        </label>
+                        <div className="flex items-center space-x-4">
+                          <Rating
+                            value={editForm.rating}
+                            onChange={(value) =>
+                              setEditForm({ ...editForm, rating: value })
+                            }
+                            style={{ maxWidth: 150 }}
+                          />
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="1"
+                            max="5"
+                            value={editForm.rating}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                rating: parseFloat(e.target.value) || 1,
+                              })
+                            }
+                            className="w-20 px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Created Date
+                        </label>
+                        <input
+                          type="date"
+                          value={editForm.createdAt}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              createdAt: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Status
+                        </label>
+                        <select
+                          value={editForm.isApproved}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              isApproved: e.target.value === "true",
+                            })
+                          }
+                          className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                        >
+                          <option value="true">Approved</option>
+                          <option value="false">Pending</option>
+                        </select>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -302,7 +522,7 @@ const ReviewManagement = () => {
                           setEditForm({ ...editForm, comment: e.target.value })
                         }
                         rows="3"
-                        className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                        className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
                       />
                     </div>
                     <div className="flex space-x-2">
@@ -323,7 +543,11 @@ const ReviewManagement = () => {
                 ) : (
                   <>
                     <div className="flex items-center mb-2">
-                      {renderStars(review.rating)}
+                      <Rating
+                        value={review.rating}
+                        readOnly
+                        style={{ maxWidth: 150 }}
+                      />
                       <span className="ml-2 text-sm text-gray-300">
                         {review.rating}/5
                       </span>

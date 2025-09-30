@@ -91,10 +91,20 @@ const Notifications = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Helper function to check if rich text content is empty
+  const isRichTextEmpty = (html) => {
+    if (!html) return true;
+    // Remove HTML tags and check if there's actual text content
+    const text = html.replace(/<[^>]*>/g, "").trim();
+    return text.length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.title.trim() || !formData.message.trim()) {
+    console.log(formData);
+
+    if (!formData.title.trim() || isRichTextEmpty(formData.message)) {
       Swal.fire({
         icon: "error",
         title: "Validation Error",
@@ -505,7 +515,9 @@ const Notifications = () => {
                   </label>
                   <RichTextEditor
                     value={formData.message}
-                    onChange={(value) => handleInputChange("message", value)}
+                    onDataChange={(value) =>
+                      handleInputChange("message", value)
+                    }
                     placeholder="Write your notification message here..."
                   />
                 </div>

@@ -7,17 +7,20 @@ const LanguageContext = createContext(null);
 const LANG_STORAGE_KEY = "app_lang";
 
 const AVAILABLE_LANGUAGES = [
-  { code: "ar", name: "Arabic" },
-  { code: "en", name: "English" },
-  { code: "zh", name: "Chinese" },
-  { code: "es", name: "Spanish" },
-  { code: "fr", name: "French" },
-  { code: "de", name: "German" },
-  { code: "it", name: "Italian" },
-  { code: "ru", name: "Russian" },
-  { code: "tr", name: "Turkish" },
-  { code: "hi", name: "Hindi" },
-  { code: "bn", name: "Bengali" },
+  { code: "en", name: "English", flag: "🇬🇧" },
+  { code: "sv", name: "Swedish", flag: "🇸🇪" },
+  { code: "no", name: "Norwegian", flag: "🇳🇴" },
+  { code: "da", name: "Danish", flag: "🇩🇰" },
+  { code: "fi", name: "Finnish", flag: "🇫🇮" },
+  { code: "fr", name: "French", flag: "🇫🇷" },
+  { code: "de", name: "German", flag: "🇩🇪" },
+  { code: "es", name: "Spanish", flag: "🇪🇸" },
+  { code: "it", name: "Italian", flag: "🇮🇹" },
+  { code: "ru", name: "Russian", flag: "🇷🇺" },
+  { code: "tr", name: "Turkish", flag: "🇹🇷" },
+  { code: "ar", name: "Arabic", flag: "🇸🇦" },
+  { code: "hi", name: "Hindi", flag: "🇮🇳" },
+  { code: "zh", name: "Chinese", flag: "🇨🇳" },
 ];
 
 export function LanguageProvider({ children }) {
@@ -35,17 +38,17 @@ export function LanguageProvider({ children }) {
           setLanguage(parsed);
         } else {
           // If saved language is invalid, set to English
-          setLanguage({ code: "en", name: "English" });
+          setLanguage({ code: "en", name: "English", flag: "🇬🇧" });
         }
       } else {
         // If no saved language, set to English
-        setLanguage({ code: "en", name: "English" });
+        setLanguage({ code: "en", name: "English", flag: "🇬🇧" });
       }
       setIsLanguageLoaded(true);
     } catch (error) {
       // If there's an error, fallback to English
       console.error("Error loading language from localStorage:", error);
-      setLanguage({ code: "en", name: "English" });
+      setLanguage({ code: "en", name: "English", flag: "🇬🇧" });
       setIsLanguageLoaded(true);
     }
   }, []);
@@ -110,7 +113,7 @@ export function LanguageProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      language: language || { code: "en", name: "English" }, // Provide fallback for components
+      language: language || { code: "en", name: "English", flag: "🇬🇧" }, // Provide fallback for components
       setLanguage,
       languages: AVAILABLE_LANGUAGES,
       translate,

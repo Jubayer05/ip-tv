@@ -117,22 +117,24 @@ const StripePaymentSchema = new mongoose.Schema(
 );
 
 // Add this schema near the PlisioPaymentSchema
-const HoodPayPaymentSchema = new mongoose.Schema(
+const VoletPaymentSchema = new mongoose.Schema(
   {
-    paymentId: { type: String, index: true }, // Remove required: true
+    paymentId: { type: String, required: true, index: true }, // Volet payment ID
     status: {
       type: String,
-      enum: ["pending", "paid", "failed", "canceled", "expired"],
-      default: "pending",
+      enum: ["new", "pending", "completed", "failed", "cancelled", "expired"],
+      default: "new",
     },
-    amount: { type: Number, default: 0 }, // Remove required: true
-    currency: { type: String, default: "USD" }, // Remove required: true
-    customerEmail: { type: String, default: "" },
-    description: { type: String, default: "" },
-    paymentUrl: { type: String }, // Remove required: true
+    amount: { type: String, required: true }, // Crypto amount
+    currency: { type: String, required: true }, // Crypto currency (BTC, ETH, etc.)
+    sourceAmount: { type: String, required: true }, // Original fiat amount
+    sourceCurrency: { type: String, default: "USD" }, // Original fiat currency
+    walletAddress: { type: String, default: "" },
+    confirmations: { type: Number, default: 0 },
+    actualSum: { type: String, default: "0.00000000" },
+    expiresAt: { type: Date, default: null },
     callbackReceived: { type: Boolean, default: false },
     lastStatusUpdate: { type: Date, default: Date.now },
-    metadata: { type: Object, default: {} }, // Add metadata field
   },
   { _id: false }
 );
@@ -270,6 +272,29 @@ const PayGatePaymentSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Add HoodPay payment schema
+const HoodPayPaymentSchema = new mongoose.Schema(
+  {
+    paymentId: { type: String, required: true, index: true },
+    status: {
+      type: String,
+      enum: ["new", "pending", "completed", "failed", "cancelled", "expired"],
+      default: "new",
+    },
+    amount: { type: String, required: true },
+    currency: { type: String, required: true },
+    sourceAmount: { type: String, required: true },
+    sourceCurrency: { type: String, default: "USD" },
+    paymentUrl: { type: String, default: "" },
+    customerEmail: { type: String, default: "" },
+    description: { type: String, default: "" },
+    callbackReceived: { type: Boolean, default: false },
+    lastStatusUpdate: { type: Date, default: Date.now },
+    metadata: { type: Object, default: {} },
+  },
+  { _id: false }
+);
+
 const OrderSchema = new mongoose.Schema(
   {
     orderNumber: { type: String, unique: true, index: true },
@@ -301,6 +326,7 @@ const OrderSchema = new mongoose.Schema(
     changenowPayment: { type: ChangeNOWPaymentSchema, default: null },
     cryptomusPayment: { type: CryptomusPaymentSchema, default: null },
     paygatePayment: { type: PayGatePaymentSchema, default: null }, // Add this line
+    voletPayment: { type: VoletPaymentSchema, default: null }, // Add this line
 
     keys: { type: [OrderKeySchema], default: [] },
 
@@ -326,6 +352,18 @@ const OrderSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // IPTV Configuration
+    lineType: { type: Number, default: 0 },
+    templateId: { type: Number, default: 2 },
+    macAddresses: [{ type: String }],
+    adultChannelsConfig: [{ type: Boolean }],
+    generatedCredentials: [{
+      username: String,
+      password: String
+    }],
+    val: { type: Number }, // Package ID parameter
+    con: { type: Number }, // Device count parameter
   },
   { timestamps: true }
 );

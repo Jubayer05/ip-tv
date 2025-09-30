@@ -7,7 +7,6 @@ const PaymentSettingsSchema = new mongoose.Schema(
       required: true,
       unique: true,
       enum: [
-        "stripe",
         "plisio",
         "hoodpay",
         "nowpayment",
@@ -26,14 +25,29 @@ const PaymentSettingsSchema = new mongoose.Schema(
     },
     apiKey: {
       type: String,
-      required: true,
+      required: function () {
+        return [
+          "plisio",
+          "hoodpay",
+          "nowpayment",
+          "changenow",
+          "cryptomus",
+        ].includes(this.gateway);
+      },
     },
     apiSecret: {
       type: String,
-      required: false,
+      required: function () {
+        return this.gateway === "nowpayment";
+      },
     },
     merchantId: {
       type: String,
+      required: function () {
+        return ["hoodpay", "changenow", "cryptomus", "paygate"].includes(
+          this.gateway
+        );
+      },
       default: "",
     },
     minAmount: {

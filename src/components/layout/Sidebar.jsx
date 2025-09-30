@@ -10,6 +10,7 @@ import {
   History,
   Key,
   List,
+  MessageCircle,
   Monitor,
   Package,
   Scale,
@@ -110,6 +111,11 @@ export default function Sidebar() {
       href: "/admin/support",
       label: "Support Tickets",
       icon: Ticket,
+    },
+    {
+      href: "/admin/contact",
+      label: "Contact Form",
+      icon: MessageCircle,
     },
     {
       href: "/admin/analytics",

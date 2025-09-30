@@ -6,16 +6,24 @@ import { NextResponse } from "next/server";
 // GET /api/support/tickets
 // - admin list: no userId -> returns all
 // - user list: provide ?userId=<id> -> returns user's tickets
+// - guest list: provide ?guestEmail=<email> -> returns guest's tickets
 export async function GET(request) {
   try {
     await connectToDatabase();
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
+    const guestEmail = searchParams.get("guestEmail");
     const status = searchParams.get("status"); // optional filter "open|reply|close"
-    const withUserData = searchParams.get("withUserData") === "true"; // new param
+    const withUserData = searchParams.get("withUserData") === "true";
 
     const query = {};
-    if (userId) query.user = userId;
+    if (userId) {
+      query.user = userId;
+      query.isGuestTicket = false;
+    } else if (guestEmail) {
+      query.guestEmail = guestEmail;
+      query.isGuestTicket = true;
+    }
     if (status && ["open", "reply", "close"].includes(status)) {
       query.status = status;
     }
@@ -25,24 +33,37 @@ export async function GET(request) {
       .select("-__v");
 
     // If admin wants user data, populate it
-    if (withUserData && !userId) {
+    if (withUserData && !userId && !guestEmail) {
       tickets = await Promise.all(
         tickets.map(async (ticket) => {
           try {
-            const user = await User.findById(ticket.user).select(
-              "firstName lastName"
-            );
-            return {
-              ...ticket.toObject(),
-              userDisplayName: user
-                ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-                  "Unknown User"
-                : "Unknown User",
-            };
+            if (ticket.isGuestTicket) {
+              return {
+                ...ticket.toObject(),
+                userDisplayName:
+                  ticket.guestName || ticket.guestEmail || "Guest User",
+                isGuest: true,
+              };
+            } else {
+              const user = await User.findById(ticket.user).select(
+                "firstName lastName"
+              );
+              return {
+                ...ticket.toObject(),
+                userDisplayName: user
+                  ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+                    "Unknown User"
+                  : "Unknown User",
+                isGuest: false,
+              };
+            }
           } catch (e) {
             return {
               ...ticket.toObject(),
-              userDisplayName: "Unknown User",
+              userDisplayName: ticket.isGuestTicket
+                ? "Guest User"
+                : "Unknown User",
+              isGuest: ticket.isGuestTicket || false,
             };
           }
         })
@@ -63,25 +84,44 @@ export async function GET(request) {
 }
 
 // POST /api/support/tickets
-// Body: { userId, title, description, image? }
+// Body: { userId?, guestEmail?, guestName?, title, description, image? }
 export async function POST(request) {
   try {
     await connectToDatabase();
     const body = await request.json();
-    const { userId, title, description, image } = body || {};
+    const { userId, guestEmail, guestName, title, description, image } =
+      body || {};
 
-    if (!userId || !title || !description) {
+    // Validate required fields
+    if (!title || !description) {
       return NextResponse.json(
-        { success: false, error: "userId, title and description are required" },
+        { success: false, error: "Title and description are required" },
         { status: 400 }
       );
     }
 
+    // Validate that either userId or guestEmail is provided
+    if (!userId && !guestEmail) {
+      return NextResponse.json(
+        { success: false, error: "Either userId or guestEmail is required" },
+        { status: 400 }
+      );
+    }
+
+    if (userId && guestEmail) {
+      return NextResponse.json(
+        { success: false, error: "Cannot provide both userId and guestEmail" },
+        { status: 400 }
+      );
+    }
+
+    const isGuestTicket = !!guestEmail;
+    const ticketQuery = isGuestTicket
+      ? { guestEmail, status: { $in: ["open", "reply"] } }
+      : { user: userId, status: { $in: ["open", "reply"] } };
+
     // Enforce: not more than 3 open tickets (status 'open' or 'reply')
-    const openCount = await SupportTicket.countDocuments({
-      user: userId,
-      status: { $in: ["open", "reply"] },
-    });
+    const openCount = await SupportTicket.countDocuments(ticketQuery);
     if (openCount >= 3) {
       return NextResponse.json(
         {
@@ -93,22 +133,30 @@ export async function POST(request) {
       );
     }
 
-    const ticket = new SupportTicket({
-      user: userId,
+    const ticketData = {
       title: String(title).trim(),
       description: String(description).trim(),
       image: image || null,
       status: "open",
       messages: [
         {
-          sender: "user",
+          sender: isGuestTicket ? "guest" : "user",
           text: String(description).trim(),
           image: image || null,
         },
       ],
-      lastUpdatedBy: "user",
-    });
+      lastUpdatedBy: isGuestTicket ? "guest" : "user",
+      isGuestTicket,
+    };
 
+    if (isGuestTicket) {
+      ticketData.guestEmail = guestEmail;
+      ticketData.guestName = guestName || "";
+    } else {
+      ticketData.user = userId;
+    }
+
+    const ticket = new SupportTicket(ticketData);
     await ticket.save();
 
     return NextResponse.json(

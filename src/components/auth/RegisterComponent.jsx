@@ -1,6 +1,7 @@
 "use client";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
+import { useDeviceLogin } from "@/hooks/useDeviceLogin";
 import { ArrowRight, Mail } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -8,6 +9,8 @@ import ReCAPTCHA from "react-google-recaptcha";
 import Select from "react-select";
 import countryList from "react-select-country-list";
 import SocialLogin from "./SocialLogin";
+import ErrorNotification from "@/components/common/ErrorNotification";
+import { getFirebaseErrorMessage, getCustomErrorMessage, isFirebaseError } from "@/lib/firebaseErrorHandler";
 
 export default function RegisterComponent({ referralCode = "" }) {
   const [formData, setFormData] = useState({
@@ -30,6 +33,7 @@ export default function RegisterComponent({ referralCode = "" }) {
 
   const recaptchaRef = useRef();
   const countryOptions = useMemo(() => countryList().getData(), []);
+  const { recordDeviceLogin } = useDeviceLogin();
 
   useEffect(() => {
     const checkRecaptchaSetting = async () => {
@@ -112,28 +116,14 @@ export default function RegisterComponent({ referralCode = "" }) {
     setError(""); // Clear any previous errors
   };
 
-  const handleSubmit = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    // Check if username is available before submitting
-    if (formData.username && !usernameAvailable) {
-      setError("Username is not available. Please choose a different one.");
-      setLoading(false);
-      return;
-    }
-
     // Check if reCAPTCHA is completed only when it's enabled
     if (recaptchaEnabled && !recaptchaToken) {
       setError("Please complete the reCAPTCHA verification.");
-      setLoading(false);
-      return;
-    }
-
-    // Check if country is selected
-    if (!formData.country || !formData.countryCode) {
-      setError("Please select your country.");
       setLoading(false);
       return;
     }
@@ -163,22 +153,12 @@ export default function RegisterComponent({ referralCode = "" }) {
         setVerificationEmail(formData.email);
       } else {
         setError(data.error || "Registration failed. Please try again.");
-        // Reset reCAPTCHA on error only when it's enabled
-        if (recaptchaEnabled) {
-          recaptchaRef.current?.reset();
-          setRecaptchaToken(null);
-        }
       }
     } catch (error) {
       setError("Network error. Please check your connection and try again.");
-      // Reset reCAPTCHA on error only when it's enabled
-      if (recaptchaEnabled) {
-        recaptchaRef.current?.reset();
-        setRecaptchaToken(null);
-      }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleResendEmail = async () => {
@@ -318,15 +298,11 @@ export default function RegisterComponent({ referralCode = "" }) {
           </p>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-            <p className="text-red-400 text-xs sm:text-sm">{error}</p>
-          </div>
-        )}
+        {/* Error Notification */}
+        <ErrorNotification error={error} onClose={() => setError("")} />
 
         {/* Register Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+        <form onSubmit={handleRegister} className="space-y-4 sm:space-y-6">
           {/* First Name Input */}
           <div>
             <label className="block text-white text-xs sm:text-sm font-medium mb-2">
@@ -514,12 +490,8 @@ export default function RegisterComponent({ referralCode = "" }) {
           loading={loading}
         />
 
-        {/* Social Error */}
-        {socialError && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-            <p className="text-red-400 text-xs sm:text-sm">{socialError}</p>
-          </div>
-        )}
+        {/* Social Error Notification */}
+        <ErrorNotification error={socialError} onClose={() => setSocialError("")} />
 
         {/* Login Link */}
         <div className="text-center">

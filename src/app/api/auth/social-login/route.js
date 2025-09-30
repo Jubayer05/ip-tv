@@ -38,7 +38,7 @@ export async function POST(request) {
       }
 
       // Only update avatar if it's a valid ImgBB URL or null
-      if (photoURL && photoURL.startsWith("https://i.ibb.co/")) {
+      if (photoURL) {
         user.profile.avatar = photoURL;
       } else if (photoURL) {
         // If it's not an ImgBB URL, set to null
@@ -81,8 +81,8 @@ export async function POST(request) {
       await user.save();
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
+    // Generate JWT access token
+    const accessToken = jwt.sign(
       {
         userId: user._id,
         email: user.email,
@@ -92,9 +92,22 @@ export async function POST(request) {
       { expiresIn: "7d" }
     );
 
+    // Generate refresh token (longer expiration)
+    const refreshToken = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email,
+        role: user.role,
+        type: "refresh",
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "30d" }
+    );
+
     return NextResponse.json({
       success: true,
-      token,
+      accessToken,
+      refreshToken,
       user: {
         _id: user._id,
         email: user.email,

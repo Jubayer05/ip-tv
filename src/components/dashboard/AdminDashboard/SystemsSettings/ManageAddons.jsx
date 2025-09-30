@@ -32,7 +32,7 @@ const ManageAddons = () => {
     microsoftClarity: { projectId: "" },
     cloudflare: { token: "" },
     getButton: { widgetId: "" },
-    tawkTo: { propertyId: "" },
+    tawkTo: { propertyId: "", widgetId: "" }, // Add widgetId
   });
 
   const addonConfigs = [
@@ -137,6 +137,11 @@ const ManageAddons = () => {
           key: "propertyId",
           label: "Property ID",
           placeholder: "Enter Tawk.to property ID",
+        },
+        {
+          key: "widgetId",
+          label: "Widget ID",
+          placeholder: "Enter Tawk.to widget ID",
         },
       ],
     },

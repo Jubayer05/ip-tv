@@ -115,6 +115,15 @@ export async function GET(request, { params }) {
                   );
               }
 
+              console.log("Free trial upgrade API called:", {
+                key: process.env.ZLIVE_API_KEY || "your_api_key_here",
+                username: user.freeTrial.trialData.username,
+                password: user.freeTrial.trialData.password,
+                action: "update",
+                val: packageId,
+                con: deviceCount,
+              });
+
               // Call the free trial upgrade API
               const upgradeResponse = await fetch(
                 "http://zlive.cc/api/free-trail-upgrade",

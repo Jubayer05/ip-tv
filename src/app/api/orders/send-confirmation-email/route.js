@@ -1,5 +1,5 @@
 import { connectToDatabase } from "@/lib/db";
-import { sendOrderConfirmationEmail } from "@/lib/email";
+import { sendIPTVCredentialsEmail } from "@/lib/email";
 import Order from "@/models/Order";
 import { NextResponse } from "next/server";
 
@@ -45,29 +45,36 @@ export async function POST(request) {
       );
     }
 
-    // Send confirmation email
-    const emailSent = await sendOrderConfirmationEmail({
+    // Check if IPTV credentials exist
+    if (!order.iptvCredentials || order.iptvCredentials.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "IPTV credentials not found for this order" },
+        { status: 400 }
+      );
+    }
+
+    // Send IPTV credentials email
+    const emailSent = await sendIPTVCredentialsEmail({
       toEmail: email,
       fullName: fullName,
       order: order,
-      paymentMethod: paymentMethod,
     });
 
     if (!emailSent) {
       return NextResponse.json(
-        { success: false, error: "Failed to send confirmation email" },
+        { success: false, error: "Failed to send IPTV credentials email" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Confirmation email sent successfully",
+      message: "IPTV credentials email sent successfully",
     });
   } catch (error) {
-    console.error("Error sending confirmation email:", error);
+    console.error("Error sending IPTV credentials email:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to send confirmation email" },
+      { success: false, error: "Failed to send IPTV credentials email" },
       { status: 500 }
     );
   }

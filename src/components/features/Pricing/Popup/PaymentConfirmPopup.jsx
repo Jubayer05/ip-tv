@@ -3,27 +3,33 @@ import { Check, Home, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export default function PaymentConfirmPopup({ isOpen, onClose }) {
+export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
   const { language, translate, isLanguageLoaded } = useLanguage();
   const router = useRouter();
 
-  // Original text constants
-  const ORIGINAL_TEXTS = {
-    title: "PAYMENT CONFIRMED",
-    subtitle: "Thank you for your purchase!",
+  // Dynamic text based on order prop
+  const getOriginalTexts = () => ({
+    title: order ? "ORDER DETAILS" : "PAYMENT CONFIRMED",
+    subtitle: order
+      ? "View your order information"
+      : "Thank you for your purchase!",
     orderDetails: {
-      orderId: "Order ID:",
-      date: "Date:",
+      orderNumber: "Order Number:",
+      orderDate: "Order Date:",
       service: "Service:",
-      plan: "Plan:",
-      total: "Total:",
+      duration: "Duration:",
+      devicesAllowed: "Devices Allowed:",
+      adultChannels: "Adult Channels:",
+      totalChannels: "Total Paid:",
     },
     orderValues: {
-      orderId: "#92838239",
-      date: "24 August 2025",
-      service: "Digital Subscription Access",
-      plan: "Premium",
-      total: "$87.93",
+      orderNumber: "CS-20250922-U6PBMY",
+      orderDate: "9/22/2025",
+      service: "IPTV Subscription",
+      duration: "1 month(s)",
+      devicesAllowed: "1",
+      adultChannels: "No",
+      totalPaid: "$0.02",
     },
     buttons: {
       backToHome: "Back to Home",
@@ -33,17 +39,29 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
       receipt: "A receipt has been sent to your email.",
       contact: "For questions, contact: info@iptvstore.com",
     },
-  };
+  });
 
   // State for translated content
-  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+  const [texts, setTexts] = useState(getOriginalTexts());
   const [orderInfo, setOrderInfo] = useState({
-    orderId: "",
-    date: "",
-    service: "Digital Subscription Access",
-    plan: "",
-    total: "",
+    orderNumber: "",
+    orderDate: "",
+    service: "IPTV Subscription",
+    duration: "",
+    devicesAllowed: "",
+    adultChannels: "",
+    totalPaid: "",
   });
+
+  const getLineTypeName = (lineType) => {
+    const names = { 0: "M3U Playlist", 1: "MAG Device", 2: "Enigma2" };
+    return names[lineType] || "M3U Playlist";
+  };
+
+  useEffect(() => {
+    // Update texts when order prop changes
+    setTexts(getOriginalTexts());
+  }, [order]);
 
   useEffect(() => {
     // Only translate when language is loaded and not English
@@ -52,39 +70,44 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
     let isMounted = true;
     (async () => {
       try {
+        const originalTexts = getOriginalTexts();
         const items = [
-          ORIGINAL_TEXTS.title,
-          ORIGINAL_TEXTS.subtitle,
-          ...Object.values(ORIGINAL_TEXTS.orderDetails),
-          ...Object.values(ORIGINAL_TEXTS.orderValues),
-          ...Object.values(ORIGINAL_TEXTS.buttons),
-          ...Object.values(ORIGINAL_TEXTS.footer),
+          originalTexts.title,
+          originalTexts.subtitle,
+          ...Object.values(originalTexts.orderDetails),
+          ...Object.values(originalTexts.orderValues),
+          ...Object.values(originalTexts.buttons),
+          ...Object.values(originalTexts.footer),
         ];
 
         const translated = await translate(items);
         if (!isMounted) return;
 
         const [tTitle, tSubtitle, ...tOrderDetails] = translated;
-        const tOrderValues = tOrderDetails.slice(5, 10);
-        const tButtons = tOrderDetails.slice(10, 12);
-        const tFooter = tOrderDetails.slice(12);
+        const tOrderValues = tOrderDetails.slice(7, 14);
+        const tButtons = tOrderDetails.slice(14, 16);
+        const tFooter = tOrderDetails.slice(16);
 
         setTexts({
           title: tTitle,
           subtitle: tSubtitle,
           orderDetails: {
-            orderId: tOrderDetails[0],
-            date: tOrderDetails[1],
+            orderNumber: tOrderDetails[0],
+            orderDate: tOrderDetails[1],
             service: tOrderDetails[2],
-            plan: tOrderDetails[3],
-            total: tOrderDetails[4],
+            duration: tOrderDetails[3],
+            devicesAllowed: tOrderDetails[4],
+            adultChannels: tOrderDetails[5],
+            totalPaid: tOrderDetails[6],
           },
           orderValues: {
-            orderId: ORIGINAL_TEXTS.orderValues.orderId, // Keep original values
-            date: ORIGINAL_TEXTS.orderValues.date,
+            orderNumber: originalTexts.orderValues.orderNumber,
+            orderDate: originalTexts.orderValues.orderDate,
             service: tOrderValues[0],
-            plan: tOrderValues[1],
-            total: ORIGINAL_TEXTS.orderValues.total,
+            duration: tOrderValues[1],
+            devicesAllowed: originalTexts.orderValues.devicesAllowed,
+            adultChannels: tOrderValues[3],
+            totalPaid: originalTexts.orderValues.totalPaid,
           },
           buttons: {
             backToHome: tButtons[0],
@@ -103,25 +126,48 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
     return () => {
       isMounted = false;
     };
-  }, [language.code, isLanguageLoaded, translate]);
+  }, [language.code, isLanguageLoaded, translate, order]);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    // If order prop is provided, derive values from it
+    if (order) {
+      const product = order?.products?.[0] || {};
+      setOrderInfo({
+        orderNumber: order?.orderNumber || "",
+        orderDate: new Date(
+          order?.createdAt || Date.now()
+        ).toLocaleDateString(),
+        service: "IPTV Subscription",
+        duration: product?.duration ? `${product.duration} month(s)` : "",
+        devicesAllowed: product?.devicesAllowed || "",
+        adultChannels: product?.adultChannels ? "Yes" : "No",
+        totalPaid: `$${(order?.totalAmount || 0).toFixed(2)}`,
+      });
+      return;
+    }
+
+    // Fallback to previous localStorage behavior
     try {
       const raw = localStorage.getItem("cs_last_order");
       if (raw) {
-        const order = JSON.parse(raw);
-        const product = order?.products?.[0] || {};
+        const o = JSON.parse(raw);
+        const product = o?.products?.[0] || {};
         setOrderInfo({
-          orderId: order?.orderNumber || "",
-          date: new Date(order?.createdAt || Date.now()).toLocaleDateString(),
-          service: "Digital Subscription Access",
-          plan: product?.duration ? `${product.duration} Months` : "Plan",
-          total: `$${(order?.totalAmount || 0).toFixed(2)}`,
+          orderNumber: o?.orderNumber || "CS-20250922-U6PBMY",
+          orderDate: new Date(o?.createdAt || Date.now()).toLocaleDateString(),
+          service: "IPTV Subscription",
+          duration: product?.duration
+            ? `${product.duration} month(s)`
+            : "1 month(s)",
+          devicesAllowed: product?.devicesAllowed || "1",
+          adultChannels: product?.adultChannels ? "Yes" : "No",
+          totalPaid: `$${(o?.totalAmount || 0.02).toFixed(2)}`,
         });
       }
     } catch {}
-  }, [isOpen]);
+  }, [isOpen, order]);
 
   const handleBackToHome = () => {
     onClose();
@@ -132,10 +178,22 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-[70] font-secondary">
-      <div className="bg-black rounded-2xl sm:rounded-3xl p-4 sm:pm-6 md:p-8 w-full max-w-sm sm:max-w-md md:max-w-lg mx-auto relative border border-[#FFFFFF26]">
+      <div
+        className="bg-black rounded-2xl sm:rounded-3xl p-4 sm:pm-6 md:p-8 w-full max-w-sm sm:max-w-md md:max-w-lg mx-auto relative border border-[#FFFFFF26] max-h-[90vh] overflow-y-auto"
+        style={{
+          scrollbarWidth: "none" /* Firefox */,
+          msOverflowStyle: "none" /* Internet Explorer 10+ */,
+        }}
+      >
+        <style jsx>{`
+          div::-webkit-scrollbar {
+            display: none; /* Safari and Chrome */
+          }
+        `}</style>
+
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-6 md:right-6 text-white hover:text-gray-300 transition-colors"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-6 md:right-6 text-white hover:text-gray-300 transition-colors z-10"
         >
           <X size={20} className="sm:w-6 sm:h-6" />
         </button>
@@ -157,24 +215,25 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
           <p className="text-gray-300 text-xs sm:text-sm">{texts.subtitle}</p>
         </div>
 
+        {/* Order Details Section */}
         <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-          {/* Order ID */}
+          {/* Order Number */}
           <div className="flex justify-between items-center pt-2">
             <span className="text-white/75 text-xs sm:text-sm">
-              {texts.orderDetails.orderId}
+              {texts.orderDetails.orderNumber}
             </span>
             <span className="text-white text-xs sm:text-sm font-medium">
-              {orderInfo.orderId}
+              {orderInfo.orderNumber}
             </span>
           </div>
 
-          {/* Date */}
+          {/* Order Date */}
           <div className="flex justify-between items-center pb-3 sm:pb-5 border-b border-[#313131]">
             <span className="text-white/75 text-xs sm:text-sm">
-              {texts.orderDetails.date}
+              {texts.orderDetails.orderDate}
             </span>
             <span className="text-white text-xs sm:text-sm font-medium">
-              {orderInfo.date}
+              {orderInfo.orderDate}
             </span>
           </div>
 
@@ -188,29 +247,109 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
             </span>
           </div>
 
-          {/* Plan */}
+          {/* Duration */}
           <div className="flex justify-between items-center">
             <span className="text-white/75 text-xs sm:text-sm">
-              {texts.orderDetails.plan}
+              {texts.orderDetails.duration}
             </span>
             <span className="text-white text-xs sm:text-sm font-medium">
-              {orderInfo.plan}
+              {orderInfo.duration}
             </span>
           </div>
 
-          {/* Total */}
-          <div className="flex justify-between items-center border-b border-[#313131] pb-3 sm:pb-5">
+          {/* Devices Allowed */}
+          <div className="flex justify-between items-center">
             <span className="text-white/75 text-xs sm:text-sm">
-              {texts.orderDetails.total}
+              {texts.orderDetails.devicesAllowed}
             </span>
             <span className="text-white text-xs sm:text-sm font-medium">
-              {orderInfo.total}
+              {orderInfo.devicesAllowed}
+            </span>
+          </div>
+
+          {/* Adult Channels */}
+          <div className="flex justify-between items-center">
+            <span className="text-white/75 text-xs sm:text-sm">
+              {texts.orderDetails.adultChannels}
+            </span>
+            <span className="text-white text-xs sm:text-sm font-medium">
+              {orderInfo.adultChannels}
+            </span>
+          </div>
+
+          {/* Total Paid */}
+          <div className="flex justify-between items-center border-b border-[#313131] pb-3 sm:pb-5">
+            <span className="text-white/75 text-xs sm:text-sm">
+              {texts.orderDetails.totalPaid}
+            </span>
+            <span className="text-white text-xs sm:text-sm font-medium">
+              {orderInfo.totalPaid}
             </span>
           </div>
         </div>
 
+        {/* Additional details when order is provided */}
+        {order && (
+          <div className="space-y-2 mt-2">
+            <div className="flex justify-between items-center">
+              <span className="text-white/75 text-xs sm:text-sm">
+                Order ID:
+              </span>
+              <span className="text-white text-xs sm:text-sm font-medium">
+                {order._id}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-white/75 text-xs sm:text-sm">
+                Payment Method:
+              </span>
+              <span className="text-white text-xs sm:text-sm font-medium">
+                {order.paymentMethod || "N/A"}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-white/75 text-xs sm:text-sm">
+                Payment Status:
+              </span>
+              <span className="text-white text-xs sm:text-sm font-medium">
+                {order.paymentStatus || "Unknown"}
+              </span>
+            </div>
+            {order.products?.[0] && (
+              <>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/75 text-xs sm:text-sm">
+                    Device Type:
+                  </span>
+                  <span className="text-white text-xs sm:text-sm font-medium">
+                    {getLineTypeName(order.products[0].lineType)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/75 text-xs sm:text-sm">
+                    Quantity:
+                  </span>
+                  <span className="text-white text-xs sm:text-sm font-medium">
+                    {order.products[0].quantity ?? 1}
+                  </span>
+                </div>
+              </>
+            )}
+            {Array.isArray(order.iptvCredentials) && (
+              <div className="flex justify-between items-center">
+                <span className="text-white/75 text-xs sm:text-sm">
+                  Accounts:
+                </span>
+                <span className="text-white text-xs sm:text-sm font-medium">
+                  {order.iptvCredentials.length}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Action Buttons */}
-        <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+        <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8 mt-2 md:mt-5">
           <button
             onClick={handleBackToHome}
             className="w-full bg-cyan-400 text-black py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-300 transition-colors flex items-center justify-center gap-2"
@@ -228,7 +367,10 @@ export default function PaymentConfirmPopup({ isOpen, onClose }) {
         </div>
 
         <div className="text-center space-y-2">
-          <p className="text-white/75 text-xs">{texts.footer.receipt}</p>
+          {/* Only show receipt text when not displaying order history */}
+          {!order && (
+            <p className="text-white/75 text-xs">{texts.footer.receipt}</p>
+          )}
           <p className="text-white/75 text-xs">{texts.footer.contact}</p>
         </div>
       </div>

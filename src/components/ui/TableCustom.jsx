@@ -10,16 +10,13 @@ const TableCustom = ({
   data = [],
   columns = [],
   pageSize = 5,
-  autoplay = true,
   showButton = true,
   onButtonClick,
-  onItemClick,
   className = "",
   containerClassName = "",
-  autoPlayDuration = 3000,
   icon = "",
   buttonText = "Get More",
-  cardType = "default", // "default", "movie", "show", "channel", "detailed"
+  rowKey = "id", // Add this prop with default value
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
@@ -31,7 +28,7 @@ const TableCustom = ({
 
   return (
     <div
-      className={` bg-black rounded-[15px] w-full max-w-5xl mx-auto font-secondary ${containerClassName}`}
+      className={`bg-black rounded-[15px] w-full max-w-[350px] sm:max-w-[620px] lg:max-w-[720px] xl:max-w-[950px] mx-auto lg:mx-0 font-secondary ${containerClassName}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
@@ -59,35 +56,132 @@ const TableCustom = ({
         )}
       </div>
 
-      {/* Antd Table with Built-in Pagination */}
-      <div
-        className={`custom-antd-table border border-[#374151] rounded-[8px] ${className}`}
-      >
-        <Table
-          columns={columns}
-          dataSource={data}
-          pagination={{
-            current: currentPage,
-            pageSize: currentPageSize,
-            total: data.length,
-            onChange: handlePageChange,
-            showSizeChanger: false,
-            className: "custom-pagination",
-            showTotal: (total, range) =>
-              `Showing ${range[1] - range[0] + 1} from ${range[0]}-${
-                range[1]
-              } `,
-          }}
-          className="custom-table"
-          scroll={{ x: "max-content" }}
-        />
+      {/* Table Container with Horizontal Scroll */}
+      <div className="w-full overflow-x-scroll">
+        <div
+          className={`custom-antd-table border border-[#374151] rounded-[8px] min-w-full ${className}`}
+        >
+          <Table
+            columns={columns}
+            dataSource={data}
+            rowKey={(record) => {
+              // Try to use the specified rowKey
+              if (typeof rowKey === "function") {
+                return rowKey(record);
+              }
+              // Try to get the value from record using the rowKey string
+              if (record[rowKey]) {
+                return record[rowKey];
+              }
+              // Fallback: generate a unique key using available data
+              return (
+                record.id ||
+                record._id ||
+                record.key ||
+                `${record.loginDate || Date.now()}-${Math.random()
+                  .toString(36)
+                  .substr(2, 9)}`
+              );
+            }}
+            pagination={{
+              current: currentPage,
+              pageSize: currentPageSize,
+              total: data.length,
+              onChange: handlePageChange,
+              showSizeChanger: false,
+              className: "custom-pagination",
+              showTotal: (total, range) =>
+                `Showing ${range[1] - range[0] + 1} from ${range[0]}-${
+                  range[1]
+                } `,
+            }}
+            className="custom-table"
+            tableLayout="fixed"
+            scroll={{ x: true }}
+          />
+        </div>
       </div>
 
       {/* Custom Styles for Antd Table */}
       <style jsx global>{`
+        .custom-antd-table {
+          min-width: 800px; /* Minimum table width */
+        }
+
         .custom-antd-table .ant-table {
           background: transparent !important;
           color: white !important;
+          min-width: 100% !important;
+        }
+
+        /* Table header and body cells */
+        .custom-antd-table .ant-table-thead > tr > th,
+        .custom-antd-table .ant-table-tbody > tr > td {
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          padding: 8px 12px !important;
+        }
+
+        /* Specific column widths for better layout */
+        .custom-antd-table .ant-table-thead > tr > th:nth-child(1),
+        .custom-antd-table .ant-table-tbody > tr > td:nth-child(1) {
+          min-width: 120px !important;
+          max-width: 150px !important;
+        }
+
+        .custom-antd-table .ant-table-thead > tr > th:nth-child(2),
+        .custom-antd-table .ant-table-tbody > tr > td:nth-child(2) {
+          min-width: 150px !important;
+          max-width: 200px !important;
+        }
+
+        .custom-antd-table .ant-table-thead > tr > th:nth-child(3),
+        .custom-antd-table .ant-table-tbody > tr > td:nth-child(3) {
+          min-width: 200px !important;
+          max-width: 250px !important;
+        }
+
+        .custom-antd-table .ant-table-thead > tr > th:nth-child(4),
+        .custom-antd-table .ant-table-tbody > tr > td:nth-child(4) {
+          min-width: 100px !important;
+          max-width: 120px !important;
+        }
+
+        .custom-antd-table .ant-table-thead > tr > th:nth-child(5),
+        .custom-antd-table .ant-table-tbody > tr > td:nth-child(5) {
+          min-width: 120px !important;
+          max-width: 150px !important;
+        }
+
+        .custom-antd-table .ant-table-thead > tr > th:nth-child(6),
+        .custom-antd-table .ant-table-tbody > tr > td:nth-child(6) {
+          min-width: 80px !important;
+          max-width: 100px !important;
+        }
+
+        .custom-antd-table .ant-table-thead > tr > th:nth-child(7),
+        .custom-antd-table .ant-table-tbody > tr > td:nth-child(7) {
+          min-width: 80px !important;
+          max-width: 100px !important;
+        }
+
+        .custom-antd-table .ant-table-thead > tr > th:nth-child(8),
+        .custom-antd-table .ant-table-tbody > tr > td:nth-child(8) {
+          min-width: 120px !important;
+          max-width: 150px !important;
+        }
+
+        .custom-antd-table .ant-table-thead > tr > th:nth-child(9),
+        .custom-antd-table .ant-table-tbody > tr > td:nth-child(9) {
+          min-width: 120px !important;
+          max-width: 150px !important;
+        }
+
+        .custom-antd-table .ant-table-thead > tr > th:nth-child(10),
+        .custom-antd-table .ant-table-tbody > tr > td:nth-child(10) {
+          min-width: 120px !important;
+          max-width: 150px !important;
         }
 
         .custom-antd-table .ant-table-thead > tr > th:first-child::before {
@@ -287,6 +381,10 @@ const TableCustom = ({
 
         /* Mobile specific pagination adjustments */
         @media (max-width: 768px) {
+          .custom-antd-table {
+            min-width: 600px !important;
+          }
+
           .custom-antd-table .ant-pagination {
             gap: 2px !important;
             justify-content: space-between !important;

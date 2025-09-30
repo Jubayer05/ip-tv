@@ -2,7 +2,15 @@
 import NotificationBell from "@/components/ui/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ChevronDown, Globe, Menu, Search, Wallet, X } from "lucide-react";
+import {
+  ChevronDown,
+  Globe,
+  Menu,
+  Search,
+  User,
+  Wallet,
+  X,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -40,6 +48,7 @@ const Navbar = () => {
   const ORIGINAL_SIGN_OUT = "Sign Out";
   const ORIGINAL_USER_MENU_HEADING = "User Menu";
   const ORIGINAL_DEPOSIT_FUNDS = "Deposit Funds";
+  const ORIGINAL_GUEST_LOGIN = "Guest Login";
 
   // Translated state
   const [navLabels, setNavLabels] = useState(ORIGINAL_NAV_LABELS);
@@ -57,6 +66,7 @@ const Navbar = () => {
   const [depositFundsLabel, setDepositFundsLabel] = useState(
     ORIGINAL_DEPOSIT_FUNDS
   );
+  const [guestLoginLabel, setGuestLoginLabel] = useState(ORIGINAL_GUEST_LOGIN);
 
   useEffect(() => {
     let isMounted = true;
@@ -69,6 +79,7 @@ const Navbar = () => {
         ORIGINAL_SIGN_OUT,
         ORIGINAL_USER_MENU_HEADING,
         ORIGINAL_DEPOSIT_FUNDS,
+        ORIGINAL_GUEST_LOGIN,
       ];
       const translated = await translate(items);
       if (!isMounted) return;
@@ -80,6 +91,7 @@ const Navbar = () => {
       setSignOutLabel(translated[17]);
       setUserMenuHeading(translated[18]);
       setDepositFundsLabel(translated[19]);
+      setGuestLoginLabel(translated[20]);
     })();
 
     return () => {
@@ -181,6 +193,17 @@ const Navbar = () => {
             <button className="text-white hover:text-gray-300 transition-colors hidden sm:block">
               <Search size={20} />
             </button>
+
+            {/* Guest Login Icon - Only show when user is not logged in */}
+            {!user && (
+              <Link
+                href="/guest-login"
+                className="text-white hover:text-gray-300 transition-colors hidden sm:block"
+              >
+                <User size={20} />
+              </Link>
+            )}
+
             <NotificationBell />
 
             {user && (
@@ -244,11 +267,12 @@ const Navbar = () => {
                   onClick={toggleUserMenu}
                   className="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-gray-700 text-white rounded-full transition-colors border border-gray-600 relative"
                 >
-                  <Image
-                    src="/icons/profile.png"
+                  <img
+                    src={user.profile.avatar || "/icons/profile.png"}
                     alt="user"
                     width={100}
                     height={100}
+                    className="h-[40px] rounded-full object-cover"
                   />
                   {/* ChevronDown icon at bottom right */}
                   <span className="absolute bottom-0 right-0">
@@ -411,6 +435,20 @@ const Navbar = () => {
                       {signOutLabel}
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Mobile Guest Login - Only show if not logged in */}
+              {!user && (
+                <div className="pt-4 border-t border-gray-700">
+                  <Link
+                    href="/guest-login"
+                    onClick={toggleMobileMenu}
+                    className="flex items-center text-white hover:text-primary transition-colors font-secondary text-sm py-2"
+                  >
+                    <User size={18} className="mr-3" />
+                    {guestLoginLabel}
+                  </Link>
                 </div>
               )}
 

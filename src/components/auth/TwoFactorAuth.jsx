@@ -2,11 +2,13 @@
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDeviceLogin } from "@/hooks/useDeviceLogin";
+import { getDeviceInfo } from "@/lib/fingerprint";
 import { ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export default function TwoFactorAuth({ email, onBack }) {
+export default function TwoFactorAuth({ email, onBack, visitorId }) {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
@@ -16,6 +18,7 @@ export default function TwoFactorAuth({ email, onBack }) {
 
   const { verify2FACode, complete2FALogin, send2FACode } = useAuth();
   const router = useRouter();
+  const { recordDeviceLogin } = useDeviceLogin();
 
   useEffect(() => {
     if (countdown > 0) {
@@ -31,7 +34,7 @@ export default function TwoFactorAuth({ email, onBack }) {
     setCountdown(30);
   }, []);
 
-  const handleSubmit = async (e) => {
+  const handleVerify = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -48,27 +51,31 @@ export default function TwoFactorAuth({ email, onBack }) {
       return;
     }
 
-    const result = await verify2FACode(email, code);
+    // Get device info for trust
+    const deviceInfo = getDeviceInfo();
 
-    if (result.success) {
-      const loginResult = await complete2FALogin(email);
-      if (loginResult.success) {
-        if (loginResult.token) {
-          localStorage.setItem("authToken", loginResult.token);
+    try {
+      const result = await verify2FACode(email, code, visitorId, deviceInfo);
+
+      if (result.success) {
+        // Record device login BEFORE completing 2FA login
+        console.log("Recording device login for 2FA completion...");
+        await recordDeviceLogin();
+
+        const loginResult = await complete2FALogin(email);
+        if (loginResult.success) {
+          router.push("/dashboard");
+        } else {
+          setError(loginResult.error);
         }
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 500);
       } else {
-        setError(
-          "Login completed but failed to set session. Please try again."
-        );
+        setError(result.error);
       }
-    } else {
-      setError(result.error);
+    } catch (error) {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleResendCode = async () => {
@@ -108,12 +115,12 @@ export default function TwoFactorAuth({ email, onBack }) {
           </p>
           <p className="text-cyan-400 text-sm mt-2">{email}</p>
           <p className="text-gray-500 text-xs mt-1">
-            For your security, 2FA is required for all logins
+            This device will be trusted for future logins
           </p>
         </div>
 
         {/* 2FA Form */}
-        <form onSubmit={handleSubmit} className="space-y-6 font-secondary">
+        <form onSubmit={handleVerify} className="space-y-6 font-secondary">
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
               <p className="text-red-400 text-sm">{error}</p>

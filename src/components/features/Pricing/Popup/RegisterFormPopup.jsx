@@ -2,17 +2,20 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { ArrowRight, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import GatewaySelectPopup from "./GatewaySelectPopup";
 import NotRegisterPopup from "./NotRegisterPopup";
 import PaymentConfirmPopup from "./PaymentConfirmPopup";
 import ThankRegisterPopup from "./ThankRegisterPopup";
 
 export default function RegisterFormPopup({ isOpen, onClose }) {
   const { language, translate, isLanguageLoaded } = useLanguage();
-  const [fullName, setFullName] = useState("");
+  const [fullName, setFullName] = useState("Guest User");
   const [email, setEmail] = useState("");
   const [showThankYou, setShowThankYou] = useState(false);
   const [showNotRegister, setShowNotRegister] = useState(false);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
+  const [showGatewaySelect, setShowGatewaySelect] = useState(false);
+  const [orderDetails, setOrderDetails] = useState(null);
 
   // Original text constants
   const ORIGINAL_TEXTS = {
@@ -20,11 +23,10 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
     subtitle:
       "Check your email for IPTV details and a secure link to view your order history.",
     form: {
-      fullName: "Full Name",
       email: "Email",
-      fullNamePlaceholder: "Enter full name",
       emailPlaceholder: "Enter email",
       submitButton: "Proceed With Checkout",
+      processingButton: "Processing...",
     },
     footer: {
       or: "Or",
@@ -65,6 +67,7 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
             fullNamePlaceholder: tForm[2],
             emailPlaceholder: tForm[3],
             submitButton: tForm[4],
+            processingButton: tForm[5],
           },
           footer: {
             or: tFooter[0],
@@ -82,20 +85,68 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
     };
   }, [language.code, isLanguageLoaded, translate]);
 
+  // Load order details when popup opens
+  useEffect(() => {
+    if (isOpen) {
+      loadOrderDetails();
+    }
+  }, [isOpen]);
+
+  const loadOrderDetails = () => {
+    try {
+      const selRaw = localStorage.getItem("cs_order_selection");
+      const sel = selRaw ? JSON.parse(selRaw) : null;
+      if (sel) {
+        setOrderDetails(sel);
+      }
+    } catch (error) {
+      console.error("Error loading order details:", error);
+    }
+  };
+
   const [submitting, setSubmitting] = useState(false);
 
   const handleGuestOrder = async () => {
     if (submitting) return;
-    if (!fullName.trim() || !email.trim()) {
+    if (!email.trim()) {
       Swal.fire({
         icon: "warning",
         title: "Missing Information",
-        text: "Please enter your full name and email",
+        text: "Please enter your email",
         confirmButtonColor: "#00b877",
         confirmButtonText: "OK",
       });
       return;
     }
+
+    // Store guest contact info for payment gateway
+    try {
+      const selRaw = localStorage.getItem("cs_order_selection");
+      const sel = selRaw ? JSON.parse(selRaw) : null;
+      if (sel) {
+        // Add guest contact information to the selection data
+        const updatedSelection = {
+          ...sel,
+          guestContactInfo: {
+            fullName: fullName || "Guest User",
+            email: email,
+            phone: "",
+          },
+        };
+        localStorage.setItem(
+          "cs_order_selection",
+          JSON.stringify(updatedSelection)
+        );
+      }
+    } catch (error) {
+      console.error("Error storing guest contact info:", error);
+    }
+
+    // Instead of creating order directly, show payment gateway selection
+    setShowGatewaySelect(true);
+  };
+
+  const handlePaymentSuccess = async () => {
     setSubmitting(true);
     try {
       const selRaw = localStorage.getItem("cs_order_selection");
@@ -114,8 +165,18 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
         adultChannels: !!sel.adultChannels,
         guestEmail: email,
         contactInfo: { fullName, email, phone: "" },
-        paymentMethod: "Manual",
-        paymentGateway: "None",
+        paymentMethod: "Gateway", // Updated to indicate gateway payment
+        paymentGateway: "Selected", // Will be updated by gateway selection
+        paymentStatus: "completed", // Ensure completion after successful payment
+
+        // IPTV Configuration - include val and con parameters
+        lineType: sel.lineType || 0,
+        templateId: sel.templateId || 2,
+        macAddresses: sel.macAddresses || [],
+        adultChannelsConfig: sel.adultChannelsConfig || [],
+        generatedCredentials: sel.generatedCredentials || [],
+        val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1),
+        con: sel.con || Number(sel.devices || 1),
       };
 
       const res = await fetch("/api/orders", {
@@ -123,17 +184,75 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err?.error || "Failed to place order");
       }
+
       const data = await res.json();
+
+      // Fallback: if backend still returns pending, force-complete it
+      if (data?.order?._id && data?.order?.paymentStatus !== "completed") {
+        await fetch(`/api/orders/${data.order._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentStatus: "completed" }),
+        });
+      }
+
+      // Create IPTV accounts with val and con parameters
+      try {
+        const iptvResponse = await fetch("/api/iptv/create-account", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderNumber: data.order.orderNumber,
+            val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1),
+            con: sel.con || Number(sel.devices || 1),
+          }),
+        });
+
+        if (iptvResponse.ok) {
+          const iptvData = await iptvResponse.json();
+          console.log("IPTV accounts created:", iptvData);
+        } else {
+          console.error(
+            "Failed to create IPTV accounts:",
+            await iptvResponse.text()
+          );
+        }
+      } catch (iptvError) {
+        console.error("Error creating IPTV accounts:", iptvError);
+      }
+
+      // Send confirmation email
+      try {
+        await fetch("/api/orders/send-confirmation-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId: data.order._id,
+            paymentMethod: "Gateway",
+          }),
+        });
+      } catch (emailError) {
+        console.error("Failed to send confirmation email:", emailError);
+      }
+
       try {
         localStorage.setItem("cs_last_order", JSON.stringify(data.order));
       } catch {}
 
       // SHOW PAYMENT CONFIRM POPUP
       setShowPaymentConfirm(true);
+    } catch (e) {
+      console.error(e);
+      Swal.fire({
+        icon: "error",
+        title: "Order Failed",
+        text: e?.message || "Failed to place order",
+      });
     } finally {
       // reset the initial state
       setFullName("");
@@ -158,6 +277,10 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
   const closePaymentConfirm = () => {
     setShowPaymentConfirm(false);
     onClose(); // Close the main popup after payment confirmation
+  };
+
+  const closeGatewaySelect = () => {
+    setShowGatewaySelect(false);
   };
 
   if (!isOpen) return null;
@@ -187,20 +310,6 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
 
           {/* Form */}
           <div className="space-y-4 sm:space-y-6 font-secondary">
-            {/* Full Name Field */}
-            <div>
-              <label className="block text-white text-xs sm:text-sm font-medium mb-2 sm:mb-3">
-                {texts.form.fullName}
-              </label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder={texts.form.fullNamePlaceholder}
-                className="w-full bg-[#0c171c] border border-[#FFFFFF26] rounded-full px-4 sm:px-6 py-3 sm:py-4 text-white placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-cyan-400 transition-colors text-sm sm:text-base"
-              />
-            </div>
-
             {/* Email Field */}
             <div>
               <label className="block text-white text-xs sm:text-sm font-medium mb-2 sm:mb-3">
@@ -224,7 +333,7 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
               {submitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
-                  Processing...
+                  {texts.form.processingButton}
                 </>
               ) : (
                 <>
@@ -260,6 +369,29 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
         isOpen={showPaymentConfirm}
         onClose={closePaymentConfirm}
       />
+
+      {/* Gateway Selection Popup */}
+      <GatewaySelectPopup
+        isOpen={showGatewaySelect}
+        onClose={closeGatewaySelect}
+        onSuccess={handlePaymentSuccess}
+      />
     </>
   );
 }
+
+// Helper function to get package ID from duration
+const getPackageIdFromDuration = (durationMonths) => {
+  switch (durationMonths) {
+    case 1:
+      return 2; // 1 Month Subscription
+    case 3:
+      return 3; // 3 Month Subscription
+    case 6:
+      return 4; // 6 Month Subscription
+    case 12:
+      return 5; // 12 Month Subscription
+    default:
+      return 2; // Default to 1 month
+  }
+};

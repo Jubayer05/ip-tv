@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import { sendBulkNotificationEmail } from "@/lib/email";
+import Order from "@/models/Order";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
@@ -18,42 +19,97 @@ export async function POST(request) {
 
     await connectToDatabase();
 
-    // Build query based on target users and filters
-    let query = { isActive: true };
-
-    if (targetUsers === "all") {
-      // Send to all active users
-    } else if (targetUsers === "premium") {
-      query["rank.level"] = { $in: ["gold", "platinum", "diamond"] };
-    } else if (targetUsers === "new") {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      query.createdAt = { $gte: thirtyDaysAgo };
-    } else if (targetUsers === "inactive") {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      query.lastLogin = { $lt: thirtyDaysAgo };
-    }
-
-    // Apply custom filters if provided
-    if (customFilters) {
-      if (customFilters.country) {
-        query["profile.country"] = customFilters.country;
-      }
-      if (customFilters.role) {
-        query.role = customFilters.role;
-      }
-      if (customFilters.minSpent) {
-        query["rank.totalSpent"] = { $gte: customFilters.minSpent };
-      }
-    }
-
-    // Get all matching users
-    const users = await User.find(query).select(
-      "email profile.firstName profile.lastName"
+    // Fetch all users and orders
+    const allUsers = await User.find({ isActive: true }).select(
+      "email profile.firstName profile.lastName profile.country role rank.totalSpent"
+    );
+    const allOrders = await Order.find({}).select(
+      "userId guestEmail status paymentStatus totalAmount"
     );
 
-    if (users.length === 0) {
+    // Get all user IDs who have completed orders
+    const completedOrders = allOrders.filter(
+      (order) =>
+        order.status === "completed" && order.paymentStatus === "completed"
+    );
+    const purchasedUserIds = new Set(
+      completedOrders
+        .filter((order) => order.userId)
+        .map((order) => order.userId.toString())
+    );
+
+    // Calculate total spent per user from orders
+    const userTotalSpent = {};
+    completedOrders.forEach((order) => {
+      if (order.userId) {
+        const userId = order.userId.toString();
+        userTotalSpent[userId] =
+          (userTotalSpent[userId] || 0) + (order.totalAmount || 0);
+      }
+    });
+
+    // Get guest emails who have orders
+    const guestEmails = new Set(
+      allOrders
+        .filter((order) => order.guestEmail && !order.userId)
+        .map((order) => order.guestEmail.toLowerCase())
+    );
+
+    // Filter users based on target category
+    let filteredUsers = [];
+
+    if (targetUsers === "all") {
+      filteredUsers = allUsers;
+    } else if (targetUsers === "guest") {
+      // Guest users - users who have orders but never logged in (guestEmail in orders)
+      filteredUsers = allUsers.filter((user) =>
+        guestEmails.has(user.email.toLowerCase())
+      );
+    } else if (targetUsers === "loggedIn") {
+      // All logged in users (all users in User collection)
+      filteredUsers = allUsers;
+    } else if (targetUsers === "purchased") {
+      // Users with at least one completed order
+      filteredUsers = allUsers.filter((user) =>
+        purchasedUserIds.has(user._id.toString())
+      );
+    } else if (targetUsers === "loggedInNoPurchase") {
+      // Logged in users who never made a purchase
+      filteredUsers = allUsers.filter(
+        (user) => !purchasedUserIds.has(user._id.toString())
+      );
+    }
+
+    // Apply custom filters
+    if (customFilters) {
+      // Country filter - multi-select
+      if (
+        customFilters.countries &&
+        customFilters.countries.length > 0 &&
+        !customFilters.countries.includes("all")
+      ) {
+        filteredUsers = filteredUsers.filter((user) =>
+          customFilters.countries.includes(user.profile?.country)
+        );
+      }
+
+      // Role filter - multi-select
+      if (customFilters.roles && customFilters.roles.length > 0) {
+        filteredUsers = filteredUsers.filter((user) =>
+          customFilters.roles.includes(user.role)
+        );
+      }
+
+      // Min spent filter - using calculated total from orders
+      if (customFilters.minSpent) {
+        const minSpent = parseFloat(customFilters.minSpent);
+        filteredUsers = filteredUsers.filter(
+          (user) => (userTotalSpent[user._id.toString()] || 0) >= minSpent
+        );
+      }
+    }
+
+    if (filteredUsers.length === 0) {
       return NextResponse.json(
         { error: "No users found matching the criteria" },
         { status: 404 }
@@ -61,7 +117,7 @@ export async function POST(request) {
     }
 
     // Extract emails
-    const emails = users.map((user) => user.email);
+    const emails = filteredUsers.map((user) => user.email);
 
     // Send bulk email
     const emailSent = await sendBulkNotificationEmail(emails, subject, message);
@@ -77,7 +133,7 @@ export async function POST(request) {
       success: true,
       message: `Bulk notification sent successfully to ${emails.length} users`,
       recipientCount: emails.length,
-      users: users.map((user) => ({
+      users: filteredUsers.map((user) => ({
         email: user.email,
         name: user.profile.firstName + " " + (user.profile.lastName || ""),
       })),
@@ -95,62 +151,72 @@ export async function GET(request) {
   try {
     await connectToDatabase();
 
-    // Get user statistics for the bulk notification form
-    const stats = await User.aggregate([
-      { $match: { isActive: true } },
-      {
-        $group: {
-          _id: null,
-          totalUsers: { $sum: 1 },
-          premiumUsers: {
-            $sum: {
-              $cond: [
-                { $in: ["$rank.level", ["gold", "platinum", "diamond"]] },
-                1,
-                0,
-              ],
-            },
-          },
-          newUsers: {
-            $sum: {
-              $cond: [
-                {
-                  $gte: [
-                    "$createdAt",
-                    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-                  ],
-                },
-                1,
-                0,
-              ],
-            },
-          },
-          inactiveUsers: {
-            $sum: {
-              $cond: [
-                {
-                  $lt: [
-                    "$lastLogin",
-                    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-                  ],
-                },
-                1,
-                0,
-              ],
-            },
-          },
-        },
-      },
-    ]);
+    // Fetch all users and orders
+    const allUsers = await User.find({ isActive: true }).select(
+      "email profile.country"
+    );
+    const allOrders = await Order.find({}).select(
+      "userId guestEmail status paymentStatus"
+    );
+
+    // Get completed orders
+    const completedOrders = allOrders.filter(
+      (order) =>
+        order.status === "completed" && order.paymentStatus === "completed"
+    );
+
+    // Get all user IDs who have completed orders
+    const purchasedUserIds = new Set(
+      completedOrders
+        .filter((order) => order.userId)
+        .map((order) => order.userId.toString())
+    );
+
+    // Get guest emails from orders
+    const guestEmails = new Set(
+      allOrders
+        .filter((order) => order.guestEmail && !order.userId)
+        .map((order) => order.guestEmail.toLowerCase())
+    );
+
+    // Calculate stats
+    const totalUsers = allUsers.length;
+
+    // Guest users - those who made orders but are in user collection (had guest checkout then registered)
+    const guestUsers = allUsers.filter((user) =>
+      guestEmails.has(user.email.toLowerCase())
+    ).length;
+
+    // All logged in users = all users in User collection
+    const loggedInUsers = totalUsers;
+
+    // Users with at least one completed order
+    const purchasedUsers = allUsers.filter((user) =>
+      purchasedUserIds.has(user._id.toString())
+    ).length;
+
+    // Logged in but never purchased
+    const loggedInNoPurchase = totalUsers - purchasedUsers;
+
+    // Extract unique countries from users
+    const countriesSet = new Set();
+    allUsers.forEach((user) => {
+      if (user.profile?.country) {
+        countriesSet.add(user.profile.country);
+      }
+    });
+    const countries = Array.from(countriesSet).sort();
 
     return NextResponse.json({
       success: true,
-      stats: stats[0] || {
-        totalUsers: 0,
-        premiumUsers: 0,
-        newUsers: 0,
-        inactiveUsers: 0,
+      stats: {
+        totalUsers,
+        guestUsers,
+        loggedInUsers,
+        purchasedUsers,
+        loggedInNoPurchase,
       },
+      countries,
     });
   } catch (error) {
     console.error("Error fetching user stats:", error);

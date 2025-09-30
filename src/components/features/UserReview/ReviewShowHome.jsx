@@ -1,7 +1,10 @@
 "use client";
+import Button from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FaQuoteLeft, FaStar } from "react-icons/fa";
+import { MdReviews } from "react-icons/md";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
@@ -18,11 +21,24 @@ const ReviewShowHome = () => {
 
   const fetchReviews = async () => {
     try {
-      const response = await fetch("/api/reviews?approved=true&limit=20");
+      const response = await fetch(
+        "/api/reviews?approved=true&limit=20&populate=userId"
+      );
       const data = await response.json();
 
       if (data.success) {
-        setReviews(data.data);
+        const currentTime = new Date();
+        // Filter reviews to only show those that are ready to be displayed
+        const filteredReviews = data.data.filter((review) => {
+          // If no scheduledFor, it's a regular review (always show)
+          if (!review.scheduledFor) {
+            return true;
+          }
+          // If scheduledFor exists, only show if it's in the past or current time
+          return new Date(review.scheduledFor) <= currentTime;
+        });
+
+        setReviews(filteredReviews);
       }
     } catch (error) {
       console.error("Error fetching reviews:", error);
@@ -52,6 +68,43 @@ const ReviewShowHome = () => {
         size={16}
       />
     ));
+  };
+
+  const getUserDisplayName = (review) => {
+    if (review.userId?.profile?.firstName && review.userId?.profile?.lastName) {
+      return `${review.userId.profile.firstName} ${review.userId.profile.lastName}`;
+    }
+    return review.uniqueName || "Anonymous";
+  };
+
+  const getUserInitial = (review) => {
+    if (review.userId?.profile?.firstName) {
+      return review.userId.profile.firstName.charAt(0).toUpperCase();
+    }
+    if (review.uniqueName) {
+      return review.uniqueName.charAt(0).toUpperCase();
+    }
+    return "A";
+  };
+
+  const getDisplayDate = (review) => {
+    // Use scheduledFor if available, otherwise use createdAt
+    const dateToUse = review.scheduledFor || review.createdAt;
+    return new Date(dateToUse)
+      .toLocaleString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      })
+      .replace(
+        /(\d+)\/(\d+)\/(\d+),?\s*(\d+):(\d+)\s*(AM|PM)/,
+        (match, month, day, year, hour, minute, period) => {
+          return `${year}/${month}/${day} ${hour}:${minute} ${period}`;
+        }
+      );
   };
 
   const CustomArrow = ({ className, style, onClick, direction }) => (
@@ -210,22 +263,14 @@ const ReviewShowHome = () => {
 
                     <div className="flex items-center">
                       <div className="w-12 h-12 bg-gradient-to-r from-[#00b877] to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                        {review.userId?.profile?.firstName?.charAt(0) || "A"}
+                        {getUserInitial(review)}
                       </div>
                       <div className="ml-3">
                         <h4 className="font-semibold text-white text-sm md:text-base">
-                          {review.userId?.profile?.firstName}{" "}
-                          {review.userId?.profile?.lastName}
+                          {getUserDisplayName(review)}
                         </h4>
                         <p className="text-gray-400 text-xs md:text-sm font-secondary">
-                          {new Date(review.createdAt).toLocaleDateString(
-                            "en-US",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            }
-                          )}
+                          {getDisplayDate(review)}
                         </p>
                       </div>
                     </div>
@@ -235,44 +280,16 @@ const ReviewShowHome = () => {
             ))}
           </Slider>
         </div>
-
-        {/* Statistics Bar */}
-        {stats && stats.starDistribution && (
-          <div className="mt-12 bg-gray-800 rounded-lg border border-gray-700 p-6">
-            <h3 className="text-xl font-semibold text-white mb-6 text-center">
-              Rating Breakdown
-            </h3>
-            <div className="max-w-md mx-auto space-y-2">
-              {[5, 4, 3, 2, 1].map((star) => {
-                const count = stats.starDistribution[star.toString()] || 0;
-                const percentage =
-                  stats.totalReviews > 0
-                    ? (count / stats.totalReviews) * 100
-                    : 0;
-
-                return (
-                  <div key={star} className="flex items-center">
-                    <span className="flex items-center w-16">
-                      <span className="text-sm mr-1 text-gray-300">{star}</span>
-                      <FaStar color="#00b877" size={12} />
-                    </span>
-                    <div className="flex-1 mx-3">
-                      <div className="bg-gray-700 rounded-full h-2">
-                        <div
-                          className="bg-[#00b877] h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${percentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    <span className="text-sm text-gray-400 w-12 text-right">
-                      {count}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        <div className="flex justify-center mt-10">
+          <Link href="/reviews">
+            <Button variant="primary" size="md" className="w-full md:w-auto">
+              <div className="flex items-center">
+                <MdReviews className="w-5 h-5 mr-2" />
+                See all reviews
+              </div>
+            </Button>
+          </Link>
+        </div>
 
         {/* Custom Slick Carousel Styles */}
         <style jsx global>{`

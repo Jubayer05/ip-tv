@@ -103,6 +103,16 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
         paymentMethod: "Manual",
         paymentGateway: "None",
         paymentStatus: "completed", // ensure completion on create
+        
+        // IPTV Configuration - include val and con parameters
+        lineType: sel.lineType || 0,
+        templateId: sel.templateId || 2,
+        macAddresses: sel.macAddresses || [],
+        adultChannelsConfig: sel.adultChannelsConfig || [],
+        generatedCredentials: sel.generatedCredentials || [],
+        val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1), // Add val parameter
+        con: sel.con || Number(sel.devices || 1), // Add con parameter
+        
         contactInfo: {
           fullName:
             `${user?.profile?.firstName || ""} ${
@@ -133,6 +143,31 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ paymentStatus: "completed" }),
         });
+      }
+
+      // Create IPTV accounts with val and con parameters
+      try {
+        const iptvResponse = await fetch("/api/iptv/create-account", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderNumber: data.order.orderNumber,
+            val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1),
+            con: sel.con || Number(sel.devices || 1),
+          }),
+        });
+
+        if (iptvResponse.ok) {
+          const iptvData = await iptvResponse.json();
+          console.log("IPTV accounts created:", iptvData);
+        } else {
+          console.error(
+            "Failed to create IPTV accounts:",
+            await iptvResponse.text()
+          );
+        }
+      } catch (iptvError) {
+        console.error("Error creating IPTV accounts:", iptvError);
       }
 
       try {
@@ -250,3 +285,19 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
     </>
   );
 }
+
+// Helper function to get package ID from duration
+const getPackageIdFromDuration = (durationMonths) => {
+  switch (durationMonths) {
+    case 1:
+      return 2; // 1 Month Subscription
+    case 3:
+      return 3; // 3 Month Subscription
+    case 6:
+      return 4; // 6 Month Subscription
+    case 12:
+      return 5; // 12 Month Subscription
+    default:
+      return 2; // Default to 1 month
+  }
+};

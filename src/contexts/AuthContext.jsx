@@ -1,6 +1,11 @@
 "use client";
 import { auth } from "@/lib/firebase";
 import {
+  getCustomErrorMessage,
+  getFirebaseErrorMessage,
+  isFirebaseError,
+} from "@/lib/firebaseErrorHandler";
+import {
   applyActionCode,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -109,9 +114,7 @@ export const AuthContextProvider = ({ children }) => {
     try {
       const response = await fetch("/api/auth/generate-token", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: userData._id,
           email: userData.email,
@@ -122,10 +125,15 @@ export const AuthContextProvider = ({ children }) => {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          setAuthToken(result.token);
-          // Store token in localStorage for persistence
-          localStorage.setItem("authToken", result.token);
-          return result.token;
+          const access = result.accessToken || result.token; // fallback if older API
+          if (access) {
+            setAuthToken(access);
+            localStorage.setItem("authToken", access);
+          }
+          if (result.refreshToken) {
+            localStorage.setItem("refreshToken", result.refreshToken);
+          }
+          return access;
         }
       }
       return null;
@@ -213,6 +221,34 @@ export const AuthContextProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  const isRsToken = (t) => {
+    try {
+      const header = JSON.parse(atob(t.split(".")[0]));
+      return typeof header?.alg === "string" && header.alg.startsWith("RS");
+    } catch {
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      if (!user) return;
+      const t =
+        typeof window !== "undefined"
+          ? localStorage.getItem("authToken")
+          : null;
+
+      // If missing OR it's an RS256 token (Firebase ID token), replace it with our HS256 app token
+      if (!t || isRsToken(t)) {
+        const newToken = await generateAuthToken(user);
+        if (newToken) {
+          setAuthToken(newToken);
+          localStorage.setItem("authToken", newToken);
+        }
+      }
+    })();
+  }, [user]);
+
   const signup = async (
     email,
     password,
@@ -273,11 +309,21 @@ export const AuthContextProvider = ({ children }) => {
         message: "Account created successfully!",
       };
     } catch (error) {
-      return { success: false, error: error.message };
+      // Use custom error handler for Firebase errors
+      const customError = isFirebaseError(error)
+        ? getFirebaseErrorMessage(error)
+        : getCustomErrorMessage("ACCOUNT_CREATION_FAILED", { email });
+
+      return { success: false, error: customError };
     }
   };
 
-  const login = async (email, password, recaptchaToken = null) => {
+  const login = async (
+    email,
+    password,
+    recaptchaToken = null,
+    visitorId = null
+  ) => {
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
@@ -285,33 +331,50 @@ export const AuthContextProvider = ({ children }) => {
         password
       );
 
-      // Always require 2FA - no need to check user settings
+      // Check if device is trusted when visitorId is provided
+      let requires2FA = true;
+
+      if (visitorId) {
+        try {
+          const response = await fetch("/api/auth/2fa/check-device", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, visitorId }),
+          });
+
+          const data = await response.json();
+
+          if (data.success && data.isTrusted) {
+            // Device is trusted, skip 2FA
+            requires2FA = false;
+
+            // Complete login immediately
+            await fetch(`/api/users/${email}/last-login`, { method: "PATCH" });
+            const mongoUser = await fetchUserData(email);
+            if (mongoUser) {
+              setUser(mongoUser);
+              await generateAuthToken(mongoUser);
+              setIs2FAPending(false);
+            }
+          }
+        } catch (error) {
+          console.error("Device check failed:", error);
+          // On error, require 2FA for security
+          requires2FA = true;
+        }
+      }
+
       return {
         success: true,
         user: userCredential.user,
-        requires2FA: true,
-        message: "2FA verification required",
+        requires2FA,
+        message: requires2FA ? "2FA verification required" : "Login successful",
       };
     } catch (error) {
-      // Provide custom error messages instead of Firebase technical errors
-      let customError = "Login failed. Please try again.";
-
-      if (error.code === "auth/invalid-credential") {
-        customError =
-          "Invalid email or password. Please check your credentials and try again.";
-      } else if (error.code === "auth/user-not-found") {
-        customError =
-          "No account found with this email address. Please check your email or create a new account.";
-      } else if (error.code === "auth/wrong-password") {
-        customError = "Incorrect password. Please try again.";
-      } else if (error.code === "auth/too-many-requests") {
-        customError = "Too many failed login attempts. Please try again later.";
-      } else if (error.code === "auth/network-request-failed") {
-        customError =
-          "Network error. Please check your internet connection and try again.";
-      } else if (error.code === "auth/user-disabled") {
-        customError = "This account has been disabled. Please contact support.";
-      }
+      // Use custom error handler for Firebase errors
+      const customError = isFirebaseError(error)
+        ? getFirebaseErrorMessage(error)
+        : getCustomErrorMessage("INVALID_CREDENTIALS");
 
       return { success: false, error: customError };
     }
@@ -333,7 +396,11 @@ export const AuthContextProvider = ({ children }) => {
       await sendPasswordResetEmail(auth, email);
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      const customError = isFirebaseError(error)
+        ? getFirebaseErrorMessage(error)
+        : getCustomErrorMessage("PASSWORD_RESET_FAILED");
+
+      return { success: false, error: customError };
     }
   };
 
@@ -345,7 +412,11 @@ export const AuthContextProvider = ({ children }) => {
       }
       return { success: false, error: "No user found" };
     } catch (error) {
-      return { success: false, error: error.message };
+      const customError = isFirebaseError(error)
+        ? getFirebaseErrorMessage(error)
+        : getCustomErrorMessage("VERIFICATION_FAILED");
+
+      return { success: false, error: customError };
     }
   };
 
@@ -354,7 +425,11 @@ export const AuthContextProvider = ({ children }) => {
       await applyActionCode(auth, actionCode);
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      const customError = isFirebaseError(error)
+        ? getFirebaseErrorMessage(error)
+        : getCustomErrorMessage("VERIFICATION_FAILED");
+
+      return { success: false, error: customError };
     }
   };
 
@@ -375,14 +450,19 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
-  const verify2FACode = async (email, code) => {
+  const verify2FACode = async (
+    email,
+    code,
+    visitorId = null,
+    deviceInfo = null
+  ) => {
     try {
       const response = await fetch("/api/auth/2fa/verify-code", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, code }),
+        body: JSON.stringify({ email, code, visitorId, deviceInfo }),
       });
 
       const data = await response.json();
@@ -460,7 +540,7 @@ export const AuthContextProvider = ({ children }) => {
     verify2FACode,
     complete2FALogin,
     generateAuthToken,
-    getAuthToken,
+    getAuthToken, // Make sure this line is present
     refreshAuthToken,
     setUserFromSocialLogin,
     is2FAPending,

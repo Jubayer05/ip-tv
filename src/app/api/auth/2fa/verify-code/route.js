@@ -6,7 +6,7 @@ export async function POST(request) {
   try {
     await connectToDatabase();
 
-    const { email, code } = await request.json();
+    const { email, code, visitorId, deviceInfo } = await request.json();
 
     if (!email || !code) {
       return NextResponse.json(
@@ -74,6 +74,11 @@ export async function POST(request) {
         },
       }
     );
+
+    // Add device as trusted if visitorId is provided
+    if (visitorId && deviceInfo) {
+      await user.addTrustedDevice(visitorId, deviceInfo);
+    }
 
     return NextResponse.json({
       success: true,

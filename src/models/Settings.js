@@ -19,6 +19,18 @@ const settingsSchema = new mongoose.Schema(
     contactInfo: {
       phoneNumber: { type: String, default: "+123 456 7890" },
       emailAddress: { type: String, default: "help@cheapstream.com" },
+      businessHours: { type: String, default: "Mon–Fri (09:00 AM – 5:00 PM)" },
+      message: {
+        type: String,
+        default:
+          "If you have any questions about your order, please describe it and include your Order ID in the message (example: zxxxx.xxxx.xxx).",
+      },
+      supportTicketButtonText: { type: String, default: "Submit Request" },
+      supportTicketSuccessMessage: {
+        type: String,
+        default:
+          "Your contact request has been submitted successfully. We'll get back to you soon!",
+      },
     },
 
     // Banner content management
@@ -192,6 +204,7 @@ const settingsSchema = new mongoose.Schema(
       },
       tawkTo: {
         propertyId: { type: String, default: "" },
+        widgetId: { type: String, default: "" },
       },
     },
 
@@ -564,6 +577,14 @@ const settingsSchema = new mongoose.Schema(
         },
       },
     },
+
+    // Email Content Management
+    emailContent: {
+      content: {
+        type: String,
+        default: "",
+      },
+    },
   },
   { timestamps: true }
 );
@@ -583,6 +604,12 @@ settingsSchema.statics.getSettings = async function () {
       contactInfo: {
         phoneNumber: "+123 456 7890",
         emailAddress: "help@cheapstream.com",
+        businessHours: "Mon–Fri (09:00 AM – 5:00 PM)",
+        message:
+          "If you have any questions about your order, please describe it and include your Order ID in the message (example: zxxxx.xxxx.xxx).",
+        supportTicketButtonText: "Submit Request",
+        supportTicketSuccessMessage:
+          "Your contact request has been submitted successfully. We'll get back to you soon!",
       },
       banners: {
         home: {
@@ -672,6 +699,7 @@ settingsSchema.statics.getSettings = async function () {
         },
         tawkTo: {
           propertyId: "",
+          widgetId: "",
         },
       },
       loginOptions: {
@@ -877,6 +905,9 @@ settingsSchema.statics.getSettings = async function () {
           },
         },
       },
+      emailContent: {
+        content: "",
+      },
     });
     return doc;
   }
@@ -892,6 +923,12 @@ settingsSchema.statics.getSettings = async function () {
     doc.contactInfo = {
       phoneNumber: "+123 456 7890",
       emailAddress: "help@cheapstream.com",
+      businessHours: "Mon–Fri (09:00 AM – 5:00 PM)",
+      message:
+        "If you have any questions about your order, please describe it and include your Order ID in the message (example: zxxxx.xxxx.xxx).",
+      supportTicketButtonText: "Submit Request",
+      supportTicketSuccessMessage:
+        "Your contact request has been submitted successfully. We'll get back to you soon!",
     };
     modified = true;
   }
@@ -1186,6 +1223,14 @@ settingsSchema.statics.getSettings = async function () {
             "Find answers to frequently asked questions about Cheap Stream's IPTV services, features, and troubleshooting.",
         },
       },
+    };
+    modified = true;
+  }
+
+  // Add email content defaults
+  if (!doc.emailContent) {
+    doc.emailContent = {
+      content: "",
     };
     modified = true;
   }

@@ -19,6 +19,124 @@ const getPackageId = (durationMonths) => {
   }
 };
 
+// Normalize various gateway statuses to our internal paymentStatus
+function mapRawStatusToPaymentStatus(rawStatus = "") {
+  const s = String(rawStatus).toLowerCase();
+
+  // Completed states
+  const completed = [
+    "paid",
+    "completed",
+    "confirmed",
+    "success",
+    "finished",
+    "succeeded",
+    "done",
+  ];
+  if (completed.includes(s)) return "completed";
+
+  // Failed/cancelled/expired
+  const failed = [
+    "failed",
+    "cancelled",
+    "canceled",
+    "expired",
+    "error",
+    "declined",
+    "rejected",
+  ];
+  if (failed.includes(s)) return "failed";
+
+  // Pending/waiting
+  const pending = [
+    "pending",
+    "processing",
+    "waiting",
+    "new",
+    "unpaid",
+    "inprogress",
+    "in_progress",
+  ];
+  if (pending.includes(s)) return "pending";
+
+  // Default to pending when unknown
+  return "pending";
+}
+
+// Apply gateway status + data to an order and trigger side-effects on completion
+export async function applyPaymentUpdate({
+  order,
+  orderId,
+  gatewayKey, // e.g., "plisioPayment", "hoodpayPayment", "paygatePayment"
+  rawStatus,
+  gatewayFields = {},
+  onCompleted, // optional async ({ order }) => {}
+  // Other props may be passed by some routes; safely ignored
+}) {
+  await connectToDatabase();
+
+  // Resolve order
+  let doc = order || null;
+  if (!doc && orderId) {
+    doc = await Order.findById(orderId);
+  }
+  if (!doc) {
+    throw new Error("Order not found for payment update");
+  }
+
+  const prevPaymentStatus = doc.paymentStatus;
+  const nextPaymentStatus =
+    rawStatus !== undefined
+      ? mapRawStatusToPaymentStatus(rawStatus)
+      : prevPaymentStatus;
+
+  // Update top-level statuses (keep orderStatus in sync)
+  if (nextPaymentStatus && nextPaymentStatus !== prevPaymentStatus) {
+    doc.paymentStatus = nextPaymentStatus;
+    doc.orderStatus =
+      nextPaymentStatus === "completed" ? "completed" : "pending";
+  }
+
+  // Merge gateway-specific fields if provided
+  if (gatewayKey) {
+    if (!doc[gatewayKey]) {
+      doc[gatewayKey] = {};
+    }
+    // Always store a raw status snapshot if given
+    if (rawStatus !== undefined) {
+      doc[gatewayKey].status = rawStatus;
+    }
+    // Merge extra fields
+    Object.assign(doc[gatewayKey], gatewayFields || {});
+    doc[gatewayKey].updatedAt = new Date().toISOString();
+  }
+
+  await doc.save();
+
+  // If we just transitioned to completed, trigger IPTV creation and any custom hook
+  const transitionedToCompleted =
+    prevPaymentStatus !== "completed" && doc.paymentStatus === "completed";
+
+  if (transitionedToCompleted) {
+    try {
+      // Create IPTV accounts and email credentials
+      await handlePaymentCompleted(doc.orderNumber);
+    } catch (e) {
+      console.error("handlePaymentCompleted failed:", e);
+    }
+
+    if (typeof onCompleted === "function") {
+      try {
+        await onCompleted({ order: doc });
+      } catch (e) {
+        console.error("onCompleted hook failed:", e);
+      }
+    }
+  }
+
+  return { success: true, orderId: doc._id, paymentStatus: doc.paymentStatus };
+}
+
 // Update the createIPTVAccount function to use the correct two-step process
 async function createIPTVAccount({
   username,
@@ -27,8 +145,11 @@ async function createIPTVAccount({
   lineType,
   macAddress,
   durationMonths,
+  val,
+  con,
 }) {
-  const packageId = getPackageId(durationMonths);
+  const packageId = val || getPackageId(durationMonths);
+  const deviceCount = con || 1;
 
   // Get IPTV API key from database
   const iptvApiKey = await getServerIptvApiKey();
@@ -92,8 +213,8 @@ async function createIPTVAccount({
       username: username,
       password: password,
       action: "update",
-      val: packageId, // package ID (2, 3, 4, or 5)
-      con: 1, // device count (1-3, max 3)
+      val: packageId, // Use val parameter or fallback to packageId
+      con: deviceCount, // Use con parameter or fallback to 1
     };
 
     console.log("Upgrade payload:", JSON.stringify(upgradePayload, null, 2));

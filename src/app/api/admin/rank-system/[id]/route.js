@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 export async function GET(request, { params }) {
   try {
     await connectToDatabase();
-    const { id } = params;
+    const { id } = await params;
 
     const rankSystem = await RankSystem.findById(id).select("-__v");
     if (!rankSystem) {
@@ -36,7 +36,7 @@ export async function PUT(request, { params }) {
     // For now, allowing all PUT requests - implement proper auth middleware
 
     await connectToDatabase();
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     // Check if rank system exists
@@ -96,7 +96,7 @@ export async function DELETE(request, { params }) {
     // For now, allowing all DELETE requests - implement proper auth middleware
 
     await connectToDatabase();
-    const { id } = params;
+    const { id } = await params;
 
     const rankSystem = await RankSystem.findById(id);
     if (!rankSystem) {

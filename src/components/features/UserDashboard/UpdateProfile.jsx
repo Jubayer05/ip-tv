@@ -15,12 +15,14 @@ import {
 import { useEffect, useState } from "react";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import Swal from "sweetalert2";
 
 const UpdateProfile = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -85,16 +87,73 @@ const UpdateProfile = () => {
     setError("");
   };
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      // For now, we'll use a local URL (you can implement VPS hosting later)
-      const localUrl = URL.createObjectURL(file);
-      setFormData((prev) => ({
-        ...prev,
-        photoUrl: localUrl,
-        avatar: localUrl, // Also update avatar field
-      }));
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid file type",
+        text: "Please select an image file",
+        confirmButtonColor: "#44dcf3",
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      Swal.fire({
+        icon: "error",
+        title: "File too large",
+        text: "Please select a file smaller than 5MB",
+        confirmButtonColor: "#44dcf3",
+      });
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/support/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFormData((prev) => ({
+          ...prev,
+          photoUrl: data.url,
+          avatar: data.url,
+        }));
+
+        Swal.fire({
+          icon: "success",
+          title: "Photo uploaded",
+          text: "Profile photo updated successfully",
+          confirmButtonColor: "#44dcf3",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      } else {
+        throw new Error(data.error || "Upload failed");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Upload failed",
+        text: "Failed to upload photo. Please try again.",
+        confirmButtonColor: "#44dcf3",
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -202,12 +261,17 @@ const UpdateProfile = () => {
 
             {isEditing && (
               <label className="absolute bottom-0 right-0 bg-cyan-400 p-2 rounded-full cursor-pointer hover:bg-cyan-300 transition-colors">
-                <Camera size={16} className="text-white" />
+                {uploading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Camera size={16} className="text-white" />
+                )}
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handlePhotoUpload}
                   className="hidden"
+                  disabled={uploading}
                 />
               </label>
             )}
@@ -217,6 +281,12 @@ const UpdateProfile = () => {
             <UserCheck size={16} />
             <span>{user?.email}</span>
           </div>
+
+          {isEditing && (
+            <p className="text-xs text-gray-500 mt-2">
+              Click the camera icon to upload a new photo
+            </p>
+          )}
         </div>
 
         {/* Profile Form */}

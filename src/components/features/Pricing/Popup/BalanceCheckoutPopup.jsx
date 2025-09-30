@@ -133,10 +133,12 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
 
         // IPTV Configuration - include all fields from selection
         lineType: sel.lineType || 0,
-        templateId: sel.templateId || 2,
+        templateId: sel.templateId || 2, // Default to template 2 (Europe) - valid template ID
         macAddresses: sel.macAddresses || [],
         adultChannelsConfig: sel.adultChannelsConfig || [],
         generatedCredentials: sel.generatedCredentials || [],
+        val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1), // Add val parameter
+        con: sel.con || Number(sel.devices || 1), // Add con parameter
 
         contactInfo: {
           fullName:
@@ -180,13 +182,15 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
         throw new Error(balanceErr?.error || "Failed to deduct balance");
       }
 
-      // Create IPTV accounts after successful payment
+      // Create IPTV accounts after successful payment with val and con parameters
       try {
-        const iptvResponse = await fetch("/api/iptv/create-accounts", {
+        const iptvResponse = await fetch("/api/iptv/create-account", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             orderNumber: data.order.orderNumber,
+            val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1),
+            con: sel.con || Number(sel.devices || 1),
           }),
         });
 
@@ -231,12 +235,6 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
         );
       } catch {}
 
-      Swal.fire({
-        icon: "success",
-        title: "Payment Successful!",
-        text: "Your order has been completed using your balance. A confirmation email has been sent to your email address.",
-      });
-
       onSuccess && onSuccess();
       onClose();
     } catch (e) {
@@ -248,6 +246,22 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
       });
     } finally {
       setPlacing(false);
+    }
+  };
+
+  // Helper function to get package ID from duration
+  const getPackageIdFromDuration = (durationMonths) => {
+    switch (durationMonths) {
+      case 1:
+        return 2; // 1 Month Subscription
+      case 3:
+        return 3; // 3 Month Subscription
+      case 6:
+        return 4; // 6 Month Subscription
+      case 12:
+        return 5; // 12 Month Subscription
+      default:
+        return 2; // Default to 1 month
     }
   };
 

@@ -1,6 +1,6 @@
 "use client";
 import { useApi } from "@/hooks/useApi";
-import { Mail, Phone } from "lucide-react";
+import { Clock, Mail, MessageSquare, Phone, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const ManageContact = () => {
@@ -11,6 +11,10 @@ const ManageContact = () => {
   const [contactInfo, setContactInfo] = useState({
     phoneNumber: "",
     emailAddress: "",
+    businessHours: "Mon–Fri (09:00 AM – 5:00 PM)",
+    message: "If you have any questions about your order, please describe it and include your Order ID in the message (example: zxxxx.xxxx.xxx).",
+    supportTicketButtonText: "Submit Request",
+    supportTicketSuccessMessage: "Your contact request has been submitted successfully. We'll get back to you soon!",
   });
 
   useEffect(() => {
@@ -23,7 +27,14 @@ const ManageContact = () => {
       setError("");
       const response = await apiCall("/api/admin/settings", "GET");
       if (response.success) {
-        setContactInfo(response.data.contactInfo || contactInfo);
+        setContactInfo({
+          phoneNumber: response.data.contactInfo?.phoneNumber || "",
+          emailAddress: response.data.contactInfo?.emailAddress || "",
+          businessHours: response.data.contactInfo?.businessHours || "Mon–Fri (09:00 AM – 5:00 PM)",
+          message: response.data.contactInfo?.message || "If you have any questions about your order, please describe it and include your Order ID in the message (example: zxxxx.xxxx.xxx).",
+          supportTicketButtonText: response.data.contactInfo?.supportTicketButtonText || "Submit Request",
+          supportTicketSuccessMessage: response.data.contactInfo?.supportTicketSuccessMessage || "Your contact request has been submitted successfully. We'll get back to you soon!",
+        });
       }
     } catch (error) {
       console.error("Failed to fetch settings:", error);
@@ -69,10 +80,10 @@ const ManageContact = () => {
           Contact Information Management
         </h2>
         <p className="text-gray-300 text-sm mb-6">
-          Manage your contact information that will be displayed in the footer.
+          Manage your contact information that will be displayed in the footer and contact form.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-8">
           {/* Contact Information Section */}
           <div>
             <h3 className="text-lg font-semibold mb-4 text-white">
@@ -113,26 +124,129 @@ const ManageContact = () => {
             </div>
           </div>
 
-          {error && <div className="text-sm text-red-400">{error}</div>}
+          {/* Business Hours Section */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-white">
+              Business Hours
+            </h3>
+            <div className="space-y-2">
+              <label className="flex items-center space-x-2 text-sm text-gray-300">
+                <Clock className="w-4 h-4 text-gray-400" />
+                <span>Business Hours</span>
+              </label>
+              <input
+                type="text"
+                value={contactInfo.businessHours}
+                onChange={(e) =>
+                  handleContactChange("businessHours", e.target.value)
+                }
+                placeholder="e.g., Mon–Fri (09:00 AM – 5:00 PM)"
+                className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+              />
+              <p className="text-xs text-gray-500">
+                This will be displayed in the footer
+              </p>
+            </div>
+          </div>
+
+          {/* Support Message Section */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-white">
+              Support Message
+            </h3>
+            <div className="space-y-2">
+              <label className="flex items-center space-x-2 text-sm text-gray-300">
+                <MessageSquare className="w-4 h-4 text-gray-400" />
+                <span>Help Message</span>
+              </label>
+              <textarea
+                value={contactInfo.message}
+                onChange={(e) =>
+                  handleContactChange("message", e.target.value)
+                }
+                placeholder="Enter help message for users"
+                rows={3}
+                className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 resize-none"
+              />
+              <p className="text-xs text-gray-500">
+                This message will be shown above the contact form
+              </p>
+            </div>
+          </div>
+
+          {/* Support Ticket Settings Section */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-white">
+              Support Ticket Settings
+            </h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm text-gray-300">
+                  Button Text
+                </label>
+                <input
+                  type="text"
+                  value={contactInfo.supportTicketButtonText}
+                  onChange={(e) =>
+                    handleContactChange("supportTicketButtonText", e.target.value)
+                  }
+                  placeholder="e.g., Submit Request"
+                  className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                />
+                <p className="text-xs text-gray-500">
+                  Text for the submit button on contact form
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm text-gray-300">
+                  Success Message
+                </label>
+                <textarea
+                  value={contactInfo.supportTicketSuccessMessage}
+                  onChange={(e) =>
+                    handleContactChange("supportTicketSuccessMessage", e.target.value)
+                  }
+                  placeholder="Enter success message"
+                  rows={2}
+                  className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 resize-none"
+                />
+                <p className="text-xs text-gray-500">
+                  Message shown after successful form submission
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Status Messages */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
           {saved && (
-            <div className="text-sm text-green-400">Settings saved</div>
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+              <p className="text-sm text-green-400">Settings saved successfully!</p>
+            </div>
           )}
 
-          <div className="flex gap-3">
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={fetchSettings}
               disabled={loading}
-              className="px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Refresh
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Saving..." : "Save"}
+              <Save className="w-4 h-4" />
+              {loading ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>

@@ -2,8 +2,9 @@
 import TableCustom from "@/components/ui/TableCustom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const BillingTable = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
@@ -11,6 +12,7 @@ const BillingTable = () => {
   const [billingData, setBillingData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const searchInputRef = useRef(null);
 
   const ORIGINAL_LOADING = "Loading billing data...";
   const ORIGINAL_ERROR = "Failed to load billing data";
@@ -19,7 +21,7 @@ const BillingTable = () => {
     orderNumber: "Order Number",
     customerName: "Customer Name",
     customerEmail: "Customer Email",
-    userType: "User Type", // Add this new column
+    userType: "User Type",
     plan: "Plan",
     devices: "Devices",
     quantity: "Quantity",
@@ -36,8 +38,7 @@ const BillingTable = () => {
   };
 
   // Add filter state
-  const [userFilter, setUserFilter] = useState("all"); // "all", "registered", "guest"
-  // Update the fetchOrderData function to support admin features
+  const [userFilter, setUserFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [pagination, setPagination] = useState({
@@ -47,27 +48,40 @@ const BillingTable = () => {
     pages: 0,
   });
 
+  // Debounce search term
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
   const [title, setTitle] = useState(ORIGINAL_TITLE);
   const [columns, setColumns] = useState(ORIGINAL_COLUMNS);
-  const [statuses, setStatuses] = useState(ORIGINAL_STATUSES);
 
-  // Add search and filter handlers
-  const handleSearch = (value) => {
+  // Handle search input changes
+  const handleSearchChange = (value) => {
     setSearchTerm(value);
-    setPagination((prev) => ({ ...prev, current: 1 })); // Reset to first page
-    fetchOrderData(1, value, statusFilter);
+    setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const handleStatusFilter = (status) => {
     setStatusFilter(status);
-    setPagination((prev) => ({ ...prev, current: 1 })); // Reset to first page
-    fetchOrderData(1, searchTerm, status);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    fetchOrderData(1, debouncedSearchTerm, status);
   };
 
-  const handlePageChange = (page) => {
-    setPagination((prev) => ({ ...prev, current: page }));
-    fetchOrderData(page, searchTerm, statusFilter);
+  // Clear search
+  const clearSearch = () => {
+    setSearchTerm("");
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    // Keep focus on the input after clearing
+    requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+    });
   };
+
+  // Effect to trigger search when debounced term changes
+  useEffect(() => {
+    if (user?.email) {
+      fetchOrderData(1, debouncedSearchTerm, statusFilter);
+    }
+  }, [debouncedSearchTerm]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch order data from Order model
   const fetchOrderData = async (
@@ -150,7 +164,6 @@ const BillingTable = () => {
             paymentStatus: order.paymentStatus || "Unknown",
             orderDate: new Date(order.createdAt).toLocaleDateString(),
             createdAt: order.createdAt,
-            // Add more fields as needed
             lineType: product.lineType || 0,
             adultChannels: product.adultChannels || false,
             iptvCredentials: order.iptvCredentials || [],
@@ -185,7 +198,7 @@ const BillingTable = () => {
     if (user?.email) {
       fetchOrderData(1, "", "all");
     }
-  }, [user?.email, hasAdminAccess]);
+  }, [user?.email, hasAdminAccess]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // Only translate when language is loaded and not English
@@ -206,7 +219,7 @@ const BillingTable = () => {
         ORIGINAL_COLUMNS.totalAmount,
         ORIGINAL_COLUMNS.orderStatus,
         ORIGINAL_COLUMNS.date,
-        ORIGINAL_COLUMNS.userType, // Add this to translation items
+        ORIGINAL_COLUMNS.userType,
         ORIGINAL_STATUSES.pending,
         ORIGINAL_STATUSES.completed,
         ORIGINAL_STATUSES.failed,
@@ -229,7 +242,7 @@ const BillingTable = () => {
         tTotalAmount,
         tOrderStatus,
         tDate,
-        tUserType, // Add this to setColumns
+        tUserType,
         tPending,
         tCompleted,
         tFailed,
@@ -237,25 +250,20 @@ const BillingTable = () => {
         tCancelled,
       ] = translated;
 
+      // Update localized strings
+      // Keep ORIGINAL_* constants unchanged; only update state
       setTitle(tTitle);
       setColumns({
         orderNumber: tOrderNumber,
         customerName: tCustomerName,
         customerEmail: tCustomerEmail,
-        userType: tUserType, // Add this to setColumns
+        userType: tUserType,
         plan: tPlan,
         devices: tDevices,
         quantity: tQuantity,
         totalAmount: tTotalAmount,
         orderStatus: tOrderStatus,
         date: tDate,
-      });
-      setStatuses({
-        pending: tPending,
-        completed: tCompleted,
-        failed: tFailed,
-        refunded: tRefunded,
-        cancelled: tCancelled,
       });
     })();
 
@@ -271,6 +279,7 @@ const BillingTable = () => {
         title: columns.orderNumber,
         dataIndex: "orderNumber",
         key: "orderNumber",
+        width: "120px",
         render: (text) => (
           <span className="text-gray-300 text-xs sm:text-sm font-secondary pl-1 sm:pl-2 md:pl-5 break-all">
             {text}
@@ -297,7 +306,7 @@ const BillingTable = () => {
         {
           title: columns.customerEmail,
           dataIndex: "customerEmail",
-          width: "250px",
+          width: "200px",
           key: "customerEmail",
           render: (text) => (
             <span className="text-gray-300 text-xs sm:text-sm font-secondary break-all">
@@ -310,7 +319,7 @@ const BillingTable = () => {
           dataIndex: "userType",
           key: "userType",
           align: "center",
-          width: "120px",
+          width: "100px",
           render: (text) => {
             const isGuest = text === "Guest";
             const statusClass = isGuest
@@ -336,6 +345,7 @@ const BillingTable = () => {
         dataIndex: "plan",
         key: "plan",
         align: "center",
+        width: "120px",
         render: (text) => (
           <span className="text-gray-300 text-xs sm:text-sm font-secondary pl-1 sm:pl-2 md:pl-5 break-all">
             {text}
@@ -347,6 +357,7 @@ const BillingTable = () => {
         dataIndex: "devices",
         key: "devices",
         align: "center",
+        width: "80px",
         render: (text) => (
           <span className="text-gray-300 text-xs sm:text-sm font-secondary">
             {text}
@@ -358,6 +369,7 @@ const BillingTable = () => {
         dataIndex: "quantity",
         key: "quantity",
         align: "center",
+        width: "80px",
         render: (text) => (
           <span className="text-gray-300 text-xs sm:text-sm font-secondary">
             {text}
@@ -369,20 +381,20 @@ const BillingTable = () => {
         dataIndex: "totalAmount",
         key: "totalAmount",
         align: "center",
+        width: "120px",
         render: (text) => (
           <span className="text-gray-300 text-xs sm:text-sm font-secondary">
             {text}
           </span>
         ),
       },
-
       {
         title: columns.orderStatus,
-        dataIndex: "orderStatus",
+        dataIndex: "paymentStatus",
         key: "orderStatus",
         align: "center",
+        width: "120px",
         render: (status) => {
-          // Map Plisio invoice status to appropriate styling
           let statusClass = "";
           let displayText = status;
 
@@ -393,19 +405,16 @@ const BillingTable = () => {
                 "bg-green-500/20 text-green-400 border border-green-500/30";
               displayText = "Completed";
               break;
-
             case "pending":
               statusClass =
                 "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30";
               displayText = "Pending";
               break;
-
             case "new":
               statusClass =
                 "bg-blue-500/20 text-blue-400 border border-blue-500/30";
               displayText = "New";
               break;
-
             case "failed":
             case "error":
             case "cancelled":
@@ -413,19 +422,16 @@ const BillingTable = () => {
                 "bg-red-500/20 text-red-400 border border-red-500/30";
               displayText = status === "cancelled" ? "Cancelled" : "Failed";
               break;
-
             case "expired":
               statusClass =
                 "bg-gray-500/20 text-gray-400 border border-gray-500/30";
               displayText = "Expired";
               break;
-
             case "refunded":
               statusClass =
                 "bg-purple-500/20 text-purple-400 border border-purple-500/30";
               displayText = "Refunded";
               break;
-
             default:
               statusClass =
                 "bg-gray-500/20 text-gray-400 border border-gray-500/30";
@@ -441,12 +447,12 @@ const BillingTable = () => {
           );
         },
       },
-
       {
         title: columns.date,
-        dataIndex: "orderDate", // Changed from "date" to "orderDate"
+        dataIndex: "orderDate",
         key: "date",
         align: "center",
+        width: "120px",
         render: (text) => (
           <span className="text-gray-300 text-xs sm:text-sm font-secondary">
             {text}
@@ -468,63 +474,16 @@ const BillingTable = () => {
 
     // Apply search filter
     let searchMatch = true;
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
+    if (debouncedSearchTerm.trim()) {
+      const searchLower = debouncedSearchTerm.toLowerCase();
       searchMatch =
         order.orderNumber?.toLowerCase().includes(searchLower) ||
-        order.orderId?.toString().toLowerCase().includes(searchLower);
+        order.orderId?.toString().toLowerCase().includes(searchLower) ||
+        order.customerEmail?.toLowerCase().includes(searchLower);
     }
 
     return userTypeMatch && searchMatch;
   });
-
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-5xl mx-auto font-secondary">
-        <div className="flex items-center justify-center h-20 sm:h-24 md:h-32">
-          <div className="text-gray-400 text-xs sm:text-sm md:text-base text-center">
-            {ORIGINAL_LOADING}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show error state
-  if (error) {
-    return (
-      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6  w-full max-w-5xl mx-auto font-secondary">
-        <div className="flex flex-col items-center justify-center h-20 sm:h-24 md:h-32">
-          <div className="text-red-400 text-xs sm:text-sm md:text-base text-center mb-2">
-            {ORIGINAL_ERROR}
-          </div>
-          <div className="text-gray-500 text-xs text-center">{error}</div>
-          <button
-            onClick={() => fetchOrderData(1, searchTerm, statusFilter)}
-            className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Show empty state
-  if (billingData.length === 0) {
-    return (
-      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-5xl mx-auto font-secondary">
-        <div className="flex items-center justify-center h-20 sm:h-24 md:h-32">
-          <div className="text-gray-400 text-xs sm:text-sm md:text-base text-center">
-            {hasAdminAccess()
-              ? "No orders found in the system"
-              : "No orders found"}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="mt-4 sm:mt-6 font-secondary">
@@ -535,16 +494,19 @@ const BillingTable = () => {
             <Search className="h-5 w-5 text-gray-400" />
           </div>
           <input
+            ref={searchInputRef}
             type="text"
-            placeholder="Search by Order Number or Order ID..."
+            placeholder="Search by Order Number, Order ID, or Email..."
             value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-[#0c171c] border border-white/15 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 transition-colors"
+            autoComplete="off"
           />
           {searchTerm && (
             <button
-              onClick={() => handleSearch("")}
+              onClick={clearSearch}
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+              type="button"
             >
               <X className="h-5 w-5" />
             </button>
@@ -553,12 +515,15 @@ const BillingTable = () => {
       </div>
 
       {/* Search Results Info */}
-      {searchTerm && (
+      {debouncedSearchTerm && (
         <div className="mb-4 text-center">
           <p className="text-gray-400 text-sm">
             Showing {filteredData.length} of {billingData.length} orders
             {filteredData.length !== billingData.length && (
-              <span className="text-cyan-400"> for "{searchTerm}"</span>
+              <span className="text-cyan-400">
+                {" "}
+                for "{debouncedSearchTerm}"
+              </span>
             )}
           </p>
         </div>
@@ -630,22 +595,62 @@ const BillingTable = () => {
         </div>
       )}
 
-      <TableCustom
-        title={`${title}${hasAdminAccess() ? " - All Orders" : ""}`}
-        data={filteredData} // Use filtered data instead of billingData
-        columns={buildTableColumns()}
-        pageSize={5}
-        showButton={false}
-        showPagination={true}
-        showHeader={true}
-        className="overflow-x-auto"
-        pagination={{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          total: pagination.total,
-          onChange: handlePageChange,
-        }}
-      />
+      {/* Table - keep header visible; swap only the table area */}
+      {error ? (
+        <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-5xl mx-auto font-secondary">
+          <div className="flex flex-col items-center justify-center h-20 sm:h-24 md:h-32">
+            <div className="text-red-400 text-xs sm:text-sm md:text-base text-center mb-2">
+              {ORIGINAL_ERROR}
+            </div>
+            <div className="text-gray-500 text-xs text-center">{error}</div>
+            <button
+              onClick={() =>
+                fetchOrderData(1, debouncedSearchTerm, statusFilter)
+              }
+              className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      ) : loading ? (
+        <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-5xl mx-auto font-secondary">
+          <div className="flex items-center justify-center h-20 sm:h-24 md:h-32">
+            <div className="text-gray-400 text-xs sm:text-sm md:text-base text-center">
+              {ORIGINAL_LOADING}
+            </div>
+          </div>
+        </div>
+      ) : billingData.length === 0 ? (
+        <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-5xl mx-auto font-secondary">
+          <div className="flex items-center justify-center h-20 sm:h-24 md:h-32">
+            <div className="text-gray-400 text-xs sm:text-sm md:text-base text-center">
+              {hasAdminAccess()
+                ? "No orders found in the system"
+                : "No orders found"}
+            </div>
+          </div>
+        </div>
+      ) : filteredData.length === 0 ? (
+        <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-5xl mx-auto font-secondary">
+          <div className="flex items-center justify-center h-20 sm:h-24 md:h-32">
+            <div className="text-gray-400 text-xs sm:text-sm md:text-base text-center">
+              No orders match your search criteria
+            </div>
+          </div>
+        </div>
+      ) : (
+        <TableCustom
+          title={`${title}${hasAdminAccess() ? " - All Orders" : ""}`}
+          data={filteredData}
+          columns={buildTableColumns()}
+          pageSize={10}
+          showButton={false}
+          showHeader={true}
+          className="overflow-x-auto"
+          rowKey="key"
+        />
+      )}
     </div>
   );
 };

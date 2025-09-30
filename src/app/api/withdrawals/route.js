@@ -108,7 +108,7 @@ export async function POST(request) {
 export async function PATCH(request, { params }) {
   try {
     await connectToDatabase();
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { status, adminNotes, processedBy } = body;
 

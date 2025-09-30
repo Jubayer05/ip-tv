@@ -1,5 +1,10 @@
 import nodemailer from "nodemailer";
+import Settings from "../models/Settings";
+import { connectToDatabase } from "./db";
 import { getServerApiKeys, getServerSmtpUser } from "./serverApiKeys";
+
+// Add this helper function at the top of the file after imports
+const getCurrentYear = () => new Date().getFullYear();
 
 // Create transporter using database SMTP settings
 export const createTransporter = async () => {
@@ -27,8 +32,29 @@ export const createTransporter = async () => {
 };
 
 // Helper function to get SMTP user from database (server-side)
-const getSmtpUser = async () => {
+export const getSmtpUser = async () => {
   return await getServerSmtpUser();
+};
+
+// Generic email sending function
+export const sendGenericEmail = async ({ to, subject, html }) => {
+  try {
+    const smtpUser = await getSmtpUser();
+    const transporter = await createTransporter();
+
+    const mailOptions = {
+      from: `"Cheap Stream" <${smtpUser}>`,
+      to,
+      subject,
+      html,
+    };
+
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error("Generic email sending failed:", error);
+    return false;
+  }
 };
 
 export async function sendVerificationEmail(email, token, firstName) {
@@ -255,6 +281,16 @@ export async function sendIPTVCredentialsEmail({ toEmail, fullName, order }) {
   const smtpUser = await getSmtpUser();
   const productLine = order.products?.[0] || {};
 
+  // Fetch email content directly from DB (avoid API fetch in mailer context)
+  let emailContent = { content: "" };
+  try {
+    await connectToDatabase();
+    const settings = await Settings.getSettings();
+    emailContent = { content: settings?.emailContent?.content || "" };
+  } catch (error) {
+    console.error("Error loading email content from DB:", error);
+  }
+
   // Line type names
   const lineTypeNames = {
     0: "M3U Playlist",
@@ -318,7 +354,7 @@ export async function sendIPTVCredentialsEmail({ toEmail, fullName, order }) {
     })
     .join("");
 
-  // Generate connection info for M3U
+  // Generate connection info for M3U - Construct URL if not available
   const m3uCredentials = order.iptvCredentials.filter(
     (cred) => cred.lineType === 0
   );
@@ -329,13 +365,26 @@ export async function sendIPTVCredentialsEmail({ toEmail, fullName, order }) {
       <h3 style="color: #333; margin: 0 0 15px 0;">📱 Connection Information</h3>
       ${m3uCredentials
         .map((cred) => {
-          const lines = cred.lineInfo.split("\n");
-          const m3uUrl = lines.find((line) => line.includes("m3u_plus")) || "";
-          const iptvUrl =
-            lines
-              .find((line) => line.includes("IPTV Url:"))
-              ?.replace("IPTV Url:", "")
-              .trim() || "";
+          // Try to extract M3U URL from lineInfo, or construct it
+          let m3uUrl = "";
+          let iptvUrl = "";
+
+          if (cred.lineInfo) {
+            const lines = cred.lineInfo.split("\n");
+            m3uUrl = lines.find((line) => line.includes("m3u_plus")) || "";
+            iptvUrl =
+              lines
+                .find((line) => line.includes("IPTV Url:"))
+                ?.replace("IPTV Url:", "")
+                .trim() || "";
+          }
+
+          // If M3U URL is not found in lineInfo, construct it
+          if (!m3uUrl && cred.username && cred.password) {
+            // Construct M3U URL based on common IPTV service patterns
+            m3uUrl = `http://zlive.cc:8080/get.php?username=${cred.username}&password=${cred.password}&type=m3u_plus&output=ts`;
+            iptvUrl = `http://zlive.cc:8080/get.php?username=${cred.username}&password=${cred.password}&type=m3u_plus&output=ts`;
+          }
 
           return `
           <div style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid #00b877;">
@@ -355,7 +404,7 @@ export async function sendIPTVCredentialsEmail({ toEmail, fullName, order }) {
             <div style="margin-bottom: 10px;">
               <strong>M3U Playlist URL:</strong>
               <div style="background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 12px; word-break: break-all; margin-top: 5px;">
-                ${m3uUrl}
+                ${m3uUrl || "URL not available"}
               </div>
             </div>
             ${
@@ -424,6 +473,18 @@ export async function sendIPTVCredentialsEmail({ toEmail, fullName, order }) {
     </div>
   `
       : "";
+
+  // Generate dynamic guides section
+  const dynamicGuides = emailContent.content
+    ? `
+    <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 25px 0;">
+      <h3 style="color: #333; margin: 0 0 15px 0;">📚 Setup Guide</h3>
+      <div style="color: #555; line-height: 1.6;">
+        ${emailContent.content}
+      </div>
+    </div>
+  `
+    : "";
 
   const mailOptions = {
     from: `"Cheap Stream" <${smtpUser}>`,
@@ -494,24 +555,7 @@ export async function sendIPTVCredentialsEmail({ toEmail, fullName, order }) {
             </div>
           </div>
 
-          <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 25px 0;">
-            <h3 style="color: #155724; margin: 0 0 15px 0;">🎯 Quick Start Guide</h3>
-            <ol style="color: #155724; margin: 0; padding-left: 20px; line-height: 1.8;">
-              <li><strong>Download an IPTV Player:</strong> We recommend VLC, IPTV Smarters, or TiviMate</li>
-              <li><strong>Add Your Credentials:</strong> Use the username and password from the table above</li>
-              ${
-                m3uCredentials.length > 0
-                  ? "<li><strong>M3U Users:</strong> Copy the M3U URL and paste it into your player</li>"
-                  : ""
-              }
-              ${
-                order.iptvCredentials.some((c) => c.lineType > 0)
-                  ? "<li><strong>MAG/Enigma2 Users:</strong> Enter the server URL and your MAC address</li>"
-                  : ""
-              }
-              <li><strong>Start Streaming:</strong> Enjoy thousands of channels and on-demand content!</li>
-            </ol>
-          </div>
+          ${dynamicGuides}
 
           <div style="text-align: center; margin: 30px 0;">
             <a href="${baseUrl}/dashboard/orders" 
@@ -676,152 +720,67 @@ export async function sendBulkNotificationEmail(emails, subject, htmlContent) {
   }
 }
 
-export async function sendOrderConfirmationEmail({
-  toEmail,
-  fullName,
-  order,
-  paymentMethod = "Balance",
+export async function sendContactFormEmail({
+  firstName,
+  lastName,
+  email,
+  subject,
+  description,
 }) {
-  const baseUrl = "https://www.cheapstreamtv.com";
   const smtpUser = await getSmtpUser();
 
-  const productLine = order.products?.[0] || {};
-  const orderDate = new Date(
-    order.createdAt || Date.now()
-  ).toLocaleDateString();
-
   const mailOptions = {
-    from: `"Cheap Stream" <${smtpUser}>`,
-    to: toEmail,
-    subject: `Order Confirmation - ${order.orderNumber}`,
+    from: `"Cheap Stream Contact Form" <${smtpUser}>`,
+    to: smtpUser, // Send to the same SMTP user (admin email)
+    subject: `New Contact Form Submission: ${subject}`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #00b877 0%, #0aa86e 100%); padding: 30px; text-align: center; color: white;">
-          <h1 style="margin: 0; font-size: 28px;">Order Confirmed! 🎉</h1>
-          <p style="margin: 10px 0 0 0; opacity: 0.9;">Thank you for your purchase</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white;">
+          <h1 style="margin: 0; font-size: 28px;">Cheap Stream</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">New Contact Form Submission</p>
         </div>
-
-        <div style="padding: 30px; background: #ffffff;">
-          <h2 style="color: #333; margin-bottom: 20px;">Hi ${
-            fullName || "there"
-          }!</h2>
-          
-          <p style="color: #555; line-height: 1.6; margin-bottom: 25px;">
-            Your order has been successfully confirmed and payment processed. You can now access your IPTV service.
-          </p>
-
-          <!-- Order Details Card -->
-          <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0;">
-            <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">Order Details</h3>
+        
+        <div style="background: #f8f9fa; padding: 30px;">
+          <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="color: #333; margin-top: 0; border-bottom: 2px solid #667eea; padding-bottom: 10px;">
+              Contact Form Details
+            </h2>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-              <div>
-                <strong style="color: #555;">Order Number:</strong><br>
-                <span style="color: #333;">${order.orderNumber}</span>
-              </div>
-              <div>
-                <strong style="color: #555;">Order Date:</strong><br>
-                <span style="color: #333;">${orderDate}</span>
+            <div style="margin-bottom: 20px;">
+              <h3 style="color: #555; margin-bottom: 10px; font-size: 16px;">Contact Information</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #666; font-weight: bold; width: 120px;">Name:</td>
+                  <td style="padding: 8px 0; color: #333;">${firstName} ${lastName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666; font-weight: bold;">Email:</td>
+                  <td style="padding: 8px 0; color: #333;">${email}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666; font-weight: bold;">Subject:</td>
+                  <td style="padding: 8px 0; color: #333;">${subject}</td>
+                </tr>
+              </table>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+              <h3 style="color: #555; margin-bottom: 10px; font-size: 16px;">Message</h3>
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #667eea;">
+                <p style="margin: 0; color: #333; line-height: 1.6; white-space: pre-wrap;">${description}</p>
               </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-              <div>
-                <strong style="color: #555;">Service:</strong><br>
-                <span style="color: #333;">IPTV Subscription</span>
-              </div>
-              <div>
-                <strong style="color: #555;">Duration:</strong><br>
-                <span style="color: #333;">${
-                  productLine.duration || 1
-                } month(s)</span>
-              </div>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-              <div>
-                <strong style="color: #555;">Devices Allowed:</strong><br>
-                <span style="color: #333;">${
-                  productLine.devicesAllowed || 1
-                }</span>
-              </div>
-              <div>
-                <strong style="color: #555;">Adult Channels:</strong><br>
-                <span style="color: #333;">${
-                  productLine.adultChannels ? "Yes" : "No"
-                }</span>
-              </div>
-            </div>
-            
-            <div style="border-top: 1px solid #dee2e6; padding-top: 15px; margin-top: 15px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <strong style="color: #333; font-size: 18px;">Total Paid:</strong>
-                <span style="color: #00b877; font-size: 20px; font-weight: bold;">$${(
-                  order.totalAmount || 0
-                ).toFixed(2)}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
-                <span style="color: #666;">Payment Method:</span>
-                <span style="color: #333;">${paymentMethod}</span>
-              </div>
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee;">
+              <p style="color: #666; font-size: 14px; margin: 0;">
+                This message was sent from the Cheap Stream contact form on ${new Date().toLocaleString()}.
+              </p>
             </div>
           </div>
-
-          <!-- Access Information -->
-          <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 20px 0;">
-            <h3 style="color: #155724; margin: 0 0 15px 0;">🎯 What's Next?</h3>
-            <ul style="color: #155724; margin: 0; padding-left: 20px;">
-              <li>Your IPTV access keys have been generated</li>
-              <li>Check your dashboard for detailed setup instructions</li>
-              <li>Download our recommended IPTV player app</li>
-              <li>Start streaming your favorite content immediately</li>
-            </ul>
-          </div>
-
-          <!-- Action Buttons -->
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${baseUrl}/dashboard" 
-               style="background: linear-gradient(135deg, #00b877 0%, #0aa86e 100%); 
-                      color: white; 
-                      padding: 15px 30px; 
-                      text-decoration: none; 
-                      border-radius: 25px; 
-                      display: inline-block; 
-                      font-weight: bold;
-                      font-size: 16px;
-                      margin: 0 10px;">
-              View Dashboard
-            </a>
-            <a href="${baseUrl}/dashboard/orders" 
-               style="background: transparent; 
-                      color: #00b877; 
-                      padding: 15px 30px; 
-                      text-decoration: none; 
-                      border: 2px solid #00b877; 
-                      border-radius: 25px; 
-                      display: inline-block; 
-                      font-weight: bold;
-                      font-size: 16px;
-                      margin: 0 10px;">
-              View Orders
-            </a>
-          </div>
-
-          <!-- Support Information -->
-          <div style="background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 8px; padding: 20px; margin: 20px 0;">
-            <h3 style="color: #1565c0; margin: 0 0 10px 0;">Need Help?</h3>
-            <p style="color: #1565c0; margin: 0; line-height: 1.6;">
-              If you have any questions or need assistance with your order, our support team is here to help!<br>
-              Contact us at: <strong>info@iptvstore.com</strong>
-            </p>
-          </div>
-
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
-            <p style="color: #999; font-size: 14px; margin: 0;">
-              Best regards,<br>
-              The Cheap Stream Team
-            </p>
-          </div>
+        </div>
+        
+        <div style="background: #333; color: #fff; padding: 20px; text-align: center; font-size: 14px;">
+          <p style="margin: 0;">© ${getCurrentYear()} Cheap Stream. All rights reserved.</p>
         </div>
       </div>
     `,
@@ -829,10 +788,11 @@ export async function sendOrderConfirmationEmail({
 
   try {
     const transporter = await createTransporter();
-    await transporter.sendMail(mailOptions);
-    return true;
+    const result = await transporter.sendMail(mailOptions);
+    console.log("Contact form email sent successfully:", result.messageId);
+    return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error("Order confirmation email sending failed:", error);
-    return false;
+    console.error("Error sending contact form email:", error);
+    throw error;
   }
 }

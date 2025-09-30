@@ -44,12 +44,6 @@ const userSchema = new mongoose.Schema(
       avatar: {
         type: String,
         default: null,
-        validate: {
-          validator: function (v) {
-            return !v || v.startsWith("https://i.ibb.co/");
-          },
-          message: "Avatar must be a valid ImgBB URL",
-        },
       },
       phone: {
         type: String,
@@ -143,6 +137,27 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Add visitor tracking for 2FA
+    trustedDevices: [
+      {
+        visitorId: {
+          type: String,
+          required: true,
+        },
+        deviceInfo: {
+          userAgent: String,
+          ip: String,
+          lastUsed: {
+            type: Date,
+            default: Date.now,
+          },
+          createdAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      },
+    ],
     // Add free trial tracking
     freeTrial: {
       hasUsed: {
@@ -379,7 +394,50 @@ userSchema.statics.findTopReferrers = function (limit = 10) {
   ]);
 };
 
+// Method to add trusted device
+userSchema.methods.addTrustedDevice = function (visitorId, deviceInfo) {
+  // Check if device already exists
+  const existingDevice = this.trustedDevices.find(
+    (device) => device.visitorId === visitorId
+  );
+
+  if (existingDevice) {
+    // Update last used time
+    existingDevice.deviceInfo.lastUsed = new Date();
+  } else {
+    // Add new trusted device
+    this.trustedDevices.push({
+      visitorId,
+      deviceInfo: {
+        ...deviceInfo,
+        lastUsed: new Date(),
+        createdAt: new Date(),
+      },
+    });
+  }
+
+  return this.save();
+};
+
+// Method to check if device is trusted
+userSchema.methods.isDeviceTrusted = function (visitorId) {
+  return this.trustedDevices.some((device) => device.visitorId === visitorId);
+};
+
+// Method to remove trusted device
+userSchema.methods.removeTrustedDevice = function (visitorId) {
+  this.trustedDevices = this.trustedDevices.filter(
+    (device) => device.visitorId !== visitorId
+  );
+  return this.save();
+};
+
+// Clear the model from cache to ensure new methods are available
+if (mongoose.models.User) {
+  delete mongoose.models.User;
+}
+
 // Check if model already exists to prevent overwrite error
-const User = mongoose.models.User || mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema);
 
 export default User;

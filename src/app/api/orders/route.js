@@ -80,6 +80,15 @@ export async function POST(request) {
       );
     }
 
+    // Validate templateId - ensure it's a valid template ID
+    const validTemplateIds = [1, 2, 3, 4, 5, 6, 7, 8];
+    if (!validTemplateIds.includes(templateId)) {
+      return NextResponse.json(
+        { error: "Invalid templateId. Must be 1-8" },
+        { status: 400 }
+      );
+    }
+
     // Validate MAC addresses for MAG/Enigma2
     if (lineType > 0) {
       if (macAddresses.length !== quantity) {
@@ -98,25 +107,6 @@ export async function POST(request) {
         }
       }
     }
-
-    // Validate generated credentials
-    if (generatedCredentials.length === 0) {
-      // return NextResponse.json(
-      //   { error: "Generated credentials are required" },
-      //   { status: 400 }
-      // );
-    }
-
-    // Update the validation to make generatedCredentials optional
-    // Remove or comment out this validation:
-    /*
-    if (generatedCredentials.length === 0) {
-      return NextResponse.json(
-        { error: "Generated credentials are required" },
-        { status: 400 }
-      );
-    }
-    */
 
     // Update the validation for credentials match quantity to handle empty array
     if (generatedCredentials.length > 0) {

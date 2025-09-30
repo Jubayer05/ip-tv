@@ -10,12 +10,15 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
   const [statusText, setStatusText] = useState("");
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [loadingMethods, setLoadingMethods] = useState(true);
+  const [guide, setGuide] = useState({ title: "", content: "" });
+  const [loadingGuide, setLoadingGuide] = useState(true);
   const pollRef = useRef(null);
 
   // Fetch payment methods when popup opens
   useEffect(() => {
     if (isOpen) {
       fetchPaymentMethods();
+      fetchGuide();
     }
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -40,6 +43,27 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
     }
   };
 
+  const fetchGuide = async () => {
+    try {
+      setLoadingGuide(true);
+      const res = await fetch("/api/settings");
+      const data = await res.json();
+      if (data?.success) {
+        const ug = data.settings?.legalContent?.userGuide || {};
+        setGuide({
+          title: ug.title || "User Guide",
+          content: ug.content || "",
+        });
+      } else {
+        setGuide({ title: "", content: "" });
+      }
+    } catch (e) {
+      setGuide({ title: "", content: "" });
+    } finally {
+      setLoadingGuide(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   const startPayment = async (gateway) => {
@@ -56,11 +80,27 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
       const amount = Number(sel.priceCalculation.finalTotal);
       if (!amount || amount <= 0) throw new Error("Invalid amount");
 
+      // Determine customer email and contact info
+      const customerEmail = user?.email || sel.guestContactInfo?.email || "";
+      const contactInfo = user
+        ? {
+            fullName:
+              `${user?.profile?.firstName || ""} ${
+                user?.profile?.lastName || ""
+              }`.trim() ||
+              user?.profile?.username ||
+              user?.email,
+            email: user?.email,
+            phone: user?.profile?.phone || "",
+          }
+        : sel.guestContactInfo;
+
       const payload = {
         amount,
         currency: "USD",
         userId: user?._id || null,
-        customerEmail: user?.email || "",
+        customerEmail,
+        contactInfo, // Add contactInfo for guest users
         meta: {
           productId: sel.productId,
           variantId: sel.variantId,
@@ -136,6 +176,7 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
       changenow: "/payment_logo/changenow.png",
       cryptomus: "/payment_logo/cryptomus.png",
       paygate: "/payment_logo/paygate.png",
+      volet: "/payment_logo/volet.png",
     };
     return logoMap[gateway] || "/payment_logo/default.png";
   };
@@ -150,6 +191,7 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
       changenow: "ChangeNOW",
       cryptomus: "Cryptomus",
       paygate: "PayGate",
+      volet: "Volet",
     };
     return nameMap[gateway] || gateway;
   };
@@ -164,6 +206,7 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
       changenow: "Exchange",
       cryptomus: "Crypto",
       paygate: "Crypto",
+      volet: "Crypto",
     };
     return typeMap[gateway] || "Payment";
   };
@@ -188,76 +231,116 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-[60] font-secondary">
-      <div className="bg-black rounded-2xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-sm sm:max-w-[700px] mx-auto relative border border-[#FFFFFF26]">
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[60] font-secondary">
+      <div className="bg-gradient-to-br from-gray-900 to-black rounded-xl p-6 w-full max-w-2xl mx-auto relative border border-gray-700 shadow-2xl max-h-[90vh] overflow-hidden">
+        {/* Add custom styles for hiding scrollbar */}
+        <style jsx>{`
+          .hide-scrollbar {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+          }
+          .hide-scrollbar::-webkit-scrollbar {
+            display: none; /* Chrome, Safari and Opera */
+          }
+        `}</style>
+
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-white hover:text-gray-300 transition-colors"
+          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
         >
-          <X size={20} />
+          <X size={24} />
         </button>
 
-        <h3 className="text-white text-lg sm:text-xl font-bold mb-4">
-          Select a Payment Method
-        </h3>
-
-        {loadingMethods ? (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        {/* Scrollable content wrapper */}
+        <div className="overflow-y-auto max-h-[calc(90vh-3rem)] hide-scrollbar">
+          <div className="mb-6">
+            <h3 className="text-white text-2xl font-bold mb-2">
+              Choose Payment Method
+            </h3>
+            <p className="text-gray-400 text-sm">
+              Select your preferred payment gateway to complete the purchase
+            </p>
           </div>
-        ) : paymentMethods.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-400">No payment methods available</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {paymentMethods.map((method) => {
-              const selRaw = localStorage.getItem("cs_order_selection");
-              const sel = selRaw ? JSON.parse(selRaw) : null;
-              const amount = sel?.priceCalculation?.finalTotal || 0;
-              const feeInfo = calculateServiceFee(method, amount);
 
-              return (
-                <button
-                  key={method._id}
-                  className="aspect-auto bg-white text-black py-4 px-3 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-60 flex flex-col items-center justify-center space-y-1 min-h-[120px]"
-                  onClick={() => startPayment(method.gateway)}
-                  disabled={loading}
-                  title={`${method.name} - Min: $${method.minAmount}`}
-                >
-                  <Image
-                    src={getLogoPath(method.gateway)}
-                    alt={method.name}
-                    width={60}
-                    height={30}
-                    className="object-contain w-[100px]"
+          {loadingMethods ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-400"></div>
+            </div>
+          ) : paymentMethods.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-400">No payment methods available</p>
+            </div>
+          ) : (
+            <>
+              {/* Payment Methods Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                {paymentMethods.map((method) => {
+                  const selRaw = localStorage.getItem("cs_order_selection");
+                  const sel = selRaw ? JSON.parse(selRaw) : null;
+                  const amount = sel?.priceCalculation?.finalTotal || 0;
+                  const feeInfo = calculateServiceFee(method, amount);
+
+                  return (
+                    <button
+                      key={method._id}
+                      className="bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-cyan-500 text-white py-3 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 flex flex-col items-center justify-center space-y-2 min-h-[100px] group"
+                      onClick={() => startPayment(method.gateway)}
+                      disabled={loading}
+                    >
+                      <Image
+                        src={getLogoPath(method.gateway)}
+                        alt={method.name}
+                        width={50}
+                        height={25}
+                        className="object-contain h-8 w-auto opacity-80 group-hover:opacity-100 transition-opacity"
+                      />
+                      <span className="text-xs text-gray-400 group-hover:text-cyan-400">
+                        {getPaymentType(method.gateway)}
+                      </span>
+
+                      {method.feeSettings && method.feeSettings.isActive && (
+                        <div className="text-center">
+                          <span className="text-[10px] text-yellow-400 block">
+                            +
+                            {method.feeSettings.feeType === "percentage"
+                              ? `${method.feeSettings.feePercentage}%`
+                              : `$${method.feeSettings.fixedAmount}`}{" "}
+                            fee
+                          </span>
+                          <span className="text-xs text-white font-semibold">
+                            ${feeInfo.totalAmount.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Help Section from settings (User Guide) */}
+              {!loadingGuide && guide?.content && (
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 mt-4">
+                  <h4 className="text-white text-sm font-semibold mb-2">
+                    {guide.title || "User Guide"}
+                  </h4>
+                  <div
+                    className="prose prose-invert prose-sm max-w-none text-gray-300"
+                    dangerouslySetInnerHTML={{ __html: guide.content }}
                   />
-                  <span className="text-xs text-gray-600">
-                    {getPaymentType(method.gateway)}
-                  </span>
+                </div>
+              )}
+            </>
+          )}
 
-                  {method.feeSettings && method.feeSettings.isActive && (
-                    <span className="text-xs text-red-500 font-medium">
-                      Service Fee:{" "}
-                      {method.feeSettings.feeType === "percentage"
-                        ? `${method.feeSettings.feePercentage}%`
-                        : `$${method.feeSettings.fixedAmount}`}
-                    </span>
-                  )}
-                  {method.feeSettings && method.feeSettings.isActive && (
-                    <span className="text-xs text-red-400 font-medium">
-                      Total: ${feeInfo.totalAmount.toFixed(2)}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {!!statusText && (
-          <p className="text-xs text-gray-300 mt-4 text-center">{statusText}</p>
-        )}
+          {!!statusText && (
+            <div className="mt-4 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
+              <p className="text-sm text-cyan-400 text-center flex items-center justify-center gap-2">
+                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400 inline-block"></span>
+                {statusText}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

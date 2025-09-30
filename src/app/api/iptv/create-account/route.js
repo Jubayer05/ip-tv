@@ -19,7 +19,18 @@ const getPackageId = (durationMonths) => {
   }
 };
 
-// Create IPTV account via external API
+// Helper function to get package name
+function getPackageName(packageId) {
+  const packageNames = {
+    2: "1 Month Subscription",
+    3: "3 Month Subscription",
+    4: "6 Month Subscription",
+    5: "12 Month Subscription",
+  };
+  return packageNames[packageId] || "Unknown Package";
+}
+
+// Create IPTV account via external API using two-step process (with template fallback)
 async function createIPTVAccount({
   username,
   password,
@@ -27,8 +38,11 @@ async function createIPTVAccount({
   lineType,
   macAddress,
   durationMonths,
+  val,
+  con,
 }) {
-  const packageId = getPackageId(durationMonths);
+  const packageId = val || getPackageId(durationMonths);
+  const deviceCount = con || 1;
 
   // Get IPTV API key from database
   const iptvApiKey = await getServerIptvApiKey();
@@ -36,47 +50,140 @@ async function createIPTVAccount({
     throw new Error("IPTV API key not configured in settings");
   }
 
-  const requestPayload = {
+  console.log("=== CREATING IPTV ACCOUNT (Two-Step Process) ===");
+  console.log("Step 1: Create free trial account");
+  console.log("Step 2: Upgrade to official account");
+
+  // Step 1: Create free trial account with fallback candidates
+  const validTemplateIds = [1, 2, 3, 4, 5, 6, 7, 8];
+
+  const normalizeTemplateId = (t) => {
+    const n = Number(t);
+    return validTemplateIds.includes(n) ? n : 2; // default to 2 (Europe)
+  };
+
+  const templateCandidates = Array.from(
+    new Set([normalizeTemplateId(templateId), 2, 7, 8, 3, 4, 5, 6, 1])
+  );
+
+  const tryCreateTrial = async (tplId) => {
+    const payload = {
+      key: iptvApiKey,
+      username,
+      password,
+      templateId: tplId,
+      lineType,
+    };
+    if (lineType > 0 && macAddress) payload.mac = macAddress;
+
+    const r = await fetch("http://zlive.cc/api/free-trail-create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "IPTV-Client/1.0",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const txt = await r.text();
+    let json;
+    try {
+      json = JSON.parse(txt);
+    } catch {
+      throw new Error(`Invalid API response: ${txt}`);
+    }
+    return json;
+  };
+
+  let trialData = null;
+  let lastError = null;
+  let chosenTemplateId = normalizeTemplateId(templateId);
+
+  for (const cand of templateCandidates) {
+    console.log(`Trying free trial with templateId=${cand}`);
+    const res = await tryCreateTrial(cand);
+
+    if (res?.code === 200) {
+      trialData = res;
+      chosenTemplateId = cand; // lock in the working template
+      break;
+    }
+
+    const msg = (res?.message || res?.msg || "").toLowerCase();
+    lastError = res?.message || res?.msg || "Unknown error";
+
+    // Only rotate to next candidate for template errors; for others, abort
+    if (!msg.includes("bouquets template id")) {
+      break;
+    }
+  }
+
+  if (!trialData || trialData.code !== 200) {
+    throw new Error(`Free trial creation failed: ${lastError}`);
+  }
+
+  console.log(
+    "✅ Free trial account created successfully with templateId:",
+    chosenTemplateId
+  );
+
+  // Step 2: Upgrade to official account
+  console.log("Upgrading to official account...");
+
+  const upgradePayload = {
     key: iptvApiKey,
     username,
     password,
-    templateId,
-    lineType,
-    packageId,
+    action: "update",
+    val: packageId, // Use val parameter or fallback to packageId
+    con: deviceCount, // Use con parameter or fallback to 1
   };
 
-  // Add MAC address for MAG/Enigma2
-  if (lineType > 0 && macAddress) {
-    requestPayload.mac = macAddress;
-  }
+  console.log("Upgrade payload:", JSON.stringify(upgradePayload, null, 2));
 
-  console.log("Creating IPTV account with payload:", requestPayload);
+  const upgradeResponse = await fetch(
+    "http://zlive.cc/api/free-trail-upgrade",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "IPTV-Client/1.0",
+      },
+      body: JSON.stringify(upgradePayload),
+    }
+  );
 
-  const response = await fetch("http://zlive.cc/api/create-account", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "User-Agent": "IPTV-Client/1.0",
-    },
-    body: JSON.stringify(requestPayload),
-  });
+  const upgradeResponseText = await upgradeResponse.text();
+  console.log("Upgrade response status:", upgradeResponse.status);
+  console.log("Upgrade raw response:", upgradeResponseText);
 
-  const responseText = await response.text();
-  let data;
-
+  let upgradeData;
   try {
-    data = JSON.parse(responseText);
-  } catch (error) {
-    throw new Error(`Invalid API response: ${responseText}`);
+    upgradeData = JSON.parse(upgradeResponseText);
+  } catch {
+    throw new Error(`Invalid upgrade API response: ${upgradeResponseText}`);
   }
 
-  if (data.code !== 200) {
+  console.log("Upgrade parsed response:", upgradeData);
+
+  if (upgradeData.code !== 200) {
     throw new Error(
-      data.message || data.msg || "Failed to create IPTV account"
+      `Upgrade failed: ${
+        upgradeData.message || upgradeData.msg || "Unknown error"
+      }`
     );
   }
 
-  return data.data;
+  console.log("✅ Account upgraded to official successfully");
+
+  // Return the trial data (which contains the account info) with updated package info
+  return {
+    ...trialData.data,
+    package: packageId,
+    packageName: getPackageName(packageId),
+    isOfficial: true,
+    templateId: chosenTemplateId,
+  };
 }
 
 // Generate username and password
@@ -96,7 +203,7 @@ export async function POST(request) {
     await connectToDatabase();
 
     const body = await request.json();
-    const { orderNumber } = body;
+    const { orderNumber, val, con } = body;
 
     if (!orderNumber) {
       return NextResponse.json(
@@ -140,12 +247,10 @@ export async function POST(request) {
         let username, password;
 
         if (generatedCredentials.length > 0) {
-          // Use provided credentials
           const cred = generatedCredentials[0];
           username = cred.username;
           password = cred.password;
         } else {
-          // Generate new credentials
           const cred = generateCredentials(order.orderNumber);
           username = cred.username;
           password = cred.password;
@@ -158,6 +263,8 @@ export async function POST(request) {
           lineType: product.lineType,
           macAddress: null,
           durationMonths: product.duration,
+          val,
+          con,
         });
 
         credentials.push({
@@ -181,12 +288,10 @@ export async function POST(request) {
           let username, password;
 
           if (generatedCredentials.length > i) {
-            // Use provided credentials
             const cred = generatedCredentials[i];
             username = cred.username;
             password = cred.password;
           } else {
-            // Generate new credentials
             const cred = generateCredentials(order.orderNumber, i);
             username = cred.username;
             password = cred.password;
@@ -202,6 +307,8 @@ export async function POST(request) {
             lineType: product.lineType,
             macAddress,
             durationMonths: product.duration,
+            val,
+            con,
           });
 
           credentials.push({

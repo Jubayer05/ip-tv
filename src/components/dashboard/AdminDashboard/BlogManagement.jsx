@@ -1,5 +1,6 @@
 "use client";
 import RichTextEditor from "@/components/ui/RichTextEditor";
+import { Upload, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FaEdit, FaPlus, FaSave, FaTimes, FaTrash } from "react-icons/fa";
 import Swal from "sweetalert2";
@@ -21,6 +22,7 @@ const BlogManagement = () => {
     tags: "",
     isPublished: false,
   });
+  const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
     fetchBlogs();
@@ -53,6 +55,59 @@ const BlogManagement = () => {
     }
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        Swal.fire({
+          icon: "error",
+          title: "File too large",
+          text: "Please select a file smaller than 5MB",
+          confirmButtonColor: "#44dcf3",
+        });
+        return;
+      }
+      // Check file type
+      if (!file.type.startsWith("image/")) {
+        Swal.fire({
+          icon: "error",
+          title: "Invalid file type",
+          text: "Please select an image file",
+          confirmButtonColor: "#44dcf3",
+        });
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const removeFile = () => {
+    setSelectedFile(null);
+  };
+
+  const uploadFile = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/support/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        return data.url;
+      } else {
+        throw new Error(data.error || "Upload failed");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      throw error;
+    }
+  };
+
   const handleCreate = () => {
     setFormData({
       title: "",
@@ -63,6 +118,7 @@ const BlogManagement = () => {
       tags: "",
       isPublished: false,
     });
+    setSelectedFile(null);
     setShowForm(true);
     setEditingBlog(null);
   };
@@ -77,6 +133,7 @@ const BlogManagement = () => {
       tags: blog.tags.join(", "),
       isPublished: blog.isPublished,
     });
+    setSelectedFile(null);
     setEditingBlog(blog._id);
     setShowForm(true);
   };
@@ -105,12 +162,7 @@ const BlogManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !formData.title ||
-      !formData.image ||
-      !formData.details ||
-      !formData.authorName
-    ) {
+    if (!formData.title || !formData.details || !formData.authorName) {
       Swal.fire({
         icon: "error",
         title: "Validation Error",
@@ -120,8 +172,16 @@ const BlogManagement = () => {
     }
 
     try {
+      let imageUrl = formData.image; // Use existing image if editing
+
+      // Upload new file if selected
+      if (selectedFile) {
+        imageUrl = await uploadFile(selectedFile);
+      }
+
       const payload = {
         ...formData,
+        image: imageUrl,
         tags: formData.tags
           .split(",")
           .map((tag) => tag.trim())
@@ -152,6 +212,7 @@ const BlogManagement = () => {
 
         setShowForm(false);
         setEditingBlog(null);
+        setSelectedFile(null);
         fetchBlogs();
       } else {
         Swal.fire({
@@ -374,17 +435,75 @@ const BlogManagement = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Image URL *
+                  Image *
                 </label>
-                <input
-                  type="url"
-                  value={formData.image}
-                  onChange={(e) =>
-                    setFormData({ ...formData, image: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
-                  placeholder="Enter image URL"
-                />
+
+                {/* File Upload Section */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <label
+                      htmlFor="image-upload"
+                      className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded cursor-pointer transition-colors"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Choose Image
+                    </label>
+                    {selectedFile && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-gray-300">
+                          {selectedFile.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={removeFile}
+                          className="text-red-400 cursor-pointer hover:text-red-300"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Show current image if editing and no new file selected */}
+                  {editingBlog && formData.image && !selectedFile && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-400 mb-2">
+                        Current image:
+                      </p>
+                      <img
+                        src={formData.image}
+                        alt="Current blog image"
+                        className="w-32 h-20 object-cover rounded border border-gray-600"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Show preview of selected file */}
+                  {selectedFile && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-400 mb-2">Preview:</p>
+                      <img
+                        src={URL.createObjectURL(selectedFile)}
+                        alt="Preview"
+                        className="w-32 h-20 object-cover rounded border border-gray-600"
+                      />
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-400">
+                    Max file size: 5MB. Supported formats: JPG, PNG, GIF
+                  </p>
+                </div>
               </div>
 
               <div>
@@ -393,7 +512,7 @@ const BlogManagement = () => {
                 </label>
                 <RichTextEditor
                   value={formData.details}
-                  onChange={(content) =>
+                  onDataChange={(content) =>
                     setFormData({ ...formData, details: content })
                   }
                   placeholder="Write your blog content..."

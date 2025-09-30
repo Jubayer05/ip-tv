@@ -1,11 +1,17 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDeviceLogin } from "@/hooks/useDeviceLogin";
 import { useLoginOptions } from "@/hooks/useLoginOptions";
 import {
   signInWithFacebook,
   signInWithGoogle,
   signInWithTwitter,
 } from "@/lib/firebase";
+import {
+  getCustomErrorMessage,
+  getFirebaseErrorMessage,
+  isFirebaseError,
+} from "@/lib/firebaseErrorHandler";
 import { useState } from "react";
 import { FaFacebook, FaTwitter } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
@@ -18,6 +24,7 @@ export default function SocialLogin({ onSuccess, onError, loading = false }) {
   });
   const { generateAuthToken } = useAuth();
   const { loginOptions, loading: optionsLoading } = useLoginOptions();
+  const { recordDeviceLogin } = useDeviceLogin();
 
   const handleSocialLogin = async (providerName) => {
     try {
@@ -60,6 +67,10 @@ export default function SocialLogin({ onSuccess, onError, loading = false }) {
           // Generate auth token
           await generateAuthToken(data.user);
 
+          // Record device login BEFORE redirecting
+          console.log("Recording device login for social login...");
+          await recordDeviceLogin();
+
           // Force page reload to trigger AuthContext re-initialization
           window.location.href = "/dashboard";
         } else {
@@ -68,7 +79,15 @@ export default function SocialLogin({ onSuccess, onError, loading = false }) {
       }
     } catch (error) {
       console.error(`${providerName} login error:`, error);
-      onError?.(error.message || `${providerName} login failed`);
+
+      // Use custom error handler for Firebase errors
+      const customError = isFirebaseError(error)
+        ? getFirebaseErrorMessage(error)
+        : getCustomErrorMessage("SOCIAL_LOGIN_FAILED", {
+            provider: providerName,
+          });
+
+      onError?.(customError);
     } finally {
       setSocialLoading((prev) => ({ ...prev, [providerName]: false }));
     }

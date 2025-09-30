@@ -3,6 +3,7 @@ import FAQ from "@/components/features/Home/FaqHome";
 import PricingBanner from "@/components/features/Pricing/PricingBanner";
 import PricingPlan from "@/components/features/Pricing/PricingPlan";
 import ReviewInput from "@/components/features/UserReview/ReviewInput";
+import ReviewShowHome from "@/components/features/UserReview/ReviewShowHome";
 import { connectToDatabase } from "@/lib/db";
 import Product from "@/models/Product";
 
@@ -15,38 +16,49 @@ export async function generateMetadata() {
         cache: "no-store",
       }
     );
-    const settingsData = await settingsResponse.json();
 
-    if (settingsData.success && settingsData.data.metaManagement?.packages) {
-      const meta = settingsData.data.metaManagement.packages;
-      return {
-        title: meta.title,
-        description: meta.description,
-        keywords: meta.keywords,
-        openGraph: {
-          title: meta.openGraph.title,
-          description: meta.openGraph.description,
-          url: `${process.env.NEXT_PUBLIC_APP_URL}/packages`,
-          type: "website",
-          images: [
-            {
-              url: "/icons/live.png",
-              width: 1200,
-              height: 630,
-              alt: meta.openGraph.title,
-            },
-          ],
-        },
-        twitter: {
-          card: "summary_large_image",
-          title: meta.openGraph.title,
-          description: meta.openGraph.description,
-          images: ["/icons/live.png"],
-        },
-        alternates: {
-          canonical: `${process.env.NEXT_PUBLIC_APP_URL}/packages`,
-        },
-      };
+    // Check if response is ok and content-type is JSON
+    if (
+      settingsResponse.ok &&
+      settingsResponse.headers.get("content-type")?.includes("application/json")
+    ) {
+      const settingsData = await settingsResponse.json();
+
+      if (settingsData.success && settingsData.data.metaManagement?.packages) {
+        const meta = settingsData.data.metaManagement.packages;
+        return {
+          title: meta.title,
+          description: meta.description,
+          keywords: meta.keywords,
+          openGraph: {
+            title: meta.openGraph.title,
+            description: meta.openGraph.description,
+            url: `${process.env.NEXT_PUBLIC_APP_URL}/packages`,
+            type: "website",
+            images: [
+              {
+                url: "/icons/live.png",
+                width: 1200,
+                height: 630,
+                alt: meta.openGraph.title,
+              },
+            ],
+          },
+          twitter: {
+            card: "summary_large_image",
+            title: meta.openGraph.title,
+            description: meta.openGraph.description,
+            images: ["/icons/live.png"],
+          },
+          alternates: {
+            canonical: `${process.env.NEXT_PUBLIC_APP_URL}/packages`,
+          },
+        };
+      }
+    } else {
+      console.warn(
+        "Settings API returned non-JSON response, falling back to default metadata"
+      );
     }
 
     // If no custom meta, generate from product data
@@ -178,6 +190,7 @@ export default async function Pricing() {
       <div className="mt-14 md:mt-0 md:py-16">
         <PricingBanner />
         <PricingPlan />
+        <ReviewShowHome />
         <ReviewInput />
         <FAQ />
       </div>

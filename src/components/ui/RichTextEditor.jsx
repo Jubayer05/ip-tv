@@ -6,9 +6,17 @@ const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 const RichTextEditor = ({ value, title, onDataChange }) => {
   const [content, setContent] = useState(value || "");
 
+  // Update content when value prop changes
   useEffect(() => {
-    onDataChange(content);
-  }, [content, onDataChange]);
+    setContent(value || "");
+  }, [value]);
+
+  // Call onDataChange when content changes, but only if it's different
+  useEffect(() => {
+    if (onDataChange && content !== value) {
+      onDataChange(content);
+    }
+  }, [content]); // Remove onDataChange from dependencies to prevent infinite loop
 
   const options = [
     "bold",
@@ -88,6 +96,7 @@ const RichTextEditor = ({ value, title, onDataChange }) => {
         `}</style>
         <JoditEditor
           config={config}
+          value={content}
           onChange={(newContent) => setContent(newContent)}
         />
       </div>

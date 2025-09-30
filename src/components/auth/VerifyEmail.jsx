@@ -2,6 +2,7 @@
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDeviceLogin } from "@/hooks/useDeviceLogin";
 import {
   ArrowLeft,
   ArrowRight,
@@ -30,9 +31,10 @@ function VerifyEmailInner() {
   const [lastName, setLastName] = useState("");
   const [userName, setUserName] = useState("");
 
-  const { signup } = useAuth();
+  const { signup, complete2FALogin } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { recordDeviceLogin } = useDeviceLogin();
 
   useEffect(() => {
     // Get only token from URL params
@@ -125,11 +127,21 @@ function VerifyEmailInner() {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess(true);
-        // Redirect to login page since account is created
-        setTimeout(() => {
-          router.push("/login");
-        }, 2000);
+        // hydrate auth: set user + token, clear 2FA pending
+        const result = await complete2FALogin(email);
+
+        if (result?.success) {
+          setSuccess(true);
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, 800);
+        } else {
+          // fallback: still show success but send to login if hydration fails
+          setSuccess(true);
+          setTimeout(() => {
+            router.push("/login");
+          }, 800);
+        }
       } else {
         setError(data.error || "Verification failed. Please try again.");
       }
@@ -197,17 +209,17 @@ function VerifyEmailInner() {
           {/* Success Message */}
           <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-6">
             <h3 className="text-green-400 text-sm font-semibold mb-2">
-              🎉 Welcome aboard!
+              Welcome aboard!
             </h3>
             <p className="text-gray-300 text-xs leading-relaxed">
-              You're now being redirected to login where you can sign in with
-              your new account.
+              You're now being redirected to your dashboard where you can start
+              exploring our services.
             </p>
           </div>
 
           {/* Redirecting Message */}
           <div className="text-center">
-            <p className="text-gray-400 text-xs">Redirecting to login...</p>
+            <p className="text-gray-400 text-xs">Redirecting to dashboard...</p>
           </div>
         </div>
       </div>

@@ -189,7 +189,7 @@ const PremiumPlanCard = () => {
 
   return (
     <>
-      <div className="border border-[#212121] bg-black rounded-[15px] p-4 sm:p-6 md:p-8 w-1/2 -mt-4">
+      <div className="border border-[#212121] bg-black rounded-[15px] p-4 sm:p-6 md:p-8 w-full md:w-1/2 -mt-4">
         {/* Header */}
         <div className="mb-4 sm:mb-6">
           <h2 className="text-white text-base sm:text-lg font-semibold mb-2">
@@ -221,7 +221,7 @@ const PremiumPlanCard = () => {
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
           {planData?.isActive ? (
             <>
               <Button

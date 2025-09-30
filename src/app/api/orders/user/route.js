@@ -13,10 +13,31 @@ async function authenticateUser(request) {
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "your-secret-key"
-    );
+
+    // Try different algorithms to handle tokens created with different methods
+    let decoded;
+    try {
+      // First try with explicit HS256
+      decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key", {
+        algorithms: ["HS256"],
+      });
+    } catch (hs256Error) {
+      try {
+        // If HS256 fails, try without algorithm specification (default behavior)
+        decoded = jwt.verify(
+          token,
+          process.env.JWT_SECRET || "your-secret-key"
+        );
+      } catch (defaultError) {
+        console.error("JWT verification failed with both methods:", {
+          hs256Error: hs256Error.message,
+          defaultError: defaultError.message,
+          tokenLength: token.length,
+          tokenStart: token.substring(0, 20) + "...",
+        });
+        throw defaultError;
+      }
+    }
 
     await connectToDatabase();
     const user = await User.findById(decoded.userId);
@@ -58,10 +79,35 @@ export async function GET(request) {
     if (authHeader && authHeader.startsWith("Bearer ")) {
       try {
         const token = authHeader.split(" ")[1];
-        const decoded = jwt.verify(
-          token,
-          process.env.JWT_SECRET || "your-secret-key"
-        );
+
+        // Try different algorithms to handle tokens created with different methods
+        let decoded;
+        try {
+          // First try with explicit HS256
+          decoded = jwt.verify(
+            token,
+            process.env.JWT_SECRET || "your-secret-key",
+            {
+              algorithms: ["HS256"],
+            }
+          );
+        } catch (hs256Error) {
+          try {
+            // If HS256 fails, try without algorithm specification (default behavior)
+            decoded = jwt.verify(
+              token,
+              process.env.JWT_SECRET || "your-secret-key"
+            );
+          } catch (defaultError) {
+            console.error("JWT verification failed with both methods:", {
+              hs256Error: hs256Error.message,
+              defaultError: defaultError.message,
+              tokenLength: token.length,
+              tokenStart: token.substring(0, 20) + "...",
+            });
+            throw defaultError;
+          }
+        }
 
         await connectToDatabase();
         user = await User.findById(decoded.userId);

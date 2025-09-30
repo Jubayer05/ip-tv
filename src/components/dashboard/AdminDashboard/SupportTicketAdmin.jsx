@@ -7,6 +7,7 @@ import {
   Send,
   User,
   X,
+  ZoomIn,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -18,6 +19,7 @@ const SupportTicketAdmin = () => {
   const [replying, setReplying] = useState(false);
   const [statusFilter, setStatusFilter] = useState("open");
   const [lastViewedTickets, setLastViewedTickets] = useState({}); // Track last viewed message count
+  const [expandedImage, setExpandedImage] = useState(null);
 
   const load = async () => {
     try {
@@ -313,18 +315,39 @@ const SupportTicketAdmin = () => {
                             </div>
                             {m.text && <div className="text-sm">{m.text}</div>}
                             {m.image && (
-                              <a
-                                href={m.image}
-                                target="_blank"
-                                rel="noreferrer"
-                                className={`text-xs underline mt-1 block ${
-                                  m.sender === "admin"
-                                    ? "text-black"
-                                    : "text-primary"
-                                }`}
-                              >
-                                📎 View attachment
-                              </a>
+                              <div className="mt-2">
+                                <div
+                                  className="relative group cursor-pointer"
+                                  onClick={() => setExpandedImage(m.image)}
+                                >
+                                  <img
+                                    src={m.image}
+                                    alt="Attachment"
+                                    className="max-w-full h-auto max-h-48 rounded-lg border border-gray-600 hover:opacity-90 transition-opacity"
+                                    onError={(e) => {
+                                      e.target.style.display = "none";
+                                      e.target.nextSibling.style.display =
+                                        "block";
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center">
+                                    <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  </div>
+                                </div>
+                                <a
+                                  href={m.image}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={`text-xs underline mt-1 block ${
+                                    m.sender === "admin"
+                                      ? "text-black"
+                                      : "text-primary"
+                                  }`}
+                                  style={{ display: "none" }}
+                                >
+                                  📎 View full image
+                                </a>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -365,6 +388,25 @@ const SupportTicketAdmin = () => {
           </div>
         )}
       </div>
+
+      {/* Expanded Image Modal */}
+      {expandedImage && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="relative max-w-4xl max-h-full">
+            <img
+              src={expandedImage}
+              alt="Expanded view"
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+            <button
+              onClick={() => setExpandedImage(null)}
+              className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

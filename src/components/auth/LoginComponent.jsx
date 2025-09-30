@@ -1,7 +1,10 @@
 "use client";
+import ErrorNotification from "@/components/common/ErrorNotification";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDeviceLogin } from "@/hooks/useDeviceLogin";
+import { generateVisitorId, getDeviceInfo } from "@/lib/fingerprint";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,13 +24,39 @@ export default function LoginComponent() {
   const [recaptchaToken, setRecaptchaToken] = useState(null);
   const [recaptchaEnabled, setRecaptchaEnabled] = useState(false);
   const [show2FA, setShow2FA] = useState(false);
-  const [pendingUser, setPendingUser] = useState(null);
   const [sending2FACode, setSending2FACode] = useState(false);
   const [socialError, setSocialError] = useState("");
+  const [visitorId, setVisitorId] = useState(null);
 
-  const { login, send2FACode } = useAuth();
+  const { login, send2FACode, complete2FALogin } = useAuth();
   const router = useRouter();
   const recaptchaRef = useRef();
+  const { recordDeviceLogin } = useDeviceLogin();
+
+  // Generate visitor ID on component mount
+  useEffect(() => {
+    const initVisitorId = async () => {
+      try {
+        const id = await generateVisitorId();
+        setVisitorId(id);
+
+        // Track visitor
+        const deviceInfo = getDeviceInfo();
+        await fetch("/api/visitors/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            visitorId: id,
+            deviceInfo,
+          }),
+        });
+      } catch (error) {
+        console.error("Visitor ID generation failed:", error);
+      }
+    };
+
+    initVisitorId();
+  }, []);
 
   useEffect(() => {
     const checkRecaptchaSetting = async () => {
@@ -67,42 +96,49 @@ export default function LoginComponent() {
       return;
     }
 
-    const result = await login(
-      formData.email,
-      formData.password,
-      recaptchaToken
-    );
+    try {
+      // Pass visitorId to login function
+      const result = await login(
+        formData.email,
+        formData.password,
+        recaptchaToken,
+        visitorId
+      );
 
-    if (result.success) {
-      if (result.requires2FA) {
-        // Automatically send 2FA code when 2FA is required
-        setSending2FACode(true);
-        const codeResult = await send2FACode(formData.email);
+      if (result.success) {
+        if (result.requires2FA) {
+          // For 2FA flow, we'll record after 2FA completion
+          setSending2FACode(true);
+          const codeResult = await send2FACode(formData.email);
 
-        if (codeResult.success) {
-          // Show 2FA component
-          setPendingUser(result.user);
-          setShow2FA(true);
+          if (codeResult.success) {
+            // Show 2FA component
+            setShow2FA(true);
+          } else {
+            setError(
+              `Login successful but failed to send 2FA code: ${codeResult.error}`
+            );
+          }
+          setSending2FACode(false);
         } else {
-          setError(
-            `Login successful but failed to send 2FA code: ${codeResult.error}`
-          );
+          // Trusted device - direct login, record device and redirect
+          await recordDeviceLogin();
+          // router.push("/dashboard");
+          window.location.href = "/dashboard";
         }
-        setSending2FACode(false);
       } else {
-        // Direct login success
-        router.push("/dashboard");
+        setError(result.error);
+        // Reset reCAPTCHA on error only when it's enabled
+        if (recaptchaEnabled) {
+          recaptchaRef.current?.reset();
+          setRecaptchaToken(null);
+        }
       }
-    } else {
-      setError(result.error);
-      // Reset reCAPTCHA on error only when it's enabled
-      if (recaptchaEnabled) {
-        recaptchaRef.current?.reset();
-        setRecaptchaToken(null);
-      }
+    } catch (error) {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleInputChange = (e) => {
@@ -119,7 +155,6 @@ export default function LoginComponent() {
 
   const handleBackToLogin = () => {
     setShow2FA(false);
-    setPendingUser(null);
     setError("");
     // Reset reCAPTCHA if enabled
     if (recaptchaEnabled) {
@@ -131,7 +166,7 @@ export default function LoginComponent() {
   const handleSocialSuccess = (data) => {
     // The SocialLogin component now handles AuthContext updates
     // Just redirect to dashboard
-    router.push("/dashboard");
+    window.location.href = "/dashboard";
   };
 
   const handleSocialError = (error) => {
@@ -141,11 +176,20 @@ export default function LoginComponent() {
 
   // Show 2FA component if needed
   if (show2FA) {
-    return <TwoFactorAuth email={formData.email} onBack={handleBackToLogin} />;
+    return (
+      <TwoFactorAuth
+        email={formData.email}
+        onBack={handleBackToLogin}
+        visitorId={visitorId}
+      />
+    );
   }
 
   return (
     <div className="max-w-[530px] mx-auto bg-black p-4 border border-[#ffffff]/15 rounded-2xl">
+      {/* Error Notification */}
+      <ErrorNotification error={error} onClose={() => setError("")} />
+
       <div className=" w-full space-y-8 ">
         {/* Header */}
         <div className="text-center">
@@ -157,11 +201,7 @@ export default function LoginComponent() {
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-6 font-secondary">
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-              <p className="text-red-400 text-sm">{error}</p>
-            </div>
-          )}
+          {/* Remove the inline error display since we're using SweetAlert */}
 
           {/* Email Input */}
           <div>
@@ -268,12 +308,11 @@ export default function LoginComponent() {
           loading={loading || sending2FACode}
         />
 
-        {/* Social Error */}
-        {socialError && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-            <p className="text-red-400 text-sm">{socialError}</p>
-          </div>
-        )}
+        {/* Social Error Notification */}
+        <ErrorNotification
+          error={socialError}
+          onClose={() => setSocialError("")}
+        />
 
         {/* Register Link */}
         <div className="text-center">

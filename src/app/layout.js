@@ -1,6 +1,5 @@
-import GoogleAnalytics from "@/components/common/GoogleAnalytics";
-import MicrosoftClarity from "@/components/common/MicrosoftClarity";
 import ScrollToTop from "@/components/common/ScrollToTop";
+import TawkTo from "@/components/common/TawkTo";
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import { AuthContextProvider } from "@/contexts/AuthContext";
@@ -98,17 +97,16 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="antialiased font-primary">
-        <GoogleAnalytics />
-        <MicrosoftClarity />
         <AuthContextProvider>
-          <UserSpendingContextProvider>
-            <LanguageProvider>
+          <LanguageProvider>
+            <UserSpendingContextProvider>
+              <TawkTo />
               <Navbar />
               <ScrollToTop />
               <main className="min-h-screen">{children}</main>
               <Footer />
-            </LanguageProvider>
-          </UserSpendingContextProvider>
+            </UserSpendingContextProvider>
+          </LanguageProvider>
         </AuthContextProvider>
       </body>
     </html>

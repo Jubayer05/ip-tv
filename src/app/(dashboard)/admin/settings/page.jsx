@@ -1,4 +1,5 @@
 "use client";
+import EmailManagement from "@/components/dashboard/AdminDashboard/SystemsSettings/EmailManagement";
 import ManageAddons from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageAddons";
 import ManageBanner from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageBanner";
 import ManageContact from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageContact";
@@ -18,7 +19,7 @@ export default function AdminSettingsPage() {
     },
     {
       id: "contact",
-      label: "Contact Information",
+      label: "Contact & Support Ticket",
       component: <ManageContact />,
     },
     {
@@ -30,6 +31,11 @@ export default function AdminSettingsPage() {
       id: "meta",
       label: "Meta Management",
       component: <MetaManagement />,
+    },
+    {
+      id: "email",
+      label: "Email Content Management",
+      component: <EmailManagement />,
     },
     {
       id: "addons",

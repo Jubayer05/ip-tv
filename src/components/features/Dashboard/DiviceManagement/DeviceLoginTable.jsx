@@ -1,20 +1,27 @@
 "use client";
 import TableCustom from "@/components/ui/TableCustom";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useDeviceLogin } from "@/hooks/useDeviceLogin";
+import { Shield, ShieldOff } from "lucide-react";
 import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 
 const DeviceLoginTable = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
-  const [deviceData, setDeviceData] = useState([]);
+  const { deviceLogins, loading, error, suspendDevice, fetchDeviceLogins } =
+    useDeviceLogin();
+  const { isAuthenticated, user } = useAuth();
 
   const ORIGINAL_LOADING = "Loading device data...";
   const ORIGINAL_TITLE = "Latest LOGIN";
   const ORIGINAL_COLUMNS = {
     device: "Device",
     loginDate: "Login Date",
-    ipAddress: "IP Address",
+    country: "Location",
     lastActivity: "Last Activity",
     status: "Status",
+    actions: "Actions",
   };
   const ORIGINAL_STATUSES = {
     active: "Active",
@@ -22,69 +29,9 @@ const DeviceLoginTable = () => {
     suspended: "Suspended",
   };
 
-  const [loading, setLoading] = useState(ORIGINAL_LOADING);
   const [title, setTitle] = useState(ORIGINAL_TITLE);
   const [columns, setColumns] = useState(ORIGINAL_COLUMNS);
   const [statuses, setStatuses] = useState(ORIGINAL_STATUSES);
-
-  // Generate dynamic device login data
-  const generateDeviceData = (currentStatuses) => {
-    const devices = [
-      "iPhone 14 Pro",
-      "MacBook Pro",
-      "iPad Air",
-      "Samsung Galaxy S23",
-      "Dell XPS 13",
-      "Google Pixel 8",
-      "Surface Laptop",
-      "OnePlus 11",
-      "Xiaomi 13",
-      "ASUS ROG",
-    ];
-    const statuses = [
-      currentStatuses.active,
-      currentStatuses.inactive,
-      currentStatuses.suspended,
-    ];
-    const data = [];
-
-    for (let i = 1; i <= 15; i++) {
-      const device = devices[Math.floor(Math.random() * devices.length)];
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-      const loginDate = new Date();
-      loginDate.setDate(loginDate.getDate() - Math.floor(Math.random() * 30)); // Random date within last 30 days
-
-      const lastActivity = new Date();
-      lastActivity.setHours(
-        lastActivity.getHours() - Math.floor(Math.random() * 24)
-      ); // Random time within last 24 hours
-
-      // Generate random IP address
-      const ipAddress = `${Math.floor(Math.random() * 255)}.${Math.floor(
-        Math.random() * 255
-      )}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-
-      data.push({
-        key: i.toString(),
-        device: device,
-        loginDate: loginDate.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-        ipAddress: ipAddress,
-        lastActivity: lastActivity.toLocaleString("en-US", {
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        status: status,
-      });
-    }
-
-    return data;
-  };
 
   useEffect(() => {
     // Only translate when language is loaded and not English
@@ -97,9 +44,10 @@ const DeviceLoginTable = () => {
         ORIGINAL_TITLE,
         ORIGINAL_COLUMNS.device,
         ORIGINAL_COLUMNS.loginDate,
-        ORIGINAL_COLUMNS.ipAddress,
+        ORIGINAL_COLUMNS.country,
         ORIGINAL_COLUMNS.lastActivity,
         ORIGINAL_COLUMNS.status,
+        ORIGINAL_COLUMNS.actions,
         ORIGINAL_STATUSES.active,
         ORIGINAL_STATUSES.inactive,
         ORIGINAL_STATUSES.suspended,
@@ -112,22 +60,23 @@ const DeviceLoginTable = () => {
         tTitle,
         tDevice,
         tLoginDate,
-        tIpAddress,
+        tCountry,
         tLastActivity,
         tStatus,
+        tActions,
         tActive,
         tInactive,
         tSuspended,
       ] = translated;
 
-      setLoading(tLoading);
       setTitle(tTitle);
       setColumns({
         device: tDevice,
         loginDate: tLoginDate,
-        ipAddress: tIpAddress,
+        country: tCountry,
         lastActivity: tLastActivity,
         status: tStatus,
+        actions: tActions,
       });
       setStatuses({
         active: tActive,
@@ -141,20 +90,64 @@ const DeviceLoginTable = () => {
     };
   }, [language.code, isLanguageLoaded, translate]);
 
-  // Generate data only on client side to avoid hydration mismatch
   useEffect(() => {
-    setDeviceData(generateDeviceData(statuses));
-  }, [statuses]);
+    if (isAuthenticated) {
+      console.log("Fetching device logins...");
+      fetchDeviceLogins();
+    }
+  }, [isAuthenticated, fetchDeviceLogins]);
+
+  // Add this useEffect to fetch data when component mounts
+  useEffect(() => {
+    fetchDeviceLogins();
+  }, [fetchDeviceLogins]);
+
+  const handleSuspendDevice = async (deviceLoginId, deviceName) => {
+    const result = await Swal.fire({
+      title: "Suspend Device",
+      text: `Are you sure you want to suspend ${deviceName}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, suspend it!",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await suspendDevice(deviceLoginId);
+        Swal.fire({
+          title: "Suspended!",
+          text: "Device has been suspended successfully.",
+          icon: "success",
+          confirmButtonColor: "#00b877",
+        });
+      } catch (error) {
+        Swal.fire({
+          title: "Error",
+          text: "Failed to suspend device. Please try again.",
+          icon: "error",
+          confirmButtonColor: "#dc3545",
+        });
+      }
+    }
+  };
+
+  const formatDeviceName = (deviceInfo) => {
+    if (!deviceInfo) return "Unknown Device";
+    const { device, browser, os } = deviceInfo;
+    return `${device} (${browser} on ${os})`;
+  };
 
   const tableColumns = [
     {
       title: columns.device,
-      width: 120,
-      dataIndex: "device",
+      width: 200,
+      dataIndex: "deviceInfo",
       key: "device",
-      render: (text) => (
+      render: (deviceInfo) => (
         <span className="pl-3 text-gray-300 text-xs sm:text-sm font-secondary md:pl-5 break-words">
-          {text}
+          {formatDeviceName(deviceInfo)}
         </span>
       ),
     },
@@ -164,33 +157,42 @@ const DeviceLoginTable = () => {
       dataIndex: "loginDate",
       key: "loginDate",
       align: "center",
-      render: (text) => (
+      render: (date) => (
         <span className="text-gray-300 text-xs sm:text-sm font-secondary whitespace-nowrap">
-          {text}
+          {new Date(date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
         </span>
       ),
     },
     {
-      title: columns.ipAddress,
-      width: 100,
-      dataIndex: "ipAddress",
-      key: "ipAddress",
+      title: columns.country, // Changed from country to country
+      width: 150, // Increased width for country display
+      dataIndex: "location", // Changed from ipAddress to location
+      key: "location", // Changed from country to location
       align: "center",
-      render: (text) => (
-        <span className="text-gray-300 text-xs sm:text-sm font-secondary font-mono break-all">
-          {text}
+      render: () => (
+        <span className="text-gray-300 text-xs sm:text-sm font-secondary break-words">
+          {user.profile.country}
         </span>
       ),
     },
     {
       title: columns.lastActivity,
-      width: 120,
+      width: 140,
       dataIndex: "lastActivity",
       key: "lastActivity",
       align: "center",
-      render: (text) => (
+      render: (date) => (
         <span className="text-gray-300 text-xs sm:text-sm font-secondary whitespace-nowrap">
-          {text}
+          {new Date(date).toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
         </span>
       ),
     },
@@ -203,26 +205,84 @@ const DeviceLoginTable = () => {
       render: (status) => (
         <span
           className={`px-2 sm:px-3 md:px-4 py-1 rounded-full text-xs font-medium font-secondary whitespace-nowrap ${
-            status === statuses.active
+            status === "active"
               ? "bg-green-500/20 text-green-400 border border-green-500/30"
-              : status === statuses.inactive
+              : status === "inactive"
               ? "bg-gray-500/20 text-gray-400 border border-gray-500/30"
               : "bg-red-500/20 text-red-400 border border-red-500/30"
           }`}
         >
-          {status}
+          {statuses[status] || status}
         </span>
+      ),
+    },
+    {
+      title: columns.actions,
+      width: 80,
+      key: "actions",
+      align: "center",
+      render: (_, record) => (
+        <button
+          onClick={() =>
+            handleSuspendDevice(record._id, formatDeviceName(record.deviceInfo))
+          }
+          disabled={record.status === "suspended"}
+          className={`p-2 rounded-lg transition-colors ${
+            record.status === "suspended"
+              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+              : "bg-red-600 text-white hover:bg-red-700"
+          }`}
+          title={
+            record.status === "suspended"
+              ? "Already suspended"
+              : "Suspend device"
+          }
+        >
+          {record.status === "suspended" ? (
+            <ShieldOff className="w-4 h-4" />
+          ) : (
+            <Shield className="w-4 h-4" />
+          )}
+        </button>
       ),
     },
   ];
 
-  // Show loading state while data is being generated
-  if (deviceData.length === 0) {
+  // Debug log to see what data we have
+  console.log("DeviceLoginTable - deviceLogins:", deviceLogins);
+  console.log("DeviceLoginTable - loading:", loading);
+  console.log("DeviceLoginTable - error:", error);
+
+  if (loading) {
     return (
       <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto font-secondary">
         <div className="flex items-center justify-center h-20 sm:h-24 md:h-32">
           <div className="text-gray-400 text-xs sm:text-sm md:text-base text-center">
-            {loading}
+            {ORIGINAL_LOADING}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto font-secondary">
+        <div className="flex items-center justify-center h-20 sm:h-24 md:h-32">
+          <div className="text-red-400 text-xs sm:text-sm md:text-base text-center">
+            Error: {error}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!deviceLogins || deviceLogins.length === 0) {
+    return (
+      <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto font-secondary">
+        <div className="flex items-center justify-center h-20 sm:h-24 md:h-32">
+          <div className="text-gray-400 text-xs sm:text-sm md:text-base text-center">
+            No device logins found
           </div>
         </div>
       </div>
@@ -231,16 +291,27 @@ const DeviceLoginTable = () => {
 
   return (
     <div className="mt-4 sm:mt-6 max-w-[340px] md:max-w-5xl">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold text-white">Device Logins</h3>
+        <button
+          onClick={() => fetchDeviceLogins()}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Refresh
+        </button>
+      </div>
       <TableCustom
         title={title}
-        data={deviceData}
+        data={deviceLogins}
         columns={tableColumns}
         pageSize={5}
         showButton={false}
         showPagination={true}
         showHeader={true}
-        // scroll={{ x: 300 }} // enable horizontal scroll for Antd
-        containerClassName="" // add mobile padding to main container
+        containerClassName=""
+        rowKey={(record) =>
+          record._id || record.id || `device-${record.loginDate}`
+        }
       />
     </div>
   );

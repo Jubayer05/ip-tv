@@ -8,7 +8,6 @@ const PaymentMethodsManagement = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingSetting, setEditingSetting] = useState(null);
-  const [showSecrets, setShowSecrets] = useState({});
   const [formData, setFormData] = useState({
     gateway: "",
     name: "",
@@ -30,7 +29,6 @@ const PaymentMethodsManagement = () => {
   });
 
   const gatewayOptions = [
-    { value: "stripe", label: "Stripe", logo: "/payment_logo/stripe.png" },
     { value: "plisio", label: "Plisio", logo: "/payment_logo/plisio.png" },
     { value: "hoodpay", label: "HoodPay", logo: "/payment_logo/hoodpay.jpeg" },
     {
@@ -187,6 +185,32 @@ const PaymentMethodsManagement = () => {
     }
   };
 
+  const addBonusSetting = () => {
+    setFormData((prev) => ({
+      ...prev,
+      bonusSettings: [
+        ...prev.bonusSettings,
+        { minAmount: 0, bonusPercentage: 0, isActive: true },
+      ],
+    }));
+  };
+
+  const removeBonusSetting = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      bonusSettings: prev.bonusSettings.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateBonusSetting = (index, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      bonusSettings: prev.bonusSettings.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      ),
+    }));
+  };
+
   const resetForm = () => {
     setFormData({
       gateway: "",
@@ -209,42 +233,23 @@ const PaymentMethodsManagement = () => {
     });
   };
 
-  const addBonusSetting = () => {
-    // Changed from addDiscountSetting
-    setFormData((prev) => ({
-      ...prev,
-      bonusSettings: [
-        // Changed from discountSettings
-        ...prev.bonusSettings,
-        {
-          minAmount: 0,
-          bonusPercentage: 0,
-          isActive: true,
-        }, // Changed from discountPercentage
-      ],
-    }));
-  };
-
-  const removeBonusSetting = (index) => {
-    // Changed from removeDiscountSetting
-    setFormData((prev) => ({
-      ...prev,
-      bonusSettings: prev.bonusSettings.filter((_, i) => i !== index), // Changed from discountSettings
-    }));
-  };
-
-  const updateBonusSetting = (index, field, value) => {
-    // Changed from updateDiscountSetting
-    setFormData((prev) => ({
-      ...prev,
-      bonusSettings: prev.bonusSettings.map(
-        (
-          setting,
-          i // Changed from discountSettings
-        ) => (i === index ? { ...setting, [field]: value } : setting)
-      ),
-    }));
-  };
+  // Field visibility and labels by gateway
+  const showApiKey = [
+    "plisio",
+    "hoodpay",
+    "nowpayment",
+    "changenow",
+    "cryptomus",
+  ].includes(formData.gateway);
+  const showApiSecret = formData.gateway === "nowpayment";
+  const showMerchantId = [
+    "hoodpay",
+    "changenow",
+    "cryptomus",
+    "paygate",
+  ].includes(formData.gateway);
+  const merchantLabel =
+    formData.gateway === "hoodpay" ? "Business ID" : "Merchant ID";
 
   if (loading) {
     return (
@@ -274,138 +279,152 @@ const PaymentMethodsManagement = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {settings.map((setting) => {
-          const gatewayInfo = gatewayOptions.find(
-            (g) => g.value === setting.gateway
-          );
-          return (
-            <div
-              key={setting._id}
-              className="bg-gray-800 rounded-lg shadow-md p-6 border border-gray-700"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  {gatewayInfo?.logo && (
-                    <img
-                      src={gatewayInfo.logo}
-                      alt={setting.name}
-                      className="w-8 h-8 object-contain"
-                    />
-                  )}
-                  <h3 className="text-lg font-semibold text-white">
-                    {setting.name}
-                  </h3>
+        {settings
+          .filter((s) =>
+            [
+              "plisio",
+              "hoodpay",
+              "nowpayment",
+              "changenow",
+              "cryptomus",
+              "paygate",
+            ].includes(s.gateway)
+          )
+          .map((setting) => {
+            const gatewayInfo = gatewayOptions.find(
+              (g) => g.value === setting.gateway
+            );
+            return (
+              <div
+                key={setting._id}
+                className="bg-gray-800 rounded-lg shadow-md p-6 border border-gray-700"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    {gatewayInfo?.logo && (
+                      <img
+                        src={gatewayInfo.logo}
+                        alt={setting.name}
+                        className="w-8 h-8 object-contain"
+                      />
+                    )}
+                    <h3 className="text-lg font-semibold text-white">
+                      {setting.name}
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => toggleActive(setting._id, setting.isActive)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      setting.isActive
+                        ? "bg-green-600 text-green-100"
+                        : "bg-gray-600 text-gray-300"
+                    }`}
+                  >
+                    {setting.isActive ? "Active" : "Inactive"}
+                  </button>
                 </div>
-                <button
-                  onClick={() => toggleActive(setting._id, setting.isActive)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    setting.isActive
-                      ? "bg-green-600 text-green-100"
-                      : "bg-gray-600 text-gray-300"
-                  }`}
-                >
-                  {setting.isActive ? "Active" : "Inactive"}
-                </button>
-              </div>
 
-              <div className="space-y-2 text-sm text-gray-300">
-                <p>
-                  <span className="font-medium text-gray-400">Gateway:</span>{" "}
-                  <span className="text-white">{setting.gateway}</span>
-                </p>
-                <p>
-                  <span className="font-medium text-gray-400">Min Amount:</span>{" "}
-                  <span className="text-white">${setting.minAmount}</span>
-                </p>
-                {setting.merchantId && (
+                <div className="space-y-2 text-sm text-gray-300">
+                  <p>
+                    <span className="font-medium text-gray-400">Gateway:</span>{" "}
+                    <span className="text-white">{setting.gateway}</span>
+                  </p>
                   <p>
                     <span className="font-medium text-gray-400">
-                      Merchant ID / Business ID:
+                      Min Amount:
                     </span>{" "}
-                    <span className="text-white wrap-break-word">
-                      {setting.merchantId}
-                    </span>
+                    <span className="text-white">${setting.minAmount}</span>
                   </p>
+                  {setting.merchantId && (
+                    <p>
+                      <span className="font-medium text-gray-400">
+                        Merchant ID / Business ID:
+                      </span>{" "}
+                      <span className="text-white wrap-break-word">
+                        {setting.merchantId}
+                      </span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Bonus Settings Display */}
+                {setting.bonusSettings && setting.bonusSettings.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="font-medium text-sm text-gray-400 mb-2">
+                      Bonus Settings:
+                    </h4>
+                    <div className="space-y-1">
+                      {setting.bonusSettings.map((bonus, index) => (
+                        <div key={index} className="text-xs text-gray-300">
+                          <span className="text-gray-400">
+                            ${bonus.minAmount}+
+                          </span>{" "}
+                          <span className="text-gray-500">→</span>{" "}
+                          <span className="text-green-400">
+                            {bonus.bonusPercentage}% bonus
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              </div>
 
-              {/* Bonus Settings Display */}
-              {setting.bonusSettings && setting.bonusSettings.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="font-medium text-sm text-gray-400 mb-2">
-                    Bonus Settings:
-                  </h4>
-                  <div className="space-y-1">
-                    {setting.bonusSettings.map((bonus, index) => (
-                      <div key={index} className="text-xs text-gray-300">
-                        <span className="text-gray-400">
-                          ${bonus.minAmount}+
-                        </span>{" "}
-                        <span className="text-gray-500">→</span>{" "}
-                        <span className="text-green-400">
-                          {bonus.bonusPercentage}% bonus
+                {/* Fee Settings Display */}
+                {setting.feeSettings && setting.feeSettings.isActive && (
+                  <div className="mt-4">
+                    <h4 className="font-medium text-sm text-gray-400 mb-2">
+                      Service Fee:
+                    </h4>
+                    <div className="text-xs text-gray-300">
+                      {setting.feeSettings.feeType === "percentage" ? (
+                        <span>
+                          <span className="text-red-400">
+                            {setting.feeSettings.feePercentage}% fee
+                          </span>
+                          <span className="text-gray-500 ml-1">
+                            (e.g., $100 → $
+                            {(
+                              100 +
+                              (100 * setting.feeSettings.feePercentage) / 100
+                            ).toFixed(2)}
+                            )
+                          </span>
                         </span>
-                      </div>
-                    ))}
+                      ) : (
+                        <span>
+                          <span className="text-red-400">
+                            ${setting.feeSettings.fixedAmount} fixed fee
+                          </span>
+                          <span className="text-gray-500 ml-1">
+                            (e.g., $100 → $
+                            {(100 + setting.feeSettings.fixedAmount).toFixed(2)}
+                            )
+                          </span>
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Fee Settings Display */}
-              {setting.feeSettings && setting.feeSettings.isActive && (
-                <div className="mt-4">
-                  <h4 className="font-medium text-sm text-gray-400 mb-2">
-                    Service Fee:
-                  </h4>
-                  <div className="text-xs text-gray-300">
-                    {setting.feeSettings.feeType === "percentage" ? (
-                      <span>
-                        <span className="text-red-400">
-                          {setting.feeSettings.feePercentage}% fee
-                        </span>
-                        <span className="text-gray-500 ml-1">
-                          (e.g., $100 → $
-                          {(
-                            100 +
-                            (100 * setting.feeSettings.feePercentage) / 100
-                          ).toFixed(2)}
-                          )
-                        </span>
-                      </span>
-                    ) : (
-                      <span>
-                        <span className="text-red-400">
-                          ${setting.feeSettings.fixedAmount} fixed fee
-                        </span>
-                        <span className="text-gray-500 ml-1">
-                          (e.g., $100 → $
-                          {(100 + setting.feeSettings.fixedAmount).toFixed(2)})
-                        </span>
-                      </span>
-                    )}
-                  </div>
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={() => handleEdit(setting)}
+                    className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <Edit className="w-3 h-3" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(setting._id)}
+                    className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700 flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Delete
+                  </button>
                 </div>
-              )}
-
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => handleEdit(setting)}
-                  className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 flex items-center justify-center gap-1 transition-colors"
-                >
-                  <Edit className="w-3 h-3" />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(setting._id)}
-                  className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700 flex items-center justify-center gap-1 transition-colors"
-                >
-                  <Trash2 className="w-3 h-3" />
-                  Delete
-                </button>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
 
       {/* Modal */}
@@ -436,6 +455,9 @@ const PaymentMethodsManagement = () => {
                       setFormData((prev) => ({
                         ...prev,
                         gateway: e.target.value,
+                        apiKey: "",
+                        apiSecret: "",
+                        merchantId: "",
                       }))
                     }
                     className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -466,57 +488,65 @@ const PaymentMethodsManagement = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    API Key *
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.apiKey}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        apiKey: e.target.value,
-                      }))
-                    }
-                    className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
+                {showApiKey && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      API Key *
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.apiKey}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          apiKey: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    API Secret
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.apiSecret}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        apiSecret: e.target.value,
-                      }))
-                    }
-                    className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                {showApiSecret && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      API Secret *
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.apiSecret}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          apiSecret: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Merchant ID / Business ID
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.merchantId}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        merchantId: e.target.value,
-                      }))
-                    }
-                    className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                {showMerchantId && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      {merchantLabel} *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.merchantId}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          merchantId: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -570,7 +600,7 @@ const PaymentMethodsManagement = () => {
                             step="0.01"
                             min="0"
                             placeholder="Enter minimum amount"
-                            value={bonus.minAmount || 0} // Ensure controlled input
+                            value={bonus.minAmount || 0}
                             onChange={(e) =>
                               updateBonusSetting(
                                 index,
@@ -591,7 +621,7 @@ const PaymentMethodsManagement = () => {
                             min="0"
                             max="100"
                             placeholder="Enter bonus percentage"
-                            value={bonus.bonusPercentage || 0} // Ensure controlled input
+                            value={bonus.bonusPercentage || 0}
                             onChange={(e) =>
                               updateBonusSetting(
                                 index,
