@@ -2,6 +2,7 @@
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { getIptvApiKey } from "@/lib/apiKeys";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import {
@@ -20,6 +21,7 @@ import { useEffect, useMemo, useState } from "react";
 
 const FreeTrialCard = () => {
   const { user } = useAuth();
+  const { translate } = useLanguage();
   const [selectedTemplate, setSelectedTemplate] = useState(2); // Europe template (ID 2)
   const [selectedLineType, setSelectedLineType] = useState(0);
   const [macAddress, setMacAddress] = useState("");
@@ -64,6 +66,152 @@ const FreeTrialCard = () => {
       "No credit card required",
     ],
   });
+
+  // Add state to store original untranslated content
+  const [originalFreeTrialContent, setOriginalFreeTrialContent] =
+    useState(null);
+
+  // Translate freeTrialContent when language changes
+  useEffect(() => {
+    if (!originalFreeTrialContent) return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        // Collect all translatable texts from original content
+        const textsToTranslate = [
+          originalFreeTrialContent.title,
+          originalFreeTrialContent.description,
+          ...(originalFreeTrialContent.features || []).map((f) => f.title),
+          ...(originalFreeTrialContent.features || []).map(
+            (f) => f.description
+          ),
+          originalFreeTrialContent.includedTitle,
+          ...(originalFreeTrialContent.includedItems || []),
+        ];
+
+        const translated = await translate(textsToTranslate);
+        if (!isMounted) return;
+
+        // Calculate indices for different sections
+        const titleIndex = 0;
+        const descriptionIndex = 1;
+        const featuresStartIndex = 2;
+        const featuresCount = originalFreeTrialContent.features?.length || 0;
+        const includedTitleIndex = featuresStartIndex + featuresCount * 2;
+        const includedItemsStartIndex = includedTitleIndex + 1;
+
+        // Reconstruct the translated freeTrialContent
+        const translatedFreeTrialContent = {
+          title: translated[titleIndex],
+          description: translated[descriptionIndex],
+          features: (originalFreeTrialContent.features || []).map(
+            (feature, index) => ({
+              ...feature,
+              title: translated[featuresStartIndex + index * 2],
+              description: translated[featuresStartIndex + index * 2 + 1],
+            })
+          ),
+          includedTitle: translated[includedTitleIndex],
+          includedItems: translated.slice(includedItemsStartIndex),
+        };
+
+        setFreeTrialContent(translatedFreeTrialContent);
+      } catch (error) {
+        console.error("Error translating freeTrialContent:", error);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [translate, originalFreeTrialContent]);
+
+  // Update the fetch function to handle both backend and default content
+  useEffect(() => {
+    const fetchFreeTrialContent = async () => {
+      try {
+        const response = await fetch("/api/admin/settings");
+        const data = await response.json();
+
+        if (data.success && data.data.freeTrialContent) {
+          // Store the original untranslated content from backend
+          setOriginalFreeTrialContent(data.data.freeTrialContent);
+        } else {
+          // Use default content if no content from API
+          setOriginalFreeTrialContent({
+            title: "Start Your Free Trial",
+            description:
+              "Experience premium IPTV content for 24 hours - completely free!",
+            features: [
+              {
+                id: 1,
+                title: "24 Hours Free",
+                description: "Full access to all channels and features",
+                icon: "clock",
+              },
+              {
+                id: 2,
+                title: "Premium Quality",
+                description: "HD and 4K content with no buffering",
+                icon: "star",
+              },
+              {
+                id: 3,
+                title: "No Commitment",
+                description: "Cancel anytime, no hidden fees",
+                icon: "shield",
+              },
+            ],
+            includedTitle: "What's Included in Your Free Trial?",
+            includedItems: [
+              "Access to all channels in your selected template",
+              "HD and 4K quality streaming",
+              "24/7 customer support",
+              "No credit card required",
+            ],
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch free trial content:", error);
+        // Use default content on error
+        setOriginalFreeTrialContent({
+          title: "Start Your Free Trial",
+          description:
+            "Experience premium IPTV content for 24 hours - completely free!",
+          features: [
+            {
+              id: 1,
+              title: "24 Hours Free",
+              description: "Full access to all channels and features",
+              icon: "clock",
+            },
+            {
+              id: 2,
+              title: "Premium Quality",
+              description: "HD and 4K content with no buffering",
+              icon: "star",
+            },
+            {
+              id: 3,
+              title: "No Commitment",
+              description: "Cancel anytime, no hidden fees",
+              icon: "shield",
+            },
+          ],
+          includedTitle: "What's Included in Your Free Trial?",
+          includedItems: [
+            "Access to all channels in your selected template",
+            "HD and 4K quality streaming",
+            "24/7 customer support",
+            "No credit card required",
+          ],
+        });
+      }
+    };
+
+    fetchFreeTrialContent();
+  }, []); // Only run once on mount
 
   // Memoize hasUsedFreeTrial to prevent dependency array changes
   const hasUsedFreeTrial = useMemo(() => {
@@ -269,6 +417,32 @@ const FreeTrialCard = () => {
         setSuccess(true);
         setTrialData(data.data);
         setError("");
+
+        // Send email with trial credentials
+        try {
+          const emailResponse = await fetch("/api/emails/send-free-trial", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              toEmail: user.email,
+              fullName:
+                user.profile?.firstName || user.profile?.username || "User",
+              trialData: data.data,
+            }),
+          });
+
+          const emailResult = await emailResponse.json();
+
+          if (emailResponse.ok && emailResult.success) {
+          } else {
+            console.error("❌ Failed to send free trial email:", emailResult);
+          }
+        } catch (emailError) {
+          console.error("❌ Error sending free trial email:", emailError);
+          // Don't show error to user as the trial was successful
+        }
       } else {
         setError(data.error || "Failed to create free trial");
       }
@@ -294,7 +468,8 @@ const FreeTrialCard = () => {
         const response = await fetch("/api/admin/settings");
         const data = await response.json();
         if (data.success && data.data.freeTrialContent) {
-          setFreeTrialContent(data.data.freeTrialContent);
+          // Store the original untranslated content from backend
+          setOriginalFreeTrialContent(data.data.freeTrialContent);
         }
       } catch (error) {
         console.error("Failed to fetch free trial content:", error);
@@ -303,7 +478,7 @@ const FreeTrialCard = () => {
     };
 
     fetchFreeTrialContent();
-  }, []);
+  }, []); // Only run once on mount
 
   // Icon mapping for dynamic features
   const iconMap = {
@@ -314,6 +489,59 @@ const FreeTrialCard = () => {
     checkCircle: CheckCircle,
   };
 
+  // Original text constants for translation
+  const ORIGINAL_TEXTS = {
+    freeTrialCreatedSuccessfully: "Free Trial Created Successfully!",
+    your24HourFreeTrialIsNowActive: "Your 24-hour free trial is now active",
+    fullApiResponse: "Full API Response",
+    trialDetails: "Trial Details",
+    connectionInformation: "Connection Information",
+    rawLineInformation: "Raw Line Information",
+    startAnotherTrial: "Start Another Trial",
+    checkingVpnStatus: "Checking VPN status...",
+    vpnDetectionUnavailable:
+      "VPN detection unavailable. Proceeding with caution.",
+    vpnProxyTorDetected:
+      "VPN/Proxy/Tor detected! Free trials are not available with VPN connections.",
+    chooseYourDeviceType: "Choose Your Device Type",
+    macAddress: "MAC Address",
+    enterMacAddress: "Enter MAC address (e.g., 1A:2B:3C:4D:5E:6F)",
+    requiredForDevices: "Required for",
+    devices: "devices",
+    start24HourFreeTrial: "Start 24-Hour Free Trial",
+    creatingTrial: "Creating Trial...",
+    youNeedToBeLoggedIn: "You need to be logged in to start a free trial",
+    youHaveAlreadyUsed:
+      "You have already used your free trial. Upgrade to premium for unlimited access!",
+    pleaseDisableYourVpn:
+      "Please disable your VPN, proxy, or Tor connection to continue with the free trial.",
+    buyPackages: "Buy Packages",
+    upgradeToPremium: "Upgrade to Premium",
+  };
+
+  // Translated text state
+  const [translatedTexts, setTranslatedTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      const textsToTranslate = Object.values(ORIGINAL_TEXTS);
+      const translated = await translate(textsToTranslate);
+      if (!isMounted) return;
+
+      const newTranslatedTexts = {};
+      Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+        newTranslatedTexts[key] = translated[index];
+      });
+      setTranslatedTexts(newTranslatedTexts);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [translate]);
+
   if (success && trialData) {
     return (
       <div className="max-w-4xl mx-auto p-6 font-secondary">
@@ -321,63 +549,53 @@ const FreeTrialCard = () => {
           <div className="mb-6">
             <CheckCircle className="w-16 h-16 text-[#00b877] mx-auto mb-4" />
             <h2 className="text-3xl font-bold text-white mb-2">
-              Free Trial Created Successfully!
+              {translatedTexts.freeTrialCreatedSuccessfully}
             </h2>
             <p className="text-gray-300 text-lg">
-              Your 24-hour free trial is now active
+              {translatedTexts.your24HourFreeTrialIsNowActive}
             </p>
           </div>
 
-          {/* Full JSON Response */}
+          {/* Complete Trial Information */}
           <div className="bg-black/30 rounded-xl p-6 mb-6 text-left">
             <h3 className="text-xl font-semibold text-white mb-4">
-              Full API Response
-            </h3>
-            <div className="bg-black/50 rounded-lg p-4 overflow-auto">
-              <pre className="text-green-400 text-sm whitespace-pre-wrap break-words">
-                {JSON.stringify(trialData, null, 2)}
-              </pre>
-            </div>
-          </div>
-
-          {/* Formatted Trial Details */}
-          <div className="bg-black/30 rounded-xl p-6 mb-6 text-left">
-            <h3 className="text-xl font-semibold text-white mb-4">
-              Trial Details
+              {translatedTexts.trialDetails}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-400">Username:</span>
-                <span className="text-white ml-2 font-mono">
+              <div className="bg-black/50 rounded-lg p-4">
+                <span className="text-gray-400 block mb-1">Username:</span>
+                <span className="text-white font-mono text-base break-all">
                   {trialData.username}
                 </span>
               </div>
-              <div>
-                <span className="text-gray-400">Password:</span>
-                <span className="text-white ml-2 font-mono">
+              <div className="bg-black/50 rounded-lg p-4">
+                <span className="text-gray-400 block mb-1">Password:</span>
+                <span className="text-white font-mono text-base break-all">
                   {trialData.password}
                 </span>
               </div>
-              <div>
-                <span className="text-gray-400">Package:</span>
-                <span className="text-white ml-2">{trialData.packageName}</span>
+              <div className="bg-black/50 rounded-lg p-4">
+                <span className="text-gray-400 block mb-1">Package:</span>
+                <span className="text-white text-base">
+                  {trialData.packageName}
+                </span>
               </div>
-              <div>
-                <span className="text-gray-400">Template:</span>
-                <span className="text-white ml-2">
+              <div className="bg-black/50 rounded-lg p-4">
+                <span className="text-gray-400 block mb-1">Template:</span>
+                <span className="text-white text-base">
                   {trialData.templateName}
                 </span>
               </div>
-              <div>
-                <span className="text-gray-400">Expires:</span>
-                <span className="text-white ml-2">
+              <div className="bg-black/50 rounded-lg p-4">
+                <span className="text-gray-400 block mb-1">Expires:</span>
+                <span className="text-white text-base">
                   {new Date(trialData.expire * 1000).toLocaleString()}
                 </span>
               </div>
               {trialData.lineId && (
-                <div>
-                  <span className="text-gray-400">Line ID:</span>
-                  <span className="text-white ml-2 font-mono">
+                <div className="bg-black/50 rounded-lg p-4">
+                  <span className="text-gray-400 block mb-1">Line ID:</span>
+                  <span className="text-white font-mono text-base break-all">
                     {trialData.lineId}
                   </span>
                 </div>
@@ -388,40 +606,89 @@ const FreeTrialCard = () => {
           {/* Connection Information */}
           <div className="bg-black/30 rounded-xl p-6 mb-6 text-left">
             <h3 className="text-xl font-semibold text-white mb-4">
-              Connection Information
+              {translatedTexts.connectionInformation}
             </h3>
-            <div className="space-y-3">
-              <div className="bg-black/50 rounded-lg p-3">
-                <p className="text-gray-400 text-sm mb-1">M3U Playlist URL:</p>
-                <p className="text-white font-mono text-sm break-all">
-                  {trialData.lineInfo
-                    .split("\n")
-                    .find((line) => line.includes("m3u_plus"))}
-                </p>
-              </div>
-              <div className="bg-black/50 rounded-lg p-3">
-                <p className="text-gray-400 text-sm mb-1">IPTV URL:</p>
-                <p className="text-white font-mono text-sm break-all">
-                  {trialData.lineInfo
-                    .split("\n")
-                    .find((line) => line.includes("IPTV Url:"))
-                    ?.replace("IPTV Url:", "")
-                    .trim()}
-                </p>
-              </div>
+            <div className="space-y-4">
+              {/* M3U Playlist URL */}
+              {trialData.lineInfo &&
+                trialData.lineInfo.includes("m3u_plus") && (
+                  <div className="bg-black/50 rounded-lg p-4">
+                    <p className="text-gray-400 text-sm mb-2 font-medium">
+                      M3U Playlist URL:
+                    </p>
+                    <p className="text-white font-mono text-sm break-all bg-gray-900/50 p-2 rounded">
+                      {trialData.lineInfo
+                        .split("\n")
+                        .find((line) => line.includes("m3u_plus"))}
+                    </p>
+                  </div>
+                )}
+
+              {/* IPTV URL */}
+              {trialData.lineInfo &&
+                trialData.lineInfo.includes("IPTV Url:") && (
+                  <div className="bg-black/50 rounded-lg p-4">
+                    <p className="text-gray-400 text-sm mb-2 font-medium">
+                      IPTV URL:
+                    </p>
+                    <p className="text-white font-mono text-sm break-all bg-gray-900/50 p-2 rounded">
+                      {trialData.lineInfo
+                        .split("\n")
+                        .find((line) => line.includes("IPTV Url:"))
+                        ?.replace("IPTV Url:", "")
+                        .trim()}
+                    </p>
+                  </div>
+                )}
+
+              {/* Additional connection info from lineInfo */}
+              {trialData.lineInfo && (
+                <div className="bg-black/50 rounded-lg p-4">
+                  <p className="text-gray-400 text-sm mb-2 font-medium">
+                    Complete Connection Details:
+                  </p>
+                  <div className="space-y-2">
+                    {trialData.lineInfo.split("\n").map((line, index) => {
+                      if (line.trim()) {
+                        return (
+                          <div
+                            key={index}
+                            className="text-white text-sm font-mono bg-gray-900/50 p-2 rounded"
+                          >
+                            {line}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Raw Line Info */}
-          <div className="bg-black/30 rounded-xl p-6 mb-6 text-left">
-            <h3 className="text-xl font-semibold text-white mb-4">
-              Raw Line Information
-            </h3>
-            <div className="bg-black/50 rounded-lg p-4">
-              <pre className="text-yellow-400 text-sm whitespace-pre-wrap break-words">
-                {trialData.lineInfo}
-              </pre>
-            </div>
+          {/* Copy to Clipboard Button */}
+          <div className="mb-6">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => {
+                const connectionDetails = `Username: ${
+                  trialData.username
+                }\nPassword: ${trialData.password}\nPackage: ${
+                  trialData.packageName
+                }\nTemplate: ${trialData.templateName}\nExpires: ${new Date(
+                  trialData.expire * 1000
+                ).toLocaleString()}\n\nConnection Details:\n${
+                  trialData.lineInfo || "No connection details available"
+                }`;
+                navigator.clipboard.writeText(connectionDetails);
+                // You might want to add a toast notification here
+              }}
+              className="mr-3"
+            >
+              Copy All Details
+            </Button>
           </div>
 
           <Button
@@ -433,7 +700,7 @@ const FreeTrialCard = () => {
             }}
             className="w-full md:w-auto"
           >
-            Start Another Trial
+            {translatedTexts.startAnotherTrial}
           </Button>
         </div>
       </div>
@@ -446,7 +713,9 @@ const FreeTrialCard = () => {
       {!hasUsedFreeTrial && vpnChecking && (
         <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg flex items-center justify-center gap-2">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
-          <span className="text-blue-400 text-sm">Checking VPN status...</span>
+          <span className="text-blue-400 text-sm">
+            {translatedTexts.checkingVpnStatus}
+          </span>
         </div>
       )}
 
@@ -454,7 +723,7 @@ const FreeTrialCard = () => {
         <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg flex items-center justify-center gap-2">
           <AlertCircle className="w-4 h-4 text-yellow-400" />
           <span className="text-yellow-400 text-sm">
-            VPN detection unavailable. Proceeding with caution.
+            {translatedTexts.vpnDetectionUnavailable}
           </span>
         </div>
       )}
@@ -463,8 +732,7 @@ const FreeTrialCard = () => {
         <div className="mb-4 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center justify-center gap-2">
           <WifiOff className="w-5 h-5 text-red-400" />
           <span className="text-red-400 text-sm font-medium">
-            VPN/Proxy/Tor detected! Free trials are not available with VPN
-            connections.
+            {translatedTexts.vpnProxyTorDetected}
           </span>
         </div>
       )}
@@ -504,7 +772,7 @@ const FreeTrialCard = () => {
           <div className="mb-8">
             <h3 className="text-white font-semibold text-xl mb-4 flex items-center">
               <Zap className="w-6 h-6 mr-2 text-[#44dcf3]" />
-              Choose Your Device Type
+              {translatedTexts.chooseYourDeviceType}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {lineTypes.map((type) => (
@@ -531,17 +799,17 @@ const FreeTrialCard = () => {
           {selectedLineType > 0 && (
             <div className="mb-8">
               <h3 className="text-white font-semibold text-lg mb-3">
-                MAC Address
+                {translatedTexts.macAddress}
               </h3>
               <Input
                 type="text"
-                placeholder="Enter MAC address (e.g., 1A:2B:3C:4D:5E:6F)"
+                placeholder={translatedTexts.enterMacAddress}
                 value={macAddress}
                 onChange={(e) => setMacAddress(e.target.value)}
                 className="max-w-md"
               />
               <p className="text-gray-400 text-sm mt-2">
-                Required for {lineTypes[selectedLineType].name} devices
+                {`${translatedTexts.requiredForDevices} ${lineTypes[selectedLineType].name} ${translatedTexts.devices}`}
               </p>
             </div>
           )}
@@ -566,7 +834,7 @@ const FreeTrialCard = () => {
                 >
                   <div className="flex items-center">
                     <Crown className="w-5 h-5 mr-2" />
-                    Upgrade to Premium
+                    {translatedTexts.upgradeToPremium}
                   </div>
                 </Button>
               </Link>
@@ -588,12 +856,12 @@ const FreeTrialCard = () => {
                 {loading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black mr-2"></div>
-                    Creating Trial...
+                    {translatedTexts.creatingTrial}
                   </div>
                 ) : (
                   <div className="flex items-center">
                     <Play className="w-5 h-5 mr-2" />
-                    Start 24-Hour Free Trial
+                    {translatedTexts.start24HourFreeTrial}
                   </div>
                 )}
               </Button>
@@ -601,21 +869,19 @@ const FreeTrialCard = () => {
 
             {!user && (
               <p className="text-gray-400 text-sm mt-3">
-                You need to be logged in to start a free trial
+                {translatedTexts.youNeedToBeLoggedIn}
               </p>
             )}
 
             {hasUsedFreeTrial && (
               <p className="text-gray-400 text-sm mt-3">
-                You have already used your free trial. Upgrade to premium for
-                unlimited access!
+                {translatedTexts.youHaveAlreadyUsed}
               </p>
             )}
 
             {!hasUsedFreeTrial && isVpnBlocked && (
               <p className="text-red-400 text-sm mt-3">
-                Please disable your VPN, proxy, or Tor connection to continue
-                with the free trial.
+                {translatedTexts.pleaseDisableYourVpn}
               </p>
             )}
           </div>
@@ -636,7 +902,7 @@ const FreeTrialCard = () => {
           </div>
           <Link href="/packages">
             <Button variant="primary" size="md" className="mt-5">
-              Buy Packages
+              {translatedTexts.buyPackages}
             </Button>
           </Link>
         </div>

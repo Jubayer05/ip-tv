@@ -392,16 +392,6 @@ export async function sendIPTVCredentialsEmail({ toEmail, fullName, order }) {
               m3uCredentials.indexOf(cred) + 1
             }</h4>
             <div style="margin-bottom: 10px;">
-              <strong>Username:</strong> <span style="font-family: monospace; background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">${
-                cred.username
-              }</span>
-            </div>
-            <div style="margin-bottom: 10px;">
-              <strong>Password:</strong> <span style="font-family: monospace; background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">${
-                cred.password
-              }</span>
-            </div>
-            <div style="margin-bottom: 10px;">
               <strong>M3U Playlist URL:</strong>
               <div style="background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 12px; word-break: break-all; margin-top: 5px;">
                 ${m3uUrl || "URL not available"}
@@ -789,10 +779,246 @@ export async function sendContactFormEmail({
   try {
     const transporter = await createTransporter();
     const result = await transporter.sendMail(mailOptions);
-    console.log("Contact form email sent successfully:", result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error("Error sending contact form email:", error);
     throw error;
+  }
+}
+
+// Free Trial credentials email template
+export async function sendFreeTrialCredentialsEmail({
+  toEmail,
+  fullName,
+  trialData,
+}) {
+  try {
+    const baseUrl = "https://www.cheapstreamtv.com";
+    const smtpUser = await getSmtpUser();
+
+    // Line type names
+    const lineTypeNames = {
+      0: "M3U Playlist",
+      1: "MAG Device",
+      2: "Enigma2",
+    };
+
+    // Extract connection information from lineInfo
+    let m3uUrl = "";
+    let iptvUrl = "";
+    let connectionDetails = "";
+
+    if (trialData.lineInfo) {
+      const lines = trialData.lineInfo.split("\n");
+      m3uUrl = lines.find((line) => line.includes("m3u_plus")) || "";
+      iptvUrl =
+        lines
+          .find((line) => line.includes("IPTV Url:"))
+          ?.replace("IPTV Url:", "")
+          .trim() || "";
+
+      // Format all connection details
+      connectionDetails = lines
+        .filter((line) => line.trim())
+        .map(
+          (line) =>
+            `<div style="background: #f8f9fa; padding: 8px 12px; margin: 4px 0; border-radius: 4px; font-family: monospace; font-size: 13px; color: #495057;">${line}</div>`
+        )
+        .join("");
+    }
+
+    const expireDate = new Date(trialData.expire * 1000);
+    const lineTypeName = lineTypeNames[trialData.lineType] || "M3U Playlist";
+
+    const mailOptions = {
+      from: `"Cheap Stream" <${smtpUser}>`,
+      to: toEmail,
+      subject: `🎉 Your Free Trial is Ready! - 24 Hours of Premium IPTV`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; background: #fff;">
+          <div style="background: linear-gradient(135deg, #00b877 0%, #44dcf3 100%); padding: 30px; text-align: center; color: white;">
+            <h1 style="margin: 0; font-size: 28px;">🎉 Your Free Trial is Ready!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 18px;">24 Hours of Premium IPTV Access</p>
+          </div>
+
+          <div style="padding: 30px; background: #ffffff;">
+            <p style="color: #333; font-size: 16px; margin-bottom: 10px;">Hi ${
+              fullName || "there"
+            },</p>
+            
+            <p style="color: #555; line-height: 1.6; margin-bottom: 25px; font-size: 16px;">
+              🚀 Congratulations! Your free trial is now active and ready to use. You have <strong>24 hours</strong> to experience our premium IPTV service completely free!
+            </p>
+
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h3 style="color: #856404; margin: 0 0 10px 0;">⏰ Trial Information</h3>
+              <div style="color: #856404;">
+                <p style="margin: 5px 0;"><strong>Duration:</strong> 24 hours</p>
+                <p style="margin: 5px 0;"><strong>Expires:</strong> ${expireDate.toLocaleString()}</p>
+                <p style="margin: 5px 0;"><strong>Device Type:</strong> ${lineTypeName}</p>
+                <p style="margin: 5px 0;"><strong>Template:</strong> ${
+                  trialData.templateName || `Template ${trialData.templateId}`
+                }</p>
+              </div>
+            </div>
+
+            <h3 style="color: #333; margin: 30px 0 20px 0; font-size: 20px;">🔐 Your Trial Credentials</h3>
+            
+            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 25px; margin: 20px 0;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #00b877;">
+                  <h4 style="margin: 0 0 8px 0; color: #333; font-size: 14px;">Username</h4>
+                  <div style="font-family: monospace; font-size: 18px; font-weight: bold; color: #00b877; background: #f8f9fa; padding: 8px; border-radius: 4px; text-align: center;">
+                    ${trialData.username}
+                  </div>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #44dcf3;">
+                  <h4 style="margin: 0 0 8px 0; color: #333; font-size: 14px;">Password</h4>
+                  <div style="font-family: monospace; font-size: 18px; font-weight: bold; color: #44dcf3; background: #f8f9fa; padding: 8px; border-radius: 4px; text-align: center;">
+                    ${trialData.password}
+                  </div>
+                </div>
+              </div>
+
+              ${
+                trialData.lineId
+                  ? `
+              <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #ffc107; margin-top: 15px;">
+                <h4 style="margin: 0 0 8px 0; color: #333; font-size: 14px;">Line ID</h4>
+                <div style="font-family: monospace; font-size: 16px; font-weight: bold; color: #856404; background: #fff3cd; padding: 8px; border-radius: 4px; text-align: center;">
+                  ${trialData.lineId}
+                </div>
+              </div>
+              `
+                  : ""
+              }
+            </div>
+
+            ${
+              m3uUrl
+                ? `
+            <div style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h3 style="color: #0c5460; margin: 0 0 15px 0;">📱 M3U Playlist URL</h3>
+              <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #ccc;">
+                <div style="font-family: monospace; font-size: 13px; word-break: break-all; color: #333; line-height: 1.4;">
+                  ${m3uUrl}
+                </div>
+              </div>
+            </div>
+            `
+                : ""
+            }
+
+            ${
+              iptvUrl
+                ? `
+            <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h3 style="color: #0c5460; margin: 0 0 15px 0;">🌐 IPTV Server URL</h3>
+              <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #ccc;">
+                <div style="font-family: monospace; font-size: 13px; word-break: break-all; color: #333; line-height: 1.4;">
+                  ${iptvUrl}
+                </div>
+              </div>
+            </div>
+            `
+                : ""
+            }
+
+            ${
+              connectionDetails
+                ? `
+            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h3 style="color: #333; margin: 0 0 15px 0;">📋 Complete Connection Details</h3>
+              <div style="max-height: 300px; overflow-y: auto;">
+                ${connectionDetails}
+              </div>
+            </div>
+            `
+                : ""
+            }
+
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h3 style="color: #155724; margin: 0 0 15px 0;">🎯 What's Next?</h3>
+              <div style="color: #155724;">
+                <p style="margin: 8px 0;">• Use these credentials in your preferred IPTV player</p>
+                <p style="margin: 8px 0;">• Enjoy 24 hours of premium content access</p>
+                <p style="margin: 8px 0;">• Explore our channel lineup and features</p>
+                <p style="margin: 8px 0;">• Upgrade to a full subscription when you're ready</p>
+              </div>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${baseUrl}/packages" 
+                 style="background: linear-gradient(135deg, #00b877 0%, #44dcf3 100%); 
+                        color: white; 
+                        padding: 15px 30px; 
+                        text-decoration: none; 
+                        border-radius: 25px; 
+                        display: inline-block; 
+                        font-weight: bold;
+                        font-size: 16px;
+                        margin-right: 15px;">
+                🚀 Upgrade to Premium
+              </a>
+              
+              <a href="${baseUrl}/support/contact" 
+                 style="background: transparent; 
+                        color: #00b877; 
+                        border: 2px solid #00b877;
+                        padding: 13px 28px; 
+                        text-decoration: none; 
+                        border-radius: 25px; 
+                        display: inline-block; 
+                        font-weight: bold;
+                        font-size: 16px;">
+                💬 Get Support
+              </a>
+            </div>
+
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h3 style="color: #856404; margin: 0 0 10px 0;">⚠️ Important Reminders</h3>
+              <div style="color: #856404; font-size: 14px;">
+                <p style="margin: 5px 0;">• Keep your credentials secure and don't share them</p>
+                <p style="margin: 5px 0;">• Your trial expires in exactly 24 hours</p>
+                <p style="margin: 5px 0;">• No credit card required for this trial</p>
+                <p style="margin: 5px 0;">• Contact support if you need any assistance</p>
+              </div>
+            </div>
+
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e9ecef; text-align: center;">
+              <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
+                Enjoy your free trial! We hope you love our service.
+              </p>
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                This email contains sensitive information. Please keep it secure.<br>
+                If you didn't request this trial, please contact our support team immediately.
+              </p>
+            </div>
+
+            <div style="margin-top: 30px; text-align: center;">
+              <p style="color: #666; font-size: 16px; margin: 0;">
+                Thank you for trying <strong style="color: #00b877;">Cheap Stream</strong>!<br>
+                <span style="color: #999; font-size: 14px;">Happy Streaming! 🎬📺</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      `,
+    };
+
+    const transporter = await createTransporter();
+
+    const result = await transporter.sendMail(mailOptions);
+
+    return true;
+  } catch (error) {
+    console.error("❌ Free trial credentials email sending failed:", error);
+    console.error("❌ Error details:", {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+    });
+    return false;
   }
 }

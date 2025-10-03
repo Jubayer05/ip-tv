@@ -1,8 +1,8 @@
 "use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   CheckCircle,
   Clock,
-  Filter,
   MessageCircle,
   Send,
   User,
@@ -12,25 +12,80 @@ import {
 import { useEffect, useState } from "react";
 
 const SupportTicketAdmin = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [tickets, setTickets] = useState([]);
+  const [allTickets, setAllTickets] = useState([]); // Add state for all tickets
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [replying, setReplying] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("open");
+  const [activeTab, setActiveTab] = useState("all");
   const [lastViewedTickets, setLastViewedTickets] = useState({}); // Track last viewed message count
   const [expandedImage, setExpandedImage] = useState(null);
+
+  const ORIGINAL_TEXTS = {
+    heading: "Support Tickets (Admin)",
+    all: "All",
+    open: "Open",
+    reply: "Replied",
+    closed: "Closed",
+    total: "Total",
+    loadingTickets: "Loading tickets...",
+    noTicketsFound: "No tickets found",
+    user: "User",
+    messages: "messages",
+    close: "Close",
+    reopen: "Reopen",
+    hideChat: "Hide Chat",
+    openChat: "Open Chat",
+    youAdmin: "You (Admin)",
+    user: "User",
+    viewFullImage: "📎 View full image",
+    typeYourReply: "Type your reply...",
+    sending: "Sending...",
+    send: "Send",
+    expandedView: "Expanded view",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  useEffect(() => {
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      const items = Object.values(ORIGINAL_TEXTS);
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const translatedTexts = {};
+      Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+        translatedTexts[key] = translated[index];
+      });
+      setTexts(translatedTexts);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
 
   const load = async () => {
     try {
       setLoading(true);
-      const q = statusFilter
-        ? `?status=${encodeURIComponent(statusFilter)}`
-        : "";
+
+      // Load filtered tickets for display
+      const q =
+        activeTab !== "all" ? `?status=${encodeURIComponent(activeTab)}` : "";
       const res = await fetch(`/api/support/tickets${q}`);
       const data = await res.json();
+
       if (data?.success) {
-        // Populate user data for each ticket
+        // Load ALL tickets for stats calculation
+        const allTicketsRes = await fetch(`/api/support/tickets`);
+        const allTicketsData = await allTicketsRes.json();
+
+        // Populate user data for filtered tickets
         const ticketsWithUsers = await Promise.all(
           (data.data || []).map(async (ticket) => {
             try {
@@ -51,7 +106,35 @@ const SupportTicketAdmin = () => {
             }
           })
         );
+
         setTickets(ticketsWithUsers);
+
+        // Store all tickets for stats
+        if (allTicketsData?.success) {
+          const allTicketsWithUsers = await Promise.all(
+            (allTicketsData.data || []).map(async (ticket) => {
+              try {
+                const userRes = await fetch(
+                  `/api/users/profile?userId=${encodeURIComponent(ticket.user)}`
+                );
+                const userData = await userRes.json();
+                return {
+                  ...ticket,
+                  userDisplayName: userData.success
+                    ? `${userData.data.firstName || ""} ${
+                        userData.data.lastName || ""
+                      }`.trim() || "Unknown User"
+                    : "Unknown User",
+                };
+              } catch (e) {
+                return { ...ticket, userDisplayName: "Unknown User" };
+              }
+            })
+          );
+
+          // Set all tickets for stats calculation
+          setAllTickets(allTicketsWithUsers);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -63,7 +146,7 @@ const SupportTicketAdmin = () => {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [activeTab]);
 
   const sendMessage = async (ticketId) => {
     if (!replyText.trim()) return;
@@ -75,6 +158,7 @@ const SupportTicketAdmin = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: { sender: "admin", text: messageText },
+          status: "reply", // Change status to reply when admin responds
         }),
       });
       const data = await res.json();
@@ -133,10 +217,10 @@ const SupportTicketAdmin = () => {
 
   const getTicketStats = () => {
     return {
-      total: tickets.length,
-      open: tickets.filter((t) => t.status === "open").length,
-      reply: tickets.filter((t) => t.status === "reply").length,
-      closed: tickets.filter((t) => t.status === "close").length,
+      total: allTickets.length,
+      open: allTickets.filter((t) => t.status === "open").length,
+      reply: allTickets.filter((t) => t.status === "reply").length,
+      closed: allTickets.filter((t) => t.status === "close").length,
     };
   };
 
@@ -152,24 +236,45 @@ const SupportTicketAdmin = () => {
 
   const stats = getTicketStats();
 
+  // Define tabs with reply status
+  const tabs = [
+    { id: "all", label: texts.all, count: stats.total },
+    { id: "open", label: texts.open, count: stats.open },
+    { id: "reply", label: texts.reply, count: stats.reply },
+    { id: "close", label: texts.closed, count: stats.closed },
+  ];
+
   return (
     <div className="flex flex-col gap-4 font-secondary">
       {/* Header with Stats */}
       <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">Support Tickets (Admin)</h2>
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
-            <select
-              className="bg-black border border-[#212121] rounded px-3 py-2 text-white"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="">All ({stats.total})</option>
-              <option value="open">Open ({stats.open})</option>
-              <option value="reply">Reply ({stats.reply})</option>
-              <option value="close">Closed ({stats.closed})</option>
-            </select>
+          <h2 className="text-xl font-bold">{texts.heading}</h2>
+
+          {/* Tab System */}
+          <div className="flex bg-gray-900/50 rounded-lg p-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                  activeTab === tab.id
+                    ? "bg-primary text-black"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800/50"
+                }`}
+              >
+                {tab.label}
+                <span
+                  className={`text-xs px-2 py-1 rounded-full ${
+                    activeTab === tab.id
+                      ? "bg-black/20 text-black"
+                      : "bg-gray-700 text-gray-300"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -177,25 +282,25 @@ const SupportTicketAdmin = () => {
         <div className="grid grid-cols-4 gap-4 text-center">
           <div className="bg-gray-900/50 rounded-lg p-3">
             <div className="text-2xl font-bold text-white">{stats.total}</div>
-            <div className="text-xs text-gray-400">Total</div>
+            <div className="text-xs text-gray-400">{texts.total}</div>
           </div>
           <div className="bg-yellow-900/20 rounded-lg p-3">
             <div className="text-2xl font-bold text-yellow-300">
               {stats.open}
             </div>
-            <div className="text-xs text-gray-400">Open</div>
+            <div className="text-xs text-gray-400">{texts.open}</div>
           </div>
           <div className="bg-blue-900/20 rounded-lg p-3">
             <div className="text-2xl font-bold text-blue-300">
               {stats.reply}
             </div>
-            <div className="text-xs text-gray-400">Reply</div>
+            <div className="text-xs text-gray-400">{texts.reply}</div>
           </div>
           <div className="bg-green-900/20 rounded-lg p-3">
             <div className="text-2xl font-bold text-green-300">
               {stats.closed}
             </div>
-            <div className="text-xs text-gray-400">Closed</div>
+            <div className="text-xs text-gray-400">{texts.closed}</div>
           </div>
         </div>
       </div>
@@ -205,12 +310,12 @@ const SupportTicketAdmin = () => {
         {loading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-gray-400">Loading tickets...</p>
+            <p className="mt-2 text-gray-400">{texts.loadingTickets}</p>
           </div>
         ) : tickets.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p>No tickets found</p>
+            <p>{texts.noTicketsFound}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -240,7 +345,7 @@ const SupportTicketAdmin = () => {
                       <div className="flex items-center gap-3 text-sm text-gray-400">
                         <span className="flex items-center gap-1">
                           <User className="w-3 h-3" />
-                          User: {t.userDisplayName || t.user}
+                          {texts.user}: {t.userDisplayName || t.user}
                         </span>
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-xs ${getStatusColor(
@@ -251,7 +356,9 @@ const SupportTicketAdmin = () => {
                           {t.status.toUpperCase()}
                         </span>
                         <span>{new Date(t.createdAt).toLocaleString()}</span>
-                        <span>{t.messages?.length || 0} messages</span>
+                        <span>
+                          {t.messages?.length || 0} {texts.messages}
+                        </span>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -261,7 +368,7 @@ const SupportTicketAdmin = () => {
                           className="flex items-center gap-1 text-xs bg-red-900/50 hover:bg-red-900 text-red-300 px-3 py-2 rounded transition-colors"
                         >
                           <X className="w-3 h-3" />
-                          Close
+                          {texts.close}
                         </button>
                       )}
                       {t.status === "close" && (
@@ -269,7 +376,7 @@ const SupportTicketAdmin = () => {
                           onClick={() => setStatus(t._id, "open")}
                           className="flex items-center gap-1 text-xs bg-green-900/50 hover:bg-green-900 text-green-300 px-3 py-2 rounded transition-colors"
                         >
-                          Reopen
+                          {texts.reopen}
                         </button>
                       )}
                       <button
@@ -282,7 +389,7 @@ const SupportTicketAdmin = () => {
                         }}
                         className="text-xs bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded transition-colors"
                       >
-                        {activeId === t._id ? "Hide Chat" : "Open Chat"}
+                        {activeId === t._id ? texts.hideChat : texts.openChat}
                       </button>
                     </div>
                   </div>
@@ -310,8 +417,10 @@ const SupportTicketAdmin = () => {
                             }`}
                           >
                             <div className="text-xs opacity-70 mb-1">
-                              {m.sender === "admin" ? "You (Admin)" : "User"} •{" "}
-                              {new Date(m.createdAt).toLocaleString()}
+                              {m.sender === "admin"
+                                ? texts.youAdmin
+                                : texts.user}{" "}
+                              • {new Date(m.createdAt).toLocaleString()}
                             </div>
                             {m.text && <div className="text-sm">{m.text}</div>}
                             {m.image && (
@@ -345,7 +454,7 @@ const SupportTicketAdmin = () => {
                                   }`}
                                   style={{ display: "none" }}
                                 >
-                                  📎 View full image
+                                  {texts.viewFullImage}
                                 </a>
                               </div>
                             )}
@@ -360,7 +469,7 @@ const SupportTicketAdmin = () => {
                         <div className="flex gap-2">
                           <input
                             className="flex-1 bg-black border border-[#212121] rounded-lg px-4 py-3 text-white placeholder-gray-400"
-                            placeholder="Type your reply..."
+                            placeholder={texts.typeYourReply}
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
                             onKeyPress={(e) => {
@@ -376,7 +485,7 @@ const SupportTicketAdmin = () => {
                             className="bg-primary hover:bg-primary/80 text-black px-4 py-3 rounded-lg disabled:opacity-50 flex items-center gap-2 transition-colors"
                           >
                             <Send className="w-4 h-4" />
-                            {replying ? "Sending..." : "Send"}
+                            {replying ? texts.sending : texts.send}
                           </button>
                         </div>
                       </div>
@@ -395,14 +504,14 @@ const SupportTicketAdmin = () => {
           <div className="relative max-w-4xl max-h-full">
             <img
               src={expandedImage}
-              alt="Expanded view"
+              alt={texts.expandedView}
               className="max-w-full max-h-full object-contain rounded-lg"
             />
             <button
               onClick={() => setExpandedImage(null)}
               className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
             >
-              <X className="w-6 h-6" />
+              <X size={20} />
             </button>
           </div>
         </div>

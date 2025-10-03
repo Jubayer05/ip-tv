@@ -1,4 +1,6 @@
 "use client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Rating } from "@smastrom/react-rating";
 import "@smastrom/react-rating/style.css";
 import { useEffect, useState } from "react";
@@ -6,6 +8,8 @@ import { FaCheck, FaEdit, FaPlus, FaTimes, FaTrash } from "react-icons/fa";
 import Swal from "sweetalert2";
 
 const ReviewManagement = () => {
+  const { hasAdminAccess } = useAuth();
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -27,6 +31,77 @@ const ReviewManagement = () => {
     userId: "", // For selecting existing user or creating new one
     reviewerName: "", // For display name
   });
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "Review Management",
+    subtitle: "Manage customer reviews and ratings",
+    loadingReviews: "Loading reviews...",
+    customerReviews: "Customer Reviews",
+    addReview: "Add Review",
+    allReviews: "All Reviews",
+    pendingApproval: "Pending Approval",
+    approved: "Approved",
+    addNewReview: "Add New Review",
+    reviewerName: "Reviewer Name",
+    enterReviewerName: "Enter reviewer name",
+    rating: "Rating",
+    createdDate: "Created Date",
+    status: "Status",
+    comment: "Comment",
+    enterReviewComment: "Enter review comment",
+    cancel: "Cancel",
+    reviewAdded: "Review Added!",
+    reviewAddedSuccess: "Review has been successfully added.",
+    addFailed: "Add Failed",
+    networkError: "Network Error",
+    tryAgainLater: "Please try again later.",
+    reviewApproved: "Review Approved!",
+    reviewRejected: "Review Rejected!",
+    operationFailed: "Operation Failed",
+    reviewUpdated: "Review Updated!",
+    updateFailed: "Update Failed",
+    areYouSure: "Are you sure?",
+    cannotBeUndone: "This action cannot be undone!",
+    yesDeleteIt: "Yes, delete it!",
+    reviewDeleted: "Review Deleted!",
+    deletionFailed: "Deletion Failed",
+    save: "Save",
+    edit: "Edit",
+    delete: "Delete",
+    anonymous: "Anonymous",
+    previous: "Previous",
+    next: "Next",
+    noReviewsFound: "No reviews found.",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
 
   useEffect(() => {
     fetchReviews();
@@ -77,8 +152,8 @@ const ReviewManagement = () => {
       if (data.success) {
         Swal.fire({
           icon: "success",
-          title: "Review Added!",
-          text: "Review has been successfully added.",
+          title: texts.reviewAdded,
+          text: texts.reviewAddedSuccess,
           timer: 2000,
           showConfirmButton: false,
         });
@@ -95,7 +170,7 @@ const ReviewManagement = () => {
       } else {
         Swal.fire({
           icon: "error",
-          title: "Add Failed",
+          title: texts.addFailed,
           text: data.error,
         });
       }
@@ -103,8 +178,8 @@ const ReviewManagement = () => {
       console.error("Error adding review:", error);
       Swal.fire({
         icon: "error",
-        title: "Network Error",
-        text: "Please try again later.",
+        title: texts.networkError,
+        text: texts.tryAgainLater,
       });
     }
   };
@@ -126,7 +201,7 @@ const ReviewManagement = () => {
       if (data.success) {
         Swal.fire({
           icon: "success",
-          title: approve ? "Review Approved!" : "Review Rejected!",
+          title: approve ? texts.reviewApproved : texts.reviewRejected,
           text: data.message,
           timer: 2000,
           showConfirmButton: false,
@@ -135,7 +210,7 @@ const ReviewManagement = () => {
       } else {
         Swal.fire({
           icon: "error",
-          title: "Operation Failed",
+          title: texts.operationFailed,
           text: data.error,
         });
       }
@@ -143,8 +218,8 @@ const ReviewManagement = () => {
       console.error("Error updating review:", error);
       Swal.fire({
         icon: "error",
-        title: "Network Error",
-        text: "Please try again later.",
+        title: texts.networkError,
+        text: texts.tryAgainLater,
       });
     }
   };
@@ -177,7 +252,7 @@ const ReviewManagement = () => {
       if (data.success) {
         Swal.fire({
           icon: "success",
-          title: "Review Updated!",
+          title: texts.reviewUpdated,
           text: data.message,
           timer: 2000,
           showConfirmButton: false,
@@ -187,7 +262,7 @@ const ReviewManagement = () => {
       } else {
         Swal.fire({
           icon: "error",
-          title: "Update Failed",
+          title: texts.updateFailed,
           text: data.error,
         });
       }
@@ -195,21 +270,21 @@ const ReviewManagement = () => {
       console.error("Error updating review:", error);
       Swal.fire({
         icon: "error",
-        title: "Network Error",
-        text: "Please try again later.",
+        title: texts.networkError,
+        text: texts.tryAgainLater,
       });
     }
   };
 
   const handleDelete = async (reviewId) => {
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "This action cannot be undone!",
+      title: texts.areYouSure,
+      text: texts.cannotBeUndone,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
+      confirmButtonText: texts.yesDeleteIt,
     });
 
     if (result.isConfirmed) {
@@ -223,7 +298,7 @@ const ReviewManagement = () => {
         if (data.success) {
           Swal.fire({
             icon: "success",
-            title: "Review Deleted!",
+            title: texts.reviewDeleted,
             text: data.message,
             timer: 2000,
             showConfirmButton: false,
@@ -232,7 +307,7 @@ const ReviewManagement = () => {
         } else {
           Swal.fire({
             icon: "error",
-            title: "Deletion Failed",
+            title: texts.deletionFailed,
             text: data.error,
           });
         }
@@ -240,8 +315,8 @@ const ReviewManagement = () => {
         console.error("Error deleting review:", error);
         Swal.fire({
           icon: "error",
-          title: "Network Error",
-          text: "Please try again later.",
+          title: texts.networkError,
+          text: texts.tryAgainLater,
         });
       }
     }
@@ -252,7 +327,7 @@ const ReviewManagement = () => {
       <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-7xl mx-auto font-secondary">
         <div className="flex items-center justify-center h-32">
           <div className="text-gray-400 text-sm text-center">
-            Loading reviews...
+            {texts.loadingReviews}
           </div>
         </div>
       </div>
@@ -261,12 +336,12 @@ const ReviewManagement = () => {
 
   return (
     <div className="mt-4 sm:mt-6 font-secondary">
-      <h2 className="text-4xl font-bold text-white mb-4">Review Management</h2>
+      <h2 className="text-4xl font-bold text-white mb-4">{texts.heading}</h2>
 
       <div className="border border-[#212121] bg-black rounded-[15px] p-6">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-2xl font-semibold text-white">
-            Customer Reviews
+            {texts.customerReviews}
           </h3>
 
           <div className="flex items-center space-x-4">
@@ -274,7 +349,7 @@ const ReviewManagement = () => {
               onClick={() => setShowAddForm(!showAddForm)}
               className="flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
             >
-              <FaPlus className="mr-2" /> Add Review
+              <FaPlus className="mr-2" /> {texts.addReview}
             </button>
 
             <select
@@ -285,9 +360,9 @@ const ReviewManagement = () => {
               }}
               className="px-4 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition-colors"
             >
-              <option value="all">All Reviews</option>
-              <option value="pending">Pending Approval</option>
-              <option value="approved">Approved</option>
+              <option value="all">{texts.allReviews}</option>
+              <option value="pending">{texts.pendingApproval}</option>
+              <option value="approved">{texts.approved}</option>
             </select>
           </div>
         </div>
@@ -295,11 +370,13 @@ const ReviewManagement = () => {
         {/* Add Review Form */}
         {showAddForm && (
           <div className="bg-[#0c171c] rounded-lg border border-[#212121] p-6 mb-6">
-            <h4 className="text-white font-medium mb-4">Add New Review</h4>
+            <h4 className="text-white font-medium mb-4">
+              {texts.addNewReview}
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Reviewer Name
+                  {texts.reviewerName}
                 </label>
                 <input
                   type="text"
@@ -308,12 +385,12 @@ const ReviewManagement = () => {
                     setAddForm({ ...addForm, reviewerName: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
-                  placeholder="Enter reviewer name"
+                  placeholder={texts.enterReviewerName}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Rating
+                  {texts.rating}
                 </label>
                 <div className="flex items-center space-x-4">
                   <Rating
@@ -341,7 +418,7 @@ const ReviewManagement = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Created Date
+                  {texts.createdDate}
                 </label>
                 <input
                   type="date"
@@ -354,7 +431,7 @@ const ReviewManagement = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Status
+                  {texts.status}
                 </label>
                 <select
                   value={addForm.isApproved}
@@ -366,14 +443,14 @@ const ReviewManagement = () => {
                   }
                   className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
                 >
-                  <option value="true">Approved</option>
-                  <option value="false">Pending</option>
+                  <option value="true">{texts.approved}</option>
+                  <option value="false">{texts.pendingApproval}</option>
                 </select>
               </div>
             </div>
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Comment
+                {texts.comment}
               </label>
               <textarea
                 value={addForm.comment}
@@ -382,7 +459,7 @@ const ReviewManagement = () => {
                 }
                 rows="3"
                 className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
-                placeholder="Enter review comment"
+                placeholder={texts.enterReviewComment}
               />
             </div>
             <div className="flex space-x-2 mt-4">
@@ -390,13 +467,13 @@ const ReviewManagement = () => {
                 onClick={handleAddReview}
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
               >
-                Add Review
+                {texts.addReview}
               </button>
               <button
                 onClick={() => setShowAddForm(false)}
                 className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
               >
-                Cancel
+                {texts.cancel}
               </button>
             </div>
           </div>
@@ -404,7 +481,7 @@ const ReviewManagement = () => {
 
         {reviews.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">No reviews found.</p>
+            <p className="text-gray-400 text-lg">{texts.noReviewsFound}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -425,7 +502,7 @@ const ReviewManagement = () => {
                         {review.userId?.profile?.firstName &&
                         review.userId?.profile?.lastName
                           ? `${review.userId.profile.firstName} ${review.userId.profile.lastName}`
-                          : review.uniqueName || "Anonymous"}
+                          : review.uniqueName || texts.anonymous}
                       </h3>
                       <p className="text-xs text-gray-400">
                         {new Date(review.createdAt).toLocaleDateString()}
@@ -441,7 +518,9 @@ const ReviewManagement = () => {
                           : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
                       }`}
                     >
-                      {review.isApproved ? "Approved" : "Pending"}
+                      {review.isApproved
+                        ? texts.approved
+                        : texts.pendingApproval}
                     </span>
                   </div>
                 </div>
@@ -451,7 +530,7 @@ const ReviewManagement = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Rating
+                          {texts.rating}
                         </label>
                         <div className="flex items-center space-x-4">
                           <Rating
@@ -479,7 +558,7 @@ const ReviewManagement = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Created Date
+                          {texts.createdDate}
                         </label>
                         <input
                           type="date"
@@ -495,7 +574,7 @@ const ReviewManagement = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Status
+                          {texts.status}
                         </label>
                         <select
                           value={editForm.isApproved}
@@ -507,14 +586,14 @@ const ReviewManagement = () => {
                           }
                           className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
                         >
-                          <option value="true">Approved</option>
-                          <option value="false">Pending</option>
+                          <option value="true">{texts.approved}</option>
+                          <option value="false">{texts.pendingApproval}</option>
                         </select>
                       </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Comment
+                        {texts.comment}
                       </label>
                       <textarea
                         value={editForm.comment}
@@ -530,13 +609,13 @@ const ReviewManagement = () => {
                         onClick={() => handleSaveEdit(review._id)}
                         className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
                       >
-                        Save
+                        {texts.save}
                       </button>
                       <button
                         onClick={() => setEditingReview(null)}
                         className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
                       >
-                        Cancel
+                        {texts.cancel}
                       </button>
                     </div>
                   </div>
@@ -564,7 +643,7 @@ const ReviewManagement = () => {
                             onClick={() => handleApprove(review._id, true)}
                             className="flex items-center px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
                           >
-                            <FaCheck className="mr-1" /> Approve
+                            <FaCheck className="mr-1" /> {texts.approved}
                           </button>
                         )}
 
@@ -573,7 +652,7 @@ const ReviewManagement = () => {
                             onClick={() => handleApprove(review._id, false)}
                             className="flex items-center px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700 text-xs"
                           >
-                            <FaTimes className="mr-1" /> Reject
+                            <FaTimes className="mr-1" /> {texts.pendingApproval}
                           </button>
                         )}
 
@@ -581,14 +660,14 @@ const ReviewManagement = () => {
                           onClick={() => handleEdit(review)}
                           className="flex items-center px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
                         >
-                          <FaEdit className="mr-1" /> Edit
+                          <FaEdit className="mr-1" /> {texts.edit}
                         </button>
 
                         <button
                           onClick={() => handleDelete(review._id)}
                           className="flex items-center px-3 py-1 bg-red-600 text-white rounded hover:bg-red-600 text-xs"
                         >
-                          <FaTrash className="mr-1" /> Delete
+                          <FaTrash className="mr-1" /> {texts.delete}
                         </button>
                       </div>
 
@@ -615,7 +694,7 @@ const ReviewManagement = () => {
                 disabled={currentPage === 1}
                 className="px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-[#1a1a1a] transition-colors"
               >
-                Previous
+                {texts.previous}
               </button>
 
               {[...Array(totalPages)].map((_, index) => (
@@ -639,7 +718,7 @@ const ReviewManagement = () => {
                 disabled={currentPage === totalPages}
                 className="px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-[#1a1a1a] transition-colors"
               >
-                Next
+                {texts.next}
               </button>
             </div>
           </div>

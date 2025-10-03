@@ -1,4 +1,5 @@
 "use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   CheckCircle,
   ChevronDown,
@@ -13,6 +14,7 @@ import {
 import { useEffect, useState } from "react";
 
 const GuestSupportTicketAdmin = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState("");
@@ -20,6 +22,47 @@ const GuestSupportTicketAdmin = () => {
   const [statusFilter, setStatusFilter] = useState("open");
   const [expandedImage, setExpandedImage] = useState(null);
   const [expandedTickets, setExpandedTickets] = useState(new Set()); // Track expanded tickets
+
+  const ORIGINAL_TEXTS = {
+    heading: "Guest Support Tickets",
+    allStatus: "All Status",
+    open: "Open",
+    reply: "Reply",
+    close: "Closed",
+    loadingGuestTickets: "Loading guest support tickets...",
+    noGuestTicketsFound: "No Guest Tickets Found",
+    noGuestTicketsMatchFilter: "No guest support tickets match your current filter.",
+    conversation: "Conversation:",
+    guest: "Guest",
+    admin: "Admin",
+    typeYourReply: "Type your reply to the guest...",
+    replying: "Replying...",
+    reply: "Reply",
+    expandedView: "Expanded view",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  useEffect(() => {
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      const items = Object.values(ORIGINAL_TEXTS);
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const translatedTexts = {};
+      Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+        translatedTexts[key] = translated[index];
+      });
+      setTexts(translatedTexts);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
 
   const load = async () => {
     try {
@@ -125,7 +168,7 @@ const GuestSupportTicketAdmin = () => {
     return (
       <div className="text-center py-8">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto"></div>
-        <p className="text-gray-400 mt-4">Loading guest support tickets...</p>
+        <p className="text-gray-400 mt-4">{texts.loadingGuestTickets}</p>
       </div>
     );
   }
@@ -135,7 +178,7 @@ const GuestSupportTicketAdmin = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white flex items-center gap-2">
           <UserX className="w-6 h-6 text-orange-400" />
-          Guest Support Tickets
+          {texts.heading}
         </h2>
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-gray-400" />
@@ -144,10 +187,10 @@ const GuestSupportTicketAdmin = () => {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-gray-800 border border-gray-600 text-white px-3 py-2 rounded-lg text-sm"
           >
-            <option value="">All Status</option>
-            <option value="open">Open</option>
-            <option value="reply">Reply</option>
-            <option value="close">Closed</option>
+            <option value="">{texts.allStatus}</option>
+            <option value="open">{texts.open}</option>
+            <option value="reply">{texts.reply}</option>
+            <option value="close">{texts.close}</option>
           </select>
         </div>
       </div>
@@ -156,10 +199,10 @@ const GuestSupportTicketAdmin = () => {
         <div className="text-center py-12">
           <UserX size={48} className="text-gray-400 mx-auto mb-4" />
           <h3 className="text-white text-lg font-semibold mb-2">
-            No Guest Tickets Found
+            {texts.noGuestTicketsFound}
           </h3>
           <p className="text-gray-400">
-            No guest support tickets match your current filter.
+            {texts.noGuestTicketsMatchFilter}
           </p>
         </div>
       ) : (
@@ -212,9 +255,9 @@ const GuestSupportTicketAdmin = () => {
                         className="bg-gray-800 border border-gray-600 text-white px-2 py-1 rounded text-xs"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <option value="open">Open</option>
-                        <option value="reply">Reply</option>
-                        <option value="close">Close</option>
+                        <option value="open">{texts.open}</option>
+                        <option value="reply">{texts.reply}</option>
+                        <option value="close">{texts.close}</option>
                       </select>
                       <button
                         className="text-gray-400 hover:text-white transition-colors"
@@ -257,7 +300,7 @@ const GuestSupportTicketAdmin = () => {
                     {ticket.messages && ticket.messages.length > 0 && (
                       <div className="space-y-3">
                         <h4 className="text-white font-medium text-sm">
-                          Conversation:
+                          {texts.conversation}
                         </h4>
                         <div className="max-h-64 overflow-y-auto space-y-3">
                           {ticket.messages.map((message, index) => (
@@ -272,8 +315,8 @@ const GuestSupportTicketAdmin = () => {
                               <div className="flex justify-between items-center mb-2">
                                 <span className="text-xs font-medium text-gray-400">
                                   {message.sender === "guest"
-                                    ? "Guest"
-                                    : "Admin"}
+                                    ? texts.guest
+                                    : texts.admin}
                                 </span>
                                 <span className="text-xs text-gray-500">
                                   {new Date(message.createdAt).toLocaleString()}
@@ -304,7 +347,7 @@ const GuestSupportTicketAdmin = () => {
                         <textarea
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
-                          placeholder="Type your reply to the guest..."
+                          placeholder={texts.typeYourReply}
                           rows={2}
                           className="w-full px-3 py-2 bg-[#0c171c] border border-[#FFFFFF26] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 transition-colors resize-none text-sm"
                         />
@@ -318,12 +361,12 @@ const GuestSupportTicketAdmin = () => {
                           {replying ? (
                             <>
                               <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-black"></div>
-                              Replying...
+                              {texts.replying}
                             </>
                           ) : (
                             <>
                               <Send size={14} />
-                              Reply
+                              {texts.reply}
                             </>
                           )}
                         </button>
@@ -343,7 +386,7 @@ const GuestSupportTicketAdmin = () => {
           <div className="relative max-w-4xl max-h-full">
             <img
               src={expandedImage}
-              alt="Expanded view"
+              alt={texts.expandedView}
               className="max-w-full max-h-full object-contain rounded"
             />
             <button

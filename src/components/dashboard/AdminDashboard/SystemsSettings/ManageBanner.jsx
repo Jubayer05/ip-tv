@@ -1,8 +1,10 @@
 "use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useApi } from "@/hooks/useApi";
 import { useEffect, useState } from "react";
 
 const ManageBanner = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const { apiCall } = useApi();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -74,6 +76,74 @@ const ManageBanner = () => {
     },
   });
 
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "Banner Content Management",
+    subtitle:
+      "Manage banner content for different pages. Each banner has a heading (with normal and highlighted parts) and a paragraph.",
+    homePage: "Home Page",
+    aboutPage: "About Page",
+    affiliatePage: "Affiliate Page",
+    blogPage: "Blog Page",
+    contactPage: "Contact Page",
+    faqPage: "FAQ Page",
+    pricingPage: "Pricing Page",
+    privacyPage: "Privacy Page",
+    termsPage: "Terms Page",
+    knowledgeBase: "Knowledge Base",
+    explorePage: "Explore Page",
+    headingPart1: "Heading Part 1 (Normal)",
+    headingPart2: "Heading Part 2 (Highlighted)",
+    paragraph: "Paragraph",
+    inputPlaceholder: "Input Placeholder",
+    buttonText: "Button Text",
+    trialNote: "Trial Note",
+    watchNowButton: "Watch Now Button",
+    myWishlistButton: "My Wishlist Button",
+    headingPart1Placeholder: "Enter heading part 1",
+    headingPart2Placeholder: "Enter heading part 2",
+    paragraphPlaceholder: "Enter paragraph text",
+    inputPlaceholderPlaceholder: "Enter input placeholder",
+    buttonTextPlaceholder: "Enter button text",
+    trialNotePlaceholder: "Enter trial note text",
+    watchNowPlaceholder: "Enter watch now button text",
+    wishlistPlaceholder: "Enter wishlist button text",
+    refresh: "Refresh",
+    saving: "Saving...",
+    save: "Save",
+    settingsSaved: "Settings saved",
+    failedToLoadSettings: "Failed to load settings",
+    failedToUpdateBanners: "Failed to update banners",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
+
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -98,7 +168,7 @@ const ManageBanner = () => {
       }
     } catch (error) {
       console.error("Failed to fetch settings:", error);
-      setError("Failed to load settings");
+      setError(texts.failedToLoadSettings);
     } finally {
       setLoading(false);
     }
@@ -134,35 +204,35 @@ const ManageBanner = () => {
           fetchSettings();
         }, 1000);
       } else {
-        setError(response.error || "Failed to update banners");
+        setError(response.error || texts.failedToUpdateBanners);
       }
     } catch (error) {
       console.error("💥 Banner update error:", error);
-      setError("Failed to update banners");
+      setError(texts.failedToUpdateBanners);
     } finally {
       setLoading(false);
     }
   };
 
   const bannerPages = [
-    { key: "home", label: "Home Page", hasButton: true },
-    { key: "about", label: "About Page", hasButton: false },
-    { key: "affiliate", label: "Affiliate Page", hasButton: false },
-    { key: "blog", label: "Blog Page", hasButton: false },
-    { key: "contact", label: "Contact Page", hasButton: false },
-    { key: "faq", label: "FAQ Page", hasButton: true },
+    { key: "home", label: texts.homePage, hasButton: true },
+    { key: "about", label: texts.aboutPage, hasButton: false },
+    { key: "affiliate", label: texts.affiliatePage, hasButton: false },
+    { key: "blog", label: texts.blogPage, hasButton: false },
+    { key: "contact", label: texts.contactPage, hasButton: false },
+    { key: "faq", label: texts.faqPage, hasButton: true },
     {
       key: "pricing",
-      label: "Pricing Page",
+      label: texts.pricingPage,
       hasButton: true,
       hasTrialNote: true,
     },
-    { key: "privacy", label: "Privacy Page", hasButton: false },
-    { key: "terms", label: "Terms Page", hasButton: false },
-    { key: "knowledge", label: "Knowledge Base", hasButton: false },
+    { key: "privacy", label: texts.privacyPage, hasButton: false },
+    { key: "terms", label: texts.termsPage, hasButton: false },
+    { key: "knowledge", label: texts.knowledgeBase, hasButton: false },
     {
       key: "explore",
-      label: "Explore Page",
+      label: texts.explorePage,
       hasButton: true,
       hasWatchNow: true,
     },
@@ -171,13 +241,8 @@ const ManageBanner = () => {
   return (
     <div className="flex flex-col gap-4 font-secondary">
       <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <h2 className="text-3xl text-center font-bold mb-4">
-          Banner Content Management
-        </h2>
-        <p className="text-gray-300 text-sm mb-6">
-          Manage banner content for different pages. Each banner has a heading
-          (with normal and highlighted parts) and a paragraph.
-        </p>
+        <h2 className="text-3xl text-center font-bold mb-4">{texts.heading}</h2>
+        <p className="text-gray-300 text-sm mb-6">{texts.subtitle}</p>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {bannerPages.map((page) => (
@@ -189,7 +254,7 @@ const ManageBanner = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm text-gray-300">
-                    Heading Part 1 (Normal)
+                    {texts.headingPart1}
                   </label>
                   <input
                     type="text"
@@ -197,14 +262,14 @@ const ManageBanner = () => {
                     onChange={(e) =>
                       handleBannerChange(page.key, "heading1", e.target.value)
                     }
-                    placeholder="Enter heading part 1"
+                    placeholder={texts.headingPart1Placeholder}
                     className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm text-gray-300">
-                    Heading Part 2 (Highlighted)
+                    {texts.headingPart2}
                   </label>
                   <input
                     type="text"
@@ -212,20 +277,22 @@ const ManageBanner = () => {
                     onChange={(e) =>
                       handleBannerChange(page.key, "heading2", e.target.value)
                     }
-                    placeholder="Enter heading part 2"
+                    placeholder={texts.headingPart2Placeholder}
                     className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
                   />
                 </div>
               </div>
 
               <div className="mt-4 space-y-2">
-                <label className="text-sm text-gray-300">Paragraph</label>
+                <label className="text-sm text-gray-300">
+                  {texts.paragraph}
+                </label>
                 <textarea
                   value={banners[page.key]?.paragraph || ""}
                   onChange={(e) =>
                     handleBannerChange(page.key, "paragraph", e.target.value)
                   }
-                  placeholder="Enter paragraph text"
+                  placeholder={texts.paragraphPlaceholder}
                   rows={3}
                   className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
                 />
@@ -235,7 +302,7 @@ const ManageBanner = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div className="space-y-2">
                     <label className="text-sm text-gray-300">
-                      Input Placeholder
+                      {texts.inputPlaceholder}
                     </label>
                     <input
                       type="text"
@@ -247,13 +314,15 @@ const ManageBanner = () => {
                           e.target.value
                         )
                       }
-                      placeholder="Enter input placeholder"
+                      placeholder={texts.inputPlaceholderPlaceholder}
                       className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm text-gray-300">Button Text</label>
+                    <label className="text-sm text-gray-300">
+                      {texts.buttonText}
+                    </label>
                     <input
                       type="text"
                       value={banners[page.key]?.buttonText || ""}
@@ -264,7 +333,7 @@ const ManageBanner = () => {
                           e.target.value
                         )
                       }
-                      placeholder="Enter button text"
+                      placeholder={texts.buttonTextPlaceholder}
                       className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
                     />
                   </div>
@@ -273,14 +342,16 @@ const ManageBanner = () => {
 
               {page.hasTrialNote && (
                 <div className="mt-4 space-y-2">
-                  <label className="text-sm text-gray-300">Trial Note</label>
+                  <label className="text-sm text-gray-300">
+                    {texts.trialNote}
+                  </label>
                   <input
                     type="text"
                     value={banners[page.key]?.trialNote || ""}
                     onChange={(e) =>
                       handleBannerChange(page.key, "trialNote", e.target.value)
                     }
-                    placeholder="Enter trial note text"
+                    placeholder={texts.trialNotePlaceholder}
                     className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
                   />
                 </div>
@@ -290,7 +361,7 @@ const ManageBanner = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div className="space-y-2">
                     <label className="text-sm text-gray-300">
-                      Watch Now Button
+                      {texts.watchNowButton}
                     </label>
                     <input
                       type="text"
@@ -298,13 +369,13 @@ const ManageBanner = () => {
                       onChange={(e) =>
                         handleBannerChange(page.key, "watchNow", e.target.value)
                       }
-                      placeholder="Enter watch now button text"
+                      placeholder={texts.watchNowPlaceholder}
                       className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm text-gray-300">
-                      My Wishlist Button
+                      {texts.myWishlistButton}
                     </label>
                     <input
                       type="text"
@@ -316,7 +387,7 @@ const ManageBanner = () => {
                           e.target.value
                         )
                       }
-                      placeholder="Enter wishlist button text"
+                      placeholder={texts.wishlistPlaceholder}
                       className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
                     />
                   </div>
@@ -327,7 +398,7 @@ const ManageBanner = () => {
 
           {error && <div className="text-sm text-red-400">{error}</div>}
           {saved && (
-            <div className="text-sm text-green-400">Settings saved</div>
+            <div className="text-sm text-green-400">{texts.settingsSaved}</div>
           )}
 
           <div className="flex gap-3">
@@ -337,14 +408,14 @@ const ManageBanner = () => {
               disabled={loading}
               className="px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Refresh
+              {texts.refresh}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Saving..." : "Save"}
+              {loading ? texts.saving : texts.save}
             </button>
           </div>
         </form>

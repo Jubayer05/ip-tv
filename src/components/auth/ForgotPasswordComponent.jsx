@@ -1,21 +1,71 @@
 "use client";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
-import { auth } from "@/lib/firebase";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getCustomErrorMessage } from "@/lib/firebaseErrorHandler";
 import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import ErrorNotification from "@/components/common/ErrorNotification";
-import { getCustomErrorMessage } from "@/lib/firebaseErrorHandler";
+import { useEffect, useState } from "react";
 
 export default function ForgotPasswordComponent() {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    resetPassword: "Reset Password",
+    enterEmailMessage:
+      "Enter your email address and we'll send you a link to reset your password",
+    checkYourEmail: "Check Your Email",
+    emailSentMessage: "We've sent a password reset link to",
+    noEmailMessage:
+      "Didn't receive the email? Check your spam folder or try again.",
+    resendEmail: "Resend Email",
+    backToLogin: "Back to Login",
+    backToSignIn: "Back to Sign In",
+    emailAddress: "Email Address",
+    enterEmailPlaceholder: "Enter your email address",
+    sending: "Sending...",
+    sendResetLink: "Send Reset Link",
+    pleaseEnterEmail: "Please enter your email address",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
   const router = useRouter();
+
+  // Translate texts
+  useEffect(() => {
+    if (!isLanguageLoaded || language?.code === "en") {
+      setTexts(ORIGINAL_TEXTS);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = Object.values(ORIGINAL_TEXTS);
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const translatedTexts = {};
+        Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+          translatedTexts[key] = translated[index];
+        });
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language?.code, translate, isLanguageLoaded]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,7 +74,7 @@ export default function ForgotPasswordComponent() {
     setSuccess(false);
 
     if (!email) {
-      setError("Please enter your email address");
+      setError(texts.pleaseEnterEmail);
       setLoading(false);
       return;
     }
@@ -43,10 +93,10 @@ export default function ForgotPasswordComponent() {
       if (response.ok) {
         setSuccess(true);
       } else {
-        setError(data.error || getCustomErrorMessage('PASSWORD_RESET_FAILED'));
+        setError(data.error || getCustomErrorMessage("PASSWORD_RESET_FAILED"));
       }
     } catch (error) {
-      setError(getCustomErrorMessage('NETWORK_ERROR'));
+      setError(getCustomErrorMessage("NETWORK_ERROR"));
     } finally {
       setLoading(false);
     }
@@ -61,11 +111,10 @@ export default function ForgotPasswordComponent() {
       <div className="w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-white mb-2">Reset Password</h2>
-          <p className="text-gray-400 text-sm">
-            Enter your email address and we'll send you a link to reset your
-            password
-          </p>
+          <h2 className="text-3xl font-bold text-white mb-2">
+            {texts.resetPassword}
+          </h2>
+          <p className="text-gray-400 text-sm">{texts.enterEmailMessage}</p>
         </div>
 
         {success ? (
@@ -76,18 +125,16 @@ export default function ForgotPasswordComponent() {
                 <Mail size={24} className="text-green-400" />
               </div>
               <h3 className="text-green-400 text-lg font-semibold mb-2">
-                Check Your Email
+                {texts.checkYourEmail}
               </h3>
               <p className="text-gray-300 text-sm">
-                We've sent a password reset link to{" "}
+                {texts.emailSentMessage}{" "}
                 <span className="text-white font-medium">{email}</span>
               </p>
             </div>
 
             <div className="text-center space-y-4">
-              <p className="text-gray-400 text-sm">
-                Didn't receive the email? Check your spam folder or try again.
-              </p>
+              <p className="text-gray-400 text-sm">{texts.noEmailMessage}</p>
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button
@@ -98,7 +145,7 @@ export default function ForgotPasswordComponent() {
                   className="flex items-center justify-center gap-2"
                 >
                   <Mail size={20} />
-                  Resend Email
+                  {texts.resendEmail}
                 </Button>
 
                 <Button
@@ -107,7 +154,7 @@ export default function ForgotPasswordComponent() {
                   className="flex items-center justify-center gap-2"
                 >
                   <ArrowLeft size={20} />
-                  Back to Login
+                  {texts.backToLogin}
                 </Button>
               </div>
             </div>
@@ -127,7 +174,7 @@ export default function ForgotPasswordComponent() {
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Email Address
+                {texts.emailAddress}
               </label>
               <Input
                 id="email"
@@ -135,7 +182,7 @@ export default function ForgotPasswordComponent() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
+                placeholder={texts.enterEmailPlaceholder}
                 required
                 className="w-full"
               />
@@ -147,7 +194,7 @@ export default function ForgotPasswordComponent() {
               disabled={loading}
               className="w-full flex items-center justify-center gap-2"
             >
-              {loading ? "Sending..." : "Send Reset Link"}
+              {loading ? texts.sending : texts.sendResetLink}
               <ArrowRight size={20} />
             </Button>
           </form>
@@ -161,7 +208,7 @@ export default function ForgotPasswordComponent() {
               className="text-gray-400 hover:text-white transition-colors text-sm flex items-center justify-center gap-2 mx-auto"
             >
               <ArrowLeft size={16} />
-              Back to Sign In
+              {texts.backToSignIn}
             </button>
           </div>
         )}

@@ -63,7 +63,6 @@ export async function POST(request) {
     const body = await request.json();
     const { firebaseUid, email, profile, role = "user" } = body;
 
-
     // Check if user already exists
     const existingUser = await User.findOne({
       $or: [{ email }, { firebaseUid }],

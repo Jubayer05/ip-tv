@@ -7,12 +7,22 @@ import { useEffect, useState } from "react";
 const FaqBanner = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
 
-  const [heading1, setHeading1] = useState("LEARN HOW CHEAP STREAM");
-  const [heading2, setHeading2] = useState("WORKS");
-  const [paragraph, setParagraph] = useState(
-    "We've made watching your favorite movies and live channels easier than ever. No cables, no contracts—just non-stop entertainment at a price you'll love."
-  );
-  const [buttonText, setButtonText] = useState("View Pricing Plans");
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading1: "LEARN HOW CHEAP STREAM",
+    heading2: "WORKS",
+    paragraph:
+      "We've made watching your favorite movies and live channels easier than ever. No cables, no contracts—just non-stop entertainment at a price you'll love.",
+    buttonText: "View Pricing Plans",
+  };
+
+  const [heading1, setHeading1] = useState(ORIGINAL_TEXTS.heading1);
+  const [heading2, setHeading2] = useState(ORIGINAL_TEXTS.heading2);
+  const [paragraph, setParagraph] = useState(ORIGINAL_TEXTS.paragraph);
+  const [buttonText, setButtonText] = useState(ORIGINAL_TEXTS.buttonText);
+
+  // Store original content from backend
+  const [originalContent, setOriginalContent] = useState(null);
 
   useEffect(() => {
     // Fetch banner content from settings
@@ -22,18 +32,72 @@ const FaqBanner = () => {
         const data = await response.json();
         if (data.success && data.data.banners?.faq) {
           const faqBanner = data.data.banners.faq;
-          setHeading1(faqBanner.heading1 || heading1);
-          setHeading2(faqBanner.heading2 || heading2);
-          setParagraph(faqBanner.paragraph || paragraph);
-          setButtonText(faqBanner.buttonText || buttonText);
+          const content = {
+            heading1: faqBanner.heading1 || ORIGINAL_TEXTS.heading1,
+            heading2: faqBanner.heading2 || ORIGINAL_TEXTS.heading2,
+            paragraph: faqBanner.paragraph || ORIGINAL_TEXTS.paragraph,
+            buttonText: faqBanner.buttonText || ORIGINAL_TEXTS.buttonText,
+          };
+          setOriginalContent(content);
+        } else {
+          // Set default content if no backend data
+          setOriginalContent(ORIGINAL_TEXTS);
         }
       } catch (error) {
         console.error("Failed to fetch banner content:", error);
+        // Set default content on error
+        setOriginalContent(ORIGINAL_TEXTS);
       }
     };
 
     fetchBannerContent();
   }, []);
+
+  // Translate content when language changes
+  useEffect(() => {
+    if (!originalContent || !isLanguageLoaded || language?.code === "en") {
+      if (originalContent) {
+        setHeading1(originalContent.heading1);
+        setHeading2(originalContent.heading2);
+        setParagraph(originalContent.paragraph);
+        setButtonText(originalContent.buttonText);
+      }
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const textsToTranslate = [
+          originalContent.heading1,
+          originalContent.heading2,
+          originalContent.paragraph,
+          originalContent.buttonText,
+        ];
+
+        const translated = await translate(textsToTranslate);
+        if (!isMounted) return;
+
+        const [tHeading1, tHeading2, tParagraph, tButtonText] = translated;
+
+        setHeading1(tHeading1);
+        setHeading2(tHeading2);
+        setParagraph(tParagraph);
+        setButtonText(tButtonText);
+      } catch (error) {
+        console.error("Translation error:", error);
+        // Fallback to original content on translation error
+        setHeading1(originalContent.heading1);
+        setHeading2(originalContent.heading2);
+        setParagraph(originalContent.paragraph);
+        setButtonText(originalContent.buttonText);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [originalContent, language?.code, translate, isLanguageLoaded]);
 
   return (
     <Polygon

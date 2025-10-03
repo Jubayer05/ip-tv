@@ -1,8 +1,11 @@
+"use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useApi } from "@/hooks/useApi";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 const UsersBalances = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [users, setUsers] = useState([]);
@@ -19,6 +22,71 @@ const UsersBalances = () => {
   });
 
   const { apiCall } = useApi();
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "User Balances",
+    searchPlaceholder: "Search users by name, email, or username...",
+    search: "Search",
+    user: "User",
+    email: "Email",
+    balance: "Balance",
+    actions: "Actions",
+    loadingUsers: "Loading users...",
+    noUsersFound: "No users found",
+    viewHistory: "View History",
+    updateBalance: "Update Balance",
+    balanceHistory: "Balance History",
+    loadingBalanceHistory: "Loading balance history...",
+    noBalanceHistoryFound: "No balance history found",
+    balanceLabel: "Balance:",
+    by: "By:",
+    updateBalanceModal: "Update Balance",
+    transactionType: "Transaction Type",
+    addBalance: "Add Balance",
+    deductBalance: "Deduct Balance",
+    amount: "Amount ($)",
+    enterAmount: "Enter amount",
+    description: "Description",
+    enterDescription: "Enter description",
+    updateBalanceButton: "Update Balance",
+    cancel: "Cancel",
+    error: "Error",
+    success: "Success",
+    invalidAmount: "Invalid Amount",
+    validAmountMessage: "Please enter a valid amount greater than 0",
+    balanceUpdatedSuccess: "Balance updated successfully",
+    failedToFetchHistory: "Failed to fetch deposit history",
+    failedToUpdateBalance: "Failed to update balance",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
 
   // Search users
   const searchUsers = async (search = "", page = 1) => {
@@ -64,16 +132,16 @@ const UsersBalances = () => {
       } else {
         Swal.fire({
           icon: "error",
-          title: "Error",
-          text: "Failed to fetch deposit history",
+          title: texts.error,
+          text: texts.failedToFetchHistory,
         });
       }
     } catch (error) {
       console.error("❌ Frontend: Error fetching deposit history:", error);
       Swal.fire({
         icon: "error",
-        title: "Error",
-        text: "Failed to fetch deposit history",
+        title: texts.error,
+        text: texts.failedToFetchHistory,
       });
     } finally {
       setHistoryLoading(false);
@@ -87,8 +155,8 @@ const UsersBalances = () => {
     if (!updateForm.amount || updateForm.amount <= 0) {
       Swal.fire({
         icon: "error",
-        title: "Invalid Amount",
-        text: "Please enter a valid amount greater than 0",
+        title: texts.invalidAmount,
+        text: texts.validAmountMessage,
       });
       return;
     }
@@ -104,8 +172,8 @@ const UsersBalances = () => {
       if (response.success) {
         Swal.fire({
           icon: "success",
-          title: "Success",
-          text: "Balance updated successfully",
+          title: texts.success,
+          text: texts.balanceUpdatedSuccess,
         });
 
         // Reset form
@@ -120,16 +188,16 @@ const UsersBalances = () => {
       } else {
         Swal.fire({
           icon: "error",
-          title: "Error",
-          text: response.error || "Failed to update balance",
+          title: texts.error,
+          text: response.error || texts.failedToUpdateBalance,
         });
       }
     } catch (error) {
       console.error("Error updating balance:", error);
       Swal.fire({
         icon: "error",
-        title: "Error",
-        text: "Failed to update balance",
+        title: texts.error,
+        text: texts.failedToUpdateBalance,
       });
     }
   };
@@ -148,13 +216,13 @@ const UsersBalances = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white mb-4">User Balances</h1>
+        <h1 className="text-2xl font-bold text-white mb-4">{texts.heading}</h1>
 
         {/* Search */}
         <div className="mb-4">
           <input
             type="text"
-            placeholder="Search users by name, email, or username..."
+            placeholder={texts.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && searchUsers(searchTerm)}
@@ -164,7 +232,7 @@ const UsersBalances = () => {
             onClick={() => searchUsers(searchTerm)}
             className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Search
+            {texts.search}
           </button>
         </div>
 
@@ -175,16 +243,16 @@ const UsersBalances = () => {
               <thead className="bg-gray-700">
                 <tr>
                   <th className="px-4 py-3 text-left text-white font-medium">
-                    User
+                    {texts.user}
                   </th>
                   <th className="px-4 py-3 text-left text-white font-medium">
-                    Email
+                    {texts.email}
                   </th>
                   <th className="px-4 py-3 text-left text-white font-medium">
-                    Balance
+                    {texts.balance}
                   </th>
                   <th className="px-4 py-3 text-left text-white font-medium">
-                    Actions
+                    {texts.actions}
                   </th>
                 </tr>
               </thead>
@@ -195,7 +263,7 @@ const UsersBalances = () => {
                       colSpan="4"
                       className="px-4 py-8 text-center text-gray-400"
                     >
-                      Loading users...
+                      {texts.loadingUsers}
                     </td>
                   </tr>
                 ) : users.length === 0 ? (
@@ -204,7 +272,7 @@ const UsersBalances = () => {
                       colSpan="4"
                       className="px-4 py-8 text-center text-gray-400"
                     >
-                      No users found
+                      {texts.noUsersFound}
                     </td>
                   </tr>
                 ) : (
@@ -236,13 +304,13 @@ const UsersBalances = () => {
                             }}
                             className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
                           >
-                            View History
+                            {texts.viewHistory}
                           </button>
                           <button
                             onClick={() => setSelectedUser(user)}
                             className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
                           >
-                            Update Balance
+                            {texts.updateBalance}
                           </button>
                         </div>
                       </td>
@@ -261,7 +329,7 @@ const UsersBalances = () => {
           <div className="bg-gray-800 rounded-lg w-full max-w-4xl max-h-[80vh] overflow-hidden">
             <div className="flex justify-between items-center p-6 border-b border-gray-700">
               <h2 className="text-xl font-bold text-white">
-                Balance History - {selectedUser?.profile?.firstName}{" "}
+                {texts.balanceHistory} - {selectedUser?.profile?.firstName}{" "}
                 {selectedUser?.profile?.lastName}
               </h2>
               <button
@@ -275,7 +343,7 @@ const UsersBalances = () => {
             <div className="p-6 overflow-y-auto max-h-[60vh]">
               {historyLoading ? (
                 <div className="text-center py-8 text-gray-300">
-                  Loading balance history...
+                  {texts.loadingBalanceHistory}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -324,7 +392,8 @@ const UsersBalances = () => {
                           </p>
                           {transaction.adminId && (
                             <p className="text-xs text-gray-400 mt-1">
-                              By: {transaction.adminId.profile?.firstName}{" "}
+                              {texts.by}{" "}
+                              {transaction.adminId.profile?.firstName}{" "}
                               {transaction.adminId.profile?.lastName}
                             </p>
                           )}
@@ -334,7 +403,8 @@ const UsersBalances = () => {
                             {sign}${Math.abs(amount).toFixed(2)}
                           </p>
                           <p className="text-sm text-gray-300">
-                            Balance: ${transaction.newBalance.toFixed(2)}
+                            {texts.balanceLabel} $
+                            {transaction.newBalance.toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -342,7 +412,7 @@ const UsersBalances = () => {
                   })}
                   {depositHistory.length === 0 && (
                     <div className="text-center py-8 text-gray-400">
-                      No balance history found
+                      {texts.noBalanceHistoryFound}
                     </div>
                   )}
                 </div>
@@ -358,7 +428,7 @@ const UsersBalances = () => {
           <div className="bg-gray-800 rounded-lg w-full max-w-md p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-white">
-                Update Balance - {selectedUser.profile?.firstName}{" "}
+                {texts.updateBalanceModal} - {selectedUser.profile?.firstName}{" "}
                 {selectedUser.profile?.lastName}
               </h2>
               <button
@@ -372,7 +442,7 @@ const UsersBalances = () => {
             <form onSubmit={updateBalance} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Transaction Type
+                  {texts.transactionType}
                 </label>
                 <select
                   value={updateForm.type}
@@ -381,14 +451,14 @@ const UsersBalances = () => {
                   }
                   className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
                 >
-                  <option value="admin_add">Add Balance</option>
-                  <option value="admin_deduct">Deduct Balance</option>
+                  <option value="admin_add">{texts.addBalance}</option>
+                  <option value="admin_deduct">{texts.deductBalance}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Amount ($)
+                  {texts.amount}
                 </label>
                 <input
                   type="number"
@@ -399,14 +469,14 @@ const UsersBalances = () => {
                     setUpdateForm({ ...updateForm, amount: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
-                  placeholder="Enter amount"
+                  placeholder={texts.enterAmount}
                   required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Description
+                  {texts.description}
                 </label>
                 <textarea
                   value={updateForm.description}
@@ -418,7 +488,7 @@ const UsersBalances = () => {
                   }
                   className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
                   rows="3"
-                  placeholder="Enter description"
+                  placeholder={texts.enterDescription}
                   required
                 />
               </div>
@@ -428,14 +498,14 @@ const UsersBalances = () => {
                   type="submit"
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  Update Balance
+                  {texts.updateBalanceButton}
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedUser(null)}
                   className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                 >
-                  Cancel
+                  {texts.cancel}
                 </button>
               </div>
             </form>

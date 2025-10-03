@@ -1,6 +1,8 @@
 "use client";
 import RichTextEditor from "@/components/ui/RichTextEditor";
+import TableCustom from "@/components/ui/TableCustom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Eye, EyeOff, Mail, Send, Users, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -9,6 +11,7 @@ import Swal from "sweetalert2";
 
 const BulkNotification = () => {
   const { hasAdminAccess } = useAuth();
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
@@ -36,6 +39,85 @@ const BulkNotification = () => {
   const [previewUsers, setPreviewUsers] = useState([]);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [showPreviewTable, setShowPreviewTable] = useState(false);
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "Bulk Notification System",
+    subtitle: "Send notifications to multiple users based on various criteria",
+    targetUsers: "Target Users",
+    allUsers: "All Users",
+    guestUsers: "Guest Users",
+    loggedInUsers: "Logged In Users",
+    purchasedUsers: "Purchased Users",
+    loggedInNoPurchase: "Logged In (No Purchase)",
+    countries: "Countries (Optional)",
+    selectCountries: "Select countries...",
+    allCountries: "All Countries",
+    roles: "Roles (Optional)",
+    selectRoles: "Select roles...",
+    user: "User",
+    support: "Support",
+    admin: "Admin",
+    minSpent: "Min Spent $ (Optional)",
+    emailSubject: "Email Subject",
+    emailMessage: "Email Message",
+    showPreview: "Show Preview",
+    hidePreview: "Hide Preview",
+    preview: "Preview:",
+    estimatedRecipients: "Estimated Recipients:",
+    users: "users",
+    previewUsers: "Preview Users",
+    loading: "Loading...",
+    userPreview: "User Preview",
+    name: "Name",
+    email: "Email",
+    country: "Country",
+    role: "Role",
+    totalSpent: "Total Spent",
+    sendNotification: "Send Notification",
+    sending: "Sending...",
+    validationError: "Validation Error",
+    fillRequiredFields: "Please fill in both subject and message fields.",
+    noRecipients: "No Recipients",
+    noUsersMatch: "No users match the selected criteria.",
+    sendBulkNotification: "Send Bulk Notification?",
+    willSendTo: "This will send the notification to",
+    areYouSure: "users. Are you sure?",
+    yesSend: "Yes, Send",
+    cancel: "Cancel",
+    success: "Success!",
+    error: "Error",
+    failedToSend: "Failed to send bulk notification",
+    failedToFetchPreview: "Failed to fetch preview users",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
 
   // Check admin access
   useEffect(() => {
@@ -171,8 +253,8 @@ const BulkNotification = () => {
       console.error("Error fetching preview users:", error);
       Swal.fire({
         icon: "error",
-        title: "Error",
-        text: "Failed to fetch preview users",
+        title: texts.error,
+        text: texts.failedToFetchPreview,
         confirmButtonColor: "#ef4444",
       });
     } finally {
@@ -186,8 +268,8 @@ const BulkNotification = () => {
     if (!formData.subject.trim() || !formData.message.trim()) {
       Swal.fire({
         icon: "error",
-        title: "Validation Error",
-        text: "Please fill in both subject and message fields.",
+        title: texts.validationError,
+        text: texts.fillRequiredFields,
       });
       return;
     }
@@ -196,8 +278,8 @@ const BulkNotification = () => {
     if (recipientCount === 0) {
       Swal.fire({
         icon: "warning",
-        title: "No Recipients",
-        text: "No users match the selected criteria.",
+        title: texts.noRecipients,
+        text: texts.noUsersMatch,
       });
       return;
     }
@@ -205,11 +287,11 @@ const BulkNotification = () => {
     // Confirm before sending
     const result = await Swal.fire({
       icon: "question",
-      title: "Send Bulk Notification?",
-      text: `This will send the notification to ${recipientCount} users. Are you sure?`,
+      title: texts.sendBulkNotification,
+      text: `${texts.willSendTo} ${recipientCount} ${texts.areYouSure}`,
       showCancelButton: true,
-      confirmButtonText: "Yes, Send",
-      cancelButtonText: "Cancel",
+      confirmButtonText: texts.yesSend,
+      cancelButtonText: texts.cancel,
       confirmButtonColor: "#10b981",
       cancelButtonColor: "#6b7280",
     });
@@ -231,7 +313,7 @@ const BulkNotification = () => {
       if (data.success) {
         Swal.fire({
           icon: "success",
-          title: "Success!",
+          title: texts.success,
           text: data.message,
           confirmButtonColor: "#10b981",
         });
@@ -253,8 +335,8 @@ const BulkNotification = () => {
     } catch (error) {
       Swal.fire({
         icon: "error",
-        title: "Error",
-        text: error.message || "Failed to send bulk notification",
+        title: texts.error,
+        text: error.message || texts.failedToSend,
         confirmButtonColor: "#ef4444",
       });
     } finally {
@@ -264,7 +346,7 @@ const BulkNotification = () => {
 
   // Prepare options for react-select
   const countryOptions = [
-    { value: "all", label: "All Countries" },
+    { value: "all", label: texts.allCountries },
     ...availableCountries.map((country) => ({
       value: country,
       label: country,
@@ -272,14 +354,14 @@ const BulkNotification = () => {
   ];
 
   const roleOptions = [
-    { value: "user", label: "User" },
-    { value: "support", label: "Support" },
-    { value: "admin", label: "Admin" },
+    { value: "user", label: texts.user },
+    { value: "support", label: texts.support },
+    { value: "admin", label: texts.admin },
   ];
 
   // Get selected options for react-select
   const selectedCountries = formData.customFilters.countries.includes("all")
-    ? [{ value: "all", label: "All Countries" }]
+    ? [{ value: "all", label: texts.allCountries }]
     : countryOptions.filter((opt) =>
         formData.customFilters.countries.includes(opt.value)
       );
@@ -364,11 +446,9 @@ const BulkNotification = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
             <Mail className="w-8 h-8 text-cyan-400" />
-            Bulk Notification System
+            {texts.heading}
           </h1>
-          <p className="text-gray-400">
-            Send notifications to multiple users based on various criteria
-          </p>
+          <p className="text-gray-400">{texts.subtitle}</p>
         </div>
 
         {/* Form */}
@@ -377,37 +457,37 @@ const BulkNotification = () => {
             {/* Target Users Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-3">
-                Target Users
+                {texts.targetUsers}
               </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {[
                   {
                     value: "all",
-                    label: "All Users",
+                    label: texts.allUsers,
                     count: stats.totalUsers,
                     color: "blue",
                   },
                   {
                     value: "guest",
-                    label: "Guest Users",
+                    label: texts.guestUsers,
                     count: stats.guestUsers,
                     color: "purple",
                   },
                   {
                     value: "loggedIn",
-                    label: "Logged In Users",
+                    label: texts.loggedInUsers,
                     count: stats.loggedInUsers,
                     color: "green",
                   },
                   {
                     value: "purchased",
-                    label: "Purchased Users",
+                    label: texts.purchasedUsers,
                     count: stats.purchasedUsers,
                     color: "yellow",
                   },
                   {
                     value: "loggedInNoPurchase",
-                    label: "Logged In (No Purchase)",
+                    label: texts.loggedInNoPurchase,
                     count: stats.loggedInNoPurchase,
                     color: "red",
                   },
@@ -450,7 +530,7 @@ const BulkNotification = () => {
               {/* Multi-select Countries using react-select */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Countries (Optional)
+                  {texts.countries}
                 </label>
                 <Select
                   isMulti
@@ -459,7 +539,7 @@ const BulkNotification = () => {
                   value={selectedCountries}
                   onChange={handleCountriesChange}
                   styles={customSelectStyles}
-                  placeholder="Select countries..."
+                  placeholder={texts.selectCountries}
                   isDisabled={formData.customFilters.countries.includes("all")}
                   className="react-select-container"
                   classNamePrefix="react-select"
@@ -469,7 +549,7 @@ const BulkNotification = () => {
               {/* Multi-select Roles using react-select */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Roles (Optional)
+                  {texts.roles}
                 </label>
                 <Select
                   isMulti
@@ -478,7 +558,7 @@ const BulkNotification = () => {
                   value={selectedRoles}
                   onChange={handleRolesChange}
                   styles={customSelectStyles}
-                  placeholder="Select roles..."
+                  placeholder={texts.selectRoles}
                   className="react-select-container"
                   classNamePrefix="react-select"
                 />
@@ -487,7 +567,7 @@ const BulkNotification = () => {
               {/* Min Spent */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Min Spent $ (Optional)
+                  {texts.minSpent}
                 </label>
                 <input
                   type="number"
@@ -505,7 +585,7 @@ const BulkNotification = () => {
             {/* Subject */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Email Subject <span className="text-red-400">*</span>
+                {texts.emailSubject} <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
@@ -521,7 +601,7 @@ const BulkNotification = () => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-gray-300">
-                  Email Message <span className="text-red-400">*</span>
+                  {texts.emailMessage} <span className="text-red-400">*</span>
                 </label>
                 <button
                   type="button"
@@ -533,7 +613,7 @@ const BulkNotification = () => {
                   ) : (
                     <Eye className="w-4 h-4" />
                   )}
-                  {previewMode ? "Hide Preview" : "Show Preview"}
+                  {previewMode ? texts.hidePreview : texts.showPreview}
                 </button>
               </div>
 
@@ -545,7 +625,9 @@ const BulkNotification = () => {
                 />
               ) : (
                 <div className="bg-gray-700 border border-gray-600 rounded-lg p-4">
-                  <div className="text-sm text-gray-400 mb-2">Preview:</div>
+                  <div className="text-sm text-gray-400 mb-2">
+                    {texts.preview}
+                  </div>
                   <div
                     className="prose prose-invert max-w-none"
                     dangerouslySetInnerHTML={{ __html: formData.message }}
@@ -557,10 +639,12 @@ const BulkNotification = () => {
             {/* Recipient Count */}
             <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
               <div className="flex items-center justify-between">
-                <span className="text-gray-300">Estimated Recipients:</span>
+                <span className="text-gray-300">
+                  {texts.estimatedRecipients}
+                </span>
                 <div className="flex items-center gap-3">
                   <span className="text-xl font-bold text-cyan-400">
-                    {calculateRecipientCount()} users
+                    {calculateRecipientCount()} {texts.users}
                   </span>
                   <button
                     type="button"
@@ -571,12 +655,12 @@ const BulkNotification = () => {
                     {loadingPreview ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Loading...
+                        {texts.loading}
                       </>
                     ) : (
                       <>
                         <Users className="w-4 h-4" />
-                        Preview Users
+                        {texts.previewUsers}
                       </>
                     )}
                   </button>
@@ -586,11 +670,11 @@ const BulkNotification = () => {
 
             {/* Preview Users Table */}
             {showPreviewTable && previewUsers.length > 0 && (
-              <div className="bg-gray-700 rounded-lg border border-gray-600 overflow-hidden">
-                <div className="flex items-center justify-between p-4 border-b border-gray-600">
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                     <Users className="w-5 h-5 text-cyan-400" />
-                    User Preview ({previewUsers.length} users)
+                    {texts.userPreview} ({previewUsers.length} {texts.users})
                   </h3>
                   <button
                     type="button"
@@ -600,68 +684,106 @@ const BulkNotification = () => {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="max-h-96 overflow-y-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-800 sticky top-0">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                          #
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                          Name
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                          Email
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                          Country
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                          Role
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                          Total Spent
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-600">
-                      {previewUsers.map((user, index) => (
-                        <tr
-                          key={user._id}
-                          className="hover:bg-gray-600 transition-colors"
-                        >
-                          <td className="px-4 py-3 text-sm text-gray-300">
-                            {index + 1}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-white">
-                            {user.name || "N/A"}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-300">
-                            {user.email}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-300">
-                            {user.country || "N/A"}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <span
-                              className={`px-2 py-1 rounded text-xs font-medium capitalize ${
-                                user.role === "admin"
-                                  ? "bg-red-500/20 text-red-300"
-                                  : user.role === "support"
-                                  ? "bg-yellow-500/20 text-yellow-300"
-                                  : "bg-blue-500/20 text-blue-300"
-                              }`}
-                            >
-                              {user.role}
+
+                {/* Mobile scrollable wrapper */}
+                <div className="w-full overflow-x-auto">
+                  <div className="min-w-full">
+                    <TableCustom
+                      title=""
+                      data={previewUsers}
+                      columns={[
+                        {
+                          title: "#",
+                          dataIndex: "index",
+                          key: "index",
+                          width: "60px",
+                          fixed: "left",
+                          render: (text, record, index) => (
+                            <span className="text-gray-300 text-xs sm:text-sm font-secondary pl-1 sm:pl-2 md:pl-5 break-all">
+                              {index + 1}
                             </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-300">
-                            ${user.totalSpent?.toFixed(2) || "0.00"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          ),
+                        },
+                        {
+                          title: texts.name,
+                          dataIndex: "name",
+                          key: "name",
+                          width: "150px",
+                          align: "center",
+                          render: (text) => (
+                            <span className="text-gray-300 text-xs sm:text-sm font-secondary break-all">
+                              {text || "N/A"}
+                            </span>
+                          ),
+                        },
+                        {
+                          title: texts.email,
+                          dataIndex: "email",
+                          key: "email",
+                          width: "200px",
+                          render: (text) => (
+                            <span className="text-gray-300 text-xs sm:text-sm font-secondary break-all">
+                              {text}
+                            </span>
+                          ),
+                        },
+                        {
+                          title: texts.country,
+                          dataIndex: "country",
+                          key: "country",
+                          width: "100px",
+                          align: "center",
+                          render: (text) => (
+                            <span className="text-gray-300 text-xs sm:text-sm font-secondary">
+                              {text || "N/A"}
+                            </span>
+                          ),
+                        },
+                        {
+                          title: texts.role,
+                          dataIndex: "role",
+                          key: "role",
+                          width: "120px",
+                          align: "center",
+                          render: (role) => {
+                            const statusClass =
+                              role === "admin"
+                                ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                                : role === "support"
+                                ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                                : "bg-blue-500/20 text-blue-400 border border-blue-500/30";
+
+                            return (
+                              <span
+                                className={`px-2 sm:px-3 md:px-4 py-1 rounded-full text-xs font-medium font-secondary whitespace-nowrap ${statusClass}`}
+                              >
+                                {role}
+                              </span>
+                            );
+                          },
+                        },
+                        {
+                          title: texts.totalSpent,
+                          dataIndex: "totalSpent",
+                          key: "totalSpent",
+                          width: "120px",
+                          align: "center",
+                          render: (amount) => (
+                            <span className="text-gray-300 text-xs sm:text-sm font-secondary">
+                              ${amount?.toFixed(2) || "0.00"}
+                            </span>
+                          ),
+                        },
+                      ]}
+                      pageSize={10}
+                      showButton={false}
+                      showHeader={true}
+                      rowKey="_id"
+                      // containerClassName="max-w-full min-w-[600px]"
+                      scroll={{ x: 600 }}
+                      className="overflow-x-auto"
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -680,12 +802,12 @@ const BulkNotification = () => {
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Sending...
+                    {texts.sending}
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    Send Notification
+                    {texts.sendNotification}
                   </>
                 )}
               </button>

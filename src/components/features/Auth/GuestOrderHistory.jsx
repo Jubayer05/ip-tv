@@ -1,13 +1,75 @@
 "use client";
 import PaymentConfirmPopup from "@/components/features/Pricing/Popup/PaymentConfirmPopup";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Mail } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 export default function GuestOrderHistory({ orders }) {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [redownloadingOrder, setRedownloadingOrder] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [popupOpen, setPopupOpen] = useState(false);
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    noOrdersFound: "No Orders Found",
+    noOrdersMessage: "No orders were found for this email address.",
+    orderHistory: "Order History",
+    ordersFound: "orders found",
+    order: "order",
+    subscription: "Subscription",
+    deviceType: "Device Type",
+    quantity: "Quantity",
+    month: "Month",
+    months: "Months",
+    account: "Account",
+    accounts: "Accounts",
+    adultChannelsEnabled: "Adult Channels Enabled",
+    iptvCredentialsReady: "IPTV Credentials Ready",
+    awaitingPayment:
+      "Awaiting Payment - IPTV credentials will be sent after payment confirmation",
+    resendToEmail: "Resend to Email",
+    sending: "Sending...",
+    success: "Success!",
+    iptvCredentialsSent:
+      "IPTV credentials have been sent to your email address.",
+    error: "Error",
+    failedToSendCredentials: "Failed to send credentials",
+    networkError: "Network error. Please try again.",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts
+  useEffect(() => {
+    if (!isLanguageLoaded || language?.code === "en") {
+      setTexts(ORIGINAL_TEXTS);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = Object.values(ORIGINAL_TEXTS);
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const translatedTexts = {};
+        Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+          translatedTexts[key] = translated[index];
+        });
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language?.code, translate, isLanguageLoaded]);
 
   const handleRedownloadCredentials = async (orderNumber, email) => {
     setRedownloadingOrder(orderNumber);
@@ -25,15 +87,15 @@ export default function GuestOrderHistory({ orders }) {
 
       if (response.ok) {
         Swal.fire({
-          title: "Success!",
-          text: "IPTV credentials have been sent to your email address.",
+          title: texts.success,
+          text: texts.iptvCredentialsSent,
           icon: "success",
           confirmButtonColor: "#00b877",
         });
       } else {
         Swal.fire({
-          title: "Error",
-          text: data.error || "Failed to send credentials",
+          title: texts.error,
+          text: data.error || texts.failedToSendCredentials,
           icon: "error",
           confirmButtonColor: "#dc3545",
         });
@@ -41,8 +103,8 @@ export default function GuestOrderHistory({ orders }) {
     } catch (error) {
       console.error("Redownload error:", error);
       Swal.fire({
-        title: "Error",
-        text: "Network error. Please try again.",
+        title: texts.error,
+        text: texts.networkError,
         icon: "error",
         confirmButtonColor: "#dc3545",
       });
@@ -75,11 +137,9 @@ export default function GuestOrderHistory({ orders }) {
       <div className="text-center py-8">
         <div className="text-6xl mb-4">📦</div>
         <h3 className="text-xl font-semibold text-white mb-2">
-          No Orders Found
+          {texts.noOrdersFound}
         </h3>
-        <p className="text-gray-400">
-          No orders were found for this email address.
-        </p>
+        <p className="text-gray-400">{texts.noOrdersMessage}</p>
       </div>
     );
   }
@@ -87,9 +147,12 @@ export default function GuestOrderHistory({ orders }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">Order History</h3>
+        <h3 className="text-lg font-semibold text-white">
+          {texts.orderHistory}
+        </h3>
         <div className="text-sm text-gray-400">
-          {orders.length} order{orders.length !== 1 ? "s" : ""} found
+          {orders.length}{" "}
+          {orders.length !== 1 ? texts.ordersFound : texts.order}
         </div>
       </div>
 
@@ -137,23 +200,31 @@ export default function GuestOrderHistory({ orders }) {
                 <div className="bg-black/30 rounded-lg p-3 mb-3">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <p className="text-xs text-gray-400 mb-1">Subscription</p>
+                      <p className="text-xs text-gray-400 mb-1">
+                        {texts.subscription}
+                      </p>
                       <p className="text-white text-sm font-medium">
-                        {product.duration} Month
-                        {product.duration !== 1 ? "s" : ""}
+                        {product.duration}{" "}
+                        {product.duration !== 1 ? texts.months : texts.month}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 mb-1">Device Type</p>
+                      <p className="text-xs text-gray-400 mb-1">
+                        {texts.deviceType}
+                      </p>
                       <p className="text-white text-sm font-medium">
                         {getLineTypeName(product.lineType)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 mb-1">Quantity</p>
+                      <p className="text-xs text-gray-400 mb-1">
+                        {texts.quantity}
+                      </p>
                       <p className="text-white text-sm font-medium">
                         {product.quantity}{" "}
-                        {product.quantity === 1 ? "Account" : "Accounts"}
+                        {product.quantity === 1
+                          ? texts.account
+                          : texts.accounts}
                       </p>
                     </div>
                   </div>
@@ -162,7 +233,7 @@ export default function GuestOrderHistory({ orders }) {
                   {product.lineType === 0 && product.adultChannels && (
                     <div className="mt-3 pt-3 border-t border-gray-700">
                       <span className="px-2 py-1 rounded text-xs bg-orange-500/20 text-orange-400">
-                        Adult Channels Enabled
+                        {texts.adultChannelsEnabled}
                       </span>
                     </div>
                   )}
@@ -175,8 +246,12 @@ export default function GuestOrderHistory({ orders }) {
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     <span className="text-green-400 text-sm font-medium">
-                      IPTV Credentials Ready ({order.iptvCredentials.length}{" "}
-                      accounts)
+                      {texts.iptvCredentialsReady} (
+                      {order.iptvCredentials.length}{" "}
+                      {order.iptvCredentials.length === 1
+                        ? texts.account
+                        : texts.accounts}
+                      )
                     </span>
                   </div>
 
@@ -194,12 +269,12 @@ export default function GuestOrderHistory({ orders }) {
                     {redownloadingOrder === order.orderNumber ? (
                       <>
                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-cyan-400"></div>
-                        Sending...
+                        {texts.sending}
                       </>
                     ) : (
                       <>
                         <Mail className="w-3 h-3" />
-                        Resend to Email
+                        {texts.resendToEmail}
                       </>
                     )}
                   </button>
@@ -210,8 +285,7 @@ export default function GuestOrderHistory({ orders }) {
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
                   <span className="text-yellow-400 text-sm font-medium">
-                    Awaiting Payment - IPTV credentials will be sent after
-                    payment confirmation
+                    {texts.awaitingPayment}
                   </span>
                 </div>
               )}

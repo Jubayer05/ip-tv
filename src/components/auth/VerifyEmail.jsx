@@ -2,6 +2,7 @@
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeviceLogin } from "@/hooks/useDeviceLogin";
 import {
   ArrowLeft,
@@ -16,6 +17,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 function VerifyEmailInner() {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
@@ -31,10 +33,83 @@ function VerifyEmailInner() {
   const [lastName, setLastName] = useState("");
   const [userName, setUserName] = useState("");
 
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    checkYourEmail: "CHECK YOUR EMAIL",
+    emailSentMessage: "We've sent a verification link to",
+    nextSteps: "Next Steps:",
+    checkEmailInbox: "Check your email inbox (and spam folder)",
+    clickVerificationLink: "Click the verification link in the email",
+    setPasswordComplete: "Set your password and complete account setup",
+    resendVerificationEmail: "Resend Verification Email",
+    goToSignIn: "Go to Sign In",
+    didntReceiveEmail:
+      "Didn't receive the email? Check your spam folder or try resending.",
+    accountCreatedSuccessfully: "ACCOUNT CREATED SUCCESSFULLY!",
+    welcomeToCheapStream:
+      "Welcome to Cheap Stream! Your account has been verified and created.",
+    welcomeAboard: "Welcome aboard!",
+    redirectingMessage:
+      "You're now being redirected to your dashboard where you can start exploring our services.",
+    redirectingToDashboard: "Redirecting to dashboard...",
+    verifyYourEmail: "VERIFY YOUR EMAIL",
+    completeRegistrationMessage:
+      "Complete your registration by setting a password for your account.",
+    createPassword: "Create Password",
+    confirmPassword: "Confirm Password",
+    creatingAccount: "Creating Account...",
+    completeRegistration: "Complete Registration",
+    nextStepsInstructions: "Next Steps:",
+    createStrongPassword: "Create a strong password for your account",
+    confirmYourPassword: "Confirm your password",
+    clickVerify: "Click verify to complete registration",
+    resendVerificationEmailAgain: "Resend Verification Email",
+    backToRegistration: "Back to Registration",
+    loadingVerification: "Loading verification...",
+    passwordsDoNotMatch: "Passwords do not match",
+    passwordTooShort: "Password must be at least 6 characters long",
+    verificationFailed: "Verification failed. Please try again.",
+    networkError: "Network error. Please check your connection and try again.",
+    failedToResend: "Failed to resend email. Please try again.",
+    sending: "Sending...",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
   const { signup, complete2FALogin } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { recordDeviceLogin } = useDeviceLogin();
+
+  // Translate texts
+  useEffect(() => {
+    if (!isLanguageLoaded || language?.code === "en") {
+      setTexts(ORIGINAL_TEXTS);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = Object.values(ORIGINAL_TEXTS);
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const translatedTexts = {};
+        Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+          translatedTexts[key] = translated[index];
+        });
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language?.code, translate, isLanguageLoaded]);
 
   useEffect(() => {
     // Get only token from URL params
@@ -85,14 +160,14 @@ function VerifyEmailInner() {
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setError(texts.passwordsDoNotMatch);
       setLoading(false);
       return;
     }
 
     // Validate password length
     if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
+      setError(texts.passwordTooShort);
       setLoading(false);
       return;
     }
@@ -143,14 +218,11 @@ function VerifyEmailInner() {
           }, 800);
         }
       } else {
-        setError(data.error || "Verification failed. Please try again.");
+        setError(data.error || texts.verificationFailed);
       }
     } catch (error) {
       console.error("Verification error:", error);
-      setError(
-        error.message ||
-          "Network error. Please check your connection and try again."
-      );
+      setError(error.message || texts.networkError);
     }
 
     setLoading(false);
@@ -178,10 +250,10 @@ function VerifyEmailInner() {
       if (response.ok) {
         setError("Verification email sent again! Please check your inbox.");
       } else {
-        setError(data.error || "Failed to resend email. Please try again.");
+        setError(data.error || texts.failedToResend);
       }
     } catch (error) {
-      setError("Network error. Please check your connection and try again.");
+      setError(texts.networkError);
     }
 
     setLoading(false);
@@ -198,28 +270,28 @@ function VerifyEmailInner() {
               <CheckCircle size={24} className="text-green-400" />
             </div>
             <h1 className="text-white text-xl sm:text-2xl font-bold mb-3 sm:mb-4 tracking-wide">
-              ACCOUNT CREATED SUCCESSFULLY!
+              {texts.accountCreatedSuccessfully}
             </h1>
             <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
-              Welcome to Cheap Stream! Your account has been verified and
-              created.
+              {texts.welcomeToCheapStream}
             </p>
           </div>
 
           {/* Success Message */}
           <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-6">
             <h3 className="text-green-400 text-sm font-semibold mb-2">
-              Welcome aboard!
+              {texts.welcomeAboard}
             </h3>
             <p className="text-gray-300 text-xs leading-relaxed">
-              You're now being redirected to your dashboard where you can start
-              exploring our services.
+              {texts.redirectingMessage}
             </p>
           </div>
 
           {/* Redirecting Message */}
           <div className="text-center">
-            <p className="text-gray-400 text-xs">Redirecting to dashboard...</p>
+            <p className="text-gray-400 text-xs">
+              {texts.redirectingToDashboard}
+            </p>
           </div>
         </div>
       </div>
@@ -232,7 +304,7 @@ function VerifyEmailInner() {
       <div className="min-h-screen flex flex-col items-center justify-center p-4 font-secondary">
         <div className="bg-black rounded-3xl p-6 sm:p-8 w-full max-w-lg mx-auto relative border border-[#FFFFFF26]">
           <div className="text-center">
-            <p className="text-gray-300">Loading verification...</p>
+            <p className="text-gray-300">{texts.loadingVerification}</p>
           </div>
         </div>
       </div>
@@ -245,10 +317,10 @@ function VerifyEmailInner() {
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-white text-xl sm:text-2xl font-bold mb-3 sm:mb-4 tracking-wide">
-            VERIFY YOUR EMAIL
+            {texts.verifyYourEmail}
           </h1>
           <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
-            Complete your registration by setting a password for your account.
+            {texts.completeRegistrationMessage}
           </p>
           {email && (
             <p className="text-white text-sm font-medium mt-2">{email}</p>
@@ -267,7 +339,7 @@ function VerifyEmailInner() {
           {/* Password Input */}
           <div>
             <label className="block text-white text-xs sm:text-sm font-medium mb-2">
-              Create Password
+              {texts.createPassword}
             </label>
             <div className="relative">
               <Input
@@ -293,7 +365,7 @@ function VerifyEmailInner() {
           {/* Confirm Password Input */}
           <div>
             <label className="block text-white text-xs sm:text-sm font-medium mb-2">
-              Confirm Password
+              {texts.confirmPassword}
             </label>
             <div className="relative">
               <Input
@@ -323,7 +395,7 @@ function VerifyEmailInner() {
             className="w-full transition-all duration-200 flex items-center justify-center gap-2"
             disabled={loading}
           >
-            {loading ? "Creating Account..." : "Complete Registration"}
+            {loading ? texts.creatingAccount : texts.completeRegistration}
             {!loading && <ArrowRight size={18} />}
           </Button>
         </form>
@@ -332,12 +404,12 @@ function VerifyEmailInner() {
         <div className="space-y-4 mb-6 mt-6">
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
             <h3 className="text-blue-400 text-sm font-semibold mb-2">
-              Next Steps:
+              {texts.nextStepsInstructions}
             </h3>
             <ul className="text-gray-300 text-xs space-y-1">
-              <li>• Create a strong password for your account</li>
-              <li>• Confirm your password</li>
-              <li>• Click verify to complete registration</li>
+              <li>• {texts.createStrongPassword}</li>
+              <li>• {texts.confirmYourPassword}</li>
+              <li>• {texts.clickVerify}</li>
             </ul>
           </div>
         </div>
@@ -350,7 +422,7 @@ function VerifyEmailInner() {
             variant="outline"
             className="w-full flex items-center justify-center gap-2 mb-2"
           >
-            {loading ? "Sending..." : "Resend Verification Email"}
+            {loading ? texts.sending : texts.resendVerificationEmailAgain}
             <Mail size={18} />
           </Button>
 
@@ -360,7 +432,7 @@ function VerifyEmailInner() {
               className="w-full flex items-center justify-center gap-2"
             >
               <ArrowLeft size={18} />
-              Back to Registration
+              {texts.backToRegistration}
             </Button>
           </Link>
         </div>

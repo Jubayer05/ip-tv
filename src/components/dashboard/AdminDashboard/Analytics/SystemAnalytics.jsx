@@ -2,11 +2,12 @@
 import TableCustom from "@/components/ui/TableCustom";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 // Filter controls for system analytics
-const FilterControls = ({ filters, setFilters }) => (
+const FilterControls = ({ filters, setFilters, texts }) => (
   <div className="flex flex-col sm:flex-row gap-4 mb-6">
     <div className="flex-1">
       <Input
@@ -15,7 +16,7 @@ const FilterControls = ({ filters, setFilters }) => (
         id="search"
         value={filters.search}
         onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-        placeholder="Search by plan name, order number, or customer..."
+        placeholder={texts.searchPlaceholder}
         className="bg-gray-800 rounded-lg border-gray-700 text-white placeholder-gray-400"
       />
     </div>
@@ -25,10 +26,10 @@ const FilterControls = ({ filters, setFilters }) => (
         onChange={(e) => setFilters({ ...filters, status: e.target.value })}
         className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
       >
-        <option value="all">All Status</option>
-        <option value="completed">Completed</option>
-        <option value="pending">Pending</option>
-        <option value="cancelled">Cancelled</option>
+        <option value="all">{texts.allStatus}</option>
+        <option value="completed">{texts.completed}</option>
+        <option value="pending">{texts.pending}</option>
+        <option value="cancelled">{texts.cancelled}</option>
       </select>
     </div>
     <div className="w-full sm:w-48">
@@ -39,26 +40,26 @@ const FilterControls = ({ filters, setFilters }) => (
         }
         className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
       >
-        <option value="all">All Payment Methods</option>
-        <option value="stripe">Stripe</option>
-        <option value="plisio">Plisio</option>
-        <option value="hoodpay">HoodPay</option>
-        <option value="nowpayments">NOWPayments</option>
-        <option value="changenow">ChangeNOW</option>
-        <option value="cryptomus">Cryptomus</option>
-        <option value="manual">Manual</option>
+        <option value="all">{texts.allPaymentMethods}</option>
+        <option value="stripe">{texts.stripe}</option>
+        <option value="plisio">{texts.plisio}</option>
+        <option value="hoodpay">{texts.hoodpay}</option>
+        <option value="nowpayments">{texts.nowpayments}</option>
+        <option value="changenow">{texts.changenow}</option>
+        <option value="cryptomus">{texts.cryptomus}</option>
+        <option value="manual">{texts.manual}</option>
       </select>
     </div>
   </div>
 );
 
 // Analytics summary cards
-const AnalyticsSummary = ({ analytics }) => (
+const AnalyticsSummary = ({ analytics, texts }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-400 text-sm">Total Orders</p>
+          <p className="text-gray-400 text-sm">{texts.totalOrders}</p>
           <p className="text-2xl font-bold text-white">
             {analytics.totalOrders || 0}
           </p>
@@ -84,9 +85,9 @@ const AnalyticsSummary = ({ analytics }) => (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-400 text-sm">Total Revenue</p>
+          <p className="text-gray-400 text-sm">{texts.totalRevenue}</p>
           <p className="text-2xl font-bold text-white">
-            ${analytics.totalRevenue.toFixed(2) || 0}
+            ${analytics.totalRevenue?.toFixed(2) || 0}
           </p>
         </div>
         <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
@@ -110,7 +111,7 @@ const AnalyticsSummary = ({ analytics }) => (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-400 text-sm">Most Popular Plan</p>
+          <p className="text-gray-400 text-sm">{texts.mostPopularPlan}</p>
           <p className="text-lg font-bold text-white">
             {analytics.mostPopularPlan || "N/A"}
           </p>
@@ -136,9 +137,9 @@ const AnalyticsSummary = ({ analytics }) => (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-400 text-sm">Avg Order Value</p>
+          <p className="text-gray-400 text-sm">{texts.avgOrderValue}</p>
           <p className="text-2xl font-bold text-white">
-            ${analytics.averageOrderValue.toFixed(2) || 0}
+            ${analytics.averageOrderValue?.toFixed(2) || 0}
           </p>
         </div>
         <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
@@ -162,9 +163,11 @@ const AnalyticsSummary = ({ analytics }) => (
 );
 
 // Popular plans chart component
-const PopularPlansChart = ({ popularPlans }) => (
+const PopularPlansChart = ({ popularPlans, texts }) => (
   <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-8">
-    <h3 className="text-xl font-bold text-white mb-4">Most Popular Plans</h3>
+    <h3 className="text-xl font-bold text-white mb-4">
+      {texts.mostPopularPlans}
+    </h3>
     <div className="space-y-4">
       {popularPlans?.slice(0, 5).map((plan, index) => (
         <div key={plan._id} className="flex items-center justify-between">
@@ -177,12 +180,15 @@ const PopularPlansChart = ({ popularPlans }) => (
             <div>
               <p className="text-white font-medium">{plan.planName}</p>
               <p className="text-gray-400 text-sm">
-                {plan.duration} months • {plan.devicesAllowed} devices
+                {plan.duration} {texts.months} • {plan.devicesAllowed}{" "}
+                {texts.devices}
               </p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-white font-bold">{plan.totalOrders} orders</p>
+            <p className="text-white font-bold">
+              {plan.totalOrders} {texts.orders}
+            </p>
             <p className="text-green-400 text-sm">${plan.totalRevenue}</p>
           </div>
         </div>
@@ -192,9 +198,11 @@ const PopularPlansChart = ({ popularPlans }) => (
 );
 
 // Device analytics chart
-const DeviceAnalytics = ({ deviceStats }) => (
+const DeviceAnalytics = ({ deviceStats, texts }) => (
   <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-8">
-    <h3 className="text-xl font-bold text-white mb-4">Device Distribution</h3>
+    <h3 className="text-xl font-bold text-white mb-4">
+      {texts.deviceDistribution}
+    </h3>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {deviceStats?.map((stat, index) => (
         <div key={index} className="text-center">
@@ -214,10 +222,14 @@ const DeviceAnalytics = ({ deviceStats }) => (
             </svg>
           </div>
           <p className="text-white font-bold text-lg">
-            {stat.deviceCount} Device{stat.deviceCount !== 1 ? "s" : ""}
+            {stat.deviceCount} {texts.device} {stat.deviceCount !== 1 ? "" : ""}
           </p>
-          <p className="text-gray-400 text-sm">{stat.percentage}% of orders</p>
-          <p className="text-green-400 text-sm">{stat.totalOrders} orders</p>
+          <p className="text-gray-400 text-sm">
+            {stat.percentage}% {texts.ofOrders}
+          </p>
+          <p className="text-green-400 text-sm">
+            {stat.totalOrders} {texts.orders}
+          </p>
         </div>
       ))}
     </div>
@@ -226,6 +238,7 @@ const DeviceAnalytics = ({ deviceStats }) => (
 
 const SystemAnalytics = () => {
   const { hasAdminAccess } = useAuth();
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const router = useRouter();
   const [orders, setOrders] = useState([]);
   const [analytics, setAnalytics] = useState({});
@@ -243,6 +256,76 @@ const SystemAnalytics = () => {
     paymentMethod: "all",
     search: "",
   });
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "System Analytics",
+    subtitle: "Plan purchases, revenue tracking, and device analytics",
+    searchPlaceholder: "Search by plan name, order number, or customer...",
+    allStatus: "All Status",
+    completed: "Completed",
+    pending: "Pending",
+    cancelled: "Cancelled",
+    allPaymentMethods: "All Payment Methods",
+    stripe: "Stripe",
+    plisio: "Plisio",
+    hoodpay: "HoodPay",
+    nowpayments: "NOWPayments",
+    changenow: "ChangeNOW",
+    cryptomus: "Cryptomus",
+    manual: "Manual",
+    totalOrders: "Total Orders",
+    totalRevenue: "Total Revenue",
+    mostPopularPlan: "Most Popular Plan",
+    avgOrderValue: "Avg Order Value",
+    mostPopularPlans: "Most Popular Plans",
+    months: "months",
+    devices: "devices",
+    orders: "orders",
+    deviceDistribution: "Device Distribution",
+    device: "Device",
+    ofOrders: "of orders",
+    orderNumber: "Order #",
+    customer: "Customer",
+    planDetails: "Plan Details",
+    amount: "Amount",
+    paymentMethod: "Payment Method",
+    status: "Status",
+    orderDate: "Order Date",
+    unknownPlan: "Unknown Plan",
+    adultChannels: "Adult Channels",
+    discount: "discount",
+    orderAnalytics: "Order Analytics",
+    unknown: "Unknown",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
 
   // Check admin access
   useEffect(() => {
@@ -322,7 +405,7 @@ const SystemAnalytics = () => {
   // Table columns
   const tableColumns = [
     {
-      title: "Order #",
+      title: texts.orderNumber,
       width: 150,
       dataIndex: "orderNumber",
       key: "orderNumber",
@@ -331,7 +414,7 @@ const SystemAnalytics = () => {
       ),
     },
     {
-      title: "Customer",
+      title: texts.customer,
       width: 200,
       dataIndex: "contactInfo",
       key: "customer",
@@ -345,7 +428,7 @@ const SystemAnalytics = () => {
       ),
     },
     {
-      title: "Plan Details",
+      title: texts.planDetails,
       width: 250,
       dataIndex: "products",
       key: "planDetails",
@@ -354,11 +437,12 @@ const SystemAnalytics = () => {
           {products?.map((product, index) => (
             <div key={index} className="text-sm">
               <div className="text-white font-medium">
-                {product.planName || "Unknown Plan"}
+                {product.planName || texts.unknownPlan}
               </div>
               <div className="text-gray-400 text-xs">
-                {product.duration} months • {product.devicesAllowed} devices
-                {product.adultChannels && " • Adult Channels"}
+                {product.duration} {texts.months} • {product.devicesAllowed}{" "}
+                {texts.devices}
+                {product.adultChannels && ` • ${texts.adultChannels}`}
               </div>
             </div>
           ))}
@@ -366,7 +450,7 @@ const SystemAnalytics = () => {
       ),
     },
     {
-      title: "Amount",
+      title: texts.amount,
       width: 120,
       dataIndex: "totalAmount",
       key: "amount",
@@ -375,14 +459,14 @@ const SystemAnalytics = () => {
           <div className="text-white font-bold">${totalAmount}</div>
           {record.discountAmount > 0 && (
             <div className="text-green-400 text-xs">
-              -${record.discountAmount} discount
+              -${record.discountAmount} {texts.discount}
             </div>
           )}
         </div>
       ),
     },
     {
-      title: "Payment Method",
+      title: texts.paymentMethod,
       width: 120,
       dataIndex: "paymentGateway",
       key: "paymentMethod",
@@ -405,13 +489,13 @@ const SystemAnalytics = () => {
                 : "bg-gray-500/20 text-gray-400 border border-gray-500/30"
             }`}
           >
-            {paymentGateway?.toUpperCase() || "MANUAL"}
+            {paymentGateway?.toUpperCase() || texts.manual}
           </span>
         </div>
       ),
     },
     {
-      title: "Status",
+      title: texts.status,
       width: 100,
       dataIndex: "status",
       key: "status",
@@ -425,12 +509,12 @@ const SystemAnalytics = () => {
               : "bg-red-500/20 text-red-400 border border-red-500/30"
           }`}
         >
-          {status?.charAt(0).toUpperCase() + status?.slice(1) || "Unknown"}
+          {status?.charAt(0).toUpperCase() + status?.slice(1) || texts.unknown}
         </span>
       ),
     },
     {
-      title: "Order Date",
+      title: texts.orderDate,
       width: 120,
       dataIndex: "createdAt",
       key: "orderDate",
@@ -455,24 +539,26 @@ const SystemAnalytics = () => {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-            System Analytics
+            {texts.heading}
           </h1>
-          <p className="text-gray-400">
-            Plan purchases, revenue tracking, and device analytics
-          </p>
+          <p className="text-gray-400">{texts.subtitle}</p>
         </div>
 
-        <AnalyticsSummary analytics={analytics} />
+        <AnalyticsSummary analytics={analytics} texts={texts} />
 
-        <PopularPlansChart popularPlans={popularPlans} />
+        <PopularPlansChart popularPlans={popularPlans} texts={texts} />
 
-        <DeviceAnalytics deviceStats={deviceStats} />
+        <DeviceAnalytics deviceStats={deviceStats} texts={texts} />
 
-        <FilterControls filters={filters} setFilters={setFilters} />
+        <FilterControls
+          filters={filters}
+          setFilters={setFilters}
+          texts={texts}
+        />
 
         <div className="rounded-lg">
           <TableCustom
-            title="Order Analytics"
+            title={texts.orderAnalytics}
             data={orders}
             columns={tableColumns}
             pageSize={pagination.limit}

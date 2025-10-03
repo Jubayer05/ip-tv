@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema(
         "Please enter a valid email",
       ],
     },
+    firebaseUid: { type: String, unique: true, sparse: true },
     firebase: {
       uid: { type: String, default: null },
       provider: { type: String, default: null },

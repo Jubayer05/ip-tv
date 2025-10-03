@@ -263,7 +263,7 @@ const settingsSchema = new mongoose.Schema(
       secure: { type: Boolean, default: false },
     },
 
-    // Other API Keys
+    // Other API Keys - Updated to include DeepL and Google Translate
     otherApiKeys: {
       iptv: {
         apiKey: { type: String, default: "" },
@@ -273,6 +273,36 @@ const settingsSchema = new mongoose.Schema(
         secret: { type: String, default: "" },
         expiresIn: { type: String, default: "7d" },
       },
+      deepl: {
+        apiKey: { type: String, default: "" },
+        baseUrl: { type: String, default: "https://api-free.deepl.com" },
+      },
+      googleTranslate: {
+        apiKey: { type: String, default: "" },
+        baseUrl: {
+          type: String,
+          default: "https://translation.googleapis.com",
+        },
+      },
+    },
+
+    // Card Payment Settings
+    cardPayment: {
+      isEnabled: { type: Boolean, default: false },
+      minAmount: { type: Number, default: 1, min: 0.01 },
+      maxAmount: { type: Number, default: 1000, min: 1 },
+      supportedCards: {
+        visa: { type: Boolean, default: true },
+        mastercard: { type: Boolean, default: true },
+        amex: { type: Boolean, default: false },
+        discover: { type: Boolean, default: false },
+      },
+      processingFee: {
+        isActive: { type: Boolean, default: false },
+        feePercentage: { type: Number, default: 0, min: 0, max: 100 },
+        fixedAmount: { type: Number, default: 0, min: 0 },
+      },
+      description: { type: String, default: "Pay securely with your credit or debit card" },
     },
 
     // Meta management for SEO
@@ -769,6 +799,31 @@ settingsSchema.statics.getSettings = async function () {
           secret: "",
           expiresIn: "7d",
         },
+        deepl: {
+          apiKey: "",
+          baseUrl: "https://api-free.deepl.com",
+        },
+        googleTranslate: {
+          apiKey: "",
+          baseUrl: "https://translation.googleapis.com",
+        },
+      },
+      cardPayment: {
+        isEnabled: false,
+        minAmount: 1,
+        maxAmount: 1000,
+        supportedCards: {
+          visa: true,
+          mastercard: true,
+          amex: false,
+          discover: false,
+        },
+        processingFee: {
+          isActive: false,
+          feePercentage: 0,
+          fixedAmount: 0,
+        },
+        description: "Pay securely with your credit or debit card",
       },
       metaManagement: {
         home: {
@@ -802,8 +857,7 @@ settingsSchema.statics.getSettings = async function () {
           keywords:
             "affiliate program, IPTV affiliate, earn money, referral program, Cheap Stream affiliate",
           openGraph: {
-            title:
-              "Affiliate Program - Cheap Stream | Earn Money Promoting IPTV",
+            title: "Affiliate Program - Cheap Stream | Earn Money Promoting IPTV",
             description:
               "Join Cheap Stream's affiliate program and earn money by promoting our premium IPTV services. Refer friends and earn commissions.",
           },
@@ -1231,6 +1285,67 @@ settingsSchema.statics.getSettings = async function () {
   if (!doc.emailContent) {
     doc.emailContent = {
       content: "",
+    };
+    modified = true;
+  }
+
+  // Add otherApiKeys defaults including new translation services
+  if (!doc.otherApiKeys) {
+    doc.otherApiKeys = {
+      iptv: {
+        apiKey: "",
+        baseUrl: "",
+      },
+      jwt: {
+        secret: "",
+        expiresIn: "7d",
+      },
+      deepl: {
+        apiKey: "",
+        baseUrl: "https://api-free.deepl.com",
+      },
+      googleTranslate: {
+        apiKey: "",
+        baseUrl: "https://translation.googleapis.com",
+      },
+    };
+    modified = true;
+  } else {
+    // Backfill missing translation API keys
+    if (!doc.otherApiKeys.deepl) {
+      doc.otherApiKeys.deepl = {
+        apiKey: "",
+        baseUrl: "https://api-free.deepl.com",
+      };
+      modified = true;
+    }
+    if (!doc.otherApiKeys.googleTranslate) {
+      doc.otherApiKeys.googleTranslate = {
+        apiKey: "",
+        baseUrl: "https://translation.googleapis.com",
+      };
+      modified = true;
+    }
+  }
+
+  // Add card payment defaults
+  if (!doc.cardPayment) {
+    doc.cardPayment = {
+      isEnabled: false,
+      minAmount: 1,
+      maxAmount: 1000,
+      supportedCards: {
+        visa: true,
+        mastercard: true,
+        amex: false,
+        discover: false,
+      },
+      processingFee: {
+        isActive: false,
+        feePercentage: 0,
+        fixedAmount: 0,
+      },
+      description: "Pay securely with your credit or debit card",
     };
     modified = true;
   }

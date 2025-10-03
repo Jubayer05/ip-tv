@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(request, { params }) {
   try {
-    const { orderNumber } = params;
+    const { orderNumber } = await params;
 
     if (!orderNumber) {
       return NextResponse.json(

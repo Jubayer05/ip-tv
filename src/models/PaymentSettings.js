@@ -105,6 +105,11 @@ const PaymentSettingsSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    // Add imageUrl field for custom uploaded images
+    imageUrl: {
+      type: String,
+      default: "",
+    },
     sortOrder: {
       type: Number,
       default: 0,

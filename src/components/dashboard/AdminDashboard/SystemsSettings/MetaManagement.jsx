@@ -1,10 +1,12 @@
 "use client";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 const MetaManagement = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -23,6 +25,62 @@ const MetaManagement = () => {
     { id: "contact", label: "Contact" },
     { id: "faq", label: "FAQ" },
   ];
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "Meta Management",
+    saving: "Saving...",
+    saveChanges: "Save Changes",
+    loading: "Loading...",
+    noMetaSettingsFound: "No meta settings found",
+    metaSettingsFor: "Meta Settings for",
+    pageTitle: "Page Title",
+    metaDescription: "Meta Description",
+    keywords: "Keywords",
+    openGraphSettings: "Open Graph Settings",
+    openGraphTitle: "Open Graph Title",
+    openGraphDescription: "Open Graph Description",
+    enterPageTitle: "Enter page title",
+    enterMetaDescription: "Enter meta description",
+    enterKeywords: "Enter keywords (comma separated)",
+    enterOpenGraphTitle: "Enter Open Graph title",
+    enterOpenGraphDescription: "Enter Open Graph description",
+    success: "Success!",
+    metaSettingsSavedSuccess: "Meta settings saved successfully!",
+    ok: "OK",
+    error: "Error!",
+    failedToSaveMetaSettings: "Failed to save meta settings",
+    failedToSaveMetaSettingsTryAgain:
+      "Failed to save meta settings. Please try again.",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
 
   useEffect(() => {
     fetchSettings();
@@ -92,10 +150,10 @@ const MetaManagement = () => {
       if (data.success) {
         // Success notification with SweetAlert2
         Swal.fire({
-          title: "Success!",
-          text: "Meta settings saved successfully!",
+          title: texts.success,
+          text: texts.metaSettingsSavedSuccess,
           icon: "success",
-          confirmButtonText: "OK",
+          confirmButtonText: texts.ok,
           confirmButtonColor: "#10b981", // Green color
           timer: 3000,
           timerProgressBar: true,
@@ -103,10 +161,10 @@ const MetaManagement = () => {
       } else {
         // Error notification with SweetAlert2
         Swal.fire({
-          title: "Error!",
-          text: "Failed to save meta settings",
+          title: texts.error,
+          text: texts.failedToSaveMetaSettings,
           icon: "error",
-          confirmButtonText: "OK",
+          confirmButtonText: texts.ok,
           confirmButtonColor: "#ef4444", // Red color
         });
       }
@@ -114,10 +172,10 @@ const MetaManagement = () => {
       console.error("Failed to save settings:", error);
       // Error notification with SweetAlert2
       Swal.fire({
-        title: "Error!",
-        text: "Failed to save meta settings. Please try again.",
+        title: texts.error,
+        text: texts.failedToSaveMetaSettingsTryAgain,
         icon: "error",
-        confirmButtonText: "OK",
+        confirmButtonText: texts.ok,
         confirmButtonColor: "#ef4444", // Red color
       });
     } finally {
@@ -126,11 +184,11 @@ const MetaManagement = () => {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return <div className="text-center py-8">{texts.loading}</div>;
   }
 
   if (!settings?.metaManagement) {
-    return <div className="text-center py-8">No meta settings found</div>;
+    return <div className="text-center py-8">{texts.noMetaSettingsFound}</div>;
   }
 
   const currentPageMeta = settings.metaManagement[activePage] || {};
@@ -138,9 +196,9 @@ const MetaManagement = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-white">Meta Management</h3>
+        <h3 className="text-xl font-semibold text-white">{texts.heading}</h3>
         <Button onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : "Save Changes"}
+          {saving ? texts.saving : texts.saveChanges}
         </Button>
       </div>
 
@@ -164,7 +222,7 @@ const MetaManagement = () => {
       {/* Meta Fields */}
       <div className="space-y-6 bg-gray-900/50 p-6 rounded-lg">
         <h4 className="text-2xl font-medium text-white font-secondary">
-          Meta Settings for{" "}
+          {texts.metaSettingsFor}{" "}
           <span className="text-blue-500">
             {pages.find((p) => p.id === activePage)?.label}
           </span>
@@ -174,12 +232,12 @@ const MetaManagement = () => {
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Page Title
+              {texts.pageTitle}
             </label>
             <Input
               value={currentPageMeta.title || ""}
               onChange={(e) => handleInputChange("title", e.target.value)}
-              placeholder="Enter page title"
+              placeholder={texts.enterPageTitle}
               className="w-full"
             />
           </div>
@@ -187,12 +245,12 @@ const MetaManagement = () => {
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Meta Description
+              {texts.metaDescription}
             </label>
             <Input
               value={currentPageMeta.description || ""}
               onChange={(e) => handleInputChange("description", e.target.value)}
-              placeholder="Enter meta description"
+              placeholder={texts.enterMetaDescription}
               className="w-full"
             />
           </div>
@@ -200,12 +258,12 @@ const MetaManagement = () => {
           {/* Keywords */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Keywords
+              {texts.keywords}
             </label>
             <Input
               value={currentPageMeta.keywords || ""}
               onChange={(e) => handleInputChange("keywords", e.target.value)}
-              placeholder="Enter keywords (comma separated)"
+              placeholder={texts.enterKeywords}
               className="w-full"
             />
           </div>
@@ -214,31 +272,31 @@ const MetaManagement = () => {
         {/* Open Graph Section */}
         <div className="border-t border-gray-700 pt-6">
           <h5 className="text-md font-medium text-white mb-4">
-            Open Graph Settings
+            {texts.openGraphSettings}
           </h5>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Open Graph Title
+                {texts.openGraphTitle}
               </label>
               <Input
                 value={currentPageMeta.openGraph?.title || ""}
                 onChange={(e) => handleOpenGraphChange("title", e.target.value)}
-                placeholder="Enter Open Graph title"
+                placeholder={texts.enterOpenGraphTitle}
                 className="w-full"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Open Graph Description
+                {texts.openGraphDescription}
               </label>
               <Input
                 value={currentPageMeta.openGraph?.description || ""}
                 onChange={(e) =>
                   handleOpenGraphChange("description", e.target.value)
                 }
-                placeholder="Enter Open Graph description"
+                placeholder={texts.enterOpenGraphDescription}
                 className="w-full"
               />
             </div>

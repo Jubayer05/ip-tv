@@ -3,16 +3,105 @@ import { ArrowLeft, Calendar } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const BlogDetailPage = () => {
   const { slug } = useParams();
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    blogNotFound: "Blog Not Found",
+    blogNotFoundMessage: "The blog you're looking for doesn't exist.",
+    backToBlogs: "Back to Blogs",
+    by: "By"
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+  const [translatedBlog, setTranslatedBlog] = useState(null);
+
   useEffect(() => {
     fetchBlog();
   }, [slug]);
+
+  // Translate static texts
+  useEffect(() => {
+    if (!isLanguageLoaded || language?.code === "en") {
+      setTexts(ORIGINAL_TEXTS);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = [
+          ORIGINAL_TEXTS.blogNotFound,
+          ORIGINAL_TEXTS.blogNotFoundMessage,
+          ORIGINAL_TEXTS.backToBlogs,
+          ORIGINAL_TEXTS.by
+        ];
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const [tBlogNotFound, tBlogNotFoundMessage, tBackToBlogs, tBy] = translated;
+        setTexts({
+          blogNotFound: tBlogNotFound,
+          blogNotFoundMessage: tBlogNotFoundMessage,
+          backToBlogs: tBackToBlogs,
+          by: tBy
+        });
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language?.code, translate, isLanguageLoaded]);
+
+  // Translate blog content
+  useEffect(() => {
+    if (!blog || !isLanguageLoaded || language?.code === "en") {
+      setTranslatedBlog(blog);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        // Collect all translatable content from blog
+        const textsToTranslate = [
+          blog.title,
+          blog.details,
+          ...(blog.tags || [])
+        ];
+
+        const translated = await translate(textsToTranslate);
+        if (!isMounted) return;
+
+        const [tTitle, tDetails, ...tTags] = translated;
+
+        setTranslatedBlog({
+          ...blog,
+          title: tTitle,
+          details: tDetails,
+          tags: blog.tags ? tTags : undefined
+        });
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTranslatedBlog(blog);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [blog, language?.code, translate, isLanguageLoaded]);
 
   const fetchBlog = async () => {
     try {
@@ -53,21 +142,23 @@ const BlogDetailPage = () => {
     return (
       <div className="min-h-screen bg-black text-white p-4 sm:p-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-2xl font-bold mb-4">Blog Not Found</h1>
+          <h1 className="text-2xl font-bold mb-4">{texts.blogNotFound}</h1>
           <p className="text-gray-400 mb-6">
-            {error || "The blog you're looking for doesn't exist."}
+            {error || texts.blogNotFoundMessage}
           </p>
           <Link
             href="/blogs"
             className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Blogs
+            {texts.backToBlogs}
           </Link>
         </div>
       </div>
     );
   }
+
+  const displayBlog = translatedBlog || blog;
 
   return (
     <div className="min-h-screen bg-black text-white p-4 sm:p-6">
@@ -78,13 +169,13 @@ const BlogDetailPage = () => {
           className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Blogs
+          {texts.backToBlogs}
         </Link>
 
         {/* Blog Header */}
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
-            {blog.title}
+            {displayBlog.title}
           </h1>
 
           <div className="flex items-center gap-4 text-gray-400 mb-6">
@@ -92,7 +183,7 @@ const BlogDetailPage = () => {
               <Calendar className="w-4 h-4" />
               <span>
                 {new Date(
-                  blog.publishedAt || blog.createdAt
+                  displayBlog.publishedAt || displayBlog.createdAt
                 ).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
@@ -100,13 +191,13 @@ const BlogDetailPage = () => {
                 })}
               </span>
             </div>
-            <span>By {blog.authorName}</span>
+            <span>{texts.by} {displayBlog.authorName}</span>
           </div>
 
           {/* Tags */}
-          {blog.tags && blog.tags.length > 0 && (
+          {displayBlog.tags && displayBlog.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-6">
-              {blog.tags.map((tag, index) => (
+              {displayBlog.tags.map((tag, index) => (
                 <span
                   key={index}
                   className="px-3 py-1 bg-cyan-500/20 text-cyan-400 text-sm rounded-full border border-cyan-500/30"
@@ -119,11 +210,11 @@ const BlogDetailPage = () => {
         </div>
 
         {/* Featured Image */}
-        {blog.image && (
+        {displayBlog.image && (
           <div className="mb-8">
             <img
-              src={blog.image}
-              alt={blog.title}
+              src={displayBlog.image}
+              alt={displayBlog.title}
               className="w-full h-64 sm:h-96 object-cover rounded-lg"
               onError={(e) => {
                 e.target.src =
@@ -137,7 +228,7 @@ const BlogDetailPage = () => {
         <div className="prose prose-invert max-w-none">
           <div
             className="text-gray-300 leading-relaxed text-base sm:text-lg"
-            dangerouslySetInnerHTML={{ __html: blog.details }}
+            dangerouslySetInnerHTML={{ __html: displayBlog.details }}
           />
         </div>
       </div>

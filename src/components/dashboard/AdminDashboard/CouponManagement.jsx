@@ -1,4 +1,5 @@
 "use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -18,12 +19,90 @@ const initialForm = {
 };
 
 const CouponManagement = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(initialForm);
   const [editingCode, setEditingCode] = useState(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+
+  const ORIGINAL_TEXTS = {
+    heading: "Coupon Management",
+    searchByCode: "Search by code",
+    search: "Search",
+    couponCode: "Coupon Code",
+    description: "Description",
+    discountType: "Discount Type",
+    percentage: "Percentage (%)",
+    fixed: "Fixed ($)",
+    discountValue: "Discount Value",
+    minOrderAmount: "Min Order Amount",
+    maxDiscountAmount: "Max Discount Amount",
+    maxDiscountNone: "Max Discount (0=none)",
+    startDate: "Start Date",
+    endDate: "End Date",
+    selectStartDate: "Select start date",
+    selectEndDate: "Select end date",
+    usageLimit: "Usage Limit",
+    usageLimitUnlimited: "Usage Limit (0=unlimited)",
+    status: "Status",
+    active: "Active",
+    update: "Update",
+    create: "Create",
+    cancel: "Cancel",
+    coupons: "Coupons",
+    loading: "Loading...",
+    code: "Code",
+    type: "Type",
+    value: "Value",
+    min: "Min",
+    max: "Max",
+    usage: "Usage",
+    validTill: "Valid Till",
+    actions: "Actions",
+    edit: "Edit",
+    delete: "Delete",
+    noCoupons: "No coupons",
+    deleteCoupon: "Delete Coupon?",
+    areYouSureDelete: "Are you sure you want to delete coupon \"{code}\"? This action cannot be undone.",
+    yesDeleteIt: "Yes, delete it!",
+    cancelAction: "Cancel",
+    deleted: "Deleted!",
+    couponDeletedSuccessfully: "Coupon has been deleted successfully",
+    error: "Error",
+    deleteFailed: "Delete failed",
+    unexpectedError: "An unexpected error occurred",
+    errorTitle: "Error",
+    failedToSaveCoupon: "Failed to save coupon",
+    updated: "Updated!",
+    created: "Created!",
+    couponUpdated: "Coupon updated successfully",
+    couponCreated: "Coupon created successfully",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  useEffect(() => {
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      const items = Object.values(ORIGINAL_TEXTS);
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const translatedTexts = {};
+      Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+        translatedTexts[key] = translated[index];
+      });
+      setTexts(translatedTexts);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
 
   const loadCoupons = async () => {
     try {
@@ -108,15 +187,15 @@ const CouponManagement = () => {
       if (!data.success) {
         Swal.fire({
           icon: "error",
-          title: "Error",
-          text: data.error || "Failed to save coupon",
+          title: texts.errorTitle,
+          text: data.error || texts.failedToSaveCoupon,
           confirmButtonColor: "#44dcf3",
         });
       } else {
         Swal.fire({
           icon: "success",
-          title: editingCode ? "Updated!" : "Created!",
-          text: `Coupon ${editingCode ? "updated" : "created"} successfully`,
+          title: editingCode ? texts.updated : texts.created,
+          text: editingCode ? texts.couponUpdated : texts.couponCreated,
           confirmButtonColor: "#44dcf3",
           timer: 2000,
           showConfirmButton: false,
@@ -128,8 +207,8 @@ const CouponManagement = () => {
       console.error(e2);
       Swal.fire({
         icon: "error",
-        title: "Error",
-        text: "An unexpected error occurred",
+        title: texts.errorTitle,
+        text: texts.unexpectedError,
         confirmButtonColor: "#44dcf3",
       });
     } finally {
@@ -139,14 +218,14 @@ const CouponManagement = () => {
 
   const remove = async (code) => {
     const result = await Swal.fire({
-      title: "Delete Coupon?",
-      text: `Are you sure you want to delete coupon "${code}"? This action cannot be undone.`,
+      title: texts.deleteCoupon,
+      text: texts.areYouSureDelete.replace("{code}", code),
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#dc2626",
       cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonText: "Cancel",
+      confirmButtonText: texts.yesDeleteIt,
+      cancelButtonText: texts.cancelAction,
     });
 
     if (result.isConfirmed) {
@@ -158,8 +237,8 @@ const CouponManagement = () => {
         if (data.success || res.status === 200) {
           Swal.fire({
             icon: "success",
-            title: "Deleted!",
-            text: "Coupon has been deleted successfully",
+            title: texts.deleted,
+            text: texts.couponDeletedSuccessfully,
             confirmButtonColor: "#44dcf3",
             timer: 2000,
             showConfirmButton: false,
@@ -168,8 +247,8 @@ const CouponManagement = () => {
         } else {
           Swal.fire({
             icon: "error",
-            title: "Error",
-            text: data.error || "Delete failed",
+            title: texts.errorTitle,
+            text: data.error || texts.deleteFailed,
             confirmButtonColor: "#44dcf3",
           });
         }
@@ -177,8 +256,8 @@ const CouponManagement = () => {
         console.error(e);
         Swal.fire({
           icon: "error",
-          title: "Error",
-          text: "An unexpected error occurred",
+          title: texts.errorTitle,
+          text: texts.unexpectedError,
           confirmButtonColor: "#44dcf3",
         });
       }
@@ -192,17 +271,17 @@ const CouponManagement = () => {
 
   return (
     <div className="p-4 text-white font-secondary">
-      <h2 className="text-xl font-bold mb-4">Coupon Management</h2>
+      <h2 className="text-xl font-bold mb-4">{texts.heading}</h2>
 
       <form onSubmit={onSearch} className="mb-4 flex gap-2">
         <input
           className="bg-black border border-white/20 rounded px-3 py-2"
-          placeholder="Search by code"
+          placeholder={texts.searchByCode}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
         <button className="cursor-pointer bg-primary px-4 rounded">
-          Search
+          {texts.search}
         </button>
       </form>
 
@@ -211,7 +290,7 @@ const CouponManagement = () => {
         className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-black/50 border border-white/10 p-4 rounded"
       >
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">Coupon Code *</label>
+          <label className="text-sm text-gray-300">{texts.couponCode} *</label>
           <input
             name="code"
             placeholder="CODE"
@@ -224,10 +303,10 @@ const CouponManagement = () => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">Description</label>
+          <label className="text-sm text-gray-300">{texts.description}</label>
           <input
             name="description"
-            placeholder="Description"
+            placeholder={texts.description}
             value={form.description}
             onChange={onChange}
             className="bg-black border border-white/20 rounded px-3 py-2 w-full"
@@ -235,24 +314,24 @@ const CouponManagement = () => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">Discount Type</label>
+          <label className="text-sm text-gray-300">{texts.discountType}</label>
           <select
             name="discountType"
             value={form.discountType}
             onChange={onChange}
             className="bg-black border border-white/20 rounded px-3 py-2 w-full"
           >
-            <option value="percentage">Percentage (%)</option>
-            <option value="fixed">Fixed ($)</option>
+            <option value="percentage">{texts.percentage}</option>
+            <option value="fixed">{texts.fixed}</option>
           </select>
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">Discount Value *</label>
+          <label className="text-sm text-gray-300">{texts.discountValue} *</label>
           <input
             type="number"
             name="discountValue"
-            placeholder="Discount Value"
+            placeholder={texts.discountValue}
             value={form.discountValue}
             onChange={onChange}
             className="bg-black border border-white/20 rounded px-3 py-2 w-full"
@@ -260,11 +339,11 @@ const CouponManagement = () => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">Min Order Amount</label>
+          <label className="text-sm text-gray-300">{texts.minOrderAmount}</label>
           <input
             type="number"
             name="minOrderAmount"
-            placeholder="Min Order Amount"
+            placeholder={texts.minOrderAmount}
             value={form.minOrderAmount}
             onChange={onChange}
             className="bg-black border border-white/20 rounded px-3 py-2 w-full"
@@ -272,11 +351,11 @@ const CouponManagement = () => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">Max Discount Amount</label>
+          <label className="text-sm text-gray-300">{texts.maxDiscountAmount}</label>
           <input
             type="number"
             name="maxDiscountAmount"
-            placeholder="Max Discount (0=none)"
+            placeholder={texts.maxDiscountNone}
             value={form.maxDiscountAmount}
             onChange={onChange}
             className="bg-black border border-white/20 rounded px-3 py-2 w-full"
@@ -284,7 +363,7 @@ const CouponManagement = () => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">Start Date</label>
+          <label className="text-sm text-gray-300">{texts.startDate}</label>
           <DatePicker
             selected={form.startDate ? new Date(form.startDate) : null}
             onChange={(date) =>
@@ -296,14 +375,14 @@ const CouponManagement = () => {
               })
             }
             className="bg-black border border-white/20 rounded px-3 py-2 w-full text-white"
-            placeholderText="Select start date"
+            placeholderText={texts.selectStartDate}
             dateFormat="MMM dd, yyyy"
             isClearable
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">End Date</label>
+          <label className="text-sm text-gray-300">{texts.endDate}</label>
           <DatePicker
             selected={form.endDate ? new Date(form.endDate) : null}
             onChange={(date) =>
@@ -315,18 +394,18 @@ const CouponManagement = () => {
               })
             }
             className="bg-black border border-white/20 rounded px-3 py-2 w-full text-white"
-            placeholderText="Select end date"
+            placeholderText={texts.selectEndDate}
             dateFormat="MMM dd, yyyy"
             isClearable
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">Usage Limit</label>
+          <label className="text-sm text-gray-300">{texts.usageLimit}</label>
           <input
             type="number"
             name="usageLimit"
-            placeholder="Usage Limit (0=unlimited)"
+            placeholder={texts.usageLimitUnlimited}
             value={form.usageLimit}
             onChange={onChange}
             className="bg-black border border-white/20 rounded px-3 py-2 w-full"
@@ -334,7 +413,7 @@ const CouponManagement = () => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">Status</label>
+          <label className="text-sm text-gray-300">{texts.status}</label>
           <label className="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
@@ -343,7 +422,7 @@ const CouponManagement = () => {
               onChange={onChange}
               className="rounded"
             />
-            <span className="text-sm">Active</span>
+            <span className="text-sm">{texts.active}</span>
           </label>
         </div>
 
@@ -352,7 +431,7 @@ const CouponManagement = () => {
             disabled={saving}
             className="cursor-pointer bg-primary px-4 py-2 rounded"
           >
-            {editingCode ? "Update" : "Create"}
+            {editingCode ? texts.update : texts.create}
           </button>
           {editingCode && (
             <button
@@ -360,30 +439,30 @@ const CouponManagement = () => {
               onClick={resetForm}
               className="bg-white/10 px-4 py-2 rounded"
             >
-              Cancel
+              {texts.cancel}
             </button>
           )}
         </div>
       </form>
 
       <div className="mt-6">
-        <h3 className="font-semibold mb-2">Coupons ({coupons.length})</h3>
+        <h3 className="font-semibold mb-2">{texts.coupons} ({coupons.length})</h3>
         {loading ? (
-          <div>Loading...</div>
+          <div>{texts.loading}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm border border-white/10">
               <thead className="bg-white/5">
                 <tr>
-                  <th className="text-left p-2">Code</th>
-                  <th className="text-left p-2">Type</th>
-                  <th className="text-left p-2">Value</th>
-                  <th className="text-left p-2">Min</th>
-                  <th className="text-left p-2">Max</th>
-                  <th className="text-left p-2">Usage</th>
-                  <th className="text-left p-2">Active</th>
-                  <th className="text-left p-2">Valid Till</th>
-                  <th className="text-left p-2">Actions</th>
+                  <th className="text-left p-2">{texts.code}</th>
+                  <th className="text-left p-2">{texts.type}</th>
+                  <th className="text-left p-2">{texts.value}</th>
+                  <th className="text-left p-2">{texts.min}</th>
+                  <th className="text-left p-2">{texts.max}</th>
+                  <th className="text-left p-2">{texts.usage}</th>
+                  <th className="text-left p-2">{texts.active}</th>
+                  <th className="text-left p-2">{texts.validTill}</th>
+                  <th className="text-left p-2">{texts.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -414,13 +493,13 @@ const CouponManagement = () => {
                         className="bg-white/10 px-3 py-1 rounded"
                         onClick={() => startEdit(c)}
                       >
-                        Edit
+                        {texts.edit}
                       </button>
                       <button
                         className="bg-red-600 px-3 py-1 rounded"
                         onClick={() => remove(c.code)}
                       >
-                        Delete
+                        {texts.delete}
                       </button>
                     </td>
                   </tr>
@@ -428,7 +507,7 @@ const CouponManagement = () => {
                 {coupons.length === 0 && (
                   <tr>
                     <td className="p-3 text-center" colSpan={9}>
-                      No coupons
+                      {texts.noCoupons}
                     </td>
                   </tr>
                 )}

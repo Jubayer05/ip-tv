@@ -2,6 +2,7 @@
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Calendar,
   Camera,
@@ -19,10 +20,47 @@ import Swal from "sweetalert2";
 
 const UpdateProfile = () => {
   const { user } = useAuth();
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "Profile Settings",
+    subtitle: "Manage your account information and preferences",
+    successMessage: "Profile updated successfully! 🎉",
+    invalidFileType: "Invalid file type",
+    invalidFileTypeMessage: "Please select an image file",
+    fileTooLarge: "File too large",
+    fileTooLargeMessage: "Please select a file smaller than 5MB",
+    photoUploaded: "Photo uploaded",
+    photoUploadedMessage: "Profile photo updated successfully",
+    uploadFailed: "Upload failed",
+    uploadFailedMessage: "Failed to upload photo. Please try again.",
+    networkError: "Network error. Please try again.",
+    failedToUpdate: "Failed to update profile",
+    firstName: "First Name",
+    firstNamePlaceholder: "Enter first name",
+    lastName: "Last Name",
+    lastNamePlaceholder: "Enter last name",
+    username: "Username",
+    usernamePlaceholder: "Enter username",
+    phoneNumber: "Phone Number",
+    phonePlaceholder: "Enter phone number",
+    notProvided: "Not provided",
+    country: "Country",
+    countryPlaceholder: "Enter country",
+    dateOfBirth: "Date of Birth",
+    emailAddress: "Email Address",
+    emailCannotBeChanged: "Email address cannot be changed",
+    clickCameraIcon: "Click the camera icon to upload a new photo",
+    editProfile: "Edit Profile",
+    saving: "Saving...",
+    saveChanges: "Save Changes",
+    cancel: "Cancel",
+  };
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -37,6 +75,33 @@ const UpdateProfile = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [originalData, setOriginalData] = useState({});
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
 
   // Fetch profile data on component mount
   useEffect(() => {
@@ -95,8 +160,8 @@ const UpdateProfile = () => {
     if (!file.type.startsWith("image/")) {
       Swal.fire({
         icon: "error",
-        title: "Invalid file type",
-        text: "Please select an image file",
+        title: texts.invalidFileType,
+        text: texts.invalidFileTypeMessage,
         confirmButtonColor: "#44dcf3",
       });
       return;
@@ -106,8 +171,8 @@ const UpdateProfile = () => {
     if (file.size > 5 * 1024 * 1024) {
       Swal.fire({
         icon: "error",
-        title: "File too large",
-        text: "Please select a file smaller than 5MB",
+        title: texts.fileTooLarge,
+        text: texts.fileTooLargeMessage,
         confirmButtonColor: "#44dcf3",
       });
       return;
@@ -135,8 +200,8 @@ const UpdateProfile = () => {
 
         Swal.fire({
           icon: "success",
-          title: "Photo uploaded",
-          text: "Profile photo updated successfully",
+          title: texts.photoUploaded,
+          text: texts.photoUploadedMessage,
           confirmButtonColor: "#44dcf3",
           timer: 1500,
           showConfirmButton: false,
@@ -148,8 +213,8 @@ const UpdateProfile = () => {
       console.error("Upload error:", error);
       Swal.fire({
         icon: "error",
-        title: "Upload failed",
-        text: "Failed to upload photo. Please try again.",
+        title: texts.uploadFailed,
+        text: texts.uploadFailedMessage,
         confirmButtonColor: "#44dcf3",
       });
     } finally {
@@ -187,10 +252,10 @@ const UpdateProfile = () => {
         setIsEditing(false);
         setTimeout(() => setSuccess(false), 3000);
       } else {
-        setError(data.error || "Failed to update profile");
+        setError(data.error || texts.failedToUpdate);
       }
     } catch (error) {
-      setError("Network error. Please try again.");
+      setError(texts.networkError);
     } finally {
       setLoading(false);
     }
@@ -220,18 +285,16 @@ const UpdateProfile = () => {
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
-          Profile Settings
+          {texts.heading}
         </h1>
-        <p className="text-gray-400 text-sm sm:text-base">
-          Manage your account information and preferences
-        </p>
+        <p className="text-gray-400 text-sm sm:text-base">{texts.subtitle}</p>
       </div>
 
       {/* Success Message */}
       {success && (
         <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-6">
           <p className="text-green-400 text-sm text-center">
-            Profile updated successfully! 🎉
+            {texts.successMessage}
           </p>
         </div>
       )}
@@ -284,7 +347,7 @@ const UpdateProfile = () => {
 
           {isEditing && (
             <p className="text-xs text-gray-500 mt-2">
-              Click the camera icon to upload a new photo
+              {texts.clickCameraIcon}
             </p>
           )}
         </div>
@@ -296,13 +359,13 @@ const UpdateProfile = () => {
             {/* First Name */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                First Name
+                {texts.firstName}
               </label>
               <Input
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleInputChange}
-                placeholder="Enter first name"
+                placeholder={texts.firstNamePlaceholder}
                 disabled={!isEditing}
                 className="w-full"
               />
@@ -311,13 +374,13 @@ const UpdateProfile = () => {
             {/* Last Name */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Last Name
+                {texts.lastName}
               </label>
               <Input
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleInputChange}
-                placeholder="Enter last name"
+                placeholder={texts.lastNamePlaceholder}
                 disabled={!isEditing}
                 className="w-full"
               />
@@ -327,13 +390,13 @@ const UpdateProfile = () => {
           {/* Username */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Username
+              {texts.username}
             </label>
             <Input
               name="username"
               value={formData.username}
               onChange={handleInputChange}
-              placeholder="Enter username"
+              placeholder={texts.usernamePlaceholder}
               disabled={!isEditing}
               className="w-full"
             />
@@ -344,7 +407,7 @@ const UpdateProfile = () => {
             {/* Phone */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Phone Number
+                {texts.phoneNumber}
               </label>
               {isEditing ? (
                 <PhoneInput
@@ -353,14 +416,14 @@ const UpdateProfile = () => {
                   defaultCountry="US"
                   value={formData.phone}
                   onChange={handlePhoneChange}
-                  placeholder="Enter phone number"
+                  placeholder={texts.phonePlaceholder}
                   className="w-full pl-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-cyan-400 focus:outline-none"
                 />
               ) : (
                 <div className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
                   <Phone size={16} className="text-gray-400" />
                   <span className="text-gray-300">
-                    {formData.phone || "Not provided"}
+                    {formData.phone || texts.notProvided}
                   </span>
                 </div>
               )}
@@ -369,13 +432,13 @@ const UpdateProfile = () => {
             {/* Country */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Country
+                {texts.country}
               </label>
               <Input
                 name="country"
                 value={formData.country}
                 onChange={handleInputChange}
-                placeholder="Enter country"
+                placeholder={texts.countryPlaceholder}
                 disabled={!isEditing}
                 className="w-full"
               />
@@ -385,7 +448,7 @@ const UpdateProfile = () => {
           {/* Date of Birth */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Date of Birth
+              {texts.dateOfBirth}
             </label>
             {isEditing ? (
               <Input
@@ -403,7 +466,7 @@ const UpdateProfile = () => {
                 <span className="text-gray-300">
                   {formData.dateOfBirth
                     ? new Date(formData.dateOfBirth).toLocaleDateString()
-                    : "Not provided"}
+                    : texts.notProvided}
                 </span>
               </div>
             )}
@@ -412,14 +475,14 @@ const UpdateProfile = () => {
           {/* Email (Read-only) */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Email Address
+              {texts.emailAddress}
             </label>
             <div className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
               <Mail size={16} className="text-gray-400" />
               <span className="text-gray-300">{user?.email}</span>
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Email address cannot be changed
+              {texts.emailCannotBeChanged}
             </p>
           </div>
 
@@ -432,7 +495,7 @@ const UpdateProfile = () => {
                 onClick={() => setIsEditing(true)}
                 className="flex-1"
               >
-                Edit Profile
+                {texts.editProfile}
               </Button>
             ) : (
               <>
@@ -445,12 +508,12 @@ const UpdateProfile = () => {
                   {loading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Saving...
+                      {texts.saving}
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
                       <Save size={16} />
-                      Save Changes
+                      {texts.saveChanges}
                     </div>
                   )}
                 </Button>
@@ -463,7 +526,7 @@ const UpdateProfile = () => {
                 >
                   <div className="flex items-center gap-2">
                     <X size={16} />
-                    Cancel
+                    {texts.cancel}
                   </div>
                 </Button>
               </>

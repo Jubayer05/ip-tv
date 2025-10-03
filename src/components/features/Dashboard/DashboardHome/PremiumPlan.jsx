@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Swal from "sweetalert2";
 import ShoppingCartModal from "./MyCart";
 
 const PremiumPlanCard = () => {
@@ -19,7 +18,6 @@ const PremiumPlanCard = () => {
   const ORIGINAL_VALID_TILL = "Valid till 28 Aug";
   const ORIGINAL_PER_MONTH = "/Per month";
   const ORIGINAL_QUICK_REORDER = "Quick Reorder";
-  const ORIGINAL_CANCEL_PLAN = "Cancel Plan";
   const ORIGINAL_NO_PLAN = "No Active Plan";
   const ORIGINAL_GET_PLAN = "Get Plan";
 
@@ -27,7 +25,6 @@ const PremiumPlanCard = () => {
   const [validTill, setValidTill] = useState(ORIGINAL_VALID_TILL);
   const [perMonth, setPerMonth] = useState(ORIGINAL_PER_MONTH);
   const [quickReorder, setQuickReorder] = useState(ORIGINAL_QUICK_REORDER);
-  const [cancelPlan, setCancelPlan] = useState(ORIGINAL_CANCEL_PLAN);
   const [noPlan, setNoPlan] = useState(ORIGINAL_NO_PLAN);
   const [getPlan, setGetPlan] = useState(ORIGINAL_GET_PLAN);
 
@@ -67,7 +64,6 @@ const PremiumPlanCard = () => {
         ORIGINAL_VALID_TILL,
         ORIGINAL_PER_MONTH,
         ORIGINAL_QUICK_REORDER,
-        ORIGINAL_CANCEL_PLAN,
         ORIGINAL_NO_PLAN,
         ORIGINAL_GET_PLAN,
       ];
@@ -88,7 +84,6 @@ const PremiumPlanCard = () => {
       setValidTill(tValidTill);
       setPerMonth(tPerMonth);
       setQuickReorder(tQuickReorder);
-      setCancelPlan(tCancelPlan);
       setNoPlan(tNoPlan);
       setGetPlan(tGetPlan);
     })();
@@ -104,62 +99,6 @@ const PremiumPlanCard = () => {
 
   const handleGetPlan = () => {
     router.push("/packages");
-  };
-
-  const handleCancelPlan = async () => {
-    const result = await Swal.fire({
-      title: "Cancel Plan?",
-      text: "Are you sure you want to cancel your current plan? This action cannot be undone.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, cancel it!",
-      cancelButtonText: "No, keep it",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const response = await fetch(
-          `/api/users/current-plan?email=${encodeURIComponent(user.email)}`,
-          {
-            method: "DELETE",
-          }
-        );
-
-        const data = await response.json();
-
-        if (data.success) {
-          Swal.fire({
-            title: "Plan Cancelled!",
-            text: "Your plan has been cancelled successfully.",
-            icon: "success",
-          });
-
-          // Refresh plan data
-          const planResponse = await fetch(
-            `/api/users/current-plan?email=${encodeURIComponent(user.email)}`
-          );
-          const planData = await planResponse.json();
-          if (planData.success) {
-            setPlanData(planData.plan);
-          }
-        } else {
-          Swal.fire({
-            title: "Error!",
-            text: data.error || "Failed to cancel plan",
-            icon: "error",
-          });
-        }
-      } catch (error) {
-        console.error("Error cancelling plan:", error);
-        Swal.fire({
-          title: "Error!",
-          text: "Failed to cancel plan. Please try again.",
-          icon: "error",
-        });
-      }
-    }
   };
 
   const formatDate = (dateString) => {
@@ -229,13 +168,6 @@ const PremiumPlanCard = () => {
                 className="text-xs sm:text-sm px-4 sm:px-6 py-2 sm:py-3"
               >
                 {quickReorder}
-              </Button>
-
-              <Button
-                onClick={handleCancelPlan}
-                className="border border-white/25 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full font-medium text-xs sm:text-sm bg-white/10 hover:bg-white hover:text-black transition-colors"
-              >
-                {cancelPlan}
               </Button>
             </>
           ) : (

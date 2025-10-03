@@ -7,9 +7,10 @@ export async function GET() {
   try {
     await connectToDatabase();
 
-    const settings = await PaymentSettings.find()
-      .sort({ sortOrder: 1, createdAt: 1 })
-      .select("-apiKey -apiSecret"); // Don't expose sensitive data
+    const settings = await PaymentSettings.find().sort({
+      sortOrder: 1,
+      createdAt: 1,
+    });
 
     return NextResponse.json({
       success: true,

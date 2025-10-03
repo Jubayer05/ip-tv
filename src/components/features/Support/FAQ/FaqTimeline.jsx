@@ -39,7 +39,10 @@ const FaqTimeline = () => {
 
   useEffect(() => {
     // Only translate when language is loaded and not English
-    if (!isLanguageLoaded || language.code === "en") return;
+    if (!isLanguageLoaded || language?.code === "en") {
+      setTexts(ORIGINAL_TEXTS);
+      return;
+    }
 
     let isMounted = true;
     (async () => {
@@ -81,7 +84,7 @@ const FaqTimeline = () => {
     return () => {
       isMounted = false;
     };
-  }, [language.code, isLanguageLoaded, translate]);
+  }, [language?.code, isLanguageLoaded, translate]);
 
   return (
     <div className="text-white py-8 sm:py-12 md:py-16 px-4 sm:px-6 md:px-8 font-secondary">

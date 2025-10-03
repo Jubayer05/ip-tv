@@ -27,6 +27,7 @@ export async function POST(request) {
     await connectToDatabase();
 
     const { token, password, firebaseUid } = await request.json();
+    console.log(firebaseUid);
     if (!token || !password) {
       return NextResponse.json(
         { error: "Token and password are required" },
@@ -39,6 +40,8 @@ export async function POST(request) {
       used: false,
       expiresAt: { $gt: new Date() },
     });
+
+    console.log(verificationTokenDoc);
 
     if (!verificationTokenDoc) {
       return NextResponse.json(
@@ -74,8 +77,14 @@ export async function POST(request) {
         username: existingUser.profile?.username || username,
         country: verificationTokenDoc.country || "Unknown",
       };
-      if (firebaseUid && !existingUser.firebaseUid) {
-        existingUser.firebaseUid = firebaseUid;
+      if (firebaseUid && !existingUser.firebase?.uid) {
+        existingUser.firebase = {
+          ...(existingUser.firebase || {}),
+          uid: firebaseUid,
+          provider: existingUser.firebase?.provider || "email",
+          emailVerified: true,
+        };
+        existingUser.firebaseUid = firebaseUid; // Add this line
       }
       await existingUser.save();
 
@@ -100,9 +109,8 @@ export async function POST(request) {
     }
 
     // Create new user
-    const user = new User({
+    const userData = {
       email,
-      firebaseUid: firebaseUid || undefined,
       profile: {
         firstName: firstName || email.split("@")[0],
         lastName: lastName || "",
@@ -116,7 +124,23 @@ export async function POST(request) {
       role: "user",
       isActive: true,
       lastLogin: new Date(),
-    });
+    };
+
+    // Add firebase object with uid if firebaseUid is provided
+    if (
+      firebaseUid &&
+      typeof firebaseUid === "string" &&
+      firebaseUid.trim() !== ""
+    ) {
+      userData.firebase = {
+        uid: firebaseUid,
+        provider: "email",
+        emailVerified: true,
+      };
+      userData.firebaseUid = firebaseUid; // Add this line
+    }
+
+    const user = new User(userData);
 
     // If a referral code was provided, set referredBy
     const rawCode = verificationTokenDoc.referralCode;
@@ -158,7 +182,7 @@ export async function GET(_req, { params }) {
   try {
     await connectToDatabase();
 
-    const { token } = params;
+    const { token } = await params;
 
     if (!token) {
       return NextResponse.json(

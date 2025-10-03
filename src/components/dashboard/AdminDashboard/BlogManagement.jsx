@@ -1,11 +1,13 @@
 "use client";
 import RichTextEditor from "@/components/ui/RichTextEditor";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Upload, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FaEdit, FaPlus, FaSave, FaTimes, FaTrash } from "react-icons/fa";
 import Swal from "sweetalert2";
 
 const BlogManagement = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -23,6 +25,91 @@ const BlogManagement = () => {
     isPublished: false,
   });
   const [selectedFile, setSelectedFile] = useState(null);
+
+  const ORIGINAL_TEXTS = {
+    heading: "Blog Management",
+    manageBlogs: "Manage Blogs",
+    allBlogs: "All Blogs",
+    published: "Published",
+    drafts: "Drafts",
+    createBlog: "Create Blog",
+    editBlog: "Edit Blog",
+    createNewBlog: "Create New Blog",
+    title: "Title",
+    slug: "Slug",
+    authorName: "Author Name",
+    tags: "Tags",
+    image: "Image",
+    content: "Content",
+    publishImmediately: "Publish immediately",
+    update: "Update",
+    create: "Create",
+    cancel: "Cancel",
+    chooseImage: "Choose Image",
+    currentImage: "Current image:",
+    preview: "Preview:",
+    maxFileSize: "Max file size: 5MB. Supported formats: JPG, PNG, GIF",
+    urlFriendlyVersion: "URL-friendly version of the title",
+    enterBlogTitle: "Enter blog title",
+    blogUrlSlug: "blog-url-slug",
+    enterAuthorName: "Enter author name",
+    enterTagsSeparated: "Enter tags separated by commas",
+    writeBlogContent: "Write your blog content...",
+    specialNoteForCustomers: "Special note for customers",
+    enterTheQuestion: "Enter the question",
+    enterTheAnswer: "Enter the answer",
+    displayOrder: "Display Order",
+    active: "Active",
+    noBlogsFound: "No blogs found.",
+    loadingBlogs: "Loading blogs...",
+    fileTooLarge: "File too large",
+    pleaseSelectSmallerFile: "Please select a file smaller than 5MB",
+    invalidFileType: "Invalid file type",
+    pleaseSelectImageFile: "Please select an image file",
+    validationError: "Validation Error",
+    pleaseFillRequiredFields: "Please fill in all required fields.",
+    blogUpdated: "Blog Updated!",
+    blogCreated: "Blog Created!",
+    operationFailed: "Operation Failed",
+    networkError: "Network Error",
+    pleaseTryAgainLater: "Please try again later.",
+    areYouSure: "Are you sure?",
+    actionCannotBeUndone: "This action cannot be undone!",
+    yesDeleteIt: "Yes, delete it!",
+    blogDeleted: "Blog Deleted!",
+    deletionFailed: "Deletion Failed",
+    blogUnpublished: "Blog Unpublished!",
+    blogPublished: "Blog Published!",
+    unpublish: "Unpublish",
+    publish: "Publish",
+    edit: "Edit",
+    delete: "Delete",
+    previous: "Previous",
+    next: "Next",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  useEffect(() => {
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      const items = Object.values(ORIGINAL_TEXTS);
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const translatedTexts = {};
+      Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+        translatedTexts[key] = translated[index];
+      });
+      setTexts(translatedTexts);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
 
   useEffect(() => {
     fetchBlogs();
@@ -62,8 +149,8 @@ const BlogManagement = () => {
       if (file.size > 5 * 1024 * 1024) {
         Swal.fire({
           icon: "error",
-          title: "File too large",
-          text: "Please select a file smaller than 5MB",
+          title: texts.fileTooLarge,
+          text: texts.pleaseSelectSmallerFile,
           confirmButtonColor: "#44dcf3",
         });
         return;
@@ -72,8 +159,8 @@ const BlogManagement = () => {
       if (!file.type.startsWith("image/")) {
         Swal.fire({
           icon: "error",
-          title: "Invalid file type",
-          text: "Please select an image file",
+          title: texts.invalidFileType,
+          text: texts.pleaseSelectImageFile,
           confirmButtonColor: "#44dcf3",
         });
         return;
@@ -165,8 +252,8 @@ const BlogManagement = () => {
     if (!formData.title || !formData.details || !formData.authorName) {
       Swal.fire({
         icon: "error",
-        title: "Validation Error",
-        text: "Please fill in all required fields.",
+        title: texts.validationError,
+        text: texts.pleaseFillRequiredFields,
       });
       return;
     }
@@ -204,7 +291,7 @@ const BlogManagement = () => {
       if (data.success) {
         Swal.fire({
           icon: "success",
-          title: editingBlog ? "Blog Updated!" : "Blog Created!",
+          title: editingBlog ? texts.blogUpdated : texts.blogCreated,
           text: data.message,
           timer: 2000,
           showConfirmButton: false,
@@ -217,7 +304,7 @@ const BlogManagement = () => {
       } else {
         Swal.fire({
           icon: "error",
-          title: "Operation Failed",
+          title: texts.operationFailed,
           text: data.error,
         });
       }
@@ -225,21 +312,21 @@ const BlogManagement = () => {
       console.error("Error saving blog:", error);
       Swal.fire({
         icon: "error",
-        title: "Network Error",
-        text: "Please try again later.",
+        title: texts.networkError,
+        text: texts.pleaseTryAgainLater,
       });
     }
   };
 
   const handleDelete = async (blogId) => {
     const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "This action cannot be undone!",
+      title: texts.areYouSure,
+      text: texts.actionCannotBeUndone,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
+      confirmButtonText: texts.yesDeleteIt,
     });
 
     if (result.isConfirmed) {
@@ -253,7 +340,7 @@ const BlogManagement = () => {
         if (data.success) {
           Swal.fire({
             icon: "success",
-            title: "Blog Deleted!",
+            title: texts.blogDeleted,
             text: data.message,
             timer: 2000,
             showConfirmButton: false,
@@ -262,7 +349,7 @@ const BlogManagement = () => {
         } else {
           Swal.fire({
             icon: "error",
-            title: "Deletion Failed",
+            title: texts.deletionFailed,
             text: data.error,
           });
         }
@@ -270,8 +357,8 @@ const BlogManagement = () => {
         console.error("Error deleting blog:", error);
         Swal.fire({
           icon: "error",
-          title: "Network Error",
-          text: "Please try again later.",
+          title: texts.networkError,
+          text: texts.pleaseTryAgainLater,
         });
       }
     }
@@ -294,7 +381,7 @@ const BlogManagement = () => {
       if (data.success) {
         Swal.fire({
           icon: "success",
-          title: currentStatus ? "Blog Unpublished!" : "Blog Published!",
+          title: currentStatus ? texts.blogUnpublished : texts.blogPublished,
           text: data.message,
           timer: 2000,
           showConfirmButton: false,
@@ -303,7 +390,7 @@ const BlogManagement = () => {
       } else {
         Swal.fire({
           icon: "error",
-          title: "Operation Failed",
+          title: texts.operationFailed,
           text: data.error,
         });
       }
@@ -311,8 +398,8 @@ const BlogManagement = () => {
       console.error("Error updating blog status:", error);
       Swal.fire({
         icon: "error",
-        title: "Network Error",
-        text: "Please try again later.",
+        title: texts.networkError,
+        text: texts.pleaseTryAgainLater,
       });
     }
   };
@@ -322,7 +409,7 @@ const BlogManagement = () => {
       <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-7xl mx-auto font-secondary">
         <div className="flex items-center justify-center h-32">
           <div className="text-gray-400 text-sm text-center">
-            Loading blogs...
+            {texts.loadingBlogs}
           </div>
         </div>
       </div>
@@ -331,11 +418,13 @@ const BlogManagement = () => {
 
   return (
     <div className="mt-4 sm:mt-6 font-secondary">
-      <h2 className="text-4xl font-bold text-white mb-4">Blog Management</h2>
+      <h2 className="text-4xl font-bold text-white mb-4">{texts.heading}</h2>
 
       <div className="border border-[#212121] bg-black rounded-[15px] p-6">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-semibold text-white">Manage Blogs</h3>
+          <h3 className="text-2xl font-semibold text-white">
+            {texts.manageBlogs}
+          </h3>
 
           <div className="flex items-center space-x-4">
             <select
@@ -346,16 +435,16 @@ const BlogManagement = () => {
               }}
               className="px-4 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition-colors"
             >
-              <option value="all">All Blogs</option>
-              <option value="published">Published</option>
-              <option value="draft">Drafts</option>
+              <option value="all">{texts.allBlogs}</option>
+              <option value="published">{texts.published}</option>
+              <option value="draft">{texts.drafts}</option>
             </select>
 
             <button
               onClick={handleCreate}
               className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors flex items-center gap-2"
             >
-              <FaPlus /> Create Blog
+              <FaPlus /> {texts.createBlog}
             </button>
           </div>
         </div>
@@ -364,27 +453,27 @@ const BlogManagement = () => {
         {showForm && (
           <div className="mb-8 bg-[#0c171c] rounded-lg border border-[#212121] p-6">
             <h4 className="text-xl font-semibold text-white mb-4">
-              {editingBlog ? "Edit Blog" : "Create New Blog"}
+              {editingBlog ? texts.editBlog : texts.createNewBlog}
             </h4>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Title *
+                    {texts.title} *
                   </label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={handleTitleChange}
                     className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
-                    placeholder="Enter blog title"
+                    placeholder={texts.enterBlogTitle}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Slug *
+                    {texts.slug} *
                   </label>
                   <input
                     type="text"
@@ -393,10 +482,10 @@ const BlogManagement = () => {
                       setFormData({ ...formData, slug: e.target.value })
                     }
                     className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
-                    placeholder="blog-url-slug"
+                    placeholder={texts.blogUrlSlug}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    URL-friendly version of the title
+                    {texts.urlFriendlyVersion}
                   </p>
                 </div>
               </div>
@@ -404,7 +493,7 @@ const BlogManagement = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Author Name *
+                    {texts.authorName} *
                   </label>
                   <input
                     type="text"
@@ -413,13 +502,13 @@ const BlogManagement = () => {
                       setFormData({ ...formData, authorName: e.target.value })
                     }
                     className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
-                    placeholder="Enter author name"
+                    placeholder={texts.enterAuthorName}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Tags
+                    {texts.tags}
                   </label>
                   <input
                     type="text"
@@ -428,14 +517,14 @@ const BlogManagement = () => {
                       setFormData({ ...formData, tags: e.target.value })
                     }
                     className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
-                    placeholder="Enter tags separated by commas"
+                    placeholder={texts.enterTagsSeparated}
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Image *
+                  {texts.image} *
                 </label>
 
                 {/* File Upload Section */}
@@ -453,7 +542,7 @@ const BlogManagement = () => {
                       className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded cursor-pointer transition-colors"
                     >
                       <Upload className="w-4 h-4" />
-                      Choose Image
+                      {texts.chooseImage}
                     </label>
                     {selectedFile && (
                       <div className="flex items-center gap-2 text-sm">
@@ -475,7 +564,7 @@ const BlogManagement = () => {
                   {editingBlog && formData.image && !selectedFile && (
                     <div className="mt-2">
                       <p className="text-sm text-gray-400 mb-2">
-                        Current image:
+                        {texts.currentImage}
                       </p>
                       <img
                         src={formData.image}
@@ -491,7 +580,9 @@ const BlogManagement = () => {
                   {/* Show preview of selected file */}
                   {selectedFile && (
                     <div className="mt-2">
-                      <p className="text-sm text-gray-400 mb-2">Preview:</p>
+                      <p className="text-sm text-gray-400 mb-2">
+                        {texts.preview}
+                      </p>
                       <img
                         src={URL.createObjectURL(selectedFile)}
                         alt="Preview"
@@ -500,22 +591,20 @@ const BlogManagement = () => {
                     </div>
                   )}
 
-                  <p className="text-xs text-gray-400">
-                    Max file size: 5MB. Supported formats: JPG, PNG, GIF
-                  </p>
+                  <p className="text-xs text-gray-400">{texts.maxFileSize}</p>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Content *
+                  {texts.content} *
                 </label>
                 <RichTextEditor
                   value={formData.details}
                   onDataChange={(content) =>
                     setFormData({ ...formData, details: content })
                   }
-                  placeholder="Write your blog content..."
+                  placeholder={texts.writeBlogContent}
                   className="bg-[#0c171c]"
                 />
               </div>
@@ -533,7 +622,9 @@ const BlogManagement = () => {
                     }
                     className="rounded border-white/15 bg-[#0c171c] text-cyan-500 focus:ring-cyan-400"
                   />
-                  <span className="text-gray-300">Publish immediately</span>
+                  <span className="text-gray-300">
+                    {texts.publishImmediately}
+                  </span>
                 </label>
               </div>
 
@@ -542,7 +633,7 @@ const BlogManagement = () => {
                   type="submit"
                   className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center gap-2"
                 >
-                  <FaSave /> {editingBlog ? "Update" : "Create"}
+                  <FaSave /> {editingBlog ? texts.update : texts.create}
                 </button>
                 <button
                   type="button"
@@ -552,7 +643,7 @@ const BlogManagement = () => {
                   }}
                   className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors flex items-center gap-2"
                 >
-                  <FaTimes /> Cancel
+                  <FaTimes /> {texts.cancel}
                 </button>
               </div>
             </form>
@@ -562,7 +653,7 @@ const BlogManagement = () => {
         {/* Blogs List */}
         {blogs.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">No blogs found.</p>
+            <p className="text-gray-400 text-lg">{texts.noBlogsFound}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -613,7 +704,7 @@ const BlogManagement = () => {
                           : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
                       }`}
                     >
-                      {blog.isPublished ? "Published" : "Draft"}
+                      {blog.isPublished ? texts.published : texts.drafts}
                     </span>
                   </div>
                 </div>
@@ -630,21 +721,21 @@ const BlogManagement = () => {
                           : "bg-green-600 text-white hover:bg-green-700"
                       }`}
                     >
-                      {blog.isPublished ? "Unpublish" : "Publish"}
+                      {blog.isPublished ? texts.unpublish : texts.publish}
                     </button>
 
                     <button
                       onClick={() => handleEdit(blog)}
                       className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-semibold flex items-center gap-1"
                     >
-                      <FaEdit className="mr-1" /> Edit
+                      <FaEdit className="mr-1" /> {texts.edit}
                     </button>
 
                     <button
                       onClick={() => handleDelete(blog._id)}
                       className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-semibold flex items-center gap-1"
                     >
-                      <FaTrash className="mr-1" /> Delete
+                      <FaTrash className="mr-1" /> {texts.delete}
                     </button>
                   </div>
 
@@ -664,7 +755,7 @@ const BlogManagement = () => {
                 disabled={currentPage === 1}
                 className="px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-[#1a1a1a] transition-colors"
               >
-                Previous
+                {texts.previous}
               </button>
 
               {[...Array(totalPages)].map((_, index) => (
@@ -688,7 +779,7 @@ const BlogManagement = () => {
                 disabled={currentPage === totalPages}
                 className="px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-[#1a1a1a] transition-colors"
               >
-                Next
+                {texts.next}
               </button>
             </div>
           </div>

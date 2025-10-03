@@ -95,11 +95,19 @@ export function LanguageProvider({ children }) {
           target: language.code,
           format: "text",
           alternatives: 3,
-          api_key: "",
         }),
       });
 
+      if (!res.ok) {
+        throw new Error(`Translation API error: ${res.status}`);
+      }
+
       const data = await res.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
       const out =
         data?.translations ?? (data?.translation ? [data.translation] : items);
 

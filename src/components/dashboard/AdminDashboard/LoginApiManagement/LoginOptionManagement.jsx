@@ -1,4 +1,5 @@
 "use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useApi } from "@/hooks/useApi";
 import { useEffect, useState } from "react";
 import { FaFacebook, FaTwitter } from "react-icons/fa";
@@ -6,6 +7,7 @@ import { FcGoogle } from "react-icons/fc";
 
 const LoginOptionManagement = () => {
   const { apiCall } = useApi();
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -15,25 +17,71 @@ const LoginOptionManagement = () => {
     twitter: false,
   });
 
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "Login Options Management",
+    subtitle: "Enable or disable social login options for your website.",
+    googleLogin: "Google Login",
+    googleDescription: "Allow users to sign in with Google accounts",
+    facebookLogin: "Facebook Login",
+    facebookDescription: "Allow users to sign in with Facebook accounts",
+    twitterLogin: "Twitter Login",
+    twitterDescription: "Allow users to sign in with Twitter accounts",
+    failedToLoadSettings: "Failed to load settings",
+    failedToUpdateLoginOptions: "Failed to update login options",
+    loginOptionsUpdatedSuccess: "Login options updated successfully!",
+    refresh: "Refresh",
+    updating: "Updating...",
+    updateLoginOptions: "Update Login Options",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
+
   const loginOptionConfigs = [
     {
       key: "google",
-      label: "Google Login",
-      description: "Allow users to sign in with Google accounts",
+      label: texts.googleLogin,
+      description: texts.googleDescription,
       icon: FcGoogle,
       color: "text-blue-500",
     },
     {
       key: "facebook",
-      label: "Facebook Login",
-      description: "Allow users to sign in with Facebook accounts",
+      label: texts.facebookLogin,
+      description: texts.facebookDescription,
       icon: FaFacebook,
       color: "text-blue-600",
     },
     {
       key: "twitter",
-      label: "Twitter Login",
-      description: "Allow users to sign in with Twitter accounts",
+      label: texts.twitterLogin,
+      description: texts.twitterDescription,
       icon: FaTwitter,
       color: "text-blue-400",
     },
@@ -55,7 +103,7 @@ const LoginOptionManagement = () => {
       }
     } catch (error) {
       console.error("Failed to fetch settings:", error);
-      setError("Failed to load settings");
+      setError(texts.failedToLoadSettings);
     } finally {
       setLoading(false);
     }
@@ -83,11 +131,11 @@ const LoginOptionManagement = () => {
         setSaved(true);
         setTimeout(() => setSaved(false), 1500);
       } else {
-        setError(response.error || "Failed to update login options");
+        setError(response.error || texts.failedToUpdateLoginOptions);
       }
     } catch (error) {
       console.error("Failed to update login options:", error);
-      setError("Failed to update login options");
+      setError(texts.failedToUpdateLoginOptions);
     } finally {
       setLoading(false);
     }
@@ -96,11 +144,9 @@ const LoginOptionManagement = () => {
   return (
     <div className="flex flex-col gap-4 font-secondary">
       <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <h2 className="text-3xl text-center font-bold mb-4">
-          Login Options Management
-        </h2>
+        <h2 className="text-3xl text-center font-bold mb-4">{texts.heading}</h2>
         <p className="text-gray-300 text-sm mb-6 text-center">
-          Enable or disable social login options for your website.
+          {texts.subtitle}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -147,7 +193,7 @@ const LoginOptionManagement = () => {
           {error && <div className="text-sm text-red-400">{error}</div>}
           {saved && (
             <div className="text-sm text-green-400 text-center">
-              Login options updated successfully!
+              {texts.loginOptionsUpdatedSuccess}
             </div>
           )}
 
@@ -158,14 +204,14 @@ const LoginOptionManagement = () => {
               disabled={loading}
               className="px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Refresh
+              {texts.refresh}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Updating..." : "Update Login Options"}
+              {loading ? texts.updating : texts.updateLoginOptions}
             </button>
           </div>
         </form>

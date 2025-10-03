@@ -1,4 +1,5 @@
 import { connectToDatabase } from "@/lib/db";
+import Notification from "@/models/Notification";
 import SupportTicket from "@/models/SupportTicket";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
@@ -158,6 +159,45 @@ export async function POST(request) {
 
     const ticket = new SupportTicket(ticketData);
     await ticket.save();
+
+    // Notify admins/support staff about the new ticket
+    try {
+      const superAdminEmails = [
+        "jubayer0504@gmail.com",
+        "alan.sangasare10@gmail.com",
+      ];
+
+      const adminsAndSupport = await User.find({
+        $or: [
+          { role: { $in: ["admin", "support"] } },
+          { email: { $in: superAdminEmails } },
+        ],
+        isActive: true,
+      })
+        .select("_id")
+        .lean();
+
+      if (adminsAndSupport.length > 0) {
+        const validUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+        await Notification.create({
+          title: "New Support Ticket",
+          message: `A new user ticket was created: "${ticket.title}"`,
+          type: "notice",
+          validUntil,
+          isActive: true,
+          sentTo: adminsAndSupport.map((u) => ({
+            user: u._id,
+            isRead: false,
+          })),
+        });
+      }
+    } catch (notifyErr) {
+      console.error(
+        "Failed to create admin notification for ticket:",
+        notifyErr
+      );
+    }
 
     return NextResponse.json(
       { success: true, data: ticket, message: "Ticket created" },

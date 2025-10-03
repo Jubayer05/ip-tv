@@ -2,11 +2,12 @@
 import TableCustom from "@/components/ui/TableCustom";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 // Filter controls for user analytics
-const FilterControls = ({ filters, setFilters }) => (
+const FilterControls = ({ filters, setFilters, texts }) => (
   <div className="flex flex-col sm:flex-row gap-4 mb-6">
     <div className="flex-1">
       <Input
@@ -15,7 +16,7 @@ const FilterControls = ({ filters, setFilters }) => (
         id="search"
         value={filters.search}
         onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-        placeholder="Search users by name, email, or country..."
+        placeholder={texts.searchPlaceholder}
         className="bg-gray-800 rounded-lg border-gray-700 text-white placeholder-gray-400"
       />
     </div>
@@ -25,12 +26,12 @@ const FilterControls = ({ filters, setFilters }) => (
         onChange={(e) => setFilters({ ...filters, rank: e.target.value })}
         className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
       >
-        <option value="all">All Ranks</option>
-        <option value="bronze">Bronze</option>
-        <option value="silver">Silver</option>
-        <option value="gold">Gold</option>
-        <option value="platinum">Platinum</option>
-        <option value="diamond">Diamond</option>
+        <option value="all">{texts.allRanks}</option>
+        <option value="bronze">{texts.bronze}</option>
+        <option value="silver">{texts.silver}</option>
+        <option value="gold">{texts.gold}</option>
+        <option value="platinum">{texts.platinum}</option>
+        <option value="diamond">{texts.diamond}</option>
       </select>
     </div>
     <div className="w-full sm:w-48">
@@ -39,23 +40,23 @@ const FilterControls = ({ filters, setFilters }) => (
         onChange={(e) => setFilters({ ...filters, status: e.target.value })}
         className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
       >
-        <option value="all">All Status</option>
-        <option value="active">Active Users</option>
-        <option value="inactive">Inactive Users</option>
-        <option value="with_plan">With Active Plan</option>
-        <option value="expired_plan">Expired Plan</option>
+        <option value="all">{texts.allStatus}</option>
+        <option value="active">{texts.activeUsers}</option>
+        <option value="inactive">{texts.inactiveUsers}</option>
+        <option value="with_plan">{texts.withActivePlan}</option>
+        <option value="expired_plan">{texts.expiredPlan}</option>
       </select>
     </div>
   </div>
 );
 
 // Analytics summary cards
-const AnalyticsSummary = ({ analytics }) => (
+const AnalyticsSummary = ({ analytics, texts }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-400 text-sm">Total Users</p>
+          <p className="text-gray-400 text-sm">{texts.totalUsers}</p>
           <p className="text-2xl font-bold text-white">
             {analytics.totalUsers || 0}
           </p>
@@ -81,7 +82,7 @@ const AnalyticsSummary = ({ analytics }) => (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-400 text-sm">Total Balance</p>
+          <p className="text-gray-400 text-sm">{texts.totalBalance}</p>
           <p className="text-2xl font-bold text-white">
             ${analytics.totalBalance?.toFixed(2) || 0}
           </p>
@@ -107,7 +108,7 @@ const AnalyticsSummary = ({ analytics }) => (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-400 text-sm">Total Spending</p>
+          <p className="text-gray-400 text-sm">{texts.totalSpending}</p>
           <p className="text-2xl font-bold text-white">
             ${analytics.totalSpending?.toFixed(2) || 0}
           </p>
@@ -133,7 +134,7 @@ const AnalyticsSummary = ({ analytics }) => (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-400 text-sm">Active Plans</p>
+          <p className="text-gray-400 text-sm">{texts.activePlans}</p>
           <p className="text-2xl font-bold text-white">
             {analytics.activePlans || 0}
           </p>
@@ -160,6 +161,7 @@ const AnalyticsSummary = ({ analytics }) => (
 
 const UserAnalytics = () => {
   const { hasAdminAccess } = useAuth();
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const router = useRouter();
   const [users, setUsers] = useState([]);
   const [analytics, setAnalytics] = useState({});
@@ -175,6 +177,74 @@ const UserAnalytics = () => {
     status: "all",
     search: "",
   });
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "User Analytics",
+    subtitle: "Comprehensive user data and spending analytics",
+    searchPlaceholder: "Search users by name, email, or country...",
+    allRanks: "All Ranks",
+    bronze: "Bronze",
+    silver: "Silver",
+    gold: "Gold",
+    platinum: "Platinum",
+    diamond: "Diamond",
+    allStatus: "All Status",
+    activeUsers: "Active Users",
+    inactiveUsers: "Inactive Users",
+    withActivePlan: "With Active Plan",
+    expiredPlan: "Expired Plan",
+    totalUsers: "Total Users",
+    totalBalance: "Total Balance",
+    totalSpending: "Total Spending",
+    activePlans: "Active Plans",
+    user: "User",
+    email: "Email",
+    country: "Country",
+    balance: "Balance",
+    totalSpent: "Total Spent",
+    rank: "Rank",
+    discount: "Discount",
+    currentPlan: "Current Plan",
+    referralEarnings: "Referral Earnings",
+    lastLogin: "Last Login",
+    joined: "Joined",
+    noUsername: "No username",
+    notSpecified: "Not specified",
+    expires: "Expires",
+    noExpiryDate: "No expiry date",
+    noActivePlan: "No active plan",
+    never: "Never",
+    userAnalytics: "User Analytics",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
 
   // Check admin access
   useEffect(() => {
@@ -247,7 +317,7 @@ const UserAnalytics = () => {
   // Table columns
   const tableColumns = [
     {
-      title: "User",
+      title: texts.user,
       width: 200,
       dataIndex: "profile",
       key: "user",
@@ -263,14 +333,14 @@ const UserAnalytics = () => {
               {profile?.firstName} {profile?.lastName}
             </div>
             <div className="text-gray-400 text-xs">
-              {profile?.username || "No username"}
+              {profile?.username || texts.noUsername}
             </div>
           </div>
         </div>
       ),
     },
     {
-      title: "Email",
+      title: texts.email,
       width: 200,
       dataIndex: "email",
       key: "email",
@@ -279,18 +349,18 @@ const UserAnalytics = () => {
       ),
     },
     {
-      title: "Country",
+      title: texts.country,
       width: 120,
       dataIndex: "profile",
       key: "country",
       render: (profile) => (
         <span className="text-gray-300 text-sm">
-          {profile?.country || "Not specified"}
+          {profile?.country || texts.notSpecified}
         </span>
       ),
     },
     {
-      title: "Balance",
+      title: texts.balance,
       width: 100,
       dataIndex: "balance",
       key: "balance",
@@ -301,7 +371,7 @@ const UserAnalytics = () => {
       ),
     },
     {
-      title: "Total Spent",
+      title: texts.totalSpent,
       width: 120,
       dataIndex: "rank",
       key: "totalSpent",
@@ -312,7 +382,7 @@ const UserAnalytics = () => {
       ),
     },
     {
-      title: "Rank",
+      title: texts.rank,
       width: 100,
       dataIndex: "rank",
       key: "rank",
@@ -331,12 +401,12 @@ const UserAnalytics = () => {
           }`}
         >
           {rank?.level?.charAt(0).toUpperCase() + rank?.level?.slice(1) ||
-            "Bronze"}
+            texts.bronze}
         </span>
       ),
     },
     {
-      title: "Discount",
+      title: texts.discount,
       width: 100,
       dataIndex: "rank",
       key: "discount",
@@ -347,7 +417,7 @@ const UserAnalytics = () => {
       ),
     },
     {
-      title: "Current Plan",
+      title: texts.currentPlan,
       width: 150,
       dataIndex: "currentPlan",
       key: "currentPlan",
@@ -360,20 +430,20 @@ const UserAnalytics = () => {
               </div>
               <div className="text-gray-400 text-xs">
                 {currentPlan.expireDate
-                  ? `Expires: ${new Date(
+                  ? `${texts.expires}: ${new Date(
                       currentPlan.expireDate
                     ).toLocaleDateString()}`
-                  : "No expiry date"}
+                  : texts.noExpiryDate}
               </div>
             </div>
           ) : (
-            <span className="text-gray-500">No active plan</span>
+            <span className="text-gray-500">{texts.noActivePlan}</span>
           )}
         </div>
       ),
     },
     {
-      title: "Referral Earnings",
+      title: texts.referralEarnings,
       width: 120,
       dataIndex: "referral",
       key: "referralEarnings",
@@ -384,7 +454,7 @@ const UserAnalytics = () => {
       ),
     },
     {
-      title: "Last Login",
+      title: texts.lastLogin,
       width: 120,
       dataIndex: "lastLogin",
       key: "lastLogin",
@@ -396,12 +466,12 @@ const UserAnalytics = () => {
                 day: "numeric",
                 year: "numeric",
               })
-            : "Never"}
+            : texts.never}
         </span>
       ),
     },
     {
-      title: "Joined",
+      title: texts.joined,
       width: 120,
       dataIndex: "createdAt",
       key: "joined",
@@ -425,19 +495,23 @@ const UserAnalytics = () => {
     <div className="min-h-screen border-1 border-gray-700 rounded-lg p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">User Analytics</h1>
-          <p className="text-gray-400">
-            Comprehensive user data and spending analytics
-          </p>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            {texts.heading}
+          </h1>
+          <p className="text-gray-400">{texts.subtitle}</p>
         </div>
 
-        <AnalyticsSummary analytics={analytics} />
+        <AnalyticsSummary analytics={analytics} texts={texts} />
 
-        <FilterControls filters={filters} setFilters={setFilters} />
+        <FilterControls
+          filters={filters}
+          setFilters={setFilters}
+          texts={texts}
+        />
 
         <div className="rounded-lg">
           <TableCustom
-            title="User Analytics"
+            title={texts.userAnalytics}
             data={users}
             columns={tableColumns}
             pageSize={pagination.limit}

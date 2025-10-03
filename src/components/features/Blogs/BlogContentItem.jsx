@@ -17,26 +17,42 @@ const ArticleCard = ({
   const ORIGINAL_READ_MORE = "Read more";
 
   const [readMore, setReadMore] = useState(ORIGINAL_READ_MORE);
+  const [translatedTitle, setTranslatedTitle] = useState(title);
+  const [translatedDescription, setTranslatedDescription] =
+    useState(description);
 
+  // Translate static text
   useEffect(() => {
-    // Only translate when language is loaded and not English
-    if (!isLanguageLoaded || language.code === "en") return;
+    if (!isLanguageLoaded || language?.code === "en") {
+      setReadMore(ORIGINAL_READ_MORE);
+      setTranslatedTitle(title);
+      setTranslatedDescription(description);
+      return;
+    }
 
     let isMounted = true;
     (async () => {
-      const items = [ORIGINAL_READ_MORE];
-      const translated = await translate(items);
-      if (!isMounted) return;
+      try {
+        const items = [ORIGINAL_READ_MORE, title, description];
+        const translated = await translate(items);
+        if (!isMounted) return;
 
-      const [tReadMore] = translated;
-
-      setReadMore(tReadMore);
+        const [tReadMore, tTitle, tDescription] = translated;
+        setReadMore(tReadMore);
+        setTranslatedTitle(tTitle);
+        setTranslatedDescription(tDescription);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setReadMore(ORIGINAL_READ_MORE);
+        setTranslatedTitle(title);
+        setTranslatedDescription(description);
+      }
     })();
 
     return () => {
       isMounted = false;
     };
-  }, [language.code, isLanguageLoaded, translate]);
+  }, [language?.code, isLanguageLoaded, translate, title, description]);
 
   // Create excerpt from HTML content
   const createExcerpt = (htmlContent) => {
@@ -46,7 +62,7 @@ const ArticleCard = ({
       : plainText;
   };
 
-  const excerpt = createExcerpt(description);
+  const excerpt = createExcerpt(translatedDescription);
 
   return (
     <Link href={`/blogs/${slug}`} className="block">
@@ -55,7 +71,7 @@ const ArticleCard = ({
         <div className="relative h-32 sm:h-48 bg-gray-800 overflow-hidden">
           <img
             src={image}
-            alt={title}
+            alt={translatedTitle}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
               e.target.src =
@@ -76,7 +92,7 @@ const ArticleCard = ({
 
           {/* Title */}
           <h3 className="text-white text-xs sm:text-lg font-bold mb-2 sm:mb-3 leading-tight sm:leading-snug line-clamp-2 group-hover:text-cyan-400 transition-colors duration-200">
-            {title}
+            {translatedTitle}
           </h3>
 
           {/* Description */}

@@ -1,7 +1,8 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Bell } from "lucide-react";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 const NotificationBell = () => {
   const { user } = useAuth();
@@ -10,25 +11,121 @@ const NotificationBell = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [prevUnread, setPrevUnread] = useState(0);
+
+  // Audio state
+  const audioRef = useRef(null);
+  const audioCtxRef = useRef(null);
+
   useEffect(() => {
     if (user) {
       fetchNotifications();
     }
   }, [user]);
 
+  // Prepare HTMLAudio using public file
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!audioRef.current) {
+      const a = new window.Audio("/sound/notificaiton.wav");
+      a.preload = "auto";
+      a.volume = 0.85;
+      audioRef.current = a;
+      try {
+        a.load();
+      } catch {}
+    }
+  }, []);
+
+  // Prepare AudioContext early to allow WebAudio fallback
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!audioCtxRef.current) {
+      try {
+        audioCtxRef.current = new (window.AudioContext ||
+          window.webkitAudioContext)();
+        audioCtxRef.current.resume().catch(() => {});
+      } catch {}
+    }
+  }, []);
+
+  // Web Audio fallback beep
+  const synthBeep = (ctx) => {
+    try {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "sine";
+      o.frequency.value = 1100;
+      o.connect(g);
+      g.connect(ctx.destination);
+      const t = ctx.currentTime;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.35, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+      o.start(t);
+      o.stop(t + 0.3);
+    } catch {}
+  };
+
+  const playBeep = () => {
+    try {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current
+          .play()
+          .then(() => {})
+          .catch(() => {
+            try {
+              if (!audioCtxRef.current) {
+                audioCtxRef.current = new (window.AudioContext ||
+                  window.webkitAudioContext)();
+                audioCtxRef.current.resume().catch(() => {});
+              }
+              if (audioCtxRef.current) synthBeep(audioCtxRef.current);
+            } catch {}
+          });
+        return;
+      }
+    } catch {}
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext ||
+          window.webkitAudioContext)();
+        audioCtxRef.current.resume().catch(() => {});
+      }
+      if (audioCtxRef.current) synthBeep(audioCtxRef.current);
+    } catch {}
+  };
+
+  useEffect(() => {
+    const uid = user?._id || user?.mongoId || user?.id;
+    if (!uid) return;
+
+    const hasNewSupportTicket = notifications.some((n) => {
+      const sent = (n.sentTo || []).find((s) => String(s.user) === String(uid));
+      const isUnread = sent && !sent.isRead;
+      const isTicket = (n.title || "")
+        .toLowerCase()
+        .includes("new support ticket");
+      return isUnread && isTicket;
+    });
+
+    // If unread increased and there's a new support ticket, play immediately
+    if (unreadCount > prevUnread && hasNewSupportTicket) {
+      playBeep();
+    }
+    setPrevUnread(unreadCount);
+  }, [unreadCount, notifications, user]);
+
   const fetchNotifications = async () => {
     if (!user?._id) return;
-
     try {
       setLoading(true);
-
-      const userId = user._id || user.mongoId || user.id; // Adjust based on your user object structure
-
+      const userId = user._id || user.mongoId || user.id;
       const response = await fetch(
         `/api/notifications/user?userId=${userId}&limit=10`
       );
       const data = await response.json();
-
       if (data.success) {
         setNotifications(data.data);
         setUnreadCount(data.unreadCount);
@@ -44,21 +141,13 @@ const NotificationBell = () => {
 
   const markAsRead = async (notificationId) => {
     try {
-      const userId = user._id || user.mongoId || user.id; // Same adjustment here
-
+      const userId = user._id || user.mongoId || user.id;
       const response = await fetch("/api/notifications/user", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          notificationId,
-          userId,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notificationId, userId }),
       });
-
       if (response.ok) {
-        // Update local state to mark as read
         setNotifications((prev) =>
           prev.map((notification) =>
             notification._id === notificationId
@@ -71,13 +160,26 @@ const NotificationBell = () => {
               : notification
           )
         );
-
-        // Update unread count
         setUnreadCount((prev) => Math.max(0, prev - 1));
       }
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    // Mark as read if not already read
+    const userSentTo = notification.sentTo.find(
+      (sent) => sent.user === (user._id || user.mongoId || user.id)
+    );
+    const isRead = userSentTo?.isRead || false;
+
+    if (!isRead) {
+      await markAsRead(notification._id);
+    }
+
+    // Close dropdown
+    setShowDropdown(false);
   };
 
   const getNotificationIcon = (type) => {
@@ -98,7 +200,6 @@ const NotificationBell = () => {
     const notificationDate = new Date(date);
     const diffTime = Math.abs(now - notificationDate);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
     if (diffDays === 1) return "Today";
     if (diffDays === 2) return "Yesterday";
     if (diffDays <= 7) return `${diffDays - 1} days ago`;
@@ -111,8 +212,11 @@ const NotificationBell = () => {
     <div className="relative">
       {/* Bell Icon */}
       <button
-        onClick={() => setShowDropdown(!showDropdown)}
+        onClick={() => {
+          setShowDropdown(!showDropdown);
+        }}
         className="relative cursor-pointer p-2 text-gray-300 hover:text-white transition-colors"
+        title="Notifications"
       >
         <Bell className="w-6 h-6" />
         {unreadCount > 0 && (
@@ -153,14 +257,14 @@ const NotificationBell = () => {
                       sent.user === (user._id || user.mongoId || user.id)
                   );
                   const isRead = userSentTo?.isRead || false;
-
                   return (
-                    <div
+                    <Link
                       key={notification._id}
-                      className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                      href={`/notifications/${notification._id}`}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`block p-4 hover:bg-gray-50 transition-colors ${
                         isRead ? "opacity-75" : ""
                       }`}
-                      onClick={() => markAsRead(notification._id)}
                     >
                       <div className="flex items-start gap-3">
                         <span className="text-2xl">
@@ -183,7 +287,7 @@ const NotificationBell = () => {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -192,15 +296,13 @@ const NotificationBell = () => {
 
           {notifications.length > 0 && (
             <div className="p-4 border-t border-gray-200">
-              <button
-                onClick={() => {
-                  // Navigate to notifications page or mark all as read
-                  setShowDropdown(false);
-                }}
-                className="w-full text-center text-sm text-cyan-600 hover:text-cyan-700 font-medium"
+              <Link
+                href="/notifications"
+                onClick={() => setShowDropdown(false)}
+                className="w-full text-center text-sm text-cyan-600 hover:text-cyan-700 font-medium block"
               >
                 View All Notifications
-              </button>
+              </Link>
             </div>
           )}
         </div>

@@ -2,6 +2,7 @@
 import TableCustom from "@/components/ui/TableCustom";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -19,7 +20,7 @@ import {
 } from "recharts";
 
 // Filter controls for country analytics
-const FilterControls = ({ filters, setFilters }) => (
+const FilterControls = ({ filters, setFilters, texts }) => (
   <div className="flex flex-col sm:flex-row gap-4 mb-6">
     <div className="flex-1">
       <Input
@@ -28,7 +29,7 @@ const FilterControls = ({ filters, setFilters }) => (
         id="search"
         value={filters.search}
         onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-        placeholder="Search countries..."
+        placeholder={texts.searchPlaceholder}
         className="bg-gray-800 rounded-lg border-gray-700 text-white placeholder-gray-400"
       />
     </div>
@@ -38,8 +39,8 @@ const FilterControls = ({ filters, setFilters }) => (
         onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
         className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
       >
-        <option value="users">Sort by Users</option>
-        <option value="alphabetical">Sort Alphabetically</option>
+        <option value="users">{texts.sortByUsers}</option>
+        <option value="alphabetical">{texts.sortAlphabetically}</option>
       </select>
     </div>
     <div className="w-full sm:w-48">
@@ -48,20 +49,20 @@ const FilterControls = ({ filters, setFilters }) => (
         onChange={(e) => setFilters({ ...filters, chartType: e.target.value })}
         className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
       >
-        <option value="bar">Bar Chart</option>
-        <option value="pie">Pie Chart</option>
+        <option value="bar">{texts.barChart}</option>
+        <option value="pie">{texts.pieChart}</option>
       </select>
     </div>
   </div>
 );
 
 // Analytics summary cards
-const AnalyticsSummary = ({ analytics }) => (
+const AnalyticsSummary = ({ analytics, texts }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-400 text-sm">Total Countries</p>
+          <p className="text-gray-400 text-sm">{texts.totalCountries}</p>
           <p className="text-2xl font-bold text-white">
             {analytics.totalCountries || 0}
           </p>
@@ -87,7 +88,7 @@ const AnalyticsSummary = ({ analytics }) => (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-400 text-sm">Total Users</p>
+          <p className="text-gray-400 text-sm">{texts.totalUsers}</p>
           <p className="text-2xl font-bold text-white">
             {analytics.totalUsers || 0}
           </p>
@@ -113,7 +114,7 @@ const AnalyticsSummary = ({ analytics }) => (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-400 text-sm">Top Country</p>
+          <p className="text-gray-400 text-sm">{texts.topCountry}</p>
           <p className="text-lg font-bold text-white">
             {analytics.topCountry || "N/A"}
           </p>
@@ -139,7 +140,7 @@ const AnalyticsSummary = ({ analytics }) => (
 );
 
 // Country chart component
-const CountryChart = ({ countryData, chartType }) => {
+const CountryChart = ({ countryData, chartType, texts }) => {
   const COLORS = [
     "#3B82F6",
     "#10B981",
@@ -158,7 +159,9 @@ const CountryChart = ({ countryData, chartType }) => {
       return (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
           <p className="text-white font-medium">{`${label}`}</p>
-          <p className="text-blue-400">Users: {payload[0].value}</p>
+          <p className="text-blue-400">
+            {texts.users}: {payload[0].value}
+          </p>
         </div>
       );
     }
@@ -169,7 +172,7 @@ const CountryChart = ({ countryData, chartType }) => {
     return (
       <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-8">
         <h3 className="text-xl font-bold text-white mb-4">
-          User Distribution by Country
+          {texts.userDistributionByCountry}
         </h3>
         <div className="h-96">
           <ResponsiveContainer width="100%" height="100%">
@@ -204,7 +207,9 @@ const CountryChart = ({ countryData, chartType }) => {
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-8">
-      <h3 className="text-xl font-bold text-white mb-4">Users by Country</h3>
+      <h3 className="text-xl font-bold text-white mb-4">
+        {texts.usersByCountry}
+      </h3>
       <div className="h-96">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -237,6 +242,7 @@ const CountryChart = ({ countryData, chartType }) => {
 
 const CountryAnalytics = () => {
   const { hasAdminAccess } = useAuth();
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const router = useRouter();
   const [countryData, setCountryData] = useState([]);
   const [analytics, setAnalytics] = useState({});
@@ -252,6 +258,57 @@ const CountryAnalytics = () => {
     chartType: "bar",
     search: "",
   });
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "Country Analytics",
+    subtitle: "User distribution by country",
+    searchPlaceholder: "Search countries...",
+    sortByUsers: "Sort by Users",
+    sortAlphabetically: "Sort Alphabetically",
+    barChart: "Bar Chart",
+    pieChart: "Pie Chart",
+    totalCountries: "Total Countries",
+    totalUsers: "Total Users",
+    topCountry: "Top Country",
+    userDistributionByCountry: "User Distribution by Country",
+    usersByCountry: "Users by Country",
+    users: "Users",
+    rank: "Rank",
+    country: "Country",
+    totalUsers: "Total Users",
+    marketShare: "Market Share",
+    unknown: "Unknown",
+    countryAnalytics: "Country Analytics",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
 
   // Check admin access
   useEffect(() => {
@@ -317,7 +374,7 @@ const CountryAnalytics = () => {
   // Table columns
   const tableColumns = [
     {
-      title: "Rank",
+      title: texts.rank,
       width: 80,
       dataIndex: "rank",
       key: "rank",
@@ -340,7 +397,7 @@ const CountryAnalytics = () => {
       ),
     },
     {
-      title: "Country",
+      title: texts.country,
       width: 200,
       dataIndex: "country",
       key: "country",
@@ -353,14 +410,14 @@ const CountryAnalytics = () => {
           </div>
           <div>
             <div className="text-white text-sm font-medium">
-              {country || "Unknown"}
+              {country || texts.unknown}
             </div>
           </div>
         </div>
       ),
     },
     {
-      title: "Total Users",
+      title: texts.totalUsers,
       width: 120,
       dataIndex: "users",
       key: "users",
@@ -369,7 +426,7 @@ const CountryAnalytics = () => {
       ),
     },
     {
-      title: "Market Share",
+      title: texts.marketShare,
       width: 200,
       dataIndex: "marketShare",
       key: "marketShare",
@@ -398,20 +455,28 @@ const CountryAnalytics = () => {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-            Country Analytics
+            {texts.heading}
           </h1>
-          <p className="text-gray-400">User distribution by country</p>
+          <p className="text-gray-400">{texts.subtitle}</p>
         </div>
 
-        <AnalyticsSummary analytics={analytics} />
+        <AnalyticsSummary analytics={analytics} texts={texts} />
 
-        <CountryChart countryData={countryData} chartType={filters.chartType} />
+        <CountryChart
+          countryData={countryData}
+          chartType={filters.chartType}
+          texts={texts}
+        />
 
-        <FilterControls filters={filters} setFilters={setFilters} />
+        <FilterControls
+          filters={filters}
+          setFilters={setFilters}
+          texts={texts}
+        />
 
         <div className="rounded-lg">
           <TableCustom
-            title="Country Analytics"
+            title={texts.countryAnalytics}
             data={countryData}
             columns={tableColumns}
             pageSize={pagination.limit}

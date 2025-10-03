@@ -3,6 +3,7 @@ import ErrorNotification from "@/components/common/ErrorNotification";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeviceLogin } from "@/hooks/useDeviceLogin";
 import { generateVisitorId, getDeviceInfo } from "@/lib/fingerprint";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
@@ -14,6 +15,7 @@ import SocialLogin from "./SocialLogin";
 import TwoFactorAuth from "./TwoFactorAuth";
 
 export default function LoginComponent() {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -28,10 +30,63 @@ export default function LoginComponent() {
   const [socialError, setSocialError] = useState("");
   const [visitorId, setVisitorId] = useState(null);
 
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    welcomeBack: "Welcome Back",
+    signInMessage: "Sign in to your account to continue",
+    emailAddress: "Email Address",
+    enterEmailPlaceholder: "Enter your email",
+    password: "Password",
+    enterPasswordPlaceholder: "Enter your password",
+    forgotPassword: "Forgot your password?",
+    orContinueWith: "Or continue with",
+    signingIn: "Signing in...",
+    sending2FACode: "Sending 2FA code...",
+    signIn: "Sign In",
+    or: "OR",
+    dontHaveAccount: "Don't have an account?",
+    signUpHere: "Sign up here",
+    fillAllFields: "Please fill in all fields",
+    completeRecaptcha: "Please complete the reCAPTCHA verification.",
+    unexpectedError: "An unexpected error occurred. Please try again.",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
   const { login, send2FACode, complete2FALogin } = useAuth();
   const router = useRouter();
   const recaptchaRef = useRef();
   const { recordDeviceLogin } = useDeviceLogin();
+
+  // Translate texts
+  useEffect(() => {
+    if (!isLanguageLoaded || language?.code === "en") {
+      setTexts(ORIGINAL_TEXTS);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = Object.values(ORIGINAL_TEXTS);
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const translatedTexts = {};
+        Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+          translatedTexts[key] = translated[index];
+        });
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language?.code, translate, isLanguageLoaded]);
 
   // Generate visitor ID on component mount
   useEffect(() => {
@@ -84,14 +139,14 @@ export default function LoginComponent() {
     setError("");
 
     if (!formData.email || !formData.password) {
-      setError("Please fill in all fields");
+      setError(texts.fillAllFields);
       setLoading(false);
       return;
     }
 
     // Check if reCAPTCHA is completed only when it's enabled
     if (recaptchaEnabled && !recaptchaToken) {
-      setError("Please complete the reCAPTCHA verification.");
+      setError(texts.completeRecaptcha);
       setLoading(false);
       return;
     }
@@ -135,7 +190,7 @@ export default function LoginComponent() {
         }
       }
     } catch (error) {
-      setError("An unexpected error occurred. Please try again.");
+      setError(texts.unexpectedError);
     } finally {
       setLoading(false);
     }
@@ -193,10 +248,10 @@ export default function LoginComponent() {
       <div className=" w-full space-y-8 ">
         {/* Header */}
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
-          <p className="text-gray-400 text-sm">
-            Sign in to your account to continue
-          </p>
+          <h2 className="text-3xl font-bold text-white mb-2">
+            {texts.welcomeBack}
+          </h2>
+          <p className="text-gray-400 text-sm">{texts.signInMessage}</p>
         </div>
 
         {/* Login Form */}
@@ -209,7 +264,7 @@ export default function LoginComponent() {
               htmlFor="email"
               className="block text-sm font-medium text-gray-300 mb-2"
             >
-              Email Address
+              {texts.emailAddress}
             </label>
             <Input
               id="email"
@@ -217,7 +272,7 @@ export default function LoginComponent() {
               type="email"
               value={formData.email}
               onChange={handleInputChange}
-              placeholder="Enter your email"
+              placeholder={texts.enterEmailPlaceholder}
               required
               className="w-full"
             />
@@ -229,7 +284,7 @@ export default function LoginComponent() {
               htmlFor="password"
               className="block text-sm font-medium text-gray-300 mb-2"
             >
-              Password
+              {texts.password}
             </label>
             <div className="relative">
               <Input
@@ -238,7 +293,7 @@ export default function LoginComponent() {
                 type={showPassword ? "text" : "password"}
                 value={formData.password}
                 onChange={handleInputChange}
-                placeholder="Enter your password"
+                placeholder={texts.enterPasswordPlaceholder}
                 required
                 className="w-full pr-10"
               />
@@ -258,7 +313,7 @@ export default function LoginComponent() {
               href="/forgot-password"
               className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
             >
-              Forgot your password?
+              {texts.forgotPassword}
             </Link>
           </div>
 
@@ -286,10 +341,10 @@ export default function LoginComponent() {
             className="w-full flex items-center justify-center gap-2"
           >
             {loading
-              ? "Signing in..."
+              ? texts.signingIn
               : sending2FACode
-              ? "Sending 2FA code..."
-              : "Sign In"}
+              ? texts.sending2FACode
+              : texts.signIn}
             <ArrowRight size={20} />
           </Button>
         </form>
@@ -297,7 +352,7 @@ export default function LoginComponent() {
         {/* Divider */}
         <div className="my-6 flex items-center">
           <div className="flex-1 h-px bg-gray-700"></div>
-          <span className="px-4 text-gray-400 text-sm">OR</span>
+          <span className="px-4 text-gray-400 text-sm">{texts.or}</span>
           <div className="flex-1 h-px bg-gray-700"></div>
         </div>
 
@@ -317,12 +372,12 @@ export default function LoginComponent() {
         {/* Register Link */}
         <div className="text-center">
           <p className="text-gray-400 text-sm font-secondary">
-            Don&apos;t have an account?{" "}
+            {texts.dontHaveAccount}{" "}
             <Link
               href="/register"
               className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
             >
-              Sign up here
+              {texts.signUpHere}
             </Link>
           </p>
         </div>

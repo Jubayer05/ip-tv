@@ -44,16 +44,6 @@ export async function POST(request) {
     const minSeconds = parseInt(timerRange.min);
     const maxSeconds = parseInt(timerRange.max);
 
-    if (minSeconds < 1800 || maxSeconds > 7200 || minSeconds >= maxSeconds) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Timer range must be between 30 minutes and 2 hours",
-        },
-        { status: 400 }
-      );
-    }
-
     // Validate rating range
     if (
       ratingRange &&

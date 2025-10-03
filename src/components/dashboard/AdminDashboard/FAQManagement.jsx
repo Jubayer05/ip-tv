@@ -1,5 +1,6 @@
 "use client";
-import useDebounce from "@/hooks/useDebounce";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Edit, HelpCircle, Plus, Search, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
@@ -13,6 +14,7 @@ const initialForm = {
 };
 
 const FAQManagement = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [faqs, setFaqs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(initialForm);
@@ -22,14 +24,82 @@ const FAQManagement = () => {
   const [showForm, setShowForm] = useState(false);
   const debouncedSearch = useDebounce(search, 400);
 
+  const ORIGINAL_TEXTS = {
+    heading: "FAQ Management",
+    addNewFAQ: "Add New FAQ",
+    cancel: "Cancel",
+    searchFAQs: "Search FAQs by question or answer...",
+    editFAQ: "Edit FAQ",
+    question: "Question",
+    category: "Category",
+    answer: "Answer",
+    displayOrder: "Display Order",
+    active: "Active",
+    createFAQ: "Create FAQ",
+    updateFAQ: "Update FAQ",
+    loadingFAQs: "Loading FAQs...",
+    noFAQsFound: "No FAQs found",
+    addYourFirstFAQ: "Add Your First FAQ",
+    general: "General",
+    billingPayments: "Billing & Payments",
+    technicalSupport: "Technical Support",
+    accountManagement: "Account Management",
+    streamingContent: "Streaming & Content",
+    other: "Other",
+    order: "Order:",
+    inactive: "Inactive",
+    hide: "Hide",
+    show: "Show",
+    deleteFAQ: "Delete FAQ?",
+    areYouSureDelete:
+      'Are you sure you want to delete "{question}"? This action cannot be undone.',
+    yesDeleteIt: "Yes, delete it!",
+    cancelAction: "Cancel",
+    deleted: "Deleted!",
+    faqDeletedSuccessfully: "FAQ has been deleted successfully",
+    error: "Error",
+    deleteFailed: "Delete failed",
+    unexpectedError: "An unexpected error occurred",
+    failedToSaveFAQ: "Failed to save FAQ",
+    updated: "Updated!",
+    created: "Created!",
+    faqUpdated: "FAQ updated successfully",
+    faqCreated: "FAQ created successfully",
+    enterTheQuestion: "Enter the question",
+    enterTheAnswer: "Enter the answer",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
   const categories = [
-    { value: "general", label: "General" },
-    { value: "billing", label: "Billing & Payments" },
-    { value: "technical", label: "Technical Support" },
-    { value: "account", label: "Account Management" },
-    { value: "streaming", label: "Streaming & Content" },
-    { value: "other", label: "Other" },
+    { value: "general", label: texts.general },
+    { value: "billing", label: texts.billingPayments },
+    { value: "technical", label: texts.technicalSupport },
+    { value: "account", label: texts.accountManagement },
+    { value: "streaming", label: texts.streamingContent },
+    { value: "other", label: texts.other },
   ];
+
+  useEffect(() => {
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      const items = Object.values(ORIGINAL_TEXTS);
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const translatedTexts = {};
+      Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+        translatedTexts[key] = translated[index];
+      });
+      setTexts(translatedTexts);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
 
   const loadFAQs = async (qStr = "") => {
     try {
@@ -61,7 +131,7 @@ const FAQManagement = () => {
       console.error(e);
       Swal.fire({
         icon: "error",
-        title: "Error",
+        title: texts.error,
         text: "Failed to load FAQs",
         confirmButtonColor: "#44dcf3",
       });
@@ -129,15 +199,15 @@ const FAQManagement = () => {
       if (!data.success) {
         Swal.fire({
           icon: "error",
-          title: "Error",
-          text: data.error || "Failed to save FAQ",
+          title: texts.error,
+          text: data.error || texts.failedToSaveFAQ,
           confirmButtonColor: "#44dcf3",
         });
       } else {
         Swal.fire({
           icon: "success",
-          title: editingId ? "Updated!" : "Created!",
-          text: `FAQ ${editingId ? "updated" : "created"} successfully`,
+          title: editingId ? texts.updated : texts.created,
+          text: editingId ? texts.faqUpdated : texts.faqCreated,
           confirmButtonColor: "#44dcf3",
           timer: 2000,
           showConfirmButton: false,
@@ -149,8 +219,8 @@ const FAQManagement = () => {
       console.error(e2);
       Swal.fire({
         icon: "error",
-        title: "Error",
-        text: "An unexpected error occurred",
+        title: texts.error,
+        text: texts.unexpectedError,
         confirmButtonColor: "#44dcf3",
       });
     } finally {
@@ -160,14 +230,14 @@ const FAQManagement = () => {
 
   const remove = async (id, question) => {
     const result = await Swal.fire({
-      title: "Delete FAQ?",
-      text: `Are you sure you want to delete "${question}"? This action cannot be undone.`,
+      title: texts.deleteFAQ,
+      text: texts.areYouSureDelete.replace("{question}", question),
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#dc2626",
       cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonText: "Cancel",
+      confirmButtonText: texts.yesDeleteIt,
+      cancelButtonText: texts.cancelAction,
     });
 
     if (result.isConfirmed) {
@@ -179,8 +249,8 @@ const FAQManagement = () => {
         if (data.success || res.status === 200) {
           Swal.fire({
             icon: "success",
-            title: "Deleted!",
-            text: "FAQ has been deleted successfully",
+            title: texts.deleted,
+            text: texts.faqDeletedSuccessfully,
             confirmButtonColor: "#44dcf3",
             timer: 2000,
             showConfirmButton: false,
@@ -189,8 +259,8 @@ const FAQManagement = () => {
         } else {
           Swal.fire({
             icon: "error",
-            title: "Error",
-            text: data.error || "Delete failed",
+            title: texts.error,
+            text: data.error || texts.deleteFailed,
             confirmButtonColor: "#44dcf3",
           });
         }
@@ -198,8 +268,8 @@ const FAQManagement = () => {
         console.error(e);
         Swal.fire({
           icon: "error",
-          title: "Error",
-          text: "An unexpected error occurred",
+          title: texts.error,
+          text: texts.unexpectedError,
           confirmButtonColor: "#44dcf3",
         });
       }
@@ -231,13 +301,13 @@ const FAQManagement = () => {
     <div className="flex flex-col gap-4 font-secondary">
       <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">FAQ Management</h2>
+          <h2 className="text-xl font-bold">{texts.heading}</h2>
           <button
             onClick={() => setShowForm(!showForm)}
             className="bg-primary hover:bg-primary/80 text-black px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
           >
             <Plus size={20} />
-            {showForm ? "Cancel" : "Add New FAQ"}
+            {showForm ? texts.cancel : texts.addNewFAQ}
           </button>
         </div>
       </div>
@@ -246,7 +316,7 @@ const FAQManagement = () => {
         <form onSubmit={onSearch} className="flex gap-2">
           <input
             className="flex-1 bg-black border border-[#212121] rounded px-3 py-2 text-white"
-            placeholder="Search FAQs by question or answer..."
+            placeholder={texts.searchFAQs}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -262,13 +332,13 @@ const FAQManagement = () => {
       {showForm && (
         <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
           <h3 className="text-lg font-semibold mb-4">
-            {editingId ? "Edit FAQ" : "Add New FAQ"}
+            {editingId ? texts.editFAQ : texts.addNewFAQ}
           </h3>
           <form onSubmit={submit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-gray-300 mb-2">
-                  Question
+                  {texts.question}
                 </label>
                 <input
                   type="text"
@@ -276,13 +346,13 @@ const FAQManagement = () => {
                   value={form.question}
                   onChange={onChange}
                   className="w-full bg-black border border-[#212121] rounded px-3 py-2 text-white"
-                  placeholder="Enter the question"
+                  placeholder={texts.enterTheQuestion}
                   required
                 />
               </div>
               <div>
                 <label className="block text-sm text-gray-300 mb-2">
-                  Category
+                  {texts.category}
                 </label>
                 <select
                   name="category"
@@ -299,21 +369,23 @@ const FAQManagement = () => {
               </div>
             </div>
             <div>
-              <label className="block text-sm text-gray-300 mb-2">Answer</label>
+              <label className="block text-sm text-gray-300 mb-2">
+                {texts.answer}
+              </label>
               <textarea
                 name="answer"
                 value={form.answer}
                 onChange={onChange}
                 rows={4}
                 className="w-full bg-black border border-[#212121] rounded px-3 py-2 text-white resize-vertical"
-                placeholder="Enter the answer"
+                placeholder={texts.enterTheAnswer}
                 required
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-gray-300 mb-2">
-                  Display Order
+                  {texts.displayOrder}
                 </label>
                 <input
                   type="number"
@@ -333,7 +405,7 @@ const FAQManagement = () => {
                   onChange={onChange}
                   className="w-4 h-4 text-primary bg-black border-[#212121] rounded"
                 />
-                <label className="text-sm text-gray-300">Active</label>
+                <label className="text-sm text-gray-300">{texts.active}</label>
               </div>
             </div>
             <div className="flex gap-3">
@@ -342,14 +414,18 @@ const FAQManagement = () => {
                 disabled={saving}
                 className="bg-primary hover:bg-primary/80 text-black px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
               >
-                {saving ? "Saving..." : editingId ? "Update FAQ" : "Create FAQ"}
+                {saving
+                  ? "Saving..."
+                  : editingId
+                  ? texts.updateFAQ
+                  : texts.createFAQ}
               </button>
               <button
                 type="button"
                 onClick={resetForm}
                 className="bg-gray-600 hover:bg-gray-500 px-6 py-2 rounded-lg transition-colors"
               >
-                Cancel
+                {texts.cancel}
               </button>
             </div>
           </form>
@@ -360,18 +436,18 @@ const FAQManagement = () => {
         {loading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-gray-300">Loading FAQs...</p>
+            <p className="mt-4 text-gray-300">{texts.loadingFAQs}</p>
           </div>
         ) : faqs.length === 0 ? (
           <div className="text-center py-8">
             <HelpCircle size={48} className="mx-auto text-gray-500 mb-4" />
-            <p className="text-gray-300">No FAQs found</p>
+            <p className="text-gray-300">{texts.noFAQsFound}</p>
             {!showForm && (
               <button
                 onClick={() => setShowForm(true)}
                 className="mt-4 bg-primary hover:bg-primary/80 text-black px-4 py-2 rounded-lg transition-colors"
               >
-                Add Your First FAQ
+                {texts.addYourFirstFAQ}
               </button>
             )}
           </div>
@@ -393,7 +469,7 @@ const FAQManagement = () => {
                       </span>
                       {faq.order > 0 && (
                         <span className="text-gray-400 text-xs">
-                          Order: {faq.order}
+                          {texts.order} {faq.order}
                         </span>
                       )}
                       <span
@@ -403,7 +479,7 @@ const FAQManagement = () => {
                             : "bg-red-900 text-red-300"
                         }`}
                       >
-                        {faq.isActive ? "Active" : "Inactive"}
+                        {faq.isActive ? texts.active : texts.inactive}
                       </span>
                     </div>
                     <h4 className="font-semibold text-lg mb-2">
@@ -423,7 +499,7 @@ const FAQManagement = () => {
                       }`}
                       title={faq.isActive ? "Deactivate" : "Activate"}
                     >
-                      {faq.isActive ? "Hide" : "Show"}
+                      {faq.isActive ? texts.hide : texts.show}
                     </button>
                     <button
                       onClick={() => startEdit(faq)}

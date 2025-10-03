@@ -1,9 +1,11 @@
 "use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useApi } from "@/hooks/useApi";
 import { CheckCircle, Clock, Play, Shield, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const ManageFreeTrial = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const { apiCall } = useApi();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -49,6 +51,60 @@ const ManageFreeTrial = () => {
     checkCircle: CheckCircle,
   };
 
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "Free Trial Management",
+    subtitle: "Manage your free trial content from admin panel",
+    mainTitle: "Main Title",
+    description: "Description",
+    features: "Features",
+    title: "Title",
+    descriptionLabel: "Description",
+    icon: "Icon",
+    clock: "Clock",
+    star: "Star",
+    shield: "Shield",
+    play: "Play",
+    includedSectionTitle: "Included Section Title",
+    includedItems: "Included Items",
+    remove: "Remove",
+    addItem: "Add Item",
+    refresh: "Refresh",
+    updating: "Updating...",
+    updateContent: "Update Content",
+    freeTrialContentUpdatedSuccess: "Free trial content updated successfully!",
+    failedToLoadSettings: "Failed to load settings",
+    failedToUpdateFreeTrialContent: "Failed to update free trial content",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
+
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -63,7 +119,7 @@ const ManageFreeTrial = () => {
       }
     } catch (error) {
       console.error("Failed to fetch settings:", error);
-      setError("Failed to load settings");
+      setError(texts.failedToLoadSettings);
     } finally {
       setLoading(false);
     }
@@ -123,11 +179,11 @@ const ManageFreeTrial = () => {
         setSaved(true);
         setTimeout(() => setSaved(false), 1500);
       } else {
-        setError(response.error || "Failed to update free trial content");
+        setError(response.error || texts.failedToUpdateFreeTrialContent);
       }
     } catch (error) {
       console.error("Failed to update free trial content:", error);
-      setError("Failed to update free trial content");
+      setError(texts.failedToUpdateFreeTrialContent);
     } finally {
       setLoading(false);
     }
@@ -136,11 +192,9 @@ const ManageFreeTrial = () => {
   return (
     <div className="flex flex-col gap-4 font-secondary">
       <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <h2 className="text-3xl text-center font-bold mb-4">
-          Free Trial Management
-        </h2>
+        <h2 className="text-3xl text-center font-bold mb-4">{texts.heading}</h2>
         <p className="text-gray-300 text-sm mb-6 text-center">
-          Manage your free trial content from admin panel
+          {texts.subtitle}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -148,7 +202,7 @@ const ManageFreeTrial = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-white font-semibold text-sm mb-2">
-                Main Title
+                {texts.mainTitle}
               </label>
               <input
                 type="text"
@@ -160,7 +214,7 @@ const ManageFreeTrial = () => {
             </div>
             <div>
               <label className="block text-white font-semibold text-sm mb-2">
-                Description
+                {texts.description}
               </label>
               <textarea
                 value={freeTrialContent.description}
@@ -175,7 +229,9 @@ const ManageFreeTrial = () => {
 
           {/* Features Section */}
           <div className="space-y-4">
-            <h3 className="text-white font-semibold text-lg">Features</h3>
+            <h3 className="text-white font-semibold text-lg">
+              {texts.features}
+            </h3>
             {freeTrialContent.features.map((feature, index) => (
               <div
                 key={feature.id}
@@ -184,7 +240,7 @@ const ManageFreeTrial = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-white font-semibold text-sm mb-2">
-                      Title
+                      {texts.title}
                     </label>
                     <input
                       type="text"
@@ -198,7 +254,7 @@ const ManageFreeTrial = () => {
                   </div>
                   <div>
                     <label className="block text-white font-semibold text-sm mb-2">
-                      Description
+                      {texts.descriptionLabel}
                     </label>
                     <input
                       type="text"
@@ -216,7 +272,7 @@ const ManageFreeTrial = () => {
                   </div>
                   <div>
                     <label className="block text-white font-semibold text-sm mb-2">
-                      Icon
+                      {texts.icon}
                     </label>
                     <select
                       value={feature.icon}
@@ -226,10 +282,10 @@ const ManageFreeTrial = () => {
                       className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500"
                       disabled={loading}
                     >
-                      <option value="clock">Clock</option>
-                      <option value="star">Star</option>
-                      <option value="shield">Shield</option>
-                      <option value="play">Play</option>
+                      <option value="clock">{texts.clock}</option>
+                      <option value="star">{texts.star}</option>
+                      <option value="shield">{texts.shield}</option>
+                      <option value="play">{texts.play}</option>
                     </select>
                   </div>
                 </div>
@@ -241,7 +297,7 @@ const ManageFreeTrial = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-white font-semibold text-sm mb-2">
-                Included Section Title
+                {texts.includedSectionTitle}
               </label>
               <input
                 type="text"
@@ -255,7 +311,7 @@ const ManageFreeTrial = () => {
             </div>
             <div>
               <label className="block text-white font-semibold text-sm mb-2">
-                Included Items
+                {texts.includedItems}
               </label>
               {freeTrialContent.includedItems.map((item, index) => (
                 <div key={index} className="flex gap-2 mb-2">
@@ -274,7 +330,7 @@ const ManageFreeTrial = () => {
                     className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
                     disabled={loading}
                   >
-                    Remove
+                    {texts.remove}
                   </button>
                 </div>
               ))}
@@ -284,7 +340,7 @@ const ManageFreeTrial = () => {
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
                 disabled={loading}
               >
-                Add Item
+                {texts.addItem}
               </button>
             </div>
           </div>
@@ -292,7 +348,7 @@ const ManageFreeTrial = () => {
           {error && <div className="text-sm text-red-400">{error}</div>}
           {saved && (
             <div className="text-sm text-green-400 text-center">
-              Free trial content updated successfully!
+              {texts.freeTrialContentUpdatedSuccess}
             </div>
           )}
 
@@ -303,14 +359,14 @@ const ManageFreeTrial = () => {
               disabled={loading}
               className="px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Refresh
+              {texts.refresh}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Updating..." : "Update Content"}
+              {loading ? texts.updating : texts.updateContent}
             </button>
           </div>
         </form>

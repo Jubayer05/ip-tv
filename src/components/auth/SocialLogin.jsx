@@ -1,5 +1,6 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeviceLogin } from "@/hooks/useDeviceLogin";
 import { useLoginOptions } from "@/hooks/useLoginOptions";
 import {
@@ -12,19 +13,63 @@ import {
   getFirebaseErrorMessage,
   isFirebaseError,
 } from "@/lib/firebaseErrorHandler";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaFacebook, FaTwitter } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 
 export default function SocialLogin({ onSuccess, onError, loading = false }) {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [socialLoading, setSocialLoading] = useState({
     google: false,
     facebook: false,
     twitter: false,
   });
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    orContinueWith: "Or continue with",
+    signingIn: "Signing in...",
+    continueWithGoogle: "Continue with Google",
+    continueWithFacebook: "Continue with Facebook",
+    continueWithTwitter: "Continue with Twitter",
+    redirecting: "Redirecting...",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
   const { generateAuthToken } = useAuth();
   const { loginOptions, loading: optionsLoading } = useLoginOptions();
   const { recordDeviceLogin } = useDeviceLogin();
+
+  // Translate texts
+  useEffect(() => {
+    if (!isLanguageLoaded || language?.code === "en") {
+      setTexts(ORIGINAL_TEXTS);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = Object.values(ORIGINAL_TEXTS);
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const translatedTexts = {};
+        Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+          translatedTexts[key] = translated[index];
+        });
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language?.code, translate, isLanguageLoaded]);
 
   const handleSocialLogin = async (providerName) => {
     try {
@@ -110,7 +155,9 @@ export default function SocialLogin({ onSuccess, onError, loading = false }) {
           <div className="w-full border-t border-gray-700" />
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-black text-gray-400">Or continue with</span>
+          <span className="px-2 bg-black text-gray-400">
+            {texts.orContinueWith}
+          </span>
         </div>
       </div>
 
@@ -125,7 +172,9 @@ export default function SocialLogin({ onSuccess, onError, loading = false }) {
           >
             <FcGoogle size={20} />
             <span className="font-medium">
-              {socialLoading.google ? "Signing in..." : "Continue with Google"}
+              {socialLoading.google
+                ? texts.signingIn
+                : texts.continueWithGoogle}
             </span>
           </button>
         )}
@@ -141,8 +190,8 @@ export default function SocialLogin({ onSuccess, onError, loading = false }) {
             <FaFacebook size={20} className="text-blue-500" />
             <span className="font-medium">
               {socialLoading.facebook
-                ? "Signing in..."
-                : "Continue with Facebook"}
+                ? texts.signingIn
+                : texts.continueWithFacebook}
             </span>
           </button>
         )}
@@ -158,8 +207,8 @@ export default function SocialLogin({ onSuccess, onError, loading = false }) {
             <FaTwitter size={20} className="text-blue-400" />
             <span className="font-medium">
               {socialLoading.twitter
-                ? "Redirecting..."
-                : "Continue with Twitter"}
+                ? texts.redirecting
+                : texts.continueWithTwitter}
             </span>
           </button>
         )}

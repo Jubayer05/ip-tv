@@ -1,5 +1,6 @@
 "use client";
 import Button from "@/components/ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   CheckCircle,
   Clock,
@@ -13,6 +14,7 @@ import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 const ContactManagement = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, open: 0, closed: 0 });
@@ -25,6 +27,66 @@ const ContactManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
   const [priority, setPriority] = useState("medium");
+
+  const ORIGINAL_TEXTS = {
+    heading: "Contact Management",
+    total: "Total",
+    open: "Open",
+    closed: "Closed",
+    status: "Status",
+    priority: "Priority",
+    search: "Search",
+    allStatus: "All Status",
+    allPriority: "All Priority",
+    high: "High",
+    medium: "Medium",
+    low: "Low",
+    searchContacts: "Search contacts...",
+    loadingContacts: "Loading contacts...",
+    noContactsFound: "No contacts found",
+    contactDetails: "Contact Details",
+    name: "Name",
+    email: "Email",
+    subject: "Subject",
+    message: "Message",
+    adminNotes: "Admin Notes",
+    addAdminNotes: "Add admin notes...",
+    updateContact: "Update Contact",
+    close: "Close",
+    view: "View",
+    closeTicket: "Close",
+    reopen: "Reopen",
+    success: "Success",
+    contactActionedSuccessfully: "Contact {action}ed successfully",
+    error: "Error",
+    failedToActionContact: "Failed to {action} contact",
+    updated: "Updated",
+    contactUpdatedSuccessfully: "Contact updated successfully",
+    failedToUpdateContact: "Failed to update contact",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  useEffect(() => {
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      const items = Object.values(ORIGINAL_TEXTS);
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const translatedTexts = {};
+      Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+        translatedTexts[key] = translated[index];
+      });
+      setTexts(translatedTexts);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
 
   const loadContacts = async () => {
     try {
@@ -71,8 +133,8 @@ const ContactManagement = () => {
       if (data.success) {
         Swal.fire({
           icon: "success",
-          title: "Success",
-          text: `Contact ${action}ed successfully`,
+          title: texts.success,
+          text: texts.contactActionedSuccessfully.replace("{action}", action),
           confirmButtonColor: "#44dcf3",
           timer: 1500,
           showConfirmButton: false,
@@ -84,8 +146,8 @@ const ContactManagement = () => {
     } catch (error) {
       Swal.fire({
         icon: "error",
-        title: "Error",
-        text: `Failed to ${action} contact`,
+        title: texts.error,
+        text: texts.failedToActionContact.replace("{action}", action),
         confirmButtonColor: "#44dcf3",
       });
     }
@@ -110,8 +172,8 @@ const ContactManagement = () => {
       if (data.success) {
         Swal.fire({
           icon: "success",
-          title: "Updated",
-          text: "Contact updated successfully",
+          title: texts.updated,
+          text: texts.contactUpdatedSuccessfully,
           confirmButtonColor: "#44dcf3",
           timer: 1500,
           showConfirmButton: false,
@@ -122,8 +184,8 @@ const ContactManagement = () => {
     } catch (error) {
       Swal.fire({
         icon: "error",
-        title: "Error",
-        text: "Failed to update contact",
+        title: texts.error,
+        text: texts.failedToUpdateContact,
         confirmButtonColor: "#44dcf3",
       });
     }
@@ -168,26 +230,26 @@ const ContactManagement = () => {
       {/* Header with Stats */}
       <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold">Contact Management</h2>
+          <h2 className="text-2xl font-bold">{texts.heading}</h2>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="bg-gray-900/50 rounded-lg p-4">
             <div className="text-2xl font-bold text-white">{stats.total}</div>
-            <div className="text-sm text-gray-400">Total</div>
+            <div className="text-sm text-gray-400">{texts.total}</div>
           </div>
           <div className="bg-yellow-900/20 rounded-lg p-4">
             <div className="text-2xl font-bold text-yellow-300">
               {stats.open}
             </div>
-            <div className="text-sm text-gray-400">Open</div>
+            <div className="text-sm text-gray-400">{texts.open}</div>
           </div>
           <div className="bg-green-900/20 rounded-lg p-4">
             <div className="text-2xl font-bold text-green-300">
               {stats.closed}
             </div>
-            <div className="text-sm text-gray-400">Closed</div>
+            <div className="text-sm text-gray-400">{texts.closed}</div>
           </div>
         </div>
       </div>
@@ -197,7 +259,7 @@ const ContactManagement = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Status
+              {texts.status}
             </label>
             <select
               value={filters.status}
@@ -206,14 +268,14 @@ const ContactManagement = () => {
               }
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
             >
-              <option value="all">All Status</option>
-              <option value="open">Open</option>
-              <option value="closed">Closed</option>
+              <option value="all">{texts.allStatus}</option>
+              <option value="open">{texts.open}</option>
+              <option value="closed">{texts.closed}</option>
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Priority
+              {texts.priority}
             </label>
             <select
               value={filters.priority}
@@ -222,21 +284,21 @@ const ContactManagement = () => {
               }
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
             >
-              <option value="all">All Priority</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
+              <option value="all">{texts.allPriority}</option>
+              <option value="high">{texts.high}</option>
+              <option value="medium">{texts.medium}</option>
+              <option value="low">{texts.low}</option>
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Search
+              {texts.search}
             </label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search contacts..."
+                placeholder={texts.searchContacts}
                 value={filters.search}
                 onChange={(e) =>
                   setFilters({ ...filters, search: e.target.value })
@@ -253,12 +315,12 @@ const ContactManagement = () => {
         {loading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto"></div>
-            <p className="mt-2 text-gray-400">Loading contacts...</p>
+            <p className="mt-2 text-gray-400">{texts.loadingContacts}</p>
           </div>
         ) : contacts.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p>No contacts found</p>
+            <p>{texts.noContactsFound}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -311,7 +373,7 @@ const ContactManagement = () => {
                       className="flex items-center gap-1 px-3 py-2 text-xs font-medium"
                     >
                       <Eye className="w-3 h-3" />
-                      View
+                      {texts.view}
                     </Button>
                     {contact.status === "open" ? (
                       <Button
@@ -321,7 +383,7 @@ const ContactManagement = () => {
                         className="flex items-center gap-1 px-3 py-2 text-xs font-medium bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700"
                       >
                         <X className="w-3 h-3" />
-                        Close
+                        {texts.closeTicket}
                       </Button>
                     ) : (
                       <Button
@@ -333,7 +395,7 @@ const ContactManagement = () => {
                         className="flex items-center gap-1 px-3 py-2 text-xs font-medium bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700"
                       >
                         <CheckCircle className="w-3 h-3" />
-                        Reopen
+                        {texts.reopen}
                       </Button>
                     )}
                   </div>
@@ -351,7 +413,7 @@ const ContactManagement = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-white">
-                  Contact Details
+                  {texts.contactDetails}
                 </h3>
                 <button
                   onClick={() => setShowModal(false)}
@@ -365,13 +427,13 @@ const ContactManagement = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Name
+                      {texts.name}
                     </label>
                     <p className="text-white">{selectedContact.fullName}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Email
+                      {texts.email}
                     </label>
                     <p className="text-white">{selectedContact.email}</p>
                   </div>
@@ -379,14 +441,14 @@ const ContactManagement = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Subject
+                    {texts.subject}
                   </label>
                   <p className="text-white">{selectedContact.subject}</p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Message
+                    {texts.message}
                   </label>
                   <div className="bg-gray-900/50 rounded-lg p-3">
                     <p className="text-white whitespace-pre-wrap">
@@ -397,12 +459,12 @@ const ContactManagement = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Admin Notes
+                    {texts.adminNotes}
                   </label>
                   <textarea
                     value={adminNotes}
                     onChange={(e) => setAdminNotes(e.target.value)}
-                    placeholder="Add admin notes..."
+                    placeholder={texts.addAdminNotes}
                     rows={3}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
                   />
@@ -410,16 +472,16 @@ const ContactManagement = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Priority
+                    {texts.priority}
                   </label>
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value)}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
+                    <option value="low">{texts.low}</option>
+                    <option value="medium">{texts.medium}</option>
+                    <option value="high">{texts.high}</option>
                   </select>
                 </div>
 
@@ -428,14 +490,14 @@ const ContactManagement = () => {
                     onClick={handleUpdateContact}
                     className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-black font-medium py-2 px-4 rounded-lg transition-colors"
                   >
-                    Update Contact
+                    {texts.updateContact}
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => setShowModal(false)}
                     className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white font-medium py-2 px-4 rounded-lg transition-colors"
                   >
-                    Close
+                    {texts.close}
                   </Button>
                 </div>
               </div>

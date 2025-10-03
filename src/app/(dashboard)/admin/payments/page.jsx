@@ -1,5 +1,6 @@
 "use client";
 import GuideManagement from "@/components/dashboard/AdminDashboard/Legal/GuideManagement";
+import CardPayment from "@/components/dashboard/AdminDashboard/PaymentManagement/CardPayment";
 import PaymentMethodsManagement from "@/components/dashboard/AdminDashboard/PaymentManagement/PaymentMethodsManagement";
 import UsersBalance from "@/components/dashboard/AdminDashboard/PaymentManagement/UsersBalances";
 import { useState } from "react";
@@ -12,6 +13,11 @@ export default function paymentManagement() {
       id: "payment_methods",
       label: "Payment Methods",
       component: <PaymentMethodsManagement />,
+    },
+    {
+      id: "card_payment",
+      label: "Card Payment",
+      component: <CardPayment />,
     },
     {
       id: "guide",

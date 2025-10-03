@@ -1,5 +1,6 @@
 "use client";
 import Button from "@/components/ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -10,9 +11,47 @@ import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
 
 const ReviewShowHome = () => {
+  const { translate } = useLanguage();
   const [reviews, setReviews] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Original text constants for translation
+  const ORIGINAL_TEXTS = {
+    customerReviews: "Customer Reviews",
+    noReviewsAvailable:
+      "No reviews available yet. Be the first to leave a review!",
+    whatOurCustomersSay: "What Our Customers Say",
+    basedOnReviews: "Based on",
+    review: "review",
+    reviews: "reviews",
+    dontJustTakeOurWord:
+      "Don't just take our word for it. Here's what our satisfied customers have to say about our service.",
+    seeAllReviews: "See all reviews",
+  };
+
+  // Translated text state
+  const [translatedTexts, setTranslatedTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      const textsToTranslate = Object.values(ORIGINAL_TEXTS);
+      const translated = await translate(textsToTranslate);
+      if (!isMounted) return;
+
+      const newTranslatedTexts = {};
+      Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+        newTranslatedTexts[key] = translated[index];
+      });
+      setTranslatedTexts(newTranslatedTexts);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [translate]);
 
   useEffect(() => {
     fetchReviews();
@@ -196,10 +235,10 @@ const ReviewShowHome = () => {
       <div className=" bg-black pt-12  text-white overflow-hidden">
         <div className="container py-8 px-4 md:px-8 lg:px-12 text-center">
           <h2 className="text-2xl md:text-3xl font-bold tracking-wider uppercase mb-4">
-            Customer Reviews
+            {translatedTexts.customerReviews}
           </h2>
           <p className="text-gray-400 font-secondary text-xs md:text-base">
-            No reviews available yet. Be the first to leave a review!
+            {translatedTexts.noReviewsAvailable}
           </p>
         </div>
       </div>
@@ -212,7 +251,7 @@ const ReviewShowHome = () => {
         {/* Header Section */}
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-bold tracking-wider uppercase mb-4">
-            What Our Customers Say
+            {translatedTexts.whatOurCustomersSay}
           </h2>
 
           {stats && (
@@ -227,16 +266,17 @@ const ReviewShowHome = () => {
                   </span>
                 </div>
                 <p className="text-gray-400 font-secondary text-xs md:text-base">
-                  Based on {stats.totalReviews} review
-                  {stats.totalReviews !== 1 ? "s" : ""}
+                  {translatedTexts.basedOnReviews} {stats.totalReviews}{" "}
+                  {stats.totalReviews !== 1
+                    ? translatedTexts.reviews
+                    : translatedTexts.review}
                 </p>
               </div>
             </div>
           )}
 
           <p className="text-gray-300 font-secondary text-xs md:text-xl max-w-2xl mx-auto">
-            Don't just take our word for it. Here's what our satisfied customers
-            have to say about our service.
+            {translatedTexts.dontJustTakeOurWord}
           </p>
         </div>
 
@@ -285,7 +325,7 @@ const ReviewShowHome = () => {
             <Button variant="primary" size="md" className="w-full md:w-auto">
               <div className="flex items-center">
                 <MdReviews className="w-5 h-5 mr-2" />
-                See all reviews
+                {translatedTexts.seeAllReviews}
               </div>
             </Button>
           </Link>

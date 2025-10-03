@@ -21,7 +21,6 @@ const BulkReviewHandling = () => {
   const [scheduledReviews, setScheduledReviews] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("all"); // all, pending, posted
   const [reviewsPerPage] = useState(10);
   const [loading, setLoading] = useState(true);

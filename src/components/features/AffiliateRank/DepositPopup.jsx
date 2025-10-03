@@ -1,4 +1,5 @@
 "use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +12,7 @@ export default function DepositPopup({
   userId,
   userEmail,
 }) {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [step, setStep] = useState("amount");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,6 +21,74 @@ export default function DepositPopup({
   const [loadingMethods, setLoadingMethods] = useState(true);
   const [selectedGateway, setSelectedGateway] = useState(null);
   const pollRef = useRef(null);
+
+  // Original text constants for translation
+  const ORIGINAL_TEXTS = {
+    addFunds: "Add Funds",
+    amount: "Amount ($)",
+    enterAmount: "Enter amount",
+    proceedToPay: "Proceed to Pay",
+    selectPaymentMethod: "Select a Payment Method",
+    noPaymentMethods: "No payment methods available",
+    selectedPaymentMethod: "Selected Payment Method",
+    method: "Method:",
+    depositAmount: "Deposit Amount:",
+    serviceFee: "Service Fee:",
+    totalCharge: "Total Charge:",
+    bonus: "Bonus:",
+    totalYoullReceive: "Total You'll Receive:",
+    confirmPayment: "Confirm Payment",
+    processing: "Processing...",
+    waitingForConfirmation: "Waiting for payment confirmation...",
+    paymentConfirmed: "Payment confirmed.",
+    paymentFailed: "Payment failed or canceled.",
+    failedToStartPayment: "Failed to start payment",
+    invalidAmount: "Invalid amount",
+    enterValidAmount: "Please enter a valid amount greater than 0.",
+    min: "Min:",
+    needMore: "more",
+    bonusText: "Bonus",
+    minToGet: "to get",
+    serviceFeeLabel: "Service Fee:",
+    total: "Total:",
+    youGet: "You get",
+    card: "Card",
+    crypto: "Crypto",
+    payment: "Payment",
+    exchange: "Exchange",
+  };
+
+  // State for translated texts
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || language?.code === "en") {
+      setTexts(ORIGINAL_TEXTS);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const textsToTranslate = Object.values(ORIGINAL_TEXTS);
+        const translated = await translate(textsToTranslate);
+        if (!isMounted) return;
+
+        const newTexts = {};
+        Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+          newTexts[key] = translated[index];
+        });
+        setTexts(newTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language?.code, translate, isLanguageLoaded]);
 
   // Fetch payment methods when popup opens
   useEffect(() => {
@@ -66,8 +136,8 @@ export default function DepositPopup({
     if (!num || num <= 0) {
       Swal.fire({
         icon: "warning",
-        title: "Invalid amount",
-        text: "Please enter a valid amount greater than 0.",
+        title: texts.invalidAmount,
+        text: texts.enterValidAmount,
         confirmButtonColor: "#00b877",
       });
       return;
@@ -122,7 +192,7 @@ export default function DepositPopup({
 
       window.open(checkoutUrl, "_blank", "noopener,noreferrer");
 
-      setStatusText("Waiting for payment confirmation...");
+      setStatusText(texts.waitingForConfirmation);
       pollRef.current = setInterval(async () => {
         try {
           const st = await fetch(`/api/deposits/status/${depositId}`);
@@ -131,25 +201,31 @@ export default function DepositPopup({
           if (s?.status === "completed") {
             clearInterval(pollRef.current);
             pollRef.current = null;
-            setStatusText("Payment confirmed.");
+            setStatusText(texts.paymentConfirmed);
             onSuccess?.();
             onClose?.();
           } else if (s?.status === "failed" || s?.status === "cancelled") {
             clearInterval(pollRef.current);
             pollRef.current = null;
-            setStatusText("Payment failed or canceled.");
+            setStatusText(texts.paymentFailed);
           }
         } catch {}
       }, 4000);
     } catch (e) {
-      setStatusText(e?.message || "Failed to start payment");
+      setStatusText(e?.message || texts.failedToStartPayment);
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper function to get logo path
-  const getLogoPath = (gateway) => {
+  // Helper function to get logo path - now checks for custom imageUrl first
+  const getLogoPath = (method) => {
+    // First check if there's a custom imageUrl from the backend
+    if (method.imageUrl) {
+      return method.imageUrl;
+    }
+
+    // Fallback to default logos
     const logoMap = {
       stripe: "/payment_logo/stripe.png",
       plisio: "/payment_logo/plisio.png",
@@ -160,22 +236,22 @@ export default function DepositPopup({
       paygate: "/payment_logo/paygate.png",
       volet: "/payment_logo/volet.png",
     };
-    return logoMap[gateway] || "/payment_logo/default.png";
+    return logoMap[method.gateway] || "/payment_logo/default.png";
   };
 
   // Helper function to get payment type
   const getPaymentType = (gateway) => {
     const typeMap = {
-      stripe: "Card",
-      plisio: "Crypto",
-      hoodpay: "Payment",
-      nowpayment: "Crypto",
-      changenow: "Exchange",
-      cryptomus: "Crypto",
-      paygate: "Crypto",
-      volet: "Crypto",
+      stripe: texts.card,
+      plisio: texts.crypto,
+      hoodpay: texts.payment,
+      nowpayment: texts.crypto,
+      changenow: texts.exchange,
+      cryptomus: texts.crypto,
+      paygate: texts.crypto,
+      volet: texts.crypto,
     };
-    return typeMap[gateway] || "Payment";
+    return typeMap[gateway] || texts.payment;
   };
 
   // Helper function to calculate service fee
@@ -231,10 +307,10 @@ export default function DepositPopup({
         {step === "amount" && (
           <div>
             <h3 className="text-white text-lg sm:text-xl font-bold mb-4">
-              Add Funds
+              {texts.addFunds}
             </h3>
             <label className="block text-sm text-gray-300 mb-2">
-              Amount ($)
+              {texts.amount}
             </label>
             <input
               type="number"
@@ -242,14 +318,14 @@ export default function DepositPopup({
               min="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount"
+              placeholder={texts.enterAmount}
               className="w-full bg-[#0c171c] border border-white/15 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
             />
             <button
               onClick={proceedToGateways}
               className="mt-4 w-full cursor-pointer py-2 bg-cyan-400 text-black rounded font-semibold hover:bg-cyan-300"
             >
-              Proceed to Pay
+              {texts.proceedToPay}
             </button>
           </div>
         )}
@@ -257,7 +333,7 @@ export default function DepositPopup({
         {step === "gateway" && (
           <div>
             <h3 className="text-white text-lg sm:text-xl font-bold mb-4">
-              Select a Payment Method
+              {texts.selectPaymentMethod}
             </h3>
 
             {loadingMethods ? (
@@ -266,7 +342,7 @@ export default function DepositPopup({
               </div>
             ) : paymentMethods.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-400">No payment methods available</p>
+                <p className="text-gray-400">{texts.noPaymentMethods}</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -301,7 +377,7 @@ export default function DepositPopup({
                       title={`${method.name} - Min: $${method.minAmount}`}
                     >
                       <Image
-                        src={getLogoPath(method.gateway)}
+                        src={getLogoPath(method)}
                         alt={method.name}
                         width={60}
                         height={30}
@@ -314,13 +390,13 @@ export default function DepositPopup({
                       {/* Always show minimum amount */}
                       <div className="text-xs text-center">
                         <span className="font-medium text-gray-600">
-                          Min: ${method.minAmount}
+                          {texts.min} ${method.minAmount}
                         </span>
                         {!isAmountValid && (
                           <div className="text-red-500 text-xs mt-1">
                             Need $
                             {(method.minAmount - Number(amount)).toFixed(2)}{" "}
-                            more
+                            {texts.needMore}
                           </div>
                         )}
                       </div>
@@ -328,21 +404,21 @@ export default function DepositPopup({
                       {/* Always show bonus if available */}
                       {highestBonus && (
                         <div className="text-xs text-green-600 font-medium">
-                          +{highestBonus.bonusPercentage}% Bonus
+                          +{highestBonus.bonusPercentage}% {texts.bonusText}
                         </div>
                       )}
 
                       {/* Show minimum amount to get this bonus */}
                       {highestBonus && (
                         <div className="text-xs text-gray-500">
-                          Min ${highestBonus.minAmount} to get
+                          {texts.min} ${highestBonus.minAmount} {texts.minToGet}
                         </div>
                       )}
 
                       {/* Show service fee if active */}
                       {method.feeSettings && method.feeSettings.isActive && (
                         <div className="text-xs text-red-500 font-medium">
-                          Service Fee:{" "}
+                          {texts.serviceFeeLabel}{" "}
                           {method.feeSettings.feeType === "percentage"
                             ? `${method.feeSettings.feePercentage}%`
                             : `$${method.feeSettings.fixedAmount}`}
@@ -352,14 +428,14 @@ export default function DepositPopup({
                       {/* Show total charge amount */}
                       {method.feeSettings && method.feeSettings.isActive && (
                         <div className="text-xs text-red-400 font-medium">
-                          Total: ${feeInfo.totalAmount.toFixed(2)}
+                          {texts.total}: ${feeInfo.totalAmount.toFixed(2)}
                         </div>
                       )}
 
                       {/* Show current bonus if amount is valid and has applicable bonuses */}
                       {bonuses.length > 0 && isAmountValid && (
                         <div className="text-xs text-blue-600 font-medium">
-                          You get +{bonuses[0].percentage}%
+                          {texts.youGet} +{bonuses[0].percentage}%
                         </div>
                       )}
                     </button>
@@ -372,18 +448,18 @@ export default function DepositPopup({
             {selectedGateway && (
               <div className="mt-6 p-4 bg-gray-800 rounded-lg">
                 <h4 className="text-white font-semibold mb-3 text-center">
-                  Selected Payment Method
+                  {texts.selectedPaymentMethod}
                 </h4>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">Method:</span>
+                    <span className="text-gray-300">{texts.method}</span>
                     <span className="text-white font-medium">
                       {selectedGateway.name}
                     </span>
                   </div>
 
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">Deposit Amount:</span>
+                    <span className="text-gray-300">{texts.depositAmount}</span>
                     <span className="text-white font-medium">
                       ${Number(amount).toFixed(2)}
                     </span>
@@ -399,7 +475,9 @@ export default function DepositPopup({
                       return (
                         <>
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-300">Service Fee:</span>
+                            <span className="text-gray-300">
+                              {texts.serviceFee}
+                            </span>
                             <span className="text-red-400 font-medium">
                               ${feeInfo.feeAmount.toFixed(2)} (
                               {selectedGateway.feeSettings.feeType ===
@@ -410,7 +488,9 @@ export default function DepositPopup({
                             </span>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-300">Total Charge:</span>
+                            <span className="text-gray-300">
+                              {texts.totalCharge}
+                            </span>
                             <span className="text-red-300 font-medium">
                               ${feeInfo.totalAmount.toFixed(2)}
                             </span>
@@ -433,7 +513,7 @@ export default function DepositPopup({
                       return (
                         <>
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-300">Bonus:</span>
+                            <span className="text-gray-300">{texts.bonus}</span>
                             <span className="text-green-400 font-medium">
                               +${highestBonus.amount.toFixed(2)} (
                               {highestBonus.percentage}%)
@@ -442,7 +522,7 @@ export default function DepositPopup({
                           <div className="border-t border-gray-600 my-2"></div>
                           <div className="flex justify-between text-sm font-semibold">
                             <span className="text-white">
-                              Total You'll Receive:
+                              {texts.totalYoullReceive}
                             </span>
                             <span className="text-cyan-400">
                               $
@@ -463,7 +543,7 @@ export default function DepositPopup({
                   disabled={loading}
                   className="mt-4 w-full py-2 bg-cyan-400 text-black rounded font-semibold hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? "Processing..." : "Confirm Payment"}
+                  {loading ? texts.processing : texts.confirmPayment}
                 </button>
               </div>
             )}

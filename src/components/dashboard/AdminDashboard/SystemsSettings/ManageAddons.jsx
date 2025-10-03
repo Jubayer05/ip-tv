@@ -1,4 +1,5 @@
 "use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useApi } from "@/hooks/useApi";
 import {
   BarChart3,
@@ -11,6 +12,7 @@ import {
 import { useEffect, useState } from "react";
 
 const ManageAddons = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const { apiCall } = useApi();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -35,113 +37,194 @@ const ManageAddons = () => {
     tawkTo: { propertyId: "", widgetId: "" }, // Add widgetId
   });
 
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "Addons Management",
+    subtitle:
+      "Enable or disable various third-party services and integrations for your website. Configure API keys for enabled services.",
+    configuration: "Configuration:",
+    refresh: "Refresh",
+    updating: "Updating...",
+    updateAddons: "Update Addons",
+    addonsUpdatedSuccess: "Addons updated successfully!",
+    failedToLoadSettings: "Failed to load settings",
+    failedToUpdateAddons: "Failed to update addons",
+    // Addon labels and descriptions
+    recaptchaLabel: "Google reCAPTCHA",
+    recaptchaDescription: "Protect login and registration forms from bots",
+    trustPilotLabel: "Trust Pilot",
+    trustPilotDescription: "Display customer reviews and ratings",
+    googleAnalyticsLabel: "Google Analytics",
+    googleAnalyticsDescription: "Track website traffic and user behavior",
+    microsoftClarityLabel: "Microsoft Clarity",
+    microsoftClarityDescription: "Heatmaps and user session recordings",
+    cloudflareLabel: "Cloudflare",
+    cloudflareDescription: "CDN, security, and performance optimization",
+    getButtonLabel: "GetButton.io",
+    getButtonDescription: "Live chat and customer support widget",
+    tawkToLabel: "Tawk.to",
+    tawkToDescription: "Free live chat for customer support",
+    // Field labels and placeholders
+    siteKeyLabel: "Site Key",
+    siteKeyPlaceholder: "Enter reCAPTCHA site key",
+    secretKeyLabel: "Secret Key",
+    secretKeyPlaceholder: "Enter reCAPTCHA secret key",
+    businessIdLabel: "Business ID",
+    businessIdPlaceholder: "Enter TrustPilot business ID",
+    apiKeyLabel: "API Key",
+    apiKeyPlaceholder: "Enter TrustPilot API key",
+    measurementIdLabel: "Measurement ID",
+    measurementIdPlaceholder: "Enter Google Analytics measurement ID",
+    projectIdLabel: "Project ID",
+    projectIdPlaceholder: "Enter Microsoft Clarity project ID",
+    tokenLabel: "Token",
+    tokenPlaceholder: "Enter Cloudflare token",
+    widgetIdLabel: "Widget ID",
+    widgetIdPlaceholder: "Enter GetButton widget ID",
+    propertyIdLabel: "Property ID",
+    propertyIdPlaceholder: "Enter Tawk.to property ID",
+    tawkToWidgetIdPlaceholder: "Enter Tawk.to widget ID",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
+
   const addonConfigs = [
     {
       key: "recaptcha",
-      label: "Google reCAPTCHA",
-      description: "Protect login and registration forms from bots",
+      label: texts.recaptchaLabel,
+      description: texts.recaptchaDescription,
       icon: Shield,
       color: "text-blue-500",
       fields: [
         {
           key: "siteKey",
-          label: "Site Key",
-          placeholder: "Enter reCAPTCHA site key",
+          label: texts.siteKeyLabel,
+          placeholder: texts.siteKeyPlaceholder,
         },
         {
           key: "secretKey",
-          label: "Secret Key",
-          placeholder: "Enter reCAPTCHA secret key",
+          label: texts.secretKeyLabel,
+          placeholder: texts.secretKeyPlaceholder,
         },
       ],
     },
     {
       key: "trustPilot",
-      label: "Trust Pilot",
-      description: "Display customer reviews and ratings",
+      label: texts.trustPilotLabel,
+      description: texts.trustPilotDescription,
       icon: Star,
       color: "text-green-500",
       fields: [
         {
           key: "businessId",
-          label: "Business ID",
-          placeholder: "Enter TrustPilot business ID",
+          label: texts.businessIdLabel,
+          placeholder: texts.businessIdPlaceholder,
         },
         {
           key: "apiKey",
-          label: "API Key",
-          placeholder: "Enter TrustPilot API key",
+          label: texts.apiKeyLabel,
+          placeholder: texts.apiKeyPlaceholder,
         },
       ],
     },
     {
       key: "googleAnalytics",
-      label: "Google Analytics",
-      description: "Track website traffic and user behavior",
+      label: texts.googleAnalyticsLabel,
+      description: texts.googleAnalyticsDescription,
       icon: BarChart3,
       color: "text-orange-500",
       fields: [
         {
           key: "measurementId",
-          label: "Measurement ID",
-          placeholder: "Enter Google Analytics measurement ID",
+          label: texts.measurementIdLabel,
+          placeholder: texts.measurementIdPlaceholder,
         },
       ],
     },
     {
       key: "microsoftClarity",
-      label: "Microsoft Clarity",
-      description: "Heatmaps and user session recordings",
+      label: texts.microsoftClarityLabel,
+      description: texts.microsoftClarityDescription,
       icon: Eye,
       color: "text-purple-500",
       fields: [
         {
           key: "projectId",
-          label: "Project ID",
-          placeholder: "Enter Microsoft Clarity project ID",
+          label: texts.projectIdLabel,
+          placeholder: texts.projectIdPlaceholder,
         },
       ],
     },
     {
       key: "cloudflare",
-      label: "Cloudflare",
-      description: "CDN, security, and performance optimization",
+      label: texts.cloudflareLabel,
+      description: texts.cloudflareDescription,
       icon: Cloud,
       color: "text-yellow-500",
       fields: [
-        { key: "token", label: "Token", placeholder: "Enter Cloudflare token" },
+        {
+          key: "token",
+          label: texts.tokenLabel,
+          placeholder: texts.tokenPlaceholder,
+        },
       ],
     },
     {
       key: "getButton",
-      label: "GetButton.io",
-      description: "Live chat and customer support widget",
+      label: texts.getButtonLabel,
+      description: texts.getButtonDescription,
       icon: MessageCircle,
       color: "text-pink-500",
       fields: [
         {
           key: "widgetId",
-          label: "Widget ID",
-          placeholder: "Enter GetButton widget ID",
+          label: texts.widgetIdLabel,
+          placeholder: texts.widgetIdPlaceholder,
         },
       ],
     },
     {
       key: "tawkTo",
-      label: "Tawk.to",
-      description: "Free live chat for customer support",
+      label: texts.tawkToLabel,
+      description: texts.tawkToDescription,
       icon: MessageCircle,
       color: "text-indigo-500",
       fields: [
         {
           key: "propertyId",
-          label: "Property ID",
-          placeholder: "Enter Tawk.to property ID",
+          label: texts.propertyIdLabel,
+          placeholder: texts.propertyIdPlaceholder,
         },
         {
           key: "widgetId",
-          label: "Widget ID",
-          placeholder: "Enter Tawk.to widget ID",
+          label: texts.widgetIdLabel,
+          placeholder: texts.tawkToWidgetIdPlaceholder,
         },
       ],
     },
@@ -166,7 +249,7 @@ const ManageAddons = () => {
       }
     } catch (error) {
       console.error("Failed to fetch settings:", error);
-      setError("Failed to load settings");
+      setError(texts.failedToLoadSettings);
     } finally {
       setLoading(false);
     }
@@ -205,11 +288,11 @@ const ManageAddons = () => {
         setSaved(true);
         setTimeout(() => setSaved(false), 1500);
       } else {
-        setError(response.error || "Failed to update addons");
+        setError(response.error || texts.failedToUpdateAddons);
       }
     } catch (error) {
       console.error("Failed to update addons:", error);
-      setError("Failed to update addons");
+      setError(texts.failedToUpdateAddons);
     } finally {
       setLoading(false);
     }
@@ -218,12 +301,9 @@ const ManageAddons = () => {
   return (
     <div className="flex flex-col gap-4 font-secondary">
       <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <h2 className="text-3xl text-center font-bold mb-4">
-          Addons Management
-        </h2>
+        <h2 className="text-3xl text-center font-bold mb-4">{texts.heading}</h2>
         <p className="text-gray-300 text-sm mb-6 text-center">
-          Enable or disable various third-party services and integrations for
-          your website. Configure API keys for enabled services.
+          {texts.subtitle}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -267,7 +347,7 @@ const ManageAddons = () => {
                   {isEnabled && addon.fields && (
                     <div className="mt-4 space-y-3 border-t border-[#333] pt-3">
                       <p className="text-xs text-gray-400 font-medium">
-                        Configuration:
+                        {texts.configuration}
                       </p>
                       {addon.fields.map((field) => (
                         <div key={field.key}>
@@ -300,7 +380,7 @@ const ManageAddons = () => {
           {error && <div className="text-sm text-red-400">{error}</div>}
           {saved && (
             <div className="text-sm text-green-400 text-center">
-              Addons updated successfully!
+              {texts.addonsUpdatedSuccess}
             </div>
           )}
 
@@ -311,14 +391,14 @@ const ManageAddons = () => {
               disabled={loading}
               className="px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Refresh
+              {texts.refresh}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Updating..." : "Update Addons"}
+              {loading ? texts.updating : texts.updateAddons}
             </button>
           </div>
         </form>

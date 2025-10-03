@@ -1,6 +1,8 @@
 "use client";
+import ErrorNotification from "@/components/common/ErrorNotification";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeviceLogin } from "@/hooks/useDeviceLogin";
 import { ArrowRight, Mail } from "lucide-react";
 import Link from "next/link";
@@ -9,10 +11,9 @@ import ReCAPTCHA from "react-google-recaptcha";
 import Select from "react-select";
 import countryList from "react-select-country-list";
 import SocialLogin from "./SocialLogin";
-import ErrorNotification from "@/components/common/ErrorNotification";
-import { getFirebaseErrorMessage, getCustomErrorMessage, isFirebaseError } from "@/lib/firebaseErrorHandler";
 
 export default function RegisterComponent({ referralCode = "" }) {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -31,9 +32,105 @@ export default function RegisterComponent({ referralCode = "" }) {
   const [recaptchaEnabled, setRecaptchaEnabled] = useState(false);
   const [socialError, setSocialError] = useState("");
 
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    newHereTitle: "NEW HERE? CREATE AN ACCOUNT",
+    newHereMessage:
+      "Join Cheap Stream in just a few clicks and unlock instant access to movies, shows, and live TV.",
+    checkYourEmail: "CHECK YOUR EMAIL",
+    emailSentMessage: "We've sent a verification link to",
+    nextSteps: "Next Steps:",
+    checkEmailInbox: "Check your email inbox (and spam folder)",
+    clickVerificationLink: "Click the verification link in the email",
+    setPasswordComplete: "Set your password and complete account setup",
+    resendVerificationEmail: "Resend Verification Email",
+    goToSignIn: "Go to Sign In",
+    didntReceiveEmail:
+      "Didn't receive the email? Check your spam folder or try resending.",
+    verifyYourEmail: "VERIFY YOUR EMAIL",
+    completeRegistrationMessage:
+      "Complete your registration by setting a password for your account.",
+    createPassword: "Create Password",
+    confirmPassword: "Confirm Password",
+    creatingAccount: "Creating Account...",
+    completeRegistration: "Complete Registration",
+    nextStepsInstructions: "Next Steps:",
+    createStrongPassword: "Create a strong password for your account",
+    confirmYourPassword: "Confirm your password",
+    clickVerify: "Click verify to complete registration",
+    resendVerificationEmailAgain: "Resend Verification Email",
+    backToRegistration: "Back to Registration",
+    firstName: "First Name",
+    enterFirstName: "Enter your first name",
+    lastName: "Last Name",
+    enterLastName: "Enter your last name",
+    emailAddress: "Email Address",
+    enterEmailAddress: "Enter your email address",
+    username: "Username",
+    enterUsername: "Enter your username",
+    country: "Country",
+    selectCountry: "Select your country",
+    checkingAvailability: "Checking availability...",
+    usernameAvailable: "✓ Username is available",
+    usernameTaken: "✗ Username is already taken",
+    createAnAccount: "Create An Account",
+    sendingVerification: "Sending Verification...",
+    or: "OR",
+    alreadyHaveAccount: "Already have an account?",
+    logIn: "Log In",
+    completeRecaptcha: "Please complete the reCAPTCHA verification.",
+    registrationFailed: "Registration failed. Please try again.",
+    networkError: "Network error. Please check your connection and try again.",
+    failedToResend: "Failed to resend email. Please try again.",
+    accountCreatedSuccessfully: "ACCOUNT CREATED SUCCESSFULLY!",
+    welcomeToCheapStream:
+      "Welcome to Cheap Stream! Your account has been verified and created.",
+    welcomeAboard: "Welcome aboard!",
+    redirectingMessage:
+      "You're now being redirected to your dashboard where you can start exploring our services.",
+    redirectingToDashboard: "Redirecting to dashboard...",
+    loadingVerification: "Loading verification...",
+    passwordsDoNotMatch: "Passwords do not match",
+    passwordTooShort: "Password must be at least 6 characters long",
+    verificationFailed: "Verification failed. Please try again.",
+    sending: "Sending...",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
   const recaptchaRef = useRef();
   const countryOptions = useMemo(() => countryList().getData(), []);
   const { recordDeviceLogin } = useDeviceLogin();
+
+  // Translate texts
+  useEffect(() => {
+    if (!isLanguageLoaded || language?.code === "en") {
+      setTexts(ORIGINAL_TEXTS);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = Object.values(ORIGINAL_TEXTS);
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const translatedTexts = {};
+        Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+          translatedTexts[key] = translated[index];
+        });
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language?.code, translate, isLanguageLoaded]);
 
   useEffect(() => {
     const checkRecaptchaSetting = async () => {
@@ -123,7 +220,7 @@ export default function RegisterComponent({ referralCode = "" }) {
 
     // Check if reCAPTCHA is completed only when it's enabled
     if (recaptchaEnabled && !recaptchaToken) {
-      setError("Please complete the reCAPTCHA verification.");
+      setError(texts.completeRecaptcha);
       setLoading(false);
       return;
     }
@@ -152,10 +249,10 @@ export default function RegisterComponent({ referralCode = "" }) {
         setSuccess(true);
         setVerificationEmail(formData.email);
       } else {
-        setError(data.error || "Registration failed. Please try again.");
+        setError(data.error || texts.registrationFailed);
       }
     } catch (error) {
-      setError("Network error. Please check your connection and try again.");
+      setError(texts.networkError);
     } finally {
       setLoading(false);
     }
@@ -189,10 +286,10 @@ export default function RegisterComponent({ referralCode = "" }) {
         setSuccess(true);
         setVerificationEmail(formData.email);
       } else {
-        setError(data.error || "Failed to resend email. Please try again.");
+        setError(data.error || texts.failedToResend);
       }
     } catch (error) {
-      setError("Network error. Please check your connection and try again.");
+      setError(texts.networkError);
     }
 
     setLoading(false);
@@ -227,10 +324,10 @@ export default function RegisterComponent({ referralCode = "" }) {
               <Mail size={24} className="text-green-400" />
             </div>
             <h1 className="text-white text-xl sm:text-2xl font-bold mb-3 sm:mb-4 tracking-wide">
-              CHECK YOUR EMAIL
+              {texts.checkYourEmail}
             </h1>
             <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
-              We've sent a verification link to{" "}
+              {texts.emailSentMessage}{" "}
               <span className="text-white font-medium">
                 {verificationEmail}
               </span>
@@ -241,12 +338,12 @@ export default function RegisterComponent({ referralCode = "" }) {
           <div className="space-y-4 mb-6">
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
               <h3 className="text-blue-400 text-sm font-semibold mb-2">
-                Next Steps:
+                {texts.nextSteps}
               </h3>
               <ul className="text-gray-300 text-xs space-y-1">
-                <li>• Check your email inbox (and spam folder)</li>
-                <li>• Click the verification link in the email</li>
-                <li>• Set your password and complete account setup</li>
+                <li>• {texts.checkEmailInbox}</li>
+                <li>• {texts.clickVerificationLink}</li>
+                <li>• {texts.setPasswordComplete}</li>
               </ul>
             </div>
           </div>
@@ -258,7 +355,7 @@ export default function RegisterComponent({ referralCode = "" }) {
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 mb-2"
             >
-              {loading ? "Sending..." : "Resend Verification Email"}
+              {loading ? texts.sending : texts.resendVerificationEmail}
               <Mail size={18} />
             </Button>
 
@@ -267,7 +364,7 @@ export default function RegisterComponent({ referralCode = "" }) {
                 variant="outline"
                 className="w-full flex items-center justify-center gap-2"
               >
-                Go to Sign In
+                {texts.goToSignIn}
                 <ArrowRight size={18} />
               </Button>
             </Link>
@@ -275,9 +372,7 @@ export default function RegisterComponent({ referralCode = "" }) {
 
           {/* Help Text */}
           <div className="text-center mt-6">
-            <p className="text-gray-400 text-xs">
-              Didn't receive the email? Check your spam folder or try resending.
-            </p>
+            <p className="text-gray-400 text-xs">{texts.didntReceiveEmail}</p>
           </div>
         </div>
       </div>
@@ -290,11 +385,10 @@ export default function RegisterComponent({ referralCode = "" }) {
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-white text-xl sm:text-2xl font-bold mb-3 sm:mb-4 tracking-wide">
-            NEW HERE? CREATE AN ACCOUNT
+            {texts.newHereTitle}
           </h1>
           <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
-            Join Cheap Stream in just a few clicks and unlock instant access to
-            movies, shows, and live TV.
+            {texts.newHereMessage}
           </p>
         </div>
 
@@ -306,14 +400,14 @@ export default function RegisterComponent({ referralCode = "" }) {
           {/* First Name Input */}
           <div>
             <label className="block text-white text-xs sm:text-sm font-medium mb-2">
-              First Name
+              {texts.firstName}
             </label>
             <Input
               type="text"
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
-              placeholder="Enter your first name"
+              placeholder={texts.enterFirstName}
               required
               disabled={loading}
             />
@@ -322,14 +416,14 @@ export default function RegisterComponent({ referralCode = "" }) {
           {/* Last Name Input */}
           <div>
             <label className="block text-white text-xs sm:text-sm font-medium mb-2">
-              Last Name
+              {texts.lastName}
             </label>
             <Input
               type="text"
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
-              placeholder="Enter your last name"
+              placeholder={texts.enterLastName}
               required
               disabled={loading}
             />
@@ -338,14 +432,14 @@ export default function RegisterComponent({ referralCode = "" }) {
           {/* Email Address Input */}
           <div>
             <label className="block text-white text-xs sm:text-sm font-medium mb-2">
-              Email Address
+              {texts.emailAddress}
             </label>
             <Input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter your email address"
+              placeholder={texts.enterEmailAddress}
               required
               disabled={loading}
             />
@@ -354,14 +448,14 @@ export default function RegisterComponent({ referralCode = "" }) {
           {/* Username Input */}
           <div>
             <label className="block text-white text-xs sm:text-sm font-medium mb-2">
-              Username
+              {texts.username}
             </label>
             <Input
               type="text"
               name="username"
               value={formData.username}
               onChange={handleChange}
-              placeholder="Enter your username"
+              placeholder={texts.enterUsername}
               required
               disabled={loading}
             />
@@ -370,15 +464,15 @@ export default function RegisterComponent({ referralCode = "" }) {
               <div className="mt-2">
                 {usernameChecking ? (
                   <span className="text-yellow-400 text-xs">
-                    Checking availability...
+                    {texts.checkingAvailability}
                   </span>
                 ) : usernameAvailable === true ? (
                   <span className="text-green-400 text-xs">
-                    ✓ Username is available
+                    {texts.usernameAvailable}
                   </span>
                 ) : usernameAvailable === false ? (
                   <span className="text-red-400 text-xs">
-                    ✗ Username is already taken
+                    {texts.usernameTaken}
                   </span>
                 ) : null}
               </div>
@@ -388,7 +482,7 @@ export default function RegisterComponent({ referralCode = "" }) {
           {/* Country Selection */}
           <div>
             <label className="block text-white text-xs sm:text-sm font-medium mb-2">
-              Country
+              {texts.country}
             </label>
             <Select
               options={countryOptions}
@@ -396,7 +490,7 @@ export default function RegisterComponent({ referralCode = "" }) {
                 (option) => option.value === formData.countryCode
               )}
               onChange={handleCountryChange}
-              placeholder="Select your country"
+              placeholder={texts.selectCountry}
               isDisabled={loading}
               className="text-black"
               styles={{
@@ -464,10 +558,10 @@ export default function RegisterComponent({ referralCode = "" }) {
             }
           >
             {loading ? (
-              "Sending Verification..."
+              texts.sendingVerification
             ) : (
               <>
-                Create An Account
+                {texts.createAnAccount}
                 <ArrowRight size={18} />
               </>
             )}
@@ -478,7 +572,7 @@ export default function RegisterComponent({ referralCode = "" }) {
         <div className="my-4 sm:my-6 flex items-center">
           <div className="flex-1 h-px bg-gray-700"></div>
           <span className="px-3 sm:px-4 text-gray-400 text-xs sm:text-sm">
-            OR
+            {texts.or}
           </span>
           <div className="flex-1 h-px bg-gray-700"></div>
         </div>
@@ -491,17 +585,20 @@ export default function RegisterComponent({ referralCode = "" }) {
         />
 
         {/* Social Error Notification */}
-        <ErrorNotification error={socialError} onClose={() => setSocialError("")} />
+        <ErrorNotification
+          error={socialError}
+          onClose={() => setSocialError("")}
+        />
 
         {/* Login Link */}
         <div className="text-center">
           <p className="text-gray-300 text-xs sm:text-sm">
-            Already have an account?{" "}
+            {texts.alreadyHaveAccount}{" "}
             <Link
               href="/login"
               className="text-cyan-400 hover:text-cyan-300 transition-colors font-semibold"
             >
-              Log In
+              {texts.logIn}
             </Link>
           </p>
         </div>

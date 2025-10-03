@@ -4,14 +4,16 @@ import { CircleMinus, CirclePlus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function FAQ() {
-  const { language, translate } = useLanguage();
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [openItem, setOpenItem] = useState(0);
   const [faqs, setFaqs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const ORIGINAL_HEADING = "FREQUENTLY ASKED QUESTIONS";
+  const ORIGINAL_NO_FAQS = "No FAQs available at the moment.";
 
   const [heading, setHeading] = useState(ORIGINAL_HEADING);
+  const [noFaqsText, setNoFaqsText] = useState(ORIGINAL_NO_FAQS);
 
   // Load FAQs from API
   const loadFAQs = async () => {
@@ -38,21 +40,64 @@ export default function FAQ() {
     loadFAQs();
   }, []);
 
+  // Translate static texts
   useEffect(() => {
+    if (!isLanguageLoaded || language?.code === "en") {
+      setHeading(ORIGINAL_HEADING);
+      setNoFaqsText(ORIGINAL_NO_FAQS);
+      return;
+    }
+
     let isMounted = true;
     (async () => {
-      const items = [ORIGINAL_HEADING];
+      const items = [ORIGINAL_HEADING, ORIGINAL_NO_FAQS];
       const translated = await translate(items);
       if (!isMounted) return;
 
-      const [tHeading] = translated;
+      const [tHeading, tNoFaqs] = translated;
       setHeading(tHeading);
+      setNoFaqsText(tNoFaqs);
     })();
 
     return () => {
       isMounted = false;
     };
-  }, [language.code]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [language?.code, translate, isLanguageLoaded]);
+
+  // Translate FAQ content
+  useEffect(() => {
+    if (!faqs.length || !isLanguageLoaded || language?.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        // Collect all questions and answers for translation
+        const textsToTranslate = [];
+        faqs.forEach((faq) => {
+          textsToTranslate.push(faq.question);
+          textsToTranslate.push(faq.answer);
+        });
+
+        const translated = await translate(textsToTranslate);
+        if (!isMounted) return;
+
+        // Update FAQs with translated content
+        const translatedFaqs = faqs.map((faq, index) => ({
+          ...faq,
+          question: translated[index * 2],
+          answer: translated[index * 2 + 1],
+        }));
+
+        setFaqs(translatedFaqs);
+      } catch (error) {
+        console.error("Error translating FAQs:", error);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [faqs.length, language?.code, translate, isLanguageLoaded]);
 
   const toggleItem = (index) => {
     setOpenItem(openItem === index ? null : index);
@@ -78,7 +123,7 @@ export default function FAQ() {
           {heading}
         </h1>
         <div className="text-center text-gray-400">
-          <p>No FAQs available at the moment.</p>
+          <p>{noFaqsText}</p>
         </div>
       </div>
     );

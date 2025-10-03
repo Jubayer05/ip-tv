@@ -2,6 +2,7 @@
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeviceLogin } from "@/hooks/useDeviceLogin";
 import { getDeviceInfo } from "@/lib/fingerprint";
 import { ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
@@ -9,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function TwoFactorAuth({ email, onBack, visitorId }) {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
@@ -16,9 +18,60 @@ export default function TwoFactorAuth({ email, onBack, visitorId }) {
   const [countdown, setCountdown] = useState(0);
   const [canResend, setCanResend] = useState(false);
 
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    twoFactorAuth: "Two-Factor Authentication",
+    enterCodeMessage: "Enter the 6-digit code sent to your email",
+    trustedDeviceMessage: "This device will be trusted for future logins",
+    verificationCode: "Verification Code",
+    enterCodePlaceholder: "Enter 6-digit code",
+    verifying: "Verifying...",
+    verifySignIn: "Verify & Sign In",
+    didntReceiveCode: "Didn't receive the code?",
+    resendCode: "Resend Code",
+    resendIn: "Resend in",
+    backToLogin: "Back to Login",
+    pleaseEnterCode: "Please enter the verification code",
+    validSixDigitCode: "Please enter a valid 6-digit code",
+    unexpectedError: "An unexpected error occurred. Please try again.",
+    sending: "Sending...",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
   const { verify2FACode, complete2FALogin, send2FACode } = useAuth();
   const router = useRouter();
   const { recordDeviceLogin } = useDeviceLogin();
+
+  // Translate texts
+  useEffect(() => {
+    if (!isLanguageLoaded || language?.code === "en") {
+      setTexts(ORIGINAL_TEXTS);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = Object.values(ORIGINAL_TEXTS);
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const translatedTexts = {};
+        Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+          translatedTexts[key] = translated[index];
+        });
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language?.code, translate, isLanguageLoaded]);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -40,13 +93,13 @@ export default function TwoFactorAuth({ email, onBack, visitorId }) {
     setError("");
 
     if (!code) {
-      setError("Please enter the verification code");
+      setError(texts.pleaseEnterCode);
       setLoading(false);
       return;
     }
 
     if (code.length !== 6) {
-      setError("Please enter a valid 6-digit code");
+      setError(texts.validSixDigitCode);
       setLoading(false);
       return;
     }
@@ -72,7 +125,7 @@ export default function TwoFactorAuth({ email, onBack, visitorId }) {
         setError(result.error);
       }
     } catch (error) {
-      setError("An unexpected error occurred. Please try again.");
+      setError(texts.unexpectedError);
     } finally {
       setLoading(false);
     }
@@ -108,14 +161,12 @@ export default function TwoFactorAuth({ email, onBack, visitorId }) {
         {/* Header */}
         <div className="text-center">
           <h2 className="text-3xl font-bold text-white mb-2">
-            Two-Factor Authentication
+            {texts.twoFactorAuth}
           </h2>
-          <p className="text-gray-400 text-sm">
-            Enter the 6-digit code sent to your email
-          </p>
+          <p className="text-gray-400 text-sm">{texts.enterCodeMessage}</p>
           <p className="text-cyan-400 text-sm mt-2">{email}</p>
           <p className="text-gray-500 text-xs mt-1">
-            This device will be trusted for future logins
+            {texts.trustedDeviceMessage}
           </p>
         </div>
 
@@ -133,7 +184,7 @@ export default function TwoFactorAuth({ email, onBack, visitorId }) {
               htmlFor="code"
               className="block text-sm font-medium text-gray-300 mb-2"
             >
-              Verification Code
+              {texts.verificationCode}
             </label>
             <Input
               id="code"
@@ -141,7 +192,7 @@ export default function TwoFactorAuth({ email, onBack, visitorId }) {
               type="text"
               value={code}
               onChange={handleInputChange}
-              placeholder="Enter 6-digit code"
+              placeholder={texts.enterCodePlaceholder}
               maxLength={6}
               required
               className="w-full text-center text-2xl tracking-widest"
@@ -154,7 +205,7 @@ export default function TwoFactorAuth({ email, onBack, visitorId }) {
             disabled={loading || code.length !== 6}
             className="w-full flex items-center justify-center gap-2"
           >
-            {loading ? "Verifying..." : "Verify & Sign In"}
+            {loading ? texts.verifying : texts.verifySignIn}
             <ArrowRight size={20} />
           </Button>
         </form>
@@ -163,7 +214,7 @@ export default function TwoFactorAuth({ email, onBack, visitorId }) {
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-2">
             <span className="text-gray-400 text-sm">
-              Didn't receive the code?
+              {texts.didntReceiveCode}
             </span>
             {canResend ? (
               <button
@@ -174,15 +225,15 @@ export default function TwoFactorAuth({ email, onBack, visitorId }) {
                 {sendingCode ? (
                   <>
                     <RefreshCw size={16} className="animate-spin inline mr-1" />
-                    Sending...
+                    {texts.sending}
                   </>
                 ) : (
-                  "Resend Code"
+                  texts.resendCode
                 )}
               </button>
             ) : (
               <span className="text-gray-500 text-sm">
-                Resend in {countdown}s
+                {texts.resendIn} {countdown}s
               </span>
             )}
           </div>
@@ -195,7 +246,7 @@ export default function TwoFactorAuth({ email, onBack, visitorId }) {
             className="text-gray-400 hover:text-white transition-colors text-sm flex items-center gap-2 mx-auto"
           >
             <ArrowLeft size={16} />
-            Back to Login
+            {texts.backToLogin}
           </button>
         </div>
       </div>

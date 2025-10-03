@@ -1,12 +1,70 @@
 "use client";
 import TableCustom from "@/components/ui/TableCustom";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Check, Clock, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const AffiliateFundTransfer = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "Fund Transfer Management - Withdrawal Requests",
+    searchPlaceholder: "Search by username, first name, last name, or email...",
+    loadingWithdrawals: "Loading withdrawal requests...",
+    noWithdrawals: "No withdrawal requests found",
+    showingResults: "Showing",
+    of: "of",
+    withdrawalRequests: "withdrawal requests",
+    for: "for",
+    user: "User",
+    amount: "Amount",
+    walletAddress: "Wallet Address",
+    status: "Status",
+    date: "Date",
+    message: "Message",
+    actions: "Actions",
+    approve: "Approve",
+    reject: "Reject",
+    markAsPaid: "Mark as Paid",
+    paymentCompleted: "✓ Payment completed",
+    requestRejected: "✗ Request rejected",
+    pending: "PENDING",
+    approved: "APPROVED",
+    rejected: "REJECTED",
+    paid: "PAID",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
 
   useEffect(() => {
     fetchWithdrawals();
@@ -125,7 +183,7 @@ const AffiliateFundTransfer = () => {
   const buildTableColumns = () => {
     return [
       {
-        title: "User",
+        title: texts.user,
         dataIndex: "user",
         key: "user",
         width: "150px",
@@ -136,7 +194,7 @@ const AffiliateFundTransfer = () => {
         ),
       },
       {
-        title: "Amount",
+        title: texts.amount,
         dataIndex: "amount",
         key: "amount",
         align: "center",
@@ -151,7 +209,7 @@ const AffiliateFundTransfer = () => {
         ),
       },
       {
-        title: "Wallet Address",
+        title: texts.walletAddress,
         dataIndex: "walletAddress",
         key: "walletAddress",
         width: "200px",
@@ -162,7 +220,7 @@ const AffiliateFundTransfer = () => {
         ),
       },
       {
-        title: "Status",
+        title: texts.status,
         dataIndex: "status",
         key: "status",
         align: "center",
@@ -175,13 +233,13 @@ const AffiliateFundTransfer = () => {
                 status
               )}`}
             >
-              {status.toUpperCase()}
+              {texts[status] || status.toUpperCase()}
             </span>
           </div>
         ),
       },
       {
-        title: "Date",
+        title: texts.date,
         dataIndex: "date",
         key: "date",
         align: "center",
@@ -193,7 +251,7 @@ const AffiliateFundTransfer = () => {
         ),
       },
       {
-        title: "Message",
+        title: texts.message,
         dataIndex: "message",
         align: "center",
         key: "message",
@@ -205,7 +263,7 @@ const AffiliateFundTransfer = () => {
         ),
       },
       {
-        title: "Actions",
+        title: texts.actions,
         key: "actions",
         align: "center",
         width: "160px",
@@ -217,7 +275,7 @@ const AffiliateFundTransfer = () => {
                   onClick={() => updateStatus(record.withdrawalId, "approved")}
                   className="px-2 py-1 cursor-pointer bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
                 >
-                  Approve
+                  {texts.approve}
                 </button>
                 <button
                   onClick={() =>
@@ -229,7 +287,7 @@ const AffiliateFundTransfer = () => {
                   }
                   className="px-2 py-1 cursor-pointer bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
                 >
-                  Reject
+                  {texts.reject}
                 </button>
               </div>
             )}
@@ -241,19 +299,19 @@ const AffiliateFundTransfer = () => {
                 }
                 className="px-3 py-1 cursor-pointer bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors"
               >
-                Mark as Paid
+                {texts.markAsPaid}
               </button>
             )}
 
             {record.status === "paid" && (
               <div className="text-green-400 text-xs font-medium">
-                ✓ Payment completed
+                {texts.paymentCompleted}
               </div>
             )}
 
             {record.status === "rejected" && (
               <div className="text-red-400 text-xs font-medium">
-                ✗ Request rejected
+                {texts.requestRejected}
               </div>
             )}
           </div>
@@ -268,7 +326,7 @@ const AffiliateFundTransfer = () => {
       <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-7xl mx-auto font-secondary">
         <div className="flex items-center justify-center h-32">
           <div className="text-gray-400 text-sm text-center">
-            Loading withdrawal requests...
+            {texts.loadingWithdrawals}
           </div>
         </div>
       </div>
@@ -281,7 +339,7 @@ const AffiliateFundTransfer = () => {
       <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-7xl mx-auto font-secondary">
         <div className="flex items-center justify-center h-32">
           <div className="text-gray-400 text-sm text-center">
-            No withdrawal requests found
+            {texts.noWithdrawals}
           </div>
         </div>
       </div>
@@ -290,9 +348,7 @@ const AffiliateFundTransfer = () => {
 
   return (
     <div className="mt-4 sm:mt-6 font-secondary">
-      <h2 className="text-4xl font-bold text-white mb-4">
-        Fund Transfer Management - Withdrawal Requests
-      </h2>
+      <h2 className="text-4xl font-bold text-white mb-4">{texts.heading}</h2>
       {/* Search Box */}
       <div className="mb-6 flex justify-start pt-3">
         <div className="relative w-full max-w-md">
@@ -301,7 +357,7 @@ const AffiliateFundTransfer = () => {
           </div>
           <input
             type="text"
-            placeholder="Search by username, first name, last name, or email..."
+            placeholder={texts.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-[#0c171c] border border-white/15 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 transition-colors"
@@ -321,10 +377,13 @@ const AffiliateFundTransfer = () => {
       {searchTerm && (
         <div className="mb-4 text-center">
           <p className="text-gray-400 text-sm">
-            Showing {filteredWithdrawals.length} of {withdrawals.length}{" "}
-            withdrawal requests
+            {texts.showingResults} {filteredWithdrawals.length} {texts.of}{" "}
+            {withdrawals.length} {texts.withdrawalRequests}
             {filteredWithdrawals.length !== withdrawals.length && (
-              <span className="text-cyan-400"> for "{searchTerm}"</span>
+              <span className="text-cyan-400">
+                {" "}
+                {texts.for} "{searchTerm}"
+              </span>
             )}
           </p>
         </div>

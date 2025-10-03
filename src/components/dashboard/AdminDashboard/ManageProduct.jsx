@@ -1,9 +1,11 @@
 "use client";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useState } from "react";
 
 const ManageProduct = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [product, setProduct] = useState({
     name: "",
     description: "",
@@ -52,6 +54,78 @@ const ManageProduct = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+
+  const ORIGINAL_TEXTS = {
+    heading: "Manage Product",
+    editExistingProduct: "Edit your existing product and variants",
+    createProductWithVariants: "Create your product with different variants",
+    productUpdatedSuccessfully: "Product updated successfully!",
+    productCreatedSuccessfully: "Product created successfully!",
+    errorOccurred: "Error occurred",
+    errorOccurredWhileSaving: "Error occurred while saving product",
+    loading: "Loading...",
+    loadingProductData: "Loading product data...",
+    productInformation: "Product Information",
+    productName: "Product Name",
+    description: "Description",
+    enterProductName: "Enter product name",
+    enterProductDescription: "Enter product description",
+    devicePricingRules: "Device Pricing Rules",
+    addDeviceRule: "Add Device Rule",
+    deviceCount: "Device Count",
+    priceMultiplier: "Price Multiplier",
+    description: "Description",
+    remove: "Remove",
+    bulkDiscountRules: "Bulk Discount Rules",
+    addDiscountRule: "Add Discount Rule",
+    minimumQuantity: "Minimum Quantity",
+    discountPercentage: "Discount Percentage",
+    adultChannelsFee: "Adult Channels Fee",
+    feePercentage: "Fee Percentage",
+    percentageAddedToTotal: "Percentage added to total when adult channels are enabled",
+    productVariants: "Product Variants",
+    addVariant: "Add Variant",
+    variant: "Variant",
+    recommended: "Recommended",
+    setAsRecommended: "Set as Recommended",
+    name: "Name",
+    durationMonths: "Duration (months)",
+    deviceLimit: "Device Limit",
+    price: "Price",
+    currency: "Currency",
+    customerNote: "Customer Note",
+    features: "Features",
+    addFeature: "Add Feature",
+    specialNoteForCustomers: "Special note for customers",
+    variantDescription: "Variant description",
+    featureDescription: "Feature description",
+    saving: "Saving...",
+    updateProduct: "Update Product",
+    createProduct: "Create Product",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  useEffect(() => {
+    if (!isLanguageLoaded || language.code === "en") return;
+
+    let isMounted = true;
+    (async () => {
+      const items = Object.values(ORIGINAL_TEXTS);
+      const translated = await translate(items);
+      if (!isMounted) return;
+
+      const translatedTexts = {};
+      Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+        translatedTexts[key] = translated[index];
+      });
+      setTexts(translatedTexts);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language.code, isLanguageLoaded, translate]);
 
   useEffect(() => {
     fetchProduct();
@@ -145,16 +219,16 @@ const ManageProduct = () => {
       if (response.ok) {
         setMessage(
           isEditing
-            ? "Product updated successfully!"
-            : "Product created successfully!"
+            ? texts.productUpdatedSuccessfully
+            : texts.productCreatedSuccessfully
         );
         setIsEditing(true);
         setProduct(data);
       } else {
-        setMessage(data.message || "Error occurred");
+        setMessage(data.message || texts.errorOccurred);
       }
     } catch (error) {
-      setMessage("Error occurred while saving product");
+      setMessage(texts.errorOccurredWhileSaving);
     } finally {
       setLoading(false);
     }
@@ -316,12 +390,12 @@ const ManageProduct = () => {
   };
 
   if (loading && !product.name) {
-    return <div className="text-center py-8">Loading...</div>;
+    return <div className="text-center py-8">{texts.loading}</div>;
   }
 
   // Show loading if we're still fetching and don't have product data
   if (loading) {
-    return <div className="text-center py-8">Loading product data...</div>;
+    return <div className="text-center py-8">{texts.loadingProductData}</div>;
   }
 
   // Ensure all arrays exist before rendering
@@ -332,11 +406,11 @@ const ManageProduct = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 font-secondary">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2">Manage Product</h2>
+        <h2 className="text-3xl font-bold text-white mb-2">{texts.heading}</h2>
         <p className="text-gray-300">
           {isEditing
-            ? "Edit your existing product and variants"
-            : "Create your product with different variants"}
+            ? texts.editExistingProduct
+            : texts.createProductWithVariants}
         </p>
       </div>
 
@@ -356,12 +430,12 @@ const ManageProduct = () => {
         {/* Product Basic Info */}
         <div className="bg-[#0C171C]/50 p-6 rounded-xl border border-white/10">
           <h3 className="text-xl font-semibold text-white mb-4">
-            Product Information
+            {texts.productInformation}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Product Name
+                {texts.productName}
               </label>
               <Input
                 name="name"
@@ -369,13 +443,13 @@ const ManageProduct = () => {
                 onChange={(e) =>
                   setProduct((prev) => ({ ...prev, name: e.target.value }))
                 }
-                placeholder="Enter product name"
+                placeholder={texts.enterProductName}
                 required
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Description
+                {texts.description}
               </label>
               <Input
                 name="description"
@@ -386,7 +460,7 @@ const ManageProduct = () => {
                     description: e.target.value,
                   }))
                 }
-                placeholder="Enter product description"
+                placeholder={texts.enterProductDescription}
               />
             </div>
           </div>
@@ -396,10 +470,10 @@ const ManageProduct = () => {
         <div className="bg-[#0C171C]/50 p-6 rounded-xl border border-white/10">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-semibold text-white">
-              Device Pricing Rules
+              {texts.devicePricingRules}
             </h3>
             <Button onClick={addDevicePricing} variant="secondary" size="sm">
-              Add Device Rule
+              {texts.addDeviceRule}
             </Button>
           </div>
 
@@ -411,7 +485,7 @@ const ManageProduct = () => {
               >
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Device Count
+                    {texts.deviceCount}
                   </label>
                   <Input
                     type="number"
@@ -429,7 +503,7 @@ const ManageProduct = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Price Multiplier
+                    {texts.priceMultiplier}
                   </label>
                   <Input
                     type="number"
@@ -448,7 +522,7 @@ const ManageProduct = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Description
+                    {texts.description}
                   </label>
                   <Input
                     value={pricing.description || ""}
@@ -465,7 +539,7 @@ const ManageProduct = () => {
                       variant="danger"
                       size="sm"
                     >
-                      Remove
+                      {texts.remove}
                     </Button>
                   )}
                 </div>
@@ -478,10 +552,10 @@ const ManageProduct = () => {
         <div className="bg-[#0C171C]/50 p-6 rounded-xl border border-white/10">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-semibold text-white">
-              Bulk Discount Rules
+              {texts.bulkDiscountRules}
             </h3>
             <Button onClick={addBulkDiscount} variant="secondary" size="sm">
-              Add Discount Rule
+              {texts.addDiscountRule}
             </Button>
           </div>
 
@@ -493,7 +567,7 @@ const ManageProduct = () => {
               >
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Minimum Quantity
+                    {texts.minimumQuantity}
                   </label>
                   <Input
                     type="number"
@@ -511,7 +585,7 @@ const ManageProduct = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Discount Percentage
+                    {texts.discountPercentage}
                   </label>
                   <Input
                     type="number"
@@ -530,7 +604,7 @@ const ManageProduct = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Description
+                    {texts.description}
                   </label>
                   <Input
                     value={discount.description || ""}
@@ -547,7 +621,7 @@ const ManageProduct = () => {
                       variant="danger"
                       size="sm"
                     >
-                      Remove
+                      {texts.remove}
                     </Button>
                   )}
                 </div>
@@ -559,12 +633,12 @@ const ManageProduct = () => {
         {/* Adult Channels Fee */}
         <div className="bg-[#0C171C]/50 p-6 rounded-xl border border-white/10">
           <h3 className="text-xl font-semibold text-white mb-4">
-            Adult Channels Fee
+            {texts.adultChannelsFee}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Fee Percentage
+                {texts.feePercentage}
               </label>
               <Input
                 type="number"
@@ -580,7 +654,7 @@ const ManageProduct = () => {
                 required
               />
               <p className="text-sm text-gray-400 mt-1">
-                Percentage added to total when adult channels are enabled
+                {texts.percentageAddedToTotal}
               </p>
             </div>
           </div>
@@ -590,10 +664,10 @@ const ManageProduct = () => {
         <div className="bg-[#0C171C]/50 p-6 rounded-xl border border-white/10">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-semibold text-white">
-              Product Variants
+              {texts.productVariants}
             </h3>
             <Button onClick={addVariant} variant="secondary" size="sm">
-              Add Variant
+              {texts.addVariant}
             </Button>
           </div>
 
@@ -605,7 +679,7 @@ const ManageProduct = () => {
               >
                 <div className="flex justify-between items-center mb-4">
                   <h4 className="text-lg font-medium text-white">
-                    Variant {variantIndex + 1}
+                    {texts.variant} {variantIndex + 1}
                   </h4>
                   <div className="flex gap-2">
                     <Button
@@ -614,8 +688,8 @@ const ManageProduct = () => {
                       size="sm"
                     >
                       {variant.recommended
-                        ? "Recommended"
-                        : "Set as Recommended"}
+                        ? texts.recommended
+                        : texts.setAsRecommended}
                     </Button>
                     {variants.length > 1 && (
                       <Button
@@ -623,7 +697,7 @@ const ManageProduct = () => {
                         variant="danger"
                         size="sm"
                       >
-                        Remove
+                        {texts.remove}
                       </Button>
                     )}
                   </div>
@@ -632,7 +706,7 @@ const ManageProduct = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Name
+                      {texts.name}
                     </label>
                     <Input
                       value={variant.name || ""}
@@ -645,7 +719,7 @@ const ManageProduct = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Duration (months)
+                      {texts.durationMonths}
                     </label>
                     <Input
                       type="number"
@@ -663,7 +737,7 @@ const ManageProduct = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Device Limit
+                      {texts.deviceLimit}
                     </label>
                     <Input
                       type="number"
@@ -681,7 +755,7 @@ const ManageProduct = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Price
+                      {texts.price}
                     </label>
                     <Input
                       type="number"
@@ -700,7 +774,7 @@ const ManageProduct = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Currency
+                      {texts.currency}
                     </label>
                     <Input
                       value={variant.currency || "USD"}
@@ -717,7 +791,7 @@ const ManageProduct = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Description
+                      {texts.description}
                     </label>
                     <Input
                       value={variant.description || ""}
@@ -728,14 +802,14 @@ const ManageProduct = () => {
                           e.target.value
                         )
                       }
-                      placeholder="Variant description"
+                      placeholder={texts.variantDescription}
                     />
                   </div>
                 </div>
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Customer Note
+                    {texts.customerNote}
                   </label>
                   <Input
                     value={variant.customerNote || ""}
@@ -746,7 +820,7 @@ const ManageProduct = () => {
                         e.target.value
                       )
                     }
-                    placeholder="Special note for customers"
+                    placeholder={texts.specialNoteForCustomers}
                   />
                 </div>
 
@@ -754,14 +828,14 @@ const ManageProduct = () => {
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <label className="block text-sm font-medium text-gray-300">
-                      Features
+                      {texts.features}
                     </label>
                     <Button
                       onClick={() => addFeature(variantIndex)}
                       variant="outline"
                       size="sm"
                     >
-                      Add Feature
+                      {texts.addFeature}
                     </Button>
                   </div>
 
@@ -794,7 +868,7 @@ const ManageProduct = () => {
                               e.target.value
                             )
                           }
-                          placeholder="Feature description"
+                          placeholder={texts.featureDescription}
                           className="flex-1"
                         />
                         {(variant.features || []).length > 1 && (
@@ -805,7 +879,7 @@ const ManageProduct = () => {
                             variant="danger"
                             size="sm"
                           >
-                            Remove
+                            {texts.remove}
                           </Button>
                         )}
                       </div>
@@ -827,10 +901,10 @@ const ManageProduct = () => {
             fullWidth
           >
             {loading
-              ? "Saving..."
+              ? texts.saving
               : isEditing
-              ? "Update Product"
-              : "Create Product"}
+              ? texts.updateProduct
+              : texts.createProduct}
           </Button>
         </div>
       </form>

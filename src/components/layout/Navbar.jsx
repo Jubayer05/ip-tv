@@ -2,32 +2,52 @@
 import NotificationBell from "@/components/ui/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import {
-  ChevronDown,
-  Globe,
-  Menu,
-  Search,
-  User,
-  Wallet,
-  X,
-} from "lucide-react";
+import { ChevronDown, Menu, User, Wallet, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import ReactCountryFlag from "react-country-flag";
 import DepositPopup from "../features/AffiliateRank/DepositPopup";
 import Button from "../ui/button";
+import AudioUnlocker from "./AudioUnlocker";
+
+const langToCountry = {
+  en: "GB",
+  sv: "SE",
+  no: "NO",
+  da: "DK",
+  fi: "FI",
+  fr: "FR",
+  de: "DE",
+  es: "ES",
+  it: "IT",
+  ru: "RU",
+  tr: "TR",
+  ar: "SA",
+  hi: "IN",
+  zh: "CN",
+};
 
 const Navbar = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showDepositPopup, setShowDepositPopup] = useState(false);
+  const [isProductsMenuOpen, setIsProductsMenuOpen] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(false);
 
   const { user, logout, refreshUserData } = useAuth();
   const { language, setLanguage, languages, translate } = useLanguage();
 
   // Originals
-  const ORIGINAL_NAV_LABELS = ["HOME", "EXPLORE", "PACKAGES", "AFFILIATE"];
+  const ORIGINAL_NAV_LABELS = [
+    "HOME",
+    "EXPLORE",
+    "PACKAGES",
+    "AFFILIATE",
+    "OUR PRODUCTS",
+  ];
   const ORIGINAL_USER_MENU_LABELS = [
     "Dashboard",
     "Order History",
@@ -68,6 +88,27 @@ const Navbar = () => {
   );
   const [guestLoginLabel, setGuestLoginLabel] = useState(ORIGINAL_GUEST_LOGIN);
 
+  // Fetch products for dropdown
+  const fetchProducts = async () => {
+    try {
+      setProductsLoading(true);
+      const response = await fetch("/api/ads/public?limit=6");
+      const data = await response.json();
+
+      if (data.success) {
+        setProducts(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -84,27 +125,28 @@ const Navbar = () => {
       const translated = await translate(items);
       if (!isMounted) return;
 
-      setNavLabels(translated.slice(0, 4));
-      setUserMenuLabels(translated.slice(4, 8));
-      setAdminMenuLabels(translated.slice(8, 16));
-      setSignInLabel(translated[16]);
-      setSignOutLabel(translated[17]);
-      setUserMenuHeading(translated[18]);
-      setDepositFundsLabel(translated[19]);
-      setGuestLoginLabel(translated[20]);
+      setNavLabels(translated.slice(0, 5));
+      setUserMenuLabels(translated.slice(5, 9));
+      setAdminMenuLabels(translated.slice(9, 17));
+      setSignInLabel(translated[17]);
+      setSignOutLabel(translated[18]);
+      setUserMenuHeading(translated[19]);
+      setDepositFundsLabel(translated[20]);
+      setGuestLoginLabel(translated[21]);
     })();
 
     return () => {
       isMounted = false;
     };
-    // Update when language changes
-  }, [language.code]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Update when language changes - add null check
+  }, [language?.code, translate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const navigationLinks = [
     { href: "/", label: "HOME" },
     { href: "/explore", label: "EXPLORE" },
     { href: "/packages", label: "PACKAGES" },
     { href: "/affiliate", label: "AFFILIATE" },
+    { href: "#", label: "OUR PRODUCTS", hasDropdown: true },
   ];
 
   const userMenuItems = [
@@ -156,6 +198,10 @@ const Navbar = () => {
     setShowDepositPopup(true);
   };
 
+  const handleProductClick = (linkUrl) => {
+    window.open(linkUrl, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <>
       <nav className="h-[70px] relative bg-transparent px-3">
@@ -171,29 +217,96 @@ const Navbar = () => {
 
             <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
               {navigationLinks.map((link, i) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="font-primary text-white hover:text-primary transition-colors uppercase tracking-wide text-base"
-                >
-                  {navLabels[i]}
-                </a>
+                <div key={link.href} className="relative">
+                  {link.hasDropdown ? (
+                    <div
+                      className="relative"
+                      onMouseEnter={() => setIsProductsMenuOpen(true)}
+                      onMouseLeave={() => setIsProductsMenuOpen(false)}
+                    >
+                      <button className="font-primary h-[80px] text-white hover:text-primary transition-colors uppercase tracking-wide text-base flex items-center gap-1">
+                        {navLabels[i]}
+                        <ChevronDown size={16} />
+                      </button>
+
+                      {/* Products Dropdown */}
+                      {isProductsMenuOpen && (
+                        <div className="absolute top-full left-0 -mt-2 w-[280px] bg-white rounded-lg shadow-xl z-50 border border-gray-200">
+                          <div className="p-4">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                              Our Products
+                            </h3>
+                            {productsLoading ? (
+                              <div className="flex items-center justify-center py-8">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-cyan-500"></div>
+                              </div>
+                            ) : products.length > 0 ? (
+                              <div className="space-y-2 max-h-96 overflow-y-auto">
+                                {products.map((product, index) => (
+                                  <div
+                                    key={product._id || index}
+                                    onClick={() =>
+                                      handleProductClick(product.linkUrl)
+                                    }
+                                    className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors group"
+                                  >
+                                    <div className="flex-shrink-0">
+                                      <img
+                                        src={product.imageUrl}
+                                        alt={product.title}
+                                        className="w-12 h-12 object-cover rounded-lg"
+                                        onError={(e) => {
+                                          e.target.src = "/icons/profile.png";
+                                        }}
+                                      />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-sm font-medium text-gray-900 group-hover:text-cyan-600 transition-colors truncate">
+                                        {product.title}
+                                      </h4>
+                                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                                        {product.description}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-center py-8 text-gray-500">
+                                <p className="text-sm">No products available</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="font-primary text-white hover:text-primary transition-colors uppercase tracking-wide text-base"
+                    >
+                      {navLabels[i]}
+                    </a>
+                  )}
+                </div>
               ))}
             </div>
           </div>
 
           {/* Center Section - Logo */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center top-[13px]">
-            <Image src="/logos/logo.png" alt="Logo" width={100} height={100} />
+            <Link href="/">
+              <Image
+                src="/logos/logo.png"
+                alt="Logo"
+                width={100}
+                height={100}
+              />
+            </Link>
           </div>
 
-          {/* Right Section - Search, Language Dropdown, Sign In, and User Menu */}
+          {/* Right Section - Language Dropdown, Sign In, and User Menu */}
           <div className="flex items-center space-x-2 sm:space-x-4">
-            {/* Search Icon */}
-            <button className="text-white hover:text-gray-300 transition-colors hidden sm:block">
-              <Search size={20} />
-            </button>
-
             {/* Guest Login Icon - Only show when user is not logged in */}
             {!user && (
               <Link
@@ -230,9 +343,16 @@ const Navbar = () => {
                 onClick={() => setIsLanguageOpen(!isLanguageOpen)}
                 className="flex outline-none items-center font-secondary text-white space-x-2 hover:text-gray-300 transition-colors border border-gray-600 rounded-[30px] px-3 lg:px-5 py-2 lg:py-3 text-xs bg-gray-900"
               >
-                <Globe size={16} className="text-primary" />
-                <span className="hidden lg:inline">{language.name}</span>
-                <span className="lg:hidden">{language.code.toUpperCase()}</span>
+                <ReactCountryFlag
+                  countryCode={langToCountry[language?.code] || "GB"}
+                  svg
+                  style={{ width: "1rem", height: "1rem" }}
+                  aria-label={language?.name}
+                />
+                <span className="hidden lg:inline">{language?.name}</span>
+                <span className="lg:hidden">
+                  {language?.code.toUpperCase()}
+                </span>
                 <ChevronDown
                   size={14}
                   className={`transform transition-transform ${
@@ -249,9 +369,15 @@ const Navbar = () => {
                       <button
                         key={lang.code}
                         onClick={() => handleLanguageSelect(lang)}
-                        className="block w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors font-secondary text-sm"
+                        className="block w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors font-secondary text-sm flex items-center gap-2"
                       >
-                        {lang.name}
+                        <ReactCountryFlag
+                          countryCode={langToCountry[lang.code] || "GB"}
+                          svg
+                          style={{ width: "1rem", height: "1rem" }}
+                          aria-label={lang.name}
+                        />
+                        <span>{lang.name}</span>
                       </button>
                     ))}
                   </div>
@@ -371,14 +497,64 @@ const Navbar = () => {
 
             <div className="p-4 space-y-4">
               {navigationLinks.map((link, i) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="block font-primary text-white hover:text-primary transition-colors uppercase tracking-wide text-sm py-2"
-                  onClick={toggleMobileMenu}
-                >
-                  {navLabels[i]}
-                </a>
+                <div key={link.href}>
+                  {link.hasDropdown ? (
+                    <div>
+                      <div className="font-primary text-white hover:text-primary transition-colors uppercase tracking-wide text-sm py-2 flex items-center justify-between">
+                        <span>{navLabels[i]}</span>
+                        <ChevronDown size={16} />
+                      </div>
+                      {/* Mobile Products List */}
+                      <div className="ml-4 space-y-2">
+                        {productsLoading ? (
+                          <div className="text-gray-400 text-sm">
+                            Loading...
+                          </div>
+                        ) : products.length > 0 ? (
+                          products.map((product, index) => (
+                            <div
+                              key={product._id || index}
+                              onClick={() => {
+                                handleProductClick(product.linkUrl);
+                                toggleMobileMenu();
+                              }}
+                              className="flex items-center gap-3 p-2 hover:bg-gray-800 rounded cursor-pointer"
+                            >
+                              <img
+                                src={product.imageUrl}
+                                alt={product.title}
+                                className="w-8 h-8 object-cover rounded"
+                                onError={(e) => {
+                                  e.target.src = "/icons/profile.png";
+                                }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-xs font-medium text-white truncate">
+                                  {product.title}
+                                </h4>
+                                <p className="text-xs text-gray-400 line-clamp-1">
+                                  {product.description}
+                                </p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-gray-400 text-xs">
+                            No products available
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="block font-primary text-white hover:text-primary transition-colors uppercase tracking-wide text-sm py-2"
+                      onClick={toggleMobileMenu}
+                    >
+                      {navLabels[i]}
+                    </a>
+                  )}
+                </div>
               ))}
 
               {/* Mobile User Menu - Only show if logged in */}
@@ -460,8 +636,13 @@ const Navbar = () => {
                     className="flex outline-none items-center justify-between w-full font-secondary text-white hover:text-gray-300 transition-colors border border-gray-600 rounded-[30px] px-4 py-3 text-sm bg-gray-800"
                   >
                     <div className="flex items-center space-x-2">
-                      <Globe size={18} className="text-primary" />
-                      <span>{language.name}</span>
+                      <ReactCountryFlag
+                        countryCode={langToCountry[language?.code] || "GB"}
+                        svg
+                        style={{ width: "1rem", height: "1rem" }}
+                        aria-label={language?.name}
+                      />
+                      <span>{language?.name}</span>
                     </div>
                     <ChevronDown
                       size={16}
@@ -481,9 +662,15 @@ const Navbar = () => {
                               handleLanguageSelect(lang);
                               setIsLanguageOpen(false);
                             }}
-                            className="block w-full text-left px-4 py-2 text-white hover:bg-gray-700 transition-colors font-secondary text-sm"
+                            className="block w-full text-left px-4 py-2 text-white hover:bg-gray-700 transition-colors font-secondary text-sm flex items-center gap-2"
                           >
-                            {lang.name}
+                            <ReactCountryFlag
+                              countryCode={langToCountry[lang.code] || "GB"}
+                              svg
+                              style={{ width: "1rem", height: "1rem" }}
+                              aria-label={lang.name}
+                            />
+                            <span>{lang.name}</span>
                           </button>
                         ))}
                       </div>
@@ -504,6 +691,7 @@ const Navbar = () => {
         userId={user?._id}
         userEmail={user?.email}
       />
+      <AudioUnlocker />
     </>
   );
 };

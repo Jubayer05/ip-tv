@@ -2,11 +2,13 @@
 import PaymentConfirmPopup from "@/components/features/Pricing/Popup/PaymentConfirmPopup";
 import Button from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { BookOpen, Mail, X } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { BookOpen, Check, Copy, Eye, EyeOff, Mail, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 const OrderHistory = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const { user, getAuthToken } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +17,84 @@ const OrderHistory = () => {
   const [popupOpen, setPopupOpen] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [guideContent, setGuideContent] = useState("");
+  const [showPasswords, setShowPasswords] = useState({});
+  const [copiedCredentials, setCopiedCredentials] = useState({});
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    loadingOrders: "Loading your orders...",
+    noOrdersYet: "No Orders Yet",
+    noOrdersMessage:
+      "You haven't made any purchases yet. Start exploring our packages!",
+    browsePackages: "Browse Packages",
+    orderHistory: "Order History",
+    ordersFound: "orders found",
+    order: "order",
+    subscription: "Subscription",
+    deviceType: "Device Type",
+    quantity: "Quantity",
+    month: "Month",
+    months: "Months",
+    account: "Account",
+    accounts: "Accounts",
+    deviceConfiguration: "Device Configuration",
+    adult: "Adult",
+    nonAdult: "Non Adult",
+    adultChannelsEnabled: "Adult Channels Enabled",
+    iptvCredentialsReady: "IPTV Credentials Ready",
+    viewGuide: "View Guide",
+    resendToEmail: "Resend to Email",
+    sending: "Sending...",
+    awaitingPayment:
+      "Awaiting Payment - IPTV credentials will be sent after payment confirmation",
+    iptvSetupGuide: "IPTV Setup Guide",
+    noGuideAvailable: "No guide available yet.",
+    success: "Success!",
+    iptvCredentialsSent:
+      "IPTV credentials have been sent to your email address.",
+    error: "Error",
+    failedToSendCredentials: "Failed to send credentials",
+    networkError: "Network error. Please try again.",
+    username: "Username",
+    password: "Password",
+    showPassword: "Show Password",
+    hidePassword: "Hide Password",
+    copyCredentials: "Copy Credentials",
+    credentialsCopied: "Credentials Copied!",
+    iptvCredentials: "IPTV Credentials",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts
+  useEffect(() => {
+    if (!isLanguageLoaded || language?.code === "en") {
+      setTexts(ORIGINAL_TEXTS);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = Object.values(ORIGINAL_TEXTS);
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const translatedTexts = {};
+        Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+          translatedTexts[key] = translated[index];
+        });
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language?.code, translate, isLanguageLoaded]);
 
   useEffect(() => {
     if (user) {
@@ -71,15 +151,15 @@ const OrderHistory = () => {
 
       if (response.ok) {
         Swal.fire({
-          title: "Success!",
-          text: "IPTV credentials have been sent to your email address.",
+          title: texts.success,
+          text: texts.iptvCredentialsSent,
           icon: "success",
           confirmButtonColor: "#00b877",
         });
       } else {
         Swal.fire({
-          title: "Error",
-          text: data.error || "Failed to send credentials",
+          title: texts.error,
+          text: data.error || texts.failedToSendCredentials,
           icon: "error",
           confirmButtonColor: "#dc3545",
         });
@@ -87,8 +167,8 @@ const OrderHistory = () => {
     } catch (error) {
       console.error("Redownload error:", error);
       Swal.fire({
-        title: "Error",
-        text: "Network error. Please try again.",
+        title: texts.error,
+        text: texts.networkError,
         icon: "error",
         confirmButtonColor: "#dc3545",
       });
@@ -100,6 +180,35 @@ const OrderHistory = () => {
   const handleShowGuide = (order) => {
     setSelectedOrder(order);
     setShowGuide(true);
+  };
+
+  const togglePasswordVisibility = (orderId, credentialIndex) => {
+    setShowPasswords((prev) => ({
+      ...prev,
+      [`${orderId}-${credentialIndex}`]: !prev[`${orderId}-${credentialIndex}`],
+    }));
+  };
+
+  const copyCredentials = async (orderId, credential) => {
+    const credentialText = `${texts.username}: ${credential.username}\n${texts.password}: ${credential.password}`;
+
+    try {
+      await navigator.clipboard.writeText(credentialText);
+      setCopiedCredentials((prev) => ({
+        ...prev,
+        [`${orderId}-${credential.username}`]: true,
+      }));
+
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedCredentials((prev) => ({
+          ...prev,
+          [`${orderId}-${credential.username}`]: false,
+        }));
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to copy credentials:", error);
+    }
   };
 
   const getLineTypeName = (lineType) => {
@@ -125,7 +234,7 @@ const OrderHistory = () => {
     return (
       <div className="text-center py-8">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-        <p className="text-gray-400 mt-4">Loading your orders...</p>
+        <p className="text-gray-400 mt-4">{texts.loadingOrders}</p>
       </div>
     );
   }
@@ -134,15 +243,15 @@ const OrderHistory = () => {
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">📦</div>
-        <h3 className="text-xl font-semibold text-white mb-2">No Orders Yet</h3>
-        <p className="text-gray-400 mb-6">
-          You haven't made any purchases yet. Start exploring our packages!
-        </p>
+        <h3 className="text-xl font-semibold text-white mb-2">
+          {texts.noOrdersYet}
+        </h3>
+        <p className="text-gray-400 mb-6">{texts.noOrdersMessage}</p>
         <Button
           variant="primary"
           onClick={() => (window.location.href = "/packages")}
         >
-          Browse Packages
+          {texts.browsePackages}
         </Button>
       </div>
     );
@@ -151,9 +260,10 @@ const OrderHistory = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">Order History</h2>
+        <h2 className="text-2xl font-bold text-white">{texts.orderHistory}</h2>
         <div className="text-sm text-gray-400">
-          {orders.length} order{orders.length !== 1 ? "s" : ""} found
+          {orders.length}{" "}
+          {orders.length !== 1 ? texts.ordersFound : texts.order}
         </div>
       </div>
 
@@ -201,23 +311,31 @@ const OrderHistory = () => {
                 <div className="bg-black/30 rounded-lg p-4 mb-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <p className="text-sm text-gray-400 mb-1">Subscription</p>
+                      <p className="text-sm text-gray-400 mb-1">
+                        {texts.subscription}
+                      </p>
                       <p className="text-white font-medium">
-                        {product.duration} Month
-                        {product.duration !== 1 ? "s" : ""}
+                        {product.duration}{" "}
+                        {product.duration !== 1 ? texts.months : texts.month}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-400 mb-1">Device Type</p>
+                      <p className="text-sm text-gray-400 mb-1">
+                        {texts.deviceType}
+                      </p>
                       <p className="text-white font-medium">
                         {getLineTypeName(product.lineType)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-400 mb-1">Quantity</p>
+                      <p className="text-sm text-gray-400 mb-1">
+                        {texts.quantity}
+                      </p>
                       <p className="text-white font-medium">
                         {product.quantity}{" "}
-                        {product.quantity === 1 ? "Account" : "Accounts"}
+                        {product.quantity === 1
+                          ? texts.account
+                          : texts.accounts}
                       </p>
                     </div>
                   </div>
@@ -226,7 +344,7 @@ const OrderHistory = () => {
                   {product.lineType > 0 && product.adultChannelsConfig && (
                     <div className="mt-4 pt-4 border-t border-gray-700">
                       <p className="text-sm text-gray-400 mb-2">
-                        Device Configuration:
+                        {texts.deviceConfiguration}:
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {product.adultChannelsConfig.map(
@@ -240,7 +358,7 @@ const OrderHistory = () => {
                               }`}
                             >
                               {getLineTypeName(product.lineType)} #{index + 1}:{" "}
-                              {adultEnabled ? "Adult" : "Non Adult"}
+                              {adultEnabled ? texts.adult : texts.nonAdult}
                             </span>
                           )
                         )}
@@ -251,7 +369,7 @@ const OrderHistory = () => {
                   {product.lineType === 0 && product.adultChannels && (
                     <div className="mt-4 pt-4 border-t border-gray-700">
                       <span className="px-2 py-1 rounded text-xs bg-orange-500/20 text-orange-400">
-                        Adult Channels Enabled
+                        {texts.adultChannelsEnabled}
                       </span>
                     </div>
                   )}
@@ -260,56 +378,193 @@ const OrderHistory = () => {
 
               {/* IPTV Credentials Status */}
               {order.paymentStatus === "completed" && (
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    {
-                      <>
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-green-400 font-medium">
-                          IPTV Credentials Ready ({order.iptvCredentials.length}{" "}
-                          accounts)
-                        </span>
-                      </>
-                    }
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <span className="text-green-400 font-medium">
+                        {texts.iptvCredentialsReady} (
+                        {order.iptvCredentials.length}{" "}
+                        {order.iptvCredentials.length === 1
+                          ? texts.account
+                          : texts.accounts}
+                        )
+                      </span>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShowGuide(order);
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        {texts.viewGuide}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRedownloadCredentials(order.orderNumber);
+                        }}
+                        disabled={redownloadingOrder === order.orderNumber}
+                        className="flex items-center gap-2"
+                      >
+                        {redownloadingOrder === order.orderNumber ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            {texts.sending}
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="w-4 h-4" />
+                            {texts.resendToEmail}
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleShowGuide(order);
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      <BookOpen className="w-4 h-4" />
-                      View Guide
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRedownloadCredentials(order.orderNumber);
-                      }}
-                      disabled={redownloadingOrder === order.orderNumber}
-                      className="flex items-center gap-2"
-                    >
-                      {redownloadingOrder === order.orderNumber ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <Mail className="w-4 h-4" />
-                          Resend to Email
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                  {/* IPTV Credentials Display */}
+                  {order.iptvCredentials &&
+                    order.iptvCredentials.length > 0 && (
+                      <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700">
+                        <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-cyan-500 rounded-full"></span>
+                          {texts.iptvCredentials}
+                        </h4>
+                        <div className="space-y-3">
+                          {order.iptvCredentials.map((credential, index) => {
+                            const isPasswordVisible =
+                              showPasswords[`${order._id}-${index}`];
+                            const isCopied =
+                              copiedCredentials[
+                                `${order._id}-${credential.username}`
+                              ];
+
+                            return (
+                              <div
+                                key={index}
+                                className="bg-black/30 rounded-lg p-3"
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs text-gray-400">
+                                    {texts.account} #{index + 1}
+                                  </span>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      copyCredentials(order._id, credential);
+                                    }}
+                                    className="flex items-center gap-1 text-xs px-2 py-1 h-6"
+                                  >
+                                    {isCopied ? (
+                                      <>
+                                        <Check className="w-3 h-3" />
+                                        {texts.credentialsCopied}
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="w-3 h-3" />
+                                        {texts.copyCredentials}
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="text-xs text-gray-400 block mb-1">
+                                      {texts.username}
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="text"
+                                        value={credential.username}
+                                        readOnly
+                                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm font-mono"
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText(
+                                            credential.username
+                                          );
+                                        }}
+                                        className="px-2 py-1 h-8"
+                                      >
+                                        <Copy className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label className="text-xs text-gray-400 block mb-1">
+                                      {texts.password}
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type={
+                                          isPasswordVisible
+                                            ? "text"
+                                            : "password"
+                                        }
+                                        value={credential.password}
+                                        readOnly
+                                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm font-mono"
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          togglePasswordVisibility(
+                                            order._id,
+                                            index
+                                          );
+                                        }}
+                                        className="px-2 py-1 h-8"
+                                      >
+                                        {isPasswordVisible ? (
+                                          <EyeOff className="w-3 h-3" />
+                                        ) : (
+                                          <Eye className="w-3 h-3" />
+                                        )}
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText(
+                                            credential.password
+                                          );
+                                        }}
+                                        className="px-2 py-1 h-8"
+                                      >
+                                        <Copy className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                 </div>
               )}
 
@@ -317,8 +572,7 @@ const OrderHistory = () => {
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
                   <span className="text-yellow-400 font-medium">
-                    Awaiting Payment - IPTV credentials will be sent after
-                    payment confirmation
+                    {texts.awaitingPayment}
                   </span>
                 </div>
               )}
@@ -334,7 +588,7 @@ const OrderHistory = () => {
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-white">
-                  IPTV Setup Guide
+                  {texts.iptvSetupGuide}
                 </h3>
                 <button
                   onClick={() => setShowGuide(false)}
@@ -355,7 +609,7 @@ const OrderHistory = () => {
                 ) : (
                   <div className="text-center py-8">
                     <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-400">No guide available yet.</p>
+                    <p className="text-gray-400">{texts.noGuideAvailable}</p>
                   </div>
                 )}
               </div>

@@ -1,13 +1,20 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 const ProtectedAdminRoute = ({ children }) => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const { user, isSuperAdminUser, loading, authToken, is2FAPending } =
     useAuth();
   const router = useRouter();
   const pathname = usePathname();
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    // This component doesn't have user-facing text, but keeping for consistency
+  };
 
   useEffect(() => {
     if (loading) return;

@@ -1,9 +1,11 @@
 "use client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useApi } from "@/hooks/useApi";
 import { Clock, Mail, MessageSquare, Phone, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const ManageContact = () => {
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const { apiCall } = useApi();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -12,10 +14,73 @@ const ManageContact = () => {
     phoneNumber: "",
     emailAddress: "",
     businessHours: "Mon–Fri (09:00 AM – 5:00 PM)",
-    message: "If you have any questions about your order, please describe it and include your Order ID in the message (example: zxxxx.xxxx.xxx).",
+    message:
+      "If you have any questions about your order, please describe it and include your Order ID in the message (example: zxxxx.xxxx.xxx).",
     supportTicketButtonText: "Submit Request",
-    supportTicketSuccessMessage: "Your contact request has been submitted successfully. We'll get back to you soon!",
+    supportTicketSuccessMessage:
+      "Your contact request has been submitted successfully. We'll get back to you soon!",
   });
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "Contact Information Management",
+    subtitle:
+      "Manage your contact information that will be displayed in the footer and contact form.",
+    contactDetails: "Contact Details",
+    businessHours: "Business Hours",
+    supportMessage: "Support Message",
+    supportTicketSettings: "Support Ticket Settings",
+    phoneNumber: "Phone Number",
+    emailAddress: "Email Address",
+    businessHoursLabel: "Business Hours",
+    helpMessage: "Help Message",
+    buttonText: "Button Text",
+    successMessage: "Success Message",
+    phoneNumberPlaceholder: "Enter phone number",
+    emailAddressPlaceholder: "Enter email address",
+    businessHoursPlaceholder: "e.g., Mon–Fri (09:00 AM – 5:00 PM)",
+    businessHoursNote: "This will be displayed in the footer",
+    helpMessagePlaceholder: "Enter help message for users",
+    helpMessageNote: "This message will be shown above the contact form",
+    buttonTextPlaceholder: "e.g., Submit Request",
+    buttonTextNote: "Text for the submit button on contact form",
+    successMessagePlaceholder: "Enter success message",
+    successMessageNote: "Message shown after successful form submission",
+    refresh: "Refresh",
+    saving: "Saving...",
+    saveChanges: "Save Changes",
+    settingsSavedSuccess: "Settings saved successfully!",
+    failedToLoadSettings: "Failed to load settings",
+    failedToUpdateSettings: "Failed to update settings",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
 
   useEffect(() => {
     fetchSettings();
@@ -30,15 +95,23 @@ const ManageContact = () => {
         setContactInfo({
           phoneNumber: response.data.contactInfo?.phoneNumber || "",
           emailAddress: response.data.contactInfo?.emailAddress || "",
-          businessHours: response.data.contactInfo?.businessHours || "Mon–Fri (09:00 AM – 5:00 PM)",
-          message: response.data.contactInfo?.message || "If you have any questions about your order, please describe it and include your Order ID in the message (example: zxxxx.xxxx.xxx).",
-          supportTicketButtonText: response.data.contactInfo?.supportTicketButtonText || "Submit Request",
-          supportTicketSuccessMessage: response.data.contactInfo?.supportTicketSuccessMessage || "Your contact request has been submitted successfully. We'll get back to you soon!",
+          businessHours:
+            response.data.contactInfo?.businessHours ||
+            "Mon–Fri (09:00 AM – 5:00 PM)",
+          message:
+            response.data.contactInfo?.message ||
+            "If you have any questions about your order, please describe it and include your Order ID in the message (example: zxxxx.xxxx.xxx).",
+          supportTicketButtonText:
+            response.data.contactInfo?.supportTicketButtonText ||
+            "Submit Request",
+          supportTicketSuccessMessage:
+            response.data.contactInfo?.supportTicketSuccessMessage ||
+            "Your contact request has been submitted successfully. We'll get back to you soon!",
         });
       }
     } catch (error) {
       console.error("Failed to fetch settings:", error);
-      setError("Failed to load settings");
+      setError(texts.failedToLoadSettings);
     } finally {
       setLoading(false);
     }
@@ -67,7 +140,7 @@ const ManageContact = () => {
       }
     } catch (error) {
       console.error("Failed to update settings:", error);
-      setError("Failed to update settings");
+      setError(texts.failedToUpdateSettings);
     } finally {
       setLoading(false);
     }
@@ -76,24 +149,20 @@ const ManageContact = () => {
   return (
     <div className="flex flex-col gap-4 font-secondary">
       <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <h2 className="text-3xl text-center font-bold mb-4">
-          Contact Information Management
-        </h2>
-        <p className="text-gray-300 text-sm mb-6">
-          Manage your contact information that will be displayed in the footer and contact form.
-        </p>
+        <h2 className="text-3xl text-center font-bold mb-4">{texts.heading}</h2>
+        <p className="text-gray-300 text-sm mb-6">{texts.subtitle}</p>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Contact Information Section */}
           <div>
             <h3 className="text-lg font-semibold mb-4 text-white">
-              Contact Details
+              {texts.contactDetails}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm text-gray-300">
                   <Phone className="w-4 h-4 text-gray-400" />
-                  <span>Phone Number</span>
+                  <span>{texts.phoneNumber}</span>
                 </label>
                 <input
                   type="tel"
@@ -101,7 +170,7 @@ const ManageContact = () => {
                   onChange={(e) =>
                     handleContactChange("phoneNumber", e.target.value)
                   }
-                  placeholder="Enter phone number"
+                  placeholder={texts.phoneNumberPlaceholder}
                   className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
                 />
               </div>
@@ -109,7 +178,7 @@ const ManageContact = () => {
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm text-gray-300">
                   <Mail className="w-4 h-4 text-gray-400" />
-                  <span>Email Address</span>
+                  <span>{texts.emailAddress}</span>
                 </label>
                 <input
                   type="email"
@@ -117,7 +186,7 @@ const ManageContact = () => {
                   onChange={(e) =>
                     handleContactChange("emailAddress", e.target.value)
                   }
-                  placeholder="Enter email address"
+                  placeholder={texts.emailAddressPlaceholder}
                   className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
                 />
               </div>
@@ -127,12 +196,12 @@ const ManageContact = () => {
           {/* Business Hours Section */}
           <div>
             <h3 className="text-lg font-semibold mb-4 text-white">
-              Business Hours
+              {texts.businessHours}
             </h3>
             <div className="space-y-2">
               <label className="flex items-center space-x-2 text-sm text-gray-300">
                 <Clock className="w-4 h-4 text-gray-400" />
-                <span>Business Hours</span>
+                <span>{texts.businessHoursLabel}</span>
               </label>
               <input
                 type="text"
@@ -140,79 +209,77 @@ const ManageContact = () => {
                 onChange={(e) =>
                   handleContactChange("businessHours", e.target.value)
                 }
-                placeholder="e.g., Mon–Fri (09:00 AM – 5:00 PM)"
+                placeholder={texts.businessHoursPlaceholder}
                 className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
               />
-              <p className="text-xs text-gray-500">
-                This will be displayed in the footer
-              </p>
+              <p className="text-xs text-gray-500">{texts.businessHoursNote}</p>
             </div>
           </div>
 
           {/* Support Message Section */}
           <div>
             <h3 className="text-lg font-semibold mb-4 text-white">
-              Support Message
+              {texts.supportMessage}
             </h3>
             <div className="space-y-2">
               <label className="flex items-center space-x-2 text-sm text-gray-300">
                 <MessageSquare className="w-4 h-4 text-gray-400" />
-                <span>Help Message</span>
+                <span>{texts.helpMessage}</span>
               </label>
               <textarea
                 value={contactInfo.message}
-                onChange={(e) =>
-                  handleContactChange("message", e.target.value)
-                }
-                placeholder="Enter help message for users"
+                onChange={(e) => handleContactChange("message", e.target.value)}
+                placeholder={texts.helpMessagePlaceholder}
                 rows={3}
                 className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 resize-none"
               />
-              <p className="text-xs text-gray-500">
-                This message will be shown above the contact form
-              </p>
+              <p className="text-xs text-gray-500">{texts.helpMessageNote}</p>
             </div>
           </div>
 
           {/* Support Ticket Settings Section */}
           <div>
             <h3 className="text-lg font-semibold mb-4 text-white">
-              Support Ticket Settings
+              {texts.supportTicketSettings}
             </h3>
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm text-gray-300">
-                  Button Text
+                  {texts.buttonText}
                 </label>
                 <input
                   type="text"
                   value={contactInfo.supportTicketButtonText}
                   onChange={(e) =>
-                    handleContactChange("supportTicketButtonText", e.target.value)
+                    handleContactChange(
+                      "supportTicketButtonText",
+                      e.target.value
+                    )
                   }
-                  placeholder="e.g., Submit Request"
+                  placeholder={texts.buttonTextPlaceholder}
                   className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
                 />
-                <p className="text-xs text-gray-500">
-                  Text for the submit button on contact form
-                </p>
+                <p className="text-xs text-gray-500">{texts.buttonTextNote}</p>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm text-gray-300">
-                  Success Message
+                  {texts.successMessage}
                 </label>
                 <textarea
                   value={contactInfo.supportTicketSuccessMessage}
                   onChange={(e) =>
-                    handleContactChange("supportTicketSuccessMessage", e.target.value)
+                    handleContactChange(
+                      "supportTicketSuccessMessage",
+                      e.target.value
+                    )
                   }
-                  placeholder="Enter success message"
+                  placeholder={texts.successMessagePlaceholder}
                   rows={2}
                   className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 resize-none"
                 />
                 <p className="text-xs text-gray-500">
-                  Message shown after successful form submission
+                  {texts.successMessageNote}
                 </p>
               </div>
             </div>
@@ -226,7 +293,9 @@ const ManageContact = () => {
           )}
           {saved && (
             <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-              <p className="text-sm text-green-400">Settings saved successfully!</p>
+              <p className="text-sm text-green-400">
+                {texts.settingsSavedSuccess}
+              </p>
             </div>
           )}
 
@@ -238,7 +307,7 @@ const ManageContact = () => {
               disabled={loading}
               className="flex items-center gap-2 px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Refresh
+              {texts.refresh}
             </button>
             <button
               type="submit"
@@ -246,7 +315,7 @@ const ManageContact = () => {
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" />
-              {loading ? "Saving..." : "Save Changes"}
+              {loading ? texts.saving : texts.saveChanges}
             </button>
           </div>
         </form>

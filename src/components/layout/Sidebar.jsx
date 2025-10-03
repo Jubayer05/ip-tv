@@ -5,11 +5,13 @@ import {
   ArrowLeft,
   BarChart3,
   Bell,
+  CreditCard,
   Gift,
   HelpCircle,
   History,
   Key,
   List,
+  Megaphone,
   MessageCircle,
   Monitor,
   Package,
@@ -28,12 +30,29 @@ import { MdOutlineDashboard, MdReviews } from "react-icons/md";
 export default function Sidebar() {
   const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [cardPaymentEnabled, setCardPaymentEnabled] = useState(false);
   const { language, translate } = useLanguage();
   const { user, hasAdminAccess, isSuperAdminUser } = useAuth();
 
   const ORIGINAL_BACK_TO_TEXT = "Back to Cheap Stream";
 
-  // User menu items (regular users)
+  // Fetch card payment settings
+  const fetchCardPaymentSettings = async () => {
+    try {
+      const response = await fetch("/api/settings/card-payment");
+      const data = await response.json();
+      if (data.success) {
+        setCardPaymentEnabled(data.data.isEnabled);
+      }
+    } catch (error) {
+      console.error("Error fetching card payment settings:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCardPaymentSettings();
+  }, []);
+
   // User menu items (regular users)
   const ORIGINAL_USER_MENU_ITEMS = [
     {
@@ -51,11 +70,16 @@ export default function Sidebar() {
       label: "Device Management",
       icon: Monitor,
     },
-    // {
-    //   href: "/dashboard/payment",
-    //   label: "Payment Methods",
-    //   icon: CreditCard,
-    // },
+    // Conditionally show Payment Methods based on card payment settings
+    ...(cardPaymentEnabled
+      ? [
+          {
+            href: "/dashboard/payment",
+            label: "Payment Methods",
+            icon: CreditCard,
+          },
+        ]
+      : []),
     {
       href: "/dashboard/support",
       label: "Support Tickets",
@@ -68,8 +92,6 @@ export default function Sidebar() {
     },
   ];
 
-  // Admin menu items (admin, support, super admin)
-  // ...
   // Admin menu items (admin, support, super admin)
   const ORIGINAL_ADMIN_MENU_ITEMS = [
     {
@@ -123,9 +145,9 @@ export default function Sidebar() {
       icon: BarChart3,
     },
     {
-      href: "/admin/faq", // Add new FAQ management route
+      href: "/admin/faq",
       label: "FAQ Management",
-      icon: HelpCircle, // Use HelpCircle icon for FAQ
+      icon: HelpCircle,
     },
     {
       href: "/admin/bulk-notification",
@@ -153,6 +175,11 @@ export default function Sidebar() {
       icon: Shield,
     },
     {
+      href: "/admin/ads", // Add new ad management route
+      label: "Ad Management",
+      icon: Megaphone, // Use Megaphone icon for ads
+    },
+    {
       href: "/admin/login-api",
       label: "Login & API Management",
       icon: Key,
@@ -174,23 +201,23 @@ export default function Sidebar() {
 
   // Determine which menu items to show based on user role
   const getMenuItems = () => {
-    if (user.role === "support") {
+    if (user?.role === "support") {
       return SUPPORT_ONLY_MENU;
     }
     if (hasAdminAccess()) {
-      // If support (and not super admin), show only Support menu
       return ORIGINAL_ADMIN_MENU_ITEMS;
     }
     return ORIGINAL_USER_MENU_ITEMS;
   };
 
   const [backToText, setBackToText] = useState(ORIGINAL_BACK_TO_TEXT);
-  const [menuItems, setMenuItems] = useState(getMenuItems());
+  const [menuItems, setMenuItems] = useState([]);
 
+  // Update menu items when user role or card payment settings change
   useEffect(() => {
-    // Update menu items when user role changes
-    setMenuItems(getMenuItems());
-  }, [user.role, hasAdminAccess]);
+    const currentMenuItems = getMenuItems();
+    setMenuItems(currentMenuItems);
+  }, [user?.role, hasAdminAccess, cardPaymentEnabled]);
 
   useEffect(() => {
     let isMounted = true;
@@ -218,7 +245,7 @@ export default function Sidebar() {
     return () => {
       isMounted = false;
     };
-  }, [language.code, user.role, hasAdminAccess]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [language.code, user?.role, hasAdminAccess, cardPaymentEnabled]); // Add cardPaymentEnabled to dependencies
 
   // Reset sidebar to collapsed state when pathname changes
   useEffect(() => {
@@ -247,11 +274,16 @@ export default function Sidebar() {
     }
   };
 
+  // Don't render if user is not available
+  if (!user) {
+    return null;
+  }
+
   return (
     <div
-      className={`w-full md:w-64 transition-all duration-300 ease-in-out border border-[#212121] bg-black md:rounded-[15px] flex flex-col ${
-        isExpanded ? "h-screen md:h-full" : "h-[48px] md:h-full"
-      } overflow-hidden`}
+      className={`w-full md:w-64 transition-all duration-300 ease-in-out border border-[#212121] bg-black md:rounded-[15px] flex flex-col overflow-hidden ${
+        isExpanded ? "h-screen" : "h-[48px] md:h-screen"
+      }`}
     >
       {/* Back to Cheap Stream Link */}
       <div
@@ -269,33 +301,50 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      {/* Role indicator for admin users */}
-      {hasAdminAccess() && (
-        <div
-          className={`px-6 py-3 border-b border-gray-800 transition-all duration-300 ${
-            isExpanded ? "block" : "hidden md:block"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-green-400 text-sm font-medium">
-              {isSuperAdminUser()
-                ? "Super Admin"
-                : user.role === "admin"
-                ? "Administrator"
-                : "Support"}
-            </span>
+      {/* User Info - Only show when expanded */}
+      {isExpanded && (
+        <div className="p-4 border-b border-gray-800">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-sm font-bold">
+                {user.name?.charAt(0)?.toUpperCase() || "U"}
+              </span>
+            </div>
+            <div>
+              <p className="text-white text-sm font-medium">{user.name}</p>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-green-400 text-sm font-medium">
+                  {isSuperAdminUser()
+                    ? "Super Admin"
+                    : user.role === "admin"
+                    ? "Admin"
+                    : user.role === "support"
+                    ? "Support"
+                    : "User"}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Navigation Menu */}
+      {/* Navigation Menu - Now scrollable */}
       <nav
-        className={`flex-1 transition-all duration-300 ${
+        className={`flex-1 transition-all duration-300 overflow-y-auto ${
           isExpanded ? "block" : "hidden md:block"
         }`}
+        style={{
+          scrollbarWidth: "none" /* Firefox */,
+          msOverflowStyle: "none" /* IE and Edge */,
+        }}
       >
-        <ul className="space-y-2">
+        <style jsx>{`
+          nav::-webkit-scrollbar {
+            display: none; /* Chrome, Safari and Opera */
+          }
+        `}</style>
+        <ul className="space-y-2 p-4">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;

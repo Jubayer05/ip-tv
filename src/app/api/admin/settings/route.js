@@ -40,7 +40,7 @@ export async function PUT(request) {
     await connectToDatabase();
 
     const body = await request.json();
-    const { addons, apiKeys } = body;
+    const { addons, apiKeys, smtp, otherApiKeys } = body;
 
     // Validate API keys structure
     if (apiKeys) {
@@ -67,7 +67,7 @@ export async function PUT(request) {
         },
         tawkTo: {
           propertyId: apiKeys.tawkTo?.propertyId || "",
-          widgetId: apiKeys.tawkTo?.widgetId || "", // Add widgetId validation
+          widgetId: apiKeys.tawkTo?.widgetId || "",
         },
       };
 
@@ -82,11 +82,60 @@ export async function PUT(request) {
         },
         { upsert: true, new: true }
       );
-    } else {
-      // Update only addons if apiKeys not provided
+    }
+
+    // Handle SMTP configuration
+    if (smtp) {
+      const validSmtp = {
+        host: smtp.host || "",
+        port: smtp.port || 587,
+        user: smtp.user || "",
+        pass: smtp.pass || "",
+        secure: smtp.secure || false,
+      };
+
       await Settings.findOneAndUpdate(
         {},
-        { $set: { addons: addons || {} } },
+        { $set: { smtp: validSmtp } },
+        { upsert: true, new: true }
+      );
+    }
+
+    // Handle other API keys (IPTV, JWT, DeepL, Google Translate)
+    if (otherApiKeys) {
+      const validOtherApiKeys = {
+        iptv: {
+          apiKey: otherApiKeys.iptv?.apiKey || "",
+          baseUrl: otherApiKeys.iptv?.baseUrl || "",
+        },
+        jwt: {
+          secret: otherApiKeys.jwt?.secret || "",
+          expiresIn: otherApiKeys.jwt?.expiresIn || "7d",
+        },
+        deepl: {
+          apiKey: otherApiKeys.deepl?.apiKey || "",
+          baseUrl: otherApiKeys.deepl?.baseUrl || "https://api-free.deepl.com",
+        },
+        googleTranslate: {
+          apiKey: otherApiKeys.googleTranslate?.apiKey || "",
+          baseUrl:
+            otherApiKeys.googleTranslate?.baseUrl ||
+            "https://translation.googleapis.com",
+        },
+      };
+
+      await Settings.findOneAndUpdate(
+        {},
+        { $set: { otherApiKeys: validOtherApiKeys } },
+        { upsert: true, new: true }
+      );
+    }
+
+    // Handle addons only if no other updates
+    if (addons && !apiKeys && !smtp && !otherApiKeys) {
+      await Settings.findOneAndUpdate(
+        {},
+        { $set: { addons: addons } },
         { upsert: true, new: true }
       );
     }

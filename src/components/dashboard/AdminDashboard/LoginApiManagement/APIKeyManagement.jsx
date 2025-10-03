@@ -1,10 +1,12 @@
 "use client";
 import { useApi } from "@/hooks/useApi";
-import { Eye, EyeOff, Key, Mail, Tv } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Eye, EyeOff, Globe, Key, Languages, Mail, Tv } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const APIKeyManagement = () => {
   const { apiCall } = useApi();
+  const { language, translate, isLanguageLoaded } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -27,75 +29,188 @@ const APIKeyManagement = () => {
       secret: "",
       expiresIn: "7d",
     },
+    deepl: {
+      apiKey: "",
+      baseUrl: "https://api-free.deepl.com",
+    },
+    googleTranslate: {
+      apiKey: "",
+      baseUrl: "https://translation.googleapis.com",
+    },
   });
+
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    heading: "API Key Management",
+    subtitle: "Manage API keys and configuration for various services. All values are stored securely in the database.",
+    smtpConfiguration: "SMTP Configuration",
+    smtpDescription: "Email server settings for sending emails",
+    smtpHost: "SMTP Host",
+    smtpPort: "SMTP Port",
+    smtpUser: "SMTP User",
+    smtpPassword: "SMTP Password",
+    useSSLTLS: "Use SSL/TLS",
+    iptvService: "IPTV Service",
+    iptvDescription: "IPTV service API configuration",
+    apiKey: "API Key",
+    baseUrl: "Base URL",
+    deeplTranslation: "DeepL Translation",
+    deeplDescription: "DeepL API for high-quality translations (Swedish, Norwegian, Danish, Finnish, French, German, Spanish, Italian, Russian, Turkish)",
+    deeplApiKey: "DeepL API Key",
+    deeplBaseUrl: "DeepL Base URL",
+    googleTranslate: "Google Translate",
+    googleTranslateDescription: "Google Translate API for additional languages (Arabic, Hindi, Chinese)",
+    googleApiKey: "Google API Key",
+    googleTranslateBaseUrl: "Google Translate Base URL",
+    jwtConfiguration: "JWT Configuration",
+    jwtDescription: "JSON Web Token settings",
+    jwtSecret: "JWT Secret",
+    expiresIn: "Expires In",
+    failedToLoadSettings: "Failed to load settings",
+    failedToUpdateApiKeys: "Failed to update API keys",
+    apiKeysUpdatedSuccess: "API keys updated successfully!",
+    refresh: "Refresh",
+    updating: "Updating...",
+    updateApiKeys: "Update API Keys",
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
+  // Translate texts when language changes
+  useEffect(() => {
+    if (!isLanguageLoaded || !language) return;
+
+    const translateTexts = async () => {
+      const keys = Object.keys(ORIGINAL_TEXTS);
+      const values = Object.values(ORIGINAL_TEXTS);
+
+      try {
+        const translatedValues = await translate(values);
+        const translatedTexts = {};
+
+        keys.forEach((key, index) => {
+          translatedTexts[key] = translatedValues[index] || values[index];
+        });
+
+        setTexts(translatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    };
+
+    translateTexts();
+  }, [language, isLanguageLoaded, translate]);
 
   const apiKeyConfigs = [
     {
       key: "smtp",
-      label: "SMTP Configuration",
-      description: "Email server settings for sending emails",
+      label: texts.smtpConfiguration,
+      description: texts.smtpDescription,
       icon: Mail,
       color: "text-blue-500",
       fields: [
         {
           key: "host",
-          label: "SMTP Host",
+          label: texts.smtpHost,
           placeholder: "smtp.gmail.com",
           type: "text",
         },
-        { key: "port", label: "SMTP Port", placeholder: "587", type: "number" },
+        { key: "port", label: texts.smtpPort, placeholder: "587", type: "number" },
         {
           key: "user",
-          label: "SMTP User",
+          label: texts.smtpUser,
           placeholder: "your-email@gmail.com",
           type: "text",
         },
         {
           key: "pass",
-          label: "SMTP Password",
+          label: texts.smtpPassword,
           placeholder: "your-app-password",
           type: "password",
         },
-        { key: "secure", label: "Use SSL/TLS", type: "checkbox" },
+        { key: "secure", label: texts.useSSLTLS, type: "checkbox" },
       ],
     },
     {
       key: "iptv",
-      label: "IPTV Service",
-      description: "IPTV service API configuration",
+      label: texts.iptvService,
+      description: texts.iptvDescription,
       icon: Tv,
       color: "text-green-500",
       fields: [
         {
           key: "apiKey",
-          label: "API Key",
+          label: texts.apiKey,
           placeholder: "your-iptv-api-key",
           type: "text",
         },
         {
           key: "baseUrl",
-          label: "Base URL",
+          label: texts.baseUrl,
           placeholder: "https://api.iptv.com",
           type: "text",
         },
       ],
     },
     {
+      key: "deepl",
+      label: texts.deeplTranslation,
+      description: texts.deeplDescription,
+      icon: Globe,
+      color: "text-purple-500",
+      fields: [
+        {
+          key: "apiKey",
+          label: texts.deeplApiKey,
+          placeholder: "your-deepl-api-key",
+          type: "password",
+        },
+        {
+          key: "baseUrl",
+          label: texts.deeplBaseUrl,
+          placeholder: "https://api-free.deepl.com",
+          type: "text",
+        },
+      ],
+    },
+    {
+      key: "googleTranslate",
+      label: texts.googleTranslate,
+      description: texts.googleTranslateDescription,
+      icon: Languages,
+      color: "text-orange-500",
+      fields: [
+        {
+          key: "apiKey",
+          label: texts.googleApiKey,
+          placeholder: "your-google-translate-api-key",
+          type: "password",
+        },
+        {
+          key: "baseUrl",
+          label: texts.googleTranslateBaseUrl,
+          placeholder: "https://translation.googleapis.com",
+          type: "text",
+        },
+      ],
+    },
+    {
       key: "jwt",
-      label: "JWT Configuration",
-      description: "JSON Web Token settings",
+      label: texts.jwtConfiguration,
+      description: texts.jwtDescription,
       icon: Key,
       color: "text-red-500",
       fields: [
         {
           key: "secret",
-          label: "JWT Secret",
+          label: texts.jwtSecret,
           placeholder: "your-jwt-secret",
           type: "password",
         },
         {
           key: "expiresIn",
-          label: "Expires In",
+          label: texts.expiresIn,
           placeholder: "7d",
           type: "text",
         },
@@ -117,12 +232,24 @@ const APIKeyManagement = () => {
           setSmtp(response.data.smtp);
         }
         if (response.data.otherApiKeys) {
-          setOtherApiKeys(response.data.otherApiKeys);
+          // Merge with default values to ensure all sections exist
+          setOtherApiKeys((prev) => ({
+            ...prev,
+            ...response.data.otherApiKeys,
+            deepl: {
+              ...prev.deepl,
+              ...response.data.otherApiKeys.deepl,
+            },
+            googleTranslate: {
+              ...prev.googleTranslate,
+              ...response.data.otherApiKeys.googleTranslate,
+            },
+          }));
         }
       }
     } catch (error) {
       console.error("Failed to fetch settings:", error);
-      setError("Failed to load settings");
+      setError(texts.failedToLoadSettings);
     } finally {
       setLoading(false);
     }
@@ -174,11 +301,11 @@ const APIKeyManagement = () => {
         setSaved(true);
         setTimeout(() => setSaved(false), 1500);
       } else {
-        setError(response.error || "Failed to update API keys");
+        setError(response.error || texts.failedToUpdateApiKeys);
       }
     } catch (error) {
       console.error("Failed to update API keys:", error);
-      setError("Failed to update API keys");
+      setError(texts.failedToUpdateApiKeys);
     } finally {
       setLoading(false);
     }
@@ -228,11 +355,10 @@ const APIKeyManagement = () => {
     <div className="flex flex-col gap-4 font-secondary">
       <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
         <h2 className="text-3xl text-center font-bold mb-4">
-          API Key Management
+          {texts.heading}
         </h2>
         <p className="text-gray-300 text-sm mb-6 text-center">
-          Manage API keys and configuration for various services. All values are
-          stored securely in the database.
+          {texts.subtitle}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -269,7 +395,7 @@ const APIKeyManagement = () => {
                           >
                             <input
                               type="checkbox"
-                              checked={currentData[field.key] || false}
+                              checked={currentData?.[field.key] || false}
                               onChange={(e) =>
                                 handleSmtpChange(field.key, e.target.checked)
                               }
@@ -286,7 +412,7 @@ const APIKeyManagement = () => {
                       return renderField(
                         config.key,
                         field,
-                        currentData[field.key],
+                        currentData?.[field.key],
                         isSmtp
                           ? handleSmtpChange
                           : (field, value) =>
@@ -304,7 +430,7 @@ const APIKeyManagement = () => {
           {error && <div className="text-sm text-red-400">{error}</div>}
           {saved && (
             <div className="text-sm text-green-400 text-center">
-              API keys updated successfully!
+              {texts.apiKeysUpdatedSuccess}
             </div>
           )}
 
@@ -315,14 +441,14 @@ const APIKeyManagement = () => {
               disabled={loading}
               className="px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Refresh
+              {texts.refresh}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Updating..." : "Update API Keys"}
+              {loading ? texts.updating : texts.updateApiKeys}
             </button>
           </div>
         </form>

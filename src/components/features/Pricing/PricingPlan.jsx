@@ -37,6 +37,9 @@ const PricingPlan = () => {
   const [couponResult, setCouponResult] = useState(null);
   const [couponError, setCouponError] = useState("");
 
+  // Add state to store translated plan names
+  const [translatedPlans, setTranslatedPlans] = useState([]);
+
   // Fetch product data from API
   useEffect(() => {
     const fetchProduct = async () => {
@@ -62,6 +65,209 @@ const PricingPlan = () => {
 
     fetchProduct();
   }, []);
+
+  // Enhanced translation effect for all plan fields
+  useEffect(() => {
+    if (!product?.variants || !isLanguageLoaded || language.code === "en") {
+      setTranslatedPlans(product?.variants || []);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        // Collect all translatable text from plan variants
+        const textsToTranslate = [];
+        const planTexts = [];
+
+        product.variants.forEach((variant, variantIndex) => {
+          // Plan name
+          planTexts.push({ variantIndex, type: "name", text: variant.name });
+          textsToTranslate.push(variant.name);
+
+          // Plan description
+          if (variant.description) {
+            planTexts.push({
+              variantIndex,
+              type: "description",
+              text: variant.description,
+            });
+            textsToTranslate.push(variant.description);
+          }
+
+          // Plan features (array of strings)
+          if (variant.features && Array.isArray(variant.features)) {
+            variant.features.forEach((feature, featureIndex) => {
+              planTexts.push({
+                variantIndex,
+                type: "feature",
+                featureIndex,
+                text: feature,
+              });
+              textsToTranslate.push(feature);
+            });
+          }
+
+          // Plan duration (if it's a string)
+          if (variant.duration && typeof variant.duration === "string") {
+            planTexts.push({
+              variantIndex,
+              type: "duration",
+              text: variant.duration,
+            });
+            textsToTranslate.push(variant.duration);
+          }
+
+          // Plan duration text (if it exists)
+          if (variant.durationText) {
+            planTexts.push({
+              variantIndex,
+              type: "durationText",
+              text: variant.durationText,
+            });
+            textsToTranslate.push(variant.durationText);
+          }
+
+          // Plan subtitle (if it exists)
+          if (variant.subtitle) {
+            planTexts.push({
+              variantIndex,
+              type: "subtitle",
+              text: variant.subtitle,
+            });
+            textsToTranslate.push(variant.subtitle);
+          }
+
+          // Plan benefits (if it exists as array)
+          if (variant.benefits && Array.isArray(variant.benefits)) {
+            variant.benefits.forEach((benefit, benefitIndex) => {
+              planTexts.push({
+                variantIndex,
+                type: "benefit",
+                benefitIndex,
+                text: benefit,
+              });
+              textsToTranslate.push(benefit);
+            });
+          }
+        });
+
+        const translated = await translate(textsToTranslate);
+        if (!isMounted) return;
+
+        // Create translated variants
+        const translatedVariants = product.variants.map(
+          (variant, variantIndex) => {
+            const translatedVariant = { ...variant };
+
+            // Translate name
+            const nameText = planTexts.find(
+              (pt) => pt.variantIndex === variantIndex && pt.type === "name"
+            );
+            if (nameText) {
+              const translatedIndex = planTexts.indexOf(nameText);
+              translatedVariant.name = translated[translatedIndex];
+            }
+
+            // Translate description
+            const descText = planTexts.find(
+              (pt) =>
+                pt.variantIndex === variantIndex && pt.type === "description"
+            );
+            if (descText) {
+              const translatedIndex = planTexts.indexOf(descText);
+              translatedVariant.description = translated[translatedIndex];
+            }
+
+            // Translate features
+            if (variant.features && Array.isArray(variant.features)) {
+              translatedVariant.features = variant.features.map(
+                (feature, featureIndex) => {
+                  const featureText = planTexts.find(
+                    (pt) =>
+                      pt.variantIndex === variantIndex &&
+                      pt.type === "feature" &&
+                      pt.featureIndex === featureIndex
+                  );
+                  if (featureText) {
+                    const translatedIndex = planTexts.indexOf(featureText);
+                    return translated[translatedIndex];
+                  }
+                  return feature;
+                }
+              );
+            }
+
+            // Translate duration
+            if (variant.duration && typeof variant.duration === "string") {
+              const durationText = planTexts.find(
+                (pt) =>
+                  pt.variantIndex === variantIndex && pt.type === "duration"
+              );
+              if (durationText) {
+                const translatedIndex = planTexts.indexOf(durationText);
+                translatedVariant.duration = translated[translatedIndex];
+              }
+            }
+
+            // Translate duration text
+            if (variant.durationText) {
+              const durationTextObj = planTexts.find(
+                (pt) =>
+                  pt.variantIndex === variantIndex && pt.type === "durationText"
+              );
+              if (durationTextObj) {
+                const translatedIndex = planTexts.indexOf(durationTextObj);
+                translatedVariant.durationText = translated[translatedIndex];
+              }
+            }
+
+            // Translate subtitle
+            if (variant.subtitle) {
+              const subtitleText = planTexts.find(
+                (pt) =>
+                  pt.variantIndex === variantIndex && pt.type === "subtitle"
+              );
+              if (subtitleText) {
+                const translatedIndex = planTexts.indexOf(subtitleText);
+                translatedVariant.subtitle = translated[translatedIndex];
+              }
+            }
+
+            // Translate benefits
+            if (variant.benefits && Array.isArray(variant.benefits)) {
+              translatedVariant.benefits = variant.benefits.map(
+                (benefit, benefitIndex) => {
+                  const benefitText = planTexts.find(
+                    (pt) =>
+                      pt.variantIndex === variantIndex &&
+                      pt.type === "benefit" &&
+                      pt.benefitIndex === benefitIndex
+                  );
+                  if (benefitText) {
+                    const translatedIndex = planTexts.indexOf(benefitText);
+                    return translated[translatedIndex];
+                  }
+                  return benefit;
+                }
+              );
+            }
+
+            return translatedVariant;
+          }
+        );
+
+        setTranslatedPlans(translatedVariants);
+      } catch (error) {
+        console.error("Error translating plan data:", error);
+        setTranslatedPlans(product.variants || []);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [product?.variants, language.code, isLanguageLoaded, translate]);
 
   // Handle quantity selection
   const handleQuantityChange = (quantity) => {
@@ -204,7 +410,7 @@ const PricingPlan = () => {
     try {
       const amount = amountEligibleForCoupon();
       if (!amount || amount <= 0) {
-        setCouponError("Amount must be greater than 0");
+        setCouponError(texts.coupon.amountMustBeGreater);
         return;
       }
       const res = await fetch("/api/coupons/validate", {
@@ -214,7 +420,7 @@ const PricingPlan = () => {
       });
       const data = await res.json();
       if (!data.success) {
-        setCouponError(data.error || "Invalid coupon");
+        setCouponError(data.error || texts.coupon.invalidCoupon);
         return;
       }
       setAppliedCoupon(data.coupon);
@@ -223,7 +429,7 @@ const PricingPlan = () => {
         finalOnEligible: data.finalTotal,
       });
     } catch (e) {
-      setCouponError("Validation failed");
+      setCouponError(texts.coupon.validationFailed);
     }
   };
 
@@ -268,6 +474,8 @@ const PricingPlan = () => {
       devices: {
         title: "Select Devices:",
         recommended: "Recommended",
+        device: "Device",
+        devices: "Devices",
       },
       adultChannels: {
         title: "Adult Channels:",
@@ -277,6 +485,7 @@ const PricingPlan = () => {
       quantity: {
         title: "Select Quantity:",
         custom: "Custom",
+        enterQuantity: "Enter quantity",
       },
     },
     bulkDiscount: {
@@ -288,6 +497,37 @@ const PricingPlan = () => {
       ],
     },
     button: "PROCEED TO PURCHASE",
+    rankDiscount: {
+      congratulations: "Congratulations! You've earned a",
+      discountOnAllPurchases: "discount on all purchases.",
+      rankDiscount: "Rank Discount",
+    },
+    priceSummary: {
+      title: "Price Summary",
+      basePrice: "Base Price:",
+      devices: "Devices",
+      perDevice: "per device",
+      quantity: "Quantity:",
+      subtotal: "Subtotal:",
+      bulkDiscount: "Bulk Discount",
+      off: "OFF",
+      rankDiscount: "Rank Discount",
+      adultChannelsFee: "Adult Channels Fee:",
+      adultChannelsFeeAfterCoupon: "Adult Channels Fee (after coupon):",
+      coupon: "Coupon",
+      finalTotal: "Final Total:",
+    },
+    coupon: {
+      placeholder: "Enter coupon code",
+      apply: "Apply",
+      applied: "Applied",
+      off: "off",
+      validationFailed: "Validation failed",
+      invalidCoupon: "Invalid coupon",
+      amountMustBeGreater: "Amount must be greater than 0",
+    },
+    loading: "Loading...",
+    noProductData: "No product data available",
   };
 
   // State for translated content
@@ -305,17 +545,45 @@ const PricingPlan = () => {
           ORIGINAL_TEXTS.header,
           ORIGINAL_TEXTS.controls.devices.title,
           ORIGINAL_TEXTS.controls.devices.recommended,
+          ORIGINAL_TEXTS.controls.devices.device,
+          ORIGINAL_TEXTS.controls.devices.devices,
           ORIGINAL_TEXTS.controls.adultChannels.title,
           ORIGINAL_TEXTS.controls.adultChannels.on,
           ORIGINAL_TEXTS.controls.adultChannels.off,
           ORIGINAL_TEXTS.controls.quantity.title,
           ORIGINAL_TEXTS.controls.quantity.custom,
+          ORIGINAL_TEXTS.controls.quantity.enterQuantity,
           ORIGINAL_TEXTS.bulkDiscount.title,
           ...ORIGINAL_TEXTS.bulkDiscount.offers.flatMap((offer) => [
             offer.orders,
             offer.discount,
           ]),
           ORIGINAL_TEXTS.button,
+          ORIGINAL_TEXTS.rankDiscount.congratulations,
+          ORIGINAL_TEXTS.rankDiscount.discountOnAllPurchases,
+          ORIGINAL_TEXTS.rankDiscount.rankDiscount,
+          ORIGINAL_TEXTS.priceSummary.title,
+          ORIGINAL_TEXTS.priceSummary.basePrice,
+          ORIGINAL_TEXTS.priceSummary.devices,
+          ORIGINAL_TEXTS.priceSummary.perDevice,
+          ORIGINAL_TEXTS.priceSummary.quantity,
+          ORIGINAL_TEXTS.priceSummary.subtotal,
+          ORIGINAL_TEXTS.priceSummary.bulkDiscount,
+          ORIGINAL_TEXTS.priceSummary.off,
+          ORIGINAL_TEXTS.priceSummary.rankDiscount,
+          ORIGINAL_TEXTS.priceSummary.adultChannelsFee,
+          ORIGINAL_TEXTS.priceSummary.adultChannelsFeeAfterCoupon,
+          ORIGINAL_TEXTS.priceSummary.coupon,
+          ORIGINAL_TEXTS.priceSummary.finalTotal,
+          ORIGINAL_TEXTS.coupon.placeholder,
+          ORIGINAL_TEXTS.coupon.apply,
+          ORIGINAL_TEXTS.coupon.applied,
+          ORIGINAL_TEXTS.coupon.off,
+          ORIGINAL_TEXTS.coupon.validationFailed,
+          ORIGINAL_TEXTS.coupon.invalidCoupon,
+          ORIGINAL_TEXTS.coupon.amountMustBeGreater,
+          ORIGINAL_TEXTS.loading,
+          ORIGINAL_TEXTS.noProductData,
         ];
 
         const translated = await translate(allTexts);
@@ -329,6 +597,8 @@ const PricingPlan = () => {
             devices: {
               title: translated[currentIndex++],
               recommended: translated[currentIndex++],
+              device: translated[currentIndex++],
+              devices: translated[currentIndex++],
             },
             adultChannels: {
               title: translated[currentIndex++],
@@ -338,6 +608,7 @@ const PricingPlan = () => {
             quantity: {
               title: translated[currentIndex++],
               custom: translated[currentIndex++],
+              enterQuantity: translated[currentIndex++],
             },
           },
           bulkDiscount: {
@@ -348,6 +619,37 @@ const PricingPlan = () => {
             })),
           },
           button: translated[currentIndex++],
+          rankDiscount: {
+            congratulations: translated[currentIndex++],
+            discountOnAllPurchases: translated[currentIndex++],
+            rankDiscount: translated[currentIndex++],
+          },
+          priceSummary: {
+            title: translated[currentIndex++],
+            basePrice: translated[currentIndex++],
+            devices: translated[currentIndex++],
+            perDevice: translated[currentIndex++],
+            quantity: translated[currentIndex++],
+            subtotal: translated[currentIndex++],
+            bulkDiscount: translated[currentIndex++],
+            off: translated[currentIndex++],
+            rankDiscount: translated[currentIndex++],
+            adultChannelsFee: translated[currentIndex++],
+            adultChannelsFeeAfterCoupon: translated[currentIndex++],
+            coupon: translated[currentIndex++],
+            finalTotal: translated[currentIndex++],
+          },
+          coupon: {
+            placeholder: translated[currentIndex++],
+            apply: translated[currentIndex++],
+            applied: translated[currentIndex++],
+            off: translated[currentIndex++],
+            validationFailed: translated[currentIndex++],
+            invalidCoupon: translated[currentIndex++],
+            amountMustBeGreater: translated[currentIndex++],
+          },
+          loading: translated[currentIndex++],
+          noProductData: translated[currentIndex++],
         });
       } catch (error) {
         console.error("Translation error:", error);
@@ -451,11 +753,11 @@ const PricingPlan = () => {
   };
 
   if (loading || authLoading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return <div className="text-center py-8">{texts.loading}</div>;
   }
 
   if (!product || !product.variants) {
-    return <div className="text-center py-100">No product data available</div>;
+    return <div className="text-center py-100">{texts.noProductData}</div>;
   }
 
   const closeThankYou = () => {
@@ -479,7 +781,7 @@ const PricingPlan = () => {
 
         {/* Subscription Plans */}
         <SubscriptionPlans
-          product={product}
+          product={{ ...product, variants: translatedPlans }}
           selectedPlan={selectedPlan}
           setSelectedPlan={setSelectedPlan}
           texts={texts}
@@ -503,7 +805,8 @@ const PricingPlan = () => {
                       : "border-[#FFFFFF26] text-gray-300 hover:border-[#44dcf3]/50"
                   }`}
                 >
-                  {deviceCount} Device{deviceCount > 1 ? "s" : ""}
+                  {texts.controls.devices.device} {deviceCount}
+                  {deviceCount > 1 && texts.controls.devices.devices}
                   {deviceCount === 2 && (
                     <span className="ml-2 text-xs text-[#44dcf3]">
                       ({texts.controls.devices.recommended})
@@ -579,7 +882,7 @@ const PricingPlan = () => {
                 <Input
                   type="number"
                   min="1"
-                  placeholder="Enter quantity"
+                  placeholder={texts.controls.quantity.enterQuantity}
                   value={customQuantity}
                   onChange={handleCustomQuantityChange}
                   className="max-w-xs text-center"
@@ -600,17 +903,17 @@ const PricingPlan = () => {
                 <span className="text-black text-xs font-bold">★</span>
               </div>
               <h3 className="text-white font-semibold text-lg">
-                {currentRank.name} Rank Discount
+                {currentRank.name} {texts.rankDiscount.rankDiscount}
               </h3>
             </div>
             <div className="text-center">
               <p className="text-gray-300 text-sm mb-2">
-                Congratulations! You've earned a {currentRank.discount}%
-                discount on all purchases.
+                {texts.rankDiscount.congratulations} {currentRank.discount}%{" "}
+                {texts.rankDiscount.discountOnAllPurchases}
               </p>
               <div className="bg-primary/20 border border-primary/30 rounded-lg p-3">
                 <span className="text-primary font-bold text-lg">
-                  {currentRank.discount}% OFF
+                  {currentRank.discount}% {texts.priceSummary.off}
                 </span>
               </div>
             </div>
@@ -621,11 +924,11 @@ const PricingPlan = () => {
         {priceCalculation.finalTotal > 0 && (
           <div className="font-secondary max-w-3xl mt-6 mx-auto p-4 sm:p-6 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#00b877]/30 rounded-xl">
             <h3 className="text-white font-semibold text-lg mb-4 text-center">
-              Price Summary
+              {texts.priceSummary.title}
             </h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span>Base Price:</span>
+                <span>{texts.priceSummary.basePrice}</span>
                 <span>
                   {priceCalculation.currency}
                   {priceCalculation.basePrice}
@@ -633,19 +936,22 @@ const PricingPlan = () => {
               </div>
 
               <div className="flex justify-between">
-                <span>Devices ({selectedDevices}):</span>
+                <span>
+                  {texts.priceSummary.devices} ({selectedDevices}):
+                </span>
                 <span>
                   {priceCalculation.currency}
-                  {priceCalculation.pricePerDevice} per device
+                  {priceCalculation.pricePerDevice}{" "}
+                  {texts.priceSummary.perDevice}
                 </span>
               </div>
 
               <div className="flex justify-between">
-                <span>Quantity:</span>
+                <span>{texts.priceSummary.quantity}</span>
                 <span>{priceCalculation.quantity}</span>
               </div>
               <div className="flex justify-between">
-                <span>Subtotal:</span>
+                <span>{texts.priceSummary.subtotal}:</span>
                 <span>
                   {priceCalculation.currency}
                   {priceCalculation.subtotal}
@@ -654,8 +960,9 @@ const PricingPlan = () => {
               {priceCalculation.bulkDiscountPercentage > 0 && (
                 <div className="flex justify-between text-[#00b877]">
                   <span>
-                    Bulk Discount ({priceCalculation.bulkDiscountPercentage}%
-                    OFF):
+                    {texts.priceSummary.bulkDiscount} (
+                    {priceCalculation.bulkDiscountPercentage}%
+                    {texts.priceSummary.off}):
                   </span>
                   <span>
                     -{priceCalculation.currency}
@@ -666,8 +973,9 @@ const PricingPlan = () => {
               {priceCalculation.rankDiscountPercentage > 0 && (
                 <div className="flex justify-between text-[#00b877]">
                   <span>
-                    Rank Discount ({currentRank?.name} -{" "}
-                    {priceCalculation.rankDiscountPercentage}% OFF):
+                    {texts.priceSummary.rankDiscount} ({currentRank?.name} -{" "}
+                    {priceCalculation.rankDiscountPercentage}%{" "}
+                    {texts.priceSummary.off}):
                   </span>
                   <span>
                     -{priceCalculation.currency}
@@ -679,7 +987,7 @@ const PricingPlan = () => {
               {/* Adult Channels Fee Display */}
               {priceCalculation.adultChannelsFee > 0 && (
                 <div className="flex justify-between text-orange-400">
-                  <span>Adult Channels Fee:</span>
+                  <span>{texts.priceSummary.adultChannelsFee}:</span>
                   <span>
                     +{priceCalculation.currency}
                     {priceCalculation.adultChannelsFee}
@@ -690,7 +998,9 @@ const PricingPlan = () => {
               {appliedCoupon && couponResult && (
                 <>
                   <div className="flex justify-between text-[#00b877]">
-                    <span>Coupon ({appliedCoupon.code}):</span>
+                    <span>
+                      {texts.priceSummary.coupon} ({appliedCoupon.code}):
+                    </span>
                     <span>
                       -{priceCalculation.currency}
                       {displayTotals.couponDiscountAmount}
@@ -698,7 +1008,9 @@ const PricingPlan = () => {
                   </div>
                   {displayTotals.adultFeeAfterCoupon > 0 && (
                     <div className="flex justify-between text-orange-400">
-                      <span>Adult Channels Fee (after coupon):</span>
+                      <span>
+                        {texts.priceSummary.adultChannelsFeeAfterCoupon}:
+                      </span>
                       <span>
                         +{priceCalculation.currency}
                         {displayTotals.adultFeeAfterCoupon}
@@ -709,7 +1021,7 @@ const PricingPlan = () => {
               )}
               <div className="border-t border-white/20 pt-2 mt-3">
                 <div className="flex justify-between text-lg font-bold text-[#00b877]">
-                  <span>Final Total:</span>
+                  <span>{texts.priceSummary.finalTotal}:</span>
                   <span>
                     {priceCalculation.currency}
                     {appliedCoupon && couponResult
@@ -728,26 +1040,28 @@ const PricingPlan = () => {
             <input
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value)}
-              placeholder="Enter coupon code"
+              placeholder={texts.coupon.placeholder}
               className="flex-1 bg-black border border-white/20 rounded px-3 py-2 text-white"
             />
             <button
               onClick={applyCoupon}
               className="bg-primary text-black font-bold px-4 py-2 rounded"
             >
-              Apply
+              {texts.coupon.apply}
             </button>
           </div>
           {couponError && (
-            <div className="text-red-400 mt-2 text-sm">{couponError}</div>
+            <div className="text-red-400 mt-2 text-sm">
+              {texts.coupon.validationFailed}
+            </div>
           )}
           {appliedCoupon && couponResult && (
             <div className="text-green-400 mt-2 text-sm">
-              Applied {appliedCoupon.code}:{" "}
+              {texts.coupon.applied} {appliedCoupon.code}:{" "}
               {appliedCoupon.discountType === "percentage"
                 ? `${appliedCoupon.discountValue}%`
                 : `$${appliedCoupon.discountValue}`}{" "}
-              off
+              {texts.coupon.off}
             </div>
           )}
         </div>

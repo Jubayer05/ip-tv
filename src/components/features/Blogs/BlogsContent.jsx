@@ -12,9 +12,47 @@ const BlogContent = () => {
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 6;
 
+  // Original static texts
+  const ORIGINAL_TEXTS = {
+    noBlogsTitle: "No Blogs Available",
+    noBlogsMessage: "Check back later for new content!"
+  };
+
+  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
+
   useEffect(() => {
     fetchBlogs();
   }, [currentPage]);
+
+  // Translate static texts
+  useEffect(() => {
+    if (!isLanguageLoaded || language?.code === "en") {
+      setTexts(ORIGINAL_TEXTS);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const items = [ORIGINAL_TEXTS.noBlogsTitle, ORIGINAL_TEXTS.noBlogsMessage];
+        const translated = await translate(items);
+        if (!isMounted) return;
+
+        const [tNoBlogsTitle, tNoBlogsMessage] = translated;
+        setTexts({
+          noBlogsTitle: tNoBlogsTitle,
+          noBlogsMessage: tNoBlogsMessage
+        });
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTexts(ORIGINAL_TEXTS);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language?.code, translate, isLanguageLoaded]);
 
   const fetchBlogs = async () => {
     try {
@@ -73,9 +111,9 @@ const BlogContent = () => {
       <div className="p-4 sm:p-6 mt-6 sm:mt-10">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-2xl font-bold text-white mb-4">
-            No Blogs Available
+            {texts.noBlogsTitle}
           </h2>
-          <p className="text-gray-400">Check back later for new content!</p>
+          <p className="text-gray-400">{texts.noBlogsMessage}</p>
         </div>
       </div>
     );

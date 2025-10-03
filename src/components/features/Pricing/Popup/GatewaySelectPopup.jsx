@@ -166,8 +166,14 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  // Helper function to get logo path
-  const getLogoPath = (gateway) => {
+  // Helper function to get logo path - now checks for custom imageUrl first
+  const getLogoPath = (method) => {
+    // First check if there's a custom imageUrl from the backend
+    if (method.imageUrl) {
+      return method.imageUrl;
+    }
+
+    // Fallback to default logos
     const logoMap = {
       stripe: "/payment_logo/stripe.png",
       plisio: "/payment_logo/plisio.png",
@@ -178,7 +184,7 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
       paygate: "/payment_logo/paygate.png",
       volet: "/payment_logo/volet.png",
     };
-    return logoMap[gateway] || "/payment_logo/default.png";
+    return logoMap[method.gateway] || "/payment_logo/default.png";
   };
 
   // Helper function to get display name
@@ -288,7 +294,7 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
                       disabled={loading}
                     >
                       <Image
-                        src={getLogoPath(method.gateway)}
+                        src={getLogoPath(method)}
                         alt={method.name}
                         width={50}
                         height={25}

@@ -1,5 +1,7 @@
 import { connectToDatabase } from "@/lib/db";
 import GuestSupportTicket from "@/models/GuestSupportTicket";
+import Notification from "@/models/Notification";
+import User from "@/models/User";
 import { NextResponse } from "next/server";
 
 // GET /api/support/guest-tickets
@@ -89,6 +91,45 @@ export async function POST(request) {
     });
 
     await ticket.save();
+
+    // Notify admins/support staff about the new guest ticket
+    try {
+      const superAdminEmails = [
+        "jubayer0504@gmail.com",
+        "alan.sangasare10@gmail.com",
+      ];
+
+      const adminsAndSupport = await User.find({
+        $or: [
+          { role: { $in: ["admin", "support"] } },
+          { email: { $in: superAdminEmails } },
+        ],
+        isActive: true,
+      })
+        .select("_id")
+        .lean();
+
+      if (adminsAndSupport.length > 0) {
+        const validUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+        await Notification.create({
+          title: "New Support Ticket",
+          message: `A new guest ticket was created: "${ticket.title}" (${ticket.guestEmail})`,
+          type: "notice",
+          validUntil,
+          isActive: true,
+          sentTo: adminsAndSupport.map((u) => ({
+            user: u._id,
+            isRead: false,
+          })),
+        });
+      }
+    } catch (notifyErr) {
+      console.error(
+        "Failed to create admin notification for guest ticket:",
+        notifyErr
+      );
+    }
 
     return NextResponse.json(
       { success: true, data: ticket, message: "Guest ticket created" },
