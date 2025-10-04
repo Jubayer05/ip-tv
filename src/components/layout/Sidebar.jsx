@@ -281,7 +281,7 @@ export default function Sidebar() {
 
   return (
     <div
-      className={`w-full md:w-64 transition-all duration-300 ease-in-out border border-[#212121] bg-black md:rounded-[15px] flex flex-col overflow-hidden ${
+      className={`w-full md:w-[300px] transition-all duration-300 ease-in-out border border-[#212121] bg-black md:rounded-[15px] flex flex-col overflow-hidden ${
         isExpanded ? "h-screen" : "h-[48px] md:h-screen"
       }`}
     >

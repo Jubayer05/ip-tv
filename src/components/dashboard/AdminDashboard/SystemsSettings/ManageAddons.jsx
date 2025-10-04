@@ -299,15 +299,17 @@ const ManageAddons = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 font-secondary">
-      <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <h2 className="text-3xl text-center font-bold mb-4">{texts.heading}</h2>
-        <p className="text-gray-300 text-sm mb-6 text-center">
+    <div className="flex flex-col gap-4 font-secondary px-4 sm:px-6 lg:px-8">
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
+        <h2 className="text-xl sm:text-2xl md:text-3xl text-center font-bold mb-3 sm:mb-4">
+          {texts.heading}
+        </h2>
+        <p className="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6 text-center">
           {texts.subtitle}
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {addonConfigs.map((addon) => {
               const IconComponent = addon.icon;
               const isEnabled = addons[addon.key];
@@ -315,16 +317,18 @@ const ManageAddons = () => {
               return (
                 <div
                   key={addon.key}
-                  className="border border-[#333] rounded-lg p-4 hover:border-[#555] transition-colors"
+                  className="border border-[#333] rounded-lg p-3 sm:p-4 hover:border-[#555] transition-colors"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <IconComponent className={`w-5 h-5 ${addon.color}`} />
+                  <div className="flex items-start justify-between mb-2 sm:mb-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <IconComponent
+                        className={`w-4 h-4 sm:w-5 sm:h-5 ${addon.color}`}
+                      />
                       <div>
-                        <h3 className="text-white font-semibold text-sm">
+                        <h3 className="text-white font-semibold text-xs sm:text-sm">
                           {addon.label}
                         </h3>
-                        <p className="text-gray-400 text-xs mt-1">
+                        <p className="text-gray-400 text-[10px] sm:text-xs mt-1">
                           {addon.description}
                         </p>
                       </div>
@@ -339,19 +343,19 @@ const ManageAddons = () => {
                         className="sr-only peer"
                         disabled={loading}
                       />
-                      <div className="w-11 h-6 bg-[#333] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="w-9 h-5 sm:w-11 sm:h-6 bg-[#333] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
                   </div>
 
                   {/* API Key Fields - Only show when addon is enabled */}
                   {isEnabled && addon.fields && (
-                    <div className="mt-4 space-y-3 border-t border-[#333] pt-3">
-                      <p className="text-xs text-gray-400 font-medium">
+                    <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3 border-t border-[#333] pt-2 sm:pt-3">
+                      <p className="text-[10px] sm:text-xs text-gray-400 font-medium">
                         {texts.configuration}
                       </p>
                       {addon.fields.map((field) => (
                         <div key={field.key}>
-                          <label className="block text-xs text-gray-300 mb-1">
+                          <label className="block text-[10px] sm:text-xs text-gray-300 mb-1">
                             {field.label}
                           </label>
                           <input
@@ -365,7 +369,7 @@ const ManageAddons = () => {
                               )
                             }
                             placeholder={field.placeholder}
-                            className="w-full px-3 py-2 bg-[#0c171c] border border-[#333] rounded-md text-white text-xs placeholder-gray-500 focus:outline-none focus:border-cyan-400 transition-colors"
+                            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-[#0c171c] border border-[#333] rounded-md text-white text-[10px] sm:text-xs placeholder-gray-500 focus:outline-none focus:border-cyan-400 transition-colors"
                             disabled={loading}
                           />
                         </div>
@@ -377,26 +381,28 @@ const ManageAddons = () => {
             })}
           </div>
 
-          {error && <div className="text-sm text-red-400">{error}</div>}
+          {error && (
+            <div className="text-xs sm:text-sm text-red-400">{error}</div>
+          )}
           {saved && (
-            <div className="text-sm text-green-400 text-center">
+            <div className="text-xs sm:text-sm text-green-400 text-center">
               {texts.addonsUpdatedSuccess}
             </div>
           )}
 
-          <div className="flex gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               type="button"
               onClick={fetchSettings}
               disabled={loading}
-              className="px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
             >
               {texts.refresh}
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
             >
               {loading ? texts.updating : texts.updateAddons}
             </button>

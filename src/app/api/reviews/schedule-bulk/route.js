@@ -126,6 +126,7 @@ export async function POST(request) {
         scheduledFor: lastScheduledTime,
         isBulkGenerated: true,
         schedulingStatus: "pending",
+        isApproved: true,
       };
 
       scheduledReviews.push(reviewData);
@@ -133,6 +134,15 @@ export async function POST(request) {
 
     // Insert all scheduled reviews
     const createdScheduledReviews = await Review.insertMany(scheduledReviews);
+
+    // Mark the used unique names as reviewUsed: true
+    const usedNameIds = availableNames
+      .slice(0, validReviews.length)
+      .map((name) => name._id);
+    await UniqueName.updateMany(
+      { _id: { $in: usedNameIds } },
+      { $set: { reviewUsed: true } }
+    );
 
     return NextResponse.json({
       success: true,

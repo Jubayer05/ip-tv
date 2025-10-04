@@ -1,4 +1,5 @@
 "use client";
+import TableCustom from "@/components/ui/TableCustom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
@@ -329,6 +330,101 @@ const AdManagement = () => {
     });
   };
 
+  // Define table columns
+  const columns = [
+    {
+      title: texts.title,
+      dataIndex: "title",
+      key: "title",
+      render: (text, record) => (
+        <div className="flex items-center gap-3">
+          {record.imageUrl && (
+            <img
+              src={record.imageUrl}
+              alt={record.title}
+              className="w-12 h-12 object-cover rounded-lg"
+            />
+          )}
+          <div>
+            <p className="text-white font-medium">{text}</p>
+            <p className="text-gray-400 text-sm">{record.description}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: texts.status,
+      dataIndex: "isActive",
+      key: "status",
+      render: (isActive, record) => (
+        <button
+          onClick={() => toggleAdStatus(record)}
+          className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+            isActive
+              ? "bg-green-500/20 text-green-400"
+              : "bg-red-500/20 text-red-400"
+          }`}
+        >
+          {isActive ? (
+            <Eye className="w-3 h-3" />
+          ) : (
+            <EyeOff className="w-3 h-3" />
+          )}
+          {isActive ? texts.active : texts.inactive}
+        </button>
+      ),
+    },
+    {
+      title: texts.clicks,
+      dataIndex: "clickCount",
+      key: "clicks",
+      render: (count) => (
+        <span className="text-white">{count?.toLocaleString() || 0}</span>
+      ),
+    },
+    {
+      title: texts.impressions,
+      dataIndex: "impressionCount",
+      key: "impressions",
+      render: (count) => (
+        <span className="text-white">{count?.toLocaleString() || 0}</span>
+      ),
+    },
+    {
+      title: texts.actions,
+      key: "actions",
+      render: (_, record) => (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleEdit(record)}
+            className="p-1 text-blue-400 hover:text-blue-300 transition-colors"
+            title={texts.edit}
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => handleDelete(record._id)}
+            className="p-1 text-red-400 hover:text-red-300 transition-colors"
+            title={texts.delete}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+          {record.linkUrl && (
+            <a
+              href={record.linkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1 text-green-400 hover:text-green-300 transition-colors"
+              title="Open Link"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -340,14 +436,18 @@ const AdManagement = () => {
   return (
     <div className="space-y-6 font-secondary">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-cyan-500/20 rounded-lg">
             <Megaphone className="w-6 h-6 text-cyan-400" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">{texts.heading}</h2>
-            <p className="text-gray-400">{texts.description}</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-white">
+              {texts.heading}
+            </h2>
+            <p className="text-gray-400 text-sm sm:text-base">
+              {texts.description}
+            </p>
           </div>
         </div>
         <button
@@ -356,128 +456,33 @@ const AdManagement = () => {
             setEditingAd(null);
             resetForm();
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors w-full sm:w-auto justify-center"
         >
           <Plus className="w-4 h-4" />
           {texts.addAd}
         </button>
       </div>
 
-      {/* Ads List */}
-      <div className="bg-gray-800/50 rounded-lg border border-gray-700">
-        {ads.length === 0 ? (
-          <div className="p-8 text-center">
-            <Megaphone className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-400">{texts.noAds}</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-700/50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">
-                    {texts.title}
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">
-                    {texts.status}
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">
-                    {texts.clicks}
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">
-                    {texts.impressions}
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">
-                    {texts.actions}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {ads.map((ad) => (
-                  <tr key={ad._id} className="hover:bg-gray-700/30">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        {ad.imageUrl && (
-                          <img
-                            src={ad.imageUrl}
-                            alt={ad.title}
-                            className="w-12 h-12 object-cover rounded-lg"
-                          />
-                        )}
-                        <div>
-                          <p className="text-white font-medium">{ad.title}</p>
-                          <p className="text-gray-400 text-sm">
-                            {ad.description}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => toggleAdStatus(ad)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
-                          ad.isActive
-                            ? "bg-green-500/20 text-green-400"
-                            : "bg-red-500/20 text-red-400"
-                        }`}
-                      >
-                        {ad.isActive ? (
-                          <Eye className="w-3 h-3" />
-                        ) : (
-                          <EyeOff className="w-3 h-3" />
-                        )}
-                        {ad.isActive ? texts.active : texts.inactive}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-white">
-                      {ad.clickCount.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-white">
-                      {ad.impressionCount.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEdit(ad)}
-                          className="p-1 text-blue-400 hover:text-blue-300 transition-colors"
-                          title={texts.edit}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(ad._id)}
-                          className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                          title={texts.delete}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                        {ad.linkUrl && (
-                          <a
-                            href={ad.linkUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1 text-green-400 hover:text-green-300 transition-colors"
-                            title="Open Link"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {/* Table */}
+      <div className="w-full">
+        <TableCustom
+          title={texts.heading}
+          data={ads}
+          columns={columns}
+          pageSize={10}
+          showButton={false}
+          rowKey="_id"
+          containerClassName="w-full"
+          className="min-w-full"
+        />
       </div>
 
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">
+              <h3 className="text-lg sm:text-xl font-bold text-white">
                 {editingAd ? texts.editAd : texts.addAd}
               </h3>
               <button
@@ -535,7 +540,7 @@ const AdManagement = () => {
                       alt="Ad preview"
                       className="w-32 h-20 object-cover rounded-lg border border-gray-600"
                     />
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <input
                         type="file"
                         accept="image/*"
@@ -550,7 +555,7 @@ const AdManagement = () => {
                       />
                       <label
                         htmlFor="change-image-upload"
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors cursor-pointer"
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors cursor-pointer text-center"
                       >
                         {texts.changeImage}
                       </label>
@@ -593,7 +598,7 @@ const AdManagement = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
                     {texts.linkUrl} *
@@ -642,7 +647,7 @@ const AdManagement = () => {
                 </label>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -650,13 +655,13 @@ const AdManagement = () => {
                     setEditingAd(null);
                     resetForm();
                   }}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors w-full sm:w-auto"
                 >
                   {texts.cancel}
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors w-full sm:w-auto"
                 >
                   {texts.save}
                 </button>

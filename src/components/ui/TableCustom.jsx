@@ -28,7 +28,7 @@ const TableCustom = ({
 
   return (
     <div
-      className={`bg-black rounded-[15px] w-full max-w-[350px] sm:max-w-[620px] lg:max-w-[720px] xl:max-w-[950px] mx-auto lg:mx-0 font-secondary ${containerClassName}`}
+      className={`bg-black rounded-[15px] w-[350px] sm:w-[450px] md:w-[550px] lg:w-[650px] xl:w-[750px] 2xl:w-[850px] mx-auto lg:mx-0 font-secondary ${containerClassName}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-8">

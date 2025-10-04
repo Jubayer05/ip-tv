@@ -1,4 +1,5 @@
 "use client";
+import TableCustom from "@/components/ui/TableCustom";
 import { Rating } from "@smastrom/react-rating";
 import { useEffect, useState } from "react";
 import { FaUpload } from "react-icons/fa";
@@ -122,7 +123,7 @@ const BulkReviewHandling = () => {
 
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs font-medium ${
+        className={`px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${
           config.color === "green"
             ? "bg-green-500/20 text-green-400 border border-green-500/30"
             : config.color === "yellow"
@@ -228,65 +229,133 @@ const BulkReviewHandling = () => {
     }
   };
 
-  const renderPagination = () => {
-    if (totalPages <= 1) return null;
-
+  // Generate page numbers for pagination
+  const generatePageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total is less than max visible
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show pages with ellipsis
+      if (currentPage <= 3) {
+        // Show first 4 pages + ellipsis + last page
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push("...");
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        // Show first page + ellipsis + last 4 pages
+        pages.push(1);
+        pages.push("...");
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // Show first page + ellipsis + current-1, current, current+1 + ellipsis + last page
+        pages.push(1);
+        pages.push("...");
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push("...");
+        pages.push(totalPages);
+      }
     }
 
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(
-        <button
-          key={i}
-          onClick={() => setCurrentPage(i)}
-          className={`px-3 py-2 mx-1 rounded-lg transition-colors ${
-            i === currentPage
-              ? "bg-[#00b877] text-white"
-              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+    return pages;
+  };
+
+  // Define columns for the TableCustom component
+  const columns = [
+    {
+      title: "Reviewer Name",
+      dataIndex: "uniqueName",
+      key: "uniqueName",
+      width: "100px",
+      render: (text) => (
+        <span className="text-white text-xs sm:text-sm font-medium pl-2">
+          {text}
+        </span>
+      ),
+    },
+    {
+      title: "Review Text",
+      dataIndex: "comment",
+      key: "comment",
+      width: "100px",
+      render: (text) => (
+        <span className="text-gray-300 text-xs sm:text-sm max-w-xs truncate block">
+          {text}
+        </span>
+      ),
+    },
+    {
+      title: "Rating",
+      dataIndex: "rating",
+      key: "rating",
+      width: "100px",
+      render: (rating) => (
+        <div className="flex items-center">
+          <Rating value={rating} readOnly style={{ maxWidth: 80 }} />
+          <span className="ml-2 text-gray-300 text-xs sm:text-sm">
+            {rating}/5
+          </span>
+        </div>
+      ),
+    },
+    {
+      title: "Scheduled For",
+      dataIndex: "scheduledFor",
+      width: "200px",
+      key: "scheduledFor",
+      render: (scheduledFor) => (
+        <span className="text-gray-400 text-xs sm:text-sm">
+          {scheduledFor ? new Date(scheduledFor).toLocaleString() : "-"}
+        </span>
+      ),
+    },
+    {
+      title: "Status",
+      width: "80px",
+      key: "status",
+      render: (_, record) =>
+        getStatusBadge(record.scheduledFor, record.schedulingStatus),
+    },
+    {
+      title: "Time Remaining",
+      width: "100px",
+      key: "timeRemaining",
+      render: (_, record) => (
+        <span
+          className={`font-mono text-[10px] sm:text-xs ${
+            getDynamicStatus(record.scheduledFor) === "posted"
+              ? "text-green-400"
+              : "text-yellow-400"
           }`}
         >
-          {i}
-        </button>
-      );
-    }
-
-    return (
-      <div className="flex justify-center items-center space-x-2 mt-4">
-        <button
-          onClick={() => setCurrentPage(currentPage - 1)}
-          disabled={currentPage === 1}
-          className="px-3 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Previous
-        </button>
-        {pages}
-        <button
-          onClick={() => setCurrentPage(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className="px-3 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Next
-        </button>
-      </div>
-    );
-  };
+          {getTimeRemaining(record.scheduledFor)}
+        </span>
+      ),
+    },
+  ];
 
   if (loading && scheduledReviews.length === 0) {
     return (
-      <div className="mt-4 sm:mt-6 font-secondary">
-        <h2 className="text-4xl font-bold text-white mb-4">
+      <div className="mt-4 sm:mt-6 font-secondary px-4 sm:px-6 lg:px-8">
+        <h2 className="text-xl sm:text-2xl md:text-4xl font-bold text-white mb-3 sm:mb-4">
           Bulk Review Handling
         </h2>
-        <div className="border border-[#212121] bg-black rounded-[15px] p-6">
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#00b877]"></div>
-            <p className="text-gray-400 mt-4">Loading scheduled reviews...</p>
+        <div className="border border-[#212121] bg-black rounded-[15px] p-4 sm:p-6">
+          <div className="text-center py-8 sm:py-12">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-[#00b877]"></div>
+            <p className="text-gray-400 mt-3 sm:mt-4 text-xs sm:text-sm">
+              Loading scheduled reviews...
+            </p>
           </div>
         </div>
       </div>
@@ -294,30 +363,32 @@ const BulkReviewHandling = () => {
   }
 
   return (
-    <div className="mt-4 sm:mt-6 font-secondary">
-      <h2 className="text-4xl font-bold text-white mb-4">
+    <div className="mt-4 sm:mt-6 font-secondary px-4 sm:px-6 lg:px-8">
+      <h2 className="text-xl sm:text-2xl md:text-4xl font-bold text-white mb-3 sm:mb-4">
         Bulk Review Handling
       </h2>
 
-      <div className="border border-[#212121] bg-black rounded-[15px] p-6">
+      <div className="border border-[#212121] bg-black rounded-[15px] p-4 sm:p-6">
         {/* Bulk Upload Section */}
-        <div className="bg-[#0c171c] rounded-lg border border-[#212121] p-4 mb-6">
-          <h3 className="text-white font-medium mb-4">Bulk Upload Reviews</h3>
+        <div className="bg-[#0c171c] rounded-lg border border-[#212121] p-3 sm:p-4 mb-4 sm:mb-6">
+          <h3 className="text-white font-medium mb-3 sm:mb-4 text-sm sm:text-base">
+            Bulk Upload Reviews
+          </h3>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <label className="block text-gray-300 text-sm font-medium mb-2">
+              <label className="block text-gray-300 text-xs sm:text-sm font-medium mb-2">
                 Enter reviews (one per line, max 50):
               </label>
               <textarea
                 value={bulkText}
                 onChange={(e) => setBulkText(e.target.value)}
                 placeholder="Enter reviews here, one per line...&#10;Excellent service! Highly recommended.&#10;Great quality and fast delivery.&#10;Amazing experience!"
-                rows="6"
-                className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 resize-none"
+                rows="4"
+                className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 resize-none text-xs sm:text-sm"
                 maxLength="25000"
               />
-              <div className="mt-1 text-gray-400 text-xs">
+              <div className="mt-1 text-gray-400 text-[10px] sm:text-xs">
                 {
                   bulkText.split("\n").filter((line) => line.trim().length > 0)
                     .length
@@ -327,9 +398,9 @@ const BulkReviewHandling = () => {
             </div>
 
             {/* Timer Range Settings */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
+                <label className="block text-gray-300 text-xs sm:text-sm font-medium mb-2">
                   Min Timer (seconds):
                 </label>
                 <input
@@ -341,14 +412,14 @@ const BulkReviewHandling = () => {
                       min: parseInt(e.target.value) || 0,
                     })
                   }
-                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                 />
-                <div className="mt-1 text-gray-400 text-xs">
+                <div className="mt-1 text-gray-400 text-[10px] sm:text-xs">
                   {formatTimerRange(timerRange.min)}
                 </div>
               </div>
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
+                <label className="block text-gray-300 text-xs sm:text-sm font-medium mb-2">
                   Max Timer (seconds):
                 </label>
                 <input
@@ -360,18 +431,18 @@ const BulkReviewHandling = () => {
                       max: parseInt(e.target.value) || 0,
                     })
                   }
-                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                 />
-                <div className="mt-1 text-gray-400 text-xs">
+                <div className="mt-1 text-gray-400 text-[10px] sm:text-xs">
                   {formatTimerRange(timerRange.max)}
                 </div>
               </div>
             </div>
 
             {/* Rating Range Settings */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
+                <label className="block text-gray-300 text-xs sm:text-sm font-medium mb-2">
                   Min Rating:
                 </label>
                 <input
@@ -384,13 +455,13 @@ const BulkReviewHandling = () => {
                       min: parseFloat(e.target.value) || 1.0,
                     })
                   }
-                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                   min="1"
                   max="5"
                 />
               </div>
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
+                <label className="block text-gray-300 text-xs sm:text-sm font-medium mb-2">
                   Max Rating:
                 </label>
                 <input
@@ -403,7 +474,7 @@ const BulkReviewHandling = () => {
                       max: parseFloat(e.target.value) || 5.0,
                     })
                   }
-                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                   min="1"
                   max="5"
                 />
@@ -414,20 +485,20 @@ const BulkReviewHandling = () => {
               <button
                 onClick={handleBulkUpload}
                 disabled={uploading || !bulkText.trim()}
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-sm"
+                className="flex items-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-xs sm:text-sm"
               >
-                <FaUpload className="mr-2" />
+                <FaUpload className="mr-2 w-3 h-3 sm:w-4 sm:h-4" />
                 {uploading ? "Scheduling..." : "Schedule Reviews"}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Filter and Search */}
-        <div className="bg-[#0c171c] rounded-lg border border-[#212121] p-4 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            <div className="flex items-center gap-4">
-              <label className="text-white text-sm font-medium">
+        {/* Filter Section */}
+        <div className="bg-[#0c171c] rounded-lg border border-[#212121] p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-between">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <label className="text-white text-xs sm:text-sm font-medium">
                 Filter by Status:
               </label>
               <select
@@ -436,7 +507,7 @@ const BulkReviewHandling = () => {
                   setFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="px-4 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                className="px-3 sm:px-4 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
               >
                 <option value="all">All Reviews</option>
                 <option value="pending">Pending</option>
@@ -447,86 +518,66 @@ const BulkReviewHandling = () => {
           </div>
         </div>
 
-        {/* Scheduled Reviews Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#212121]">
-                <th className="text-left py-3 px-2 text-white font-medium">
-                  Reviewer Name
-                </th>
-                <th className="text-left py-3 px-2 text-white font-medium">
-                  Review Text
-                </th>
-                <th className="text-left py-3 px-2 text-white font-medium">
-                  Rating
-                </th>
-                <th className="text-left py-3 px-2 text-white font-medium">
-                  Scheduled For
-                </th>
-                <th className="text-left py-3 px-2 text-white font-medium">
-                  Status
-                </th>
-                <th className="text-left py-3 px-2 text-white font-medium">
-                  Time Remaining
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {scheduledReviews.map((scheduledReview) => (
-                <tr
-                  key={scheduledReview._id}
-                  className="border-b border-[#212121] hover:bg-[#0c171c]/50"
-                >
-                  <td className="py-3 px-2 text-white text-sm font-medium">
-                    {scheduledReview.uniqueName}
-                  </td>
-                  <td className="py-3 px-2 text-gray-300 text-sm max-w-xs truncate">
-                    {scheduledReview.comment}
-                  </td>
-                  <td className="py-3 px-2">
-                    <div className="flex items-center">
-                      <Rating
-                        value={scheduledReview.rating}
-                        readOnly
-                        style={{ maxWidth: 100 }}
-                      />
-                      <span className="ml-2 text-gray-300 text-sm">
-                        {scheduledReview.rating}/5
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-2 text-gray-400 text-sm">
-                    {scheduledReview.scheduledFor
-                      ? new Date(scheduledReview.scheduledFor).toLocaleString()
-                      : "-"}
-                  </td>
-                  <td className="py-3 px-2">
-                    {getStatusBadge(
-                      scheduledReview.scheduledFor,
-                      scheduledReview.schedulingStatus
-                    )}
-                  </td>
-                  <td className="py-3 px-2 text-gray-400 text-sm">
-                    <span
-                      className={`font-mono text-xs ${
-                        getDynamicStatus(scheduledReview.scheduledFor) ===
-                        "posted"
-                          ? "text-green-400"
-                          : "text-yellow-400"
-                      }`}
-                    >
-                      {getTimeRemaining(scheduledReview.scheduledFor)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* TableCustom Component without internal pagination */}
+        <TableCustom
+          title="Scheduled Reviews"
+          data={scheduledReviews}
+          columns={columns}
+          pageSize={scheduledReviews.length} // Set to current data length to disable internal pagination
+          showButton={false}
+          rowKey="_id"
+          pagination={false} // Disable TableCustom's internal pagination
+          className="overflow-x-scroll w-full"
+        />
 
-        {/* Pagination */}
-        {renderPagination()}
+        {/* Custom Pagination with Page Numbers */}
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-6">
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              {/* Previous Button */}
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-2 sm:px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white disabled:bg-gray-900 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors text-xs sm:text-sm"
+              >
+                Previous
+              </button>
+
+              {/* Page Numbers */}
+              {generatePageNumbers().map((page, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    if (typeof page === "number") {
+                      setCurrentPage(page);
+                    }
+                  }}
+                  disabled={page === "..."}
+                  className={`px-2 sm:px-3 py-2 border rounded-lg transition-colors text-xs sm:text-sm ${
+                    currentPage === page
+                      ? "bg-cyan-500 text-white border-cyan-500"
+                      : page === "..."
+                      ? "bg-gray-800 text-gray-500 border-gray-700 cursor-default"
+                      : "bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              {/* Next Button */}
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="px-2 sm:px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white disabled:bg-gray-900 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors text-xs sm:text-sm"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

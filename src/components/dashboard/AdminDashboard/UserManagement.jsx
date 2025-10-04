@@ -1,20 +1,21 @@
 "use client";
+import TableCustom from "@/components/ui/TableCustom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Search, UserCheck, UserX } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 const FilterControls = ({ filters, setFilters, texts }) => (
-  <div className="flex flex-col sm:flex-row gap-4 mb-6">
+  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
     <div className="flex-1">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 sm:w-4 sm:h-4" />
         <input
           type="text"
           placeholder={texts.searchUsers}
           value={filters.search}
           onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-          className="w-full pl-10 pr-4 py-2 bg-black border border-[#212121] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 transition-colors"
+          className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 bg-black border border-[#212121] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 transition-colors text-xs sm:text-sm"
         />
       </div>
     </div>
@@ -22,7 +23,7 @@ const FilterControls = ({ filters, setFilters, texts }) => (
       <select
         value={filters.role}
         onChange={(e) => setFilters({ ...filters, role: e.target.value })}
-        className="px-4 py-2 bg-black border border-[#212121] rounded-lg text-white focus:outline-none focus:border-cyan-400 transition-colors"
+        className="px-3 sm:px-4 py-2 bg-black border border-[#212121] rounded-lg text-white focus:outline-none focus:border-cyan-400 transition-colors text-xs sm:text-sm"
       >
         <option value="all">{texts.allUsers}</option>
         <option value="user">{texts.regularUsers}</option>
@@ -64,7 +65,8 @@ const UserManagement = () => {
     makeUserAdmin: "Make User Admin",
     removeUserAdmin: "Remove User Admin",
     areYouSureMakeAdmin: "Are you sure you want to make this user an admin?",
-    areYouSureRemoveAdmin: "Are you sure you want to remove admin privileges from this user?",
+    areYouSureRemoveAdmin:
+      "Are you sure you want to remove admin privileges from this user?",
     yesMakeAdmin: "Yes, make admin",
     yesRemoveAdmin: "Yes, remove admin",
     cancel: "Cancel",
@@ -123,7 +125,9 @@ const UserManagement = () => {
         queryParams.append("search", search);
       }
 
-      const response = await fetch(`/api/admin/users?${queryParams.toString()}`);
+      const response = await fetch(
+        `/api/admin/users?${queryParams.toString()}`
+      );
       const data = await response.json();
 
       if (data.success) {
@@ -211,9 +215,14 @@ const UserManagement = () => {
     }
 
     const newRole = currentRole === "admin" ? "user" : "admin";
-    const actionText = newRole === "admin" ? texts.makeUserAdmin : texts.removeUserAdmin;
-    const confirmText = newRole === "admin" ? texts.areYouSureMakeAdmin : texts.areYouSureRemoveAdmin;
-    const confirmButtonText = newRole === "admin" ? texts.yesMakeAdmin : texts.yesRemoveAdmin;
+    const actionText =
+      newRole === "admin" ? texts.makeUserAdmin : texts.removeUserAdmin;
+    const confirmText =
+      newRole === "admin"
+        ? texts.areYouSureMakeAdmin
+        : texts.areYouSureRemoveAdmin;
+    const confirmButtonText =
+      newRole === "admin" ? texts.yesMakeAdmin : texts.yesRemoveAdmin;
 
     Swal.fire({
       title: actionText,
@@ -234,7 +243,7 @@ const UserManagement = () => {
   const getStatusBadge = (isActive) => {
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+        className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${
           isActive
             ? "bg-green-900/20 text-green-300 border border-green-500/30"
             : "bg-red-900/20 text-red-300 border border-red-500/30"
@@ -248,7 +257,7 @@ const UserManagement = () => {
   const getRoleBadge = (role) => {
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+        className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${
           role === "admin"
             ? "bg-blue-900/20 text-blue-300 border border-blue-500/30"
             : "bg-gray-900/20 text-gray-300 border border-gray-500/30"
@@ -259,147 +268,130 @@ const UserManagement = () => {
     );
   };
 
+  // Prepare data for TableCustom
+  const tableData = users.map((user) => ({
+    key: user._id,
+    user: (
+      <div className="flex items-center space-x-2 sm:space-x-3 pl-2">
+        <div className="flex-shrink-0">
+          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-700 rounded-full flex items-center justify-center">
+            {user.profile.avatar ? (
+              <img
+                src={user.profile.avatar}
+                alt="User"
+                className="w-full h-full rounded-full"
+              />
+            ) : (
+              <UserCheck className="w-3 h-3 sm:w-4 sm:h-4 text-gray-300" />
+            )}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs sm:text-sm font-medium text-white">
+            {user.profile.firstName} {user.profile.lastName}
+          </div>
+        </div>
+      </div>
+    ),
+    email: (
+      <span className="text-xs pl-4 sm:text-sm text-gray-300">
+        {user.email}
+      </span>
+    ),
+    role: getRoleBadge(user.role),
+    status: getStatusBadge(user.isActive),
+    joinedDate: (
+      <span className="text-xs sm:text-sm text-gray-300">
+        {new Date(user.createdAt).toLocaleDateString()}
+      </span>
+    ),
+    actions: (
+      <button
+        onClick={() => handleRoleChange(user._id, user.role, user.email)}
+        disabled={isSuperAdminEmail(user.email)}
+        className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium rounded-lg transition-colors pl-2 ${
+          user.role === "admin"
+            ? "bg-red-900/20 text-red-300 hover:bg-red-900/30 border border-red-500/30"
+            : "bg-blue-900/20 text-blue-300 hover:bg-blue-900/30 border border-blue-500/30"
+        } ${
+          isSuperAdminEmail(user.email) ? "opacity-50 cursor-not-allowed" : ""
+        }`}
+      >
+        {user.role === "admin" ? texts.removeAdmin : texts.makeAdmin}
+      </button>
+    ),
+  }));
+
+  const columns = [
+    {
+      title: texts.user,
+      dataIndex: "user",
+      key: "user",
+    },
+    {
+      title: texts.email,
+      dataIndex: "email",
+      key: "email",
+    },
+    {
+      title: texts.role,
+      dataIndex: "role",
+      key: "role",
+    },
+    {
+      title: texts.status,
+      dataIndex: "status",
+      key: "status",
+    },
+    {
+      title: texts.joinedDate,
+      dataIndex: "joinedDate",
+      key: "joinedDate",
+    },
+    {
+      title: texts.actions,
+      dataIndex: "actions",
+      key: "actions",
+    },
+  ];
+
   return (
-    <div className="space-y-6 font-secondary">
+    <div className="space-y-4 sm:space-y-6 font-secondary px-4 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">{texts.heading}</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+          {texts.heading}
+        </h1>
       </div>
 
-      <div className="bg-black border border-[#212121] rounded-lg p-6">
-        <FilterControls filters={filters} setFilters={setFilters} texts={texts} />
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6">
+        <FilterControls
+          filters={filters}
+          setFilters={setFilters}
+          texts={texts}
+        />
 
         {loading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto"></div>
-            <p className="mt-2 text-gray-400">{texts.loading}</p>
+          <div className="text-center py-6 sm:py-8">
+            <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-cyan-400 mx-auto"></div>
+            <p className="mt-2 text-gray-400 text-xs sm:text-sm">
+              {texts.loading}
+            </p>
           </div>
         ) : users.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
-            <UserX className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p>{texts.noUsersFound}</p>
+          <div className="text-center py-6 sm:py-8 text-gray-400">
+            <UserX className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 opacity-50" />
+            <p className="text-xs sm:text-sm">{texts.noUsersFound}</p>
           </div>
         ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-gray-400 uppercase bg-gray-900/50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3">
-                      {texts.user}
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      {texts.email}
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      {texts.role}
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      {texts.status}
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      {texts.joinedDate}
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      {texts.actions}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr
-                      key={user._id}
-                      className="bg-black border-b border-gray-800 hover:bg-gray-900/50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex-shrink-0">
-                            <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
-                              <UserCheck className="w-4 h-4 text-gray-300" />
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-white">
-                              {user.firstName} {user.lastName}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-300">
-                        {user.email}
-                      </td>
-                      <td className="px-6 py-4">
-                        {getRoleBadge(user.role)}
-                      </td>
-                      <td className="px-6 py-4">
-                        {getStatusBadge(user.isActive)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-300">
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() =>
-                            handleRoleChange(user._id, user.role, user.email)
-                          }
-                          disabled={isSuperAdminEmail(user.email)}
-                          className={`inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                            user.role === "admin"
-                              ? "bg-red-900/20 text-red-300 hover:bg-red-900/30 border border-red-500/30"
-                              : "bg-blue-900/20 text-blue-300 hover:bg-blue-900/30 border border-blue-500/30"
-                          } ${
-                            isSuperAdminEmail(user.email)
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
-                          }`}
-                        >
-                          {user.role === "admin" ? texts.removeAdmin : texts.makeAdmin}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-6">
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white disabled:bg-gray-900 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
-                  >
-                    {texts.previous}
-                  </button>
-
-                  {[...Array(totalPages)].map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentPage(index + 1)}
-                      className={`px-3 py-2 border rounded-lg transition-colors ${
-                        currentPage === index + 1
-                          ? "bg-cyan-500 text-white border-cyan-500"
-                          : "bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
-                      }`}
-                    >
-                      {index + 1}
-                    </button>
-                  ))}
-
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white disabled:bg-gray-900 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
-                  >
-                    {texts.next}
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
+          <TableCustom
+            title={texts.heading}
+            data={tableData}
+            columns={columns}
+            pageSize={10}
+            showButton={false}
+            rowKey="_id"
+            containerClassName="w-full"
+          />
         )}
       </div>
     </div>

@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 export async function GET(request, { params }) {
   try {
     await connectToDatabase();
-    const { id } = params;
+    const { id } = await params;
 
     const ad = await Ad.findById(id).populate("createdBy", "name email");
 
@@ -34,7 +34,7 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     await connectToDatabase();
-    const { id } = params;
+    const { id } = await params;
     const data = await request.json();
 
     const ad = await Ad.findByIdAndUpdate(
@@ -67,7 +67,7 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await connectToDatabase();
-    const { id } = params;
+    const { id } = await params;
 
     const ad = await Ad.findByIdAndDelete(id);
 

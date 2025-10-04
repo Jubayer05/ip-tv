@@ -13,7 +13,7 @@ export default function Footer() {
   const ORIGINAL_COPYRIGHT = "Copyright © Cheap Stream";
   const ORIGINAL_ALL_RIGHTS = "All rights reserved";
   const ORIGINAL_DEVELOPED_BY = "Developed by";
-  const ORIGINAL_OUR_PRODUCTS = "Our Products";
+  const ORIGINAL_OUR_PRODUCTS = "Our Websites";
 
   const ORIGINAL_SECTIONS = [
     {
@@ -207,7 +207,7 @@ export default function Footer() {
               <p className="text-white mb-1 text-xs sm:text-sm md:text-base leading-6">
                 {item.label}
               </p>
-              <p className="text-white text-xs sm:text-sm md:text-base">
+              <p className="break-all text-white text-xs sm:text-sm md:text-base">
                 {item.value}
               </p>
             </div>
@@ -222,7 +222,7 @@ export default function Footer() {
           <li key={index}>
             <a
               href={item.href}
-              className="text-white hover:text-white transition-colors font-secondary text-xs sm:text-sm md:text-base"
+              className="text-white break-all hover:text-white transition-colors font-secondary text-xs sm:text-sm md:text-base"
             >
               {item.label}
             </a>
@@ -234,8 +234,8 @@ export default function Footer() {
 
   return (
     <footer className="text-white -mt-6 md:mt-0">
-      <Polygon showGradient={false} fullWidth={true} className="h-[750px]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Polygon showGradient={false} fullWidth={true} className="md:h-[750px] ">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20 pt-10">
           {/* Top Section - Logo, Description, Social Icons */}
           <div className="text-center mb-8 md:mb-10">
             {/* Logo */}
@@ -277,32 +277,32 @@ export default function Footer() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-10 sm:gap-8 lg:gap-12">
             {sections.map((section, index) => (
               <div key={index} className="text-left">
-                <h3 className="text-white font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4 md:mb-6 tracking-wide">
+                <h3 className="text-white font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4 md:mb-6 tracking-wide break-all">
                   {section.title}
                 </h3>
                 {renderSection(section)}
               </div>
             ))}
 
-            {/* Ads Column */}
-            <div className="text-left">
-              <h3 className="text-white font-semibold text-sm sm:text-base md:text-lg mb-4 sm:mb-6 tracking-wide">
+            {/* Ads Column - Hidden on mobile, shown in grid on larger screens */}
+            <div className="hidden md:block text-left">
+              <h3 className="text-white font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4 tracking-wide break-all">
                 {ourProducts}
               </h3>
               {adsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+                <div className="flex items-center justify-center py-6">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-cyan-400"></div>
                 </div>
               ) : ads.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {ads.map((ad, index) => (
                     <div
                       key={ad._id || index}
                       onClick={() => handleAdClick(ad.linkUrl)}
-                      className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-lg p-3 hover:from-white/10 hover:to-white/20 hover:scale-[1.02] transition-all duration-300 cursor-pointer group border border-white/10 hover:border-white/20"
+                      className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-lg p-2 hover:from-white/10 hover:to-white/20 hover:scale-[1.02] transition-all duration-300 cursor-pointer group border border-white/10 hover:border-white/20"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="w-16 h-16 flex-shrink-0 relative overflow-hidden rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <div className="w-12 h-12 flex-shrink-0 relative overflow-hidden rounded-lg">
                           <img
                             src={ad.imageUrl}
                             alt={ad.title}
@@ -314,13 +314,13 @@ export default function Footer() {
                           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-white text-sm font-semibold group-hover:text-cyan-400 font-secondary transition-colors line-clamp-1 mb-2">
+                          <h4 className="text-white text-xs font-semibold group-hover:text-cyan-400 font-secondary transition-colors line-clamp-1 mb-1">
                             {ad.title}
                           </h4>
                           <p className="text-gray-300 text-xs leading-relaxed line-clamp-2 group-hover:text-gray-200 transition-colors">
                             {ad.description}
                           </p>
-                          <div className="mt-2 flex items-center text-cyan-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="mt-1 flex items-center text-cyan-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <span>View Details</span>
                             <svg
                               className="w-3 h-3 ml-1 transform group-hover:translate-x-1 transition-transform duration-300"
@@ -342,10 +342,10 @@ export default function Footer() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto mb-3 bg-gray-700/50 rounded-full flex items-center justify-center">
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 mx-auto mb-2 bg-gray-700/50 rounded-full flex items-center justify-center">
                     <svg
-                      className="w-8 h-8 text-gray-400"
+                      className="w-6 h-6 text-gray-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -358,10 +358,89 @@ export default function Footer() {
                       />
                     </svg>
                   </div>
-                  <p className="text-gray-400 text-sm">No products available</p>
+                  <p className="text-gray-400 text-xs">No products available</p>
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Full Width Ads Section - Only visible on mobile */}
+          <div className="md:hidden mt-6 sm:mt-8">
+            <h3 className="text-white font-semibold text-base mb-4 tracking-wide text-center break-all">
+              {ourProducts}
+            </h3>
+            {adsLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-cyan-400"></div>
+              </div>
+            ) : ads.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {ads.map((ad, index) => (
+                  <div
+                    key={ad._id || index}
+                    onClick={() => handleAdClick(ad.linkUrl)}
+                    className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-lg p-3 hover:from-white/10 hover:to-white/20 hover:scale-[1.02] transition-all duration-300 cursor-pointer group border border-white/10 hover:border-white/20"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-14 h-14 flex-shrink-0 relative overflow-hidden rounded-lg">
+                        <img
+                          src={ad.imageUrl}
+                          alt={ad.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => {
+                            e.target.src = "/icons/profile.png";
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-white text-sm font-semibold group-hover:text-cyan-400 font-secondary transition-colors line-clamp-1 mb-1">
+                          {ad.title}
+                        </h4>
+                        <p className="text-gray-300 text-xs leading-relaxed line-clamp-2 group-hover:text-gray-200 transition-colors">
+                          {ad.description}
+                        </p>
+                        <div className="mt-1 flex items-center text-cyan-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <span>View Details</span>
+                          <svg
+                            className="w-3 h-3 ml-1 transform group-hover:translate-x-1 transition-transform duration-300"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <div className="w-14 h-14 mx-auto mb-2 bg-gray-700/50 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-6 h-6 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                    />
+                  </svg>
+                </div>
+                <p className="text-gray-400 text-sm">No products available</p>
+              </div>
+            )}
           </div>
 
           {/* Copyright Section */}

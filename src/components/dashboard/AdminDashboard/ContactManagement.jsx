@@ -200,9 +200,9 @@ const ContactManagement = () => {
 
   const getStatusIcon = (status) => {
     return status === "open" ? (
-      <Clock className="w-4 h-4 text-yellow-500" />
+      <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />
     ) : (
-      <CheckCircle className="w-4 h-4 text-green-500" />
+      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
     );
   };
 
@@ -226,39 +226,47 @@ const ContactManagement = () => {
   };
 
   return (
-    <div className="space-y-6 font-secondary">
+    <div className="space-y-4 sm:space-y-6 font-secondary px-4 sm:px-6 lg:px-8 w-[350px] sm:w-[600px] md:w-full">
       {/* Header with Stats */}
-      <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold">{texts.heading}</h2>
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold">
+            {texts.heading}
+          </h2>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="bg-gray-900/50 rounded-lg p-4">
-            <div className="text-2xl font-bold text-white">{stats.total}</div>
-            <div className="text-sm text-gray-400">{texts.total}</div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+          <div className="bg-gray-900/50 rounded-lg p-2 sm:p-4">
+            <div className="text-lg sm:text-2xl font-bold text-white">
+              {stats.total}
+            </div>
+            <div className="text-xs sm:text-sm text-gray-400">
+              {texts.total}
+            </div>
           </div>
-          <div className="bg-yellow-900/20 rounded-lg p-4">
-            <div className="text-2xl font-bold text-yellow-300">
+          <div className="bg-yellow-900/20 rounded-lg p-2 sm:p-4">
+            <div className="text-lg sm:text-2xl font-bold text-yellow-300">
               {stats.open}
             </div>
-            <div className="text-sm text-gray-400">{texts.open}</div>
+            <div className="text-xs sm:text-sm text-gray-400">{texts.open}</div>
           </div>
-          <div className="bg-green-900/20 rounded-lg p-4">
-            <div className="text-2xl font-bold text-green-300">
+          <div className="bg-green-900/20 rounded-lg p-2 sm:p-4">
+            <div className="text-lg sm:text-2xl font-bold text-green-300">
               {stats.closed}
             </div>
-            <div className="text-sm text-gray-400">{texts.closed}</div>
+            <div className="text-xs sm:text-sm text-gray-400">
+              {texts.closed}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
               {texts.status}
             </label>
             <select
@@ -266,7 +274,7 @@ const ContactManagement = () => {
               onChange={(e) =>
                 setFilters({ ...filters, status: e.target.value })
               }
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 sm:px-3 py-2 text-white text-xs sm:text-sm"
             >
               <option value="all">{texts.allStatus}</option>
               <option value="open">{texts.open}</option>
@@ -274,7 +282,7 @@ const ContactManagement = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
               {texts.priority}
             </label>
             <select
@@ -282,7 +290,7 @@ const ContactManagement = () => {
               onChange={(e) =>
                 setFilters({ ...filters, priority: e.target.value })
               }
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 sm:px-3 py-2 text-white text-xs sm:text-sm"
             >
               <option value="all">{texts.allPriority}</option>
               <option value="high">{texts.high}</option>
@@ -291,11 +299,11 @@ const ContactManagement = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
               {texts.search}
             </label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 sm:w-4 sm:h-4" />
               <input
                 type="text"
                 placeholder={texts.searchContacts}
@@ -303,7 +311,7 @@ const ContactManagement = () => {
                 onChange={(e) =>
                   setFilters({ ...filters, search: e.target.value })
                 }
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-3 py-2 text-white"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-8 sm:pl-10 pr-2 sm:pr-3 py-2 text-white text-xs sm:text-sm"
               />
             </div>
           </div>
@@ -311,66 +319,72 @@ const ContactManagement = () => {
       </div>
 
       {/* Contacts List */}
-      <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
         {loading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto"></div>
-            <p className="mt-2 text-gray-400">{texts.loadingContacts}</p>
+          <div className="text-center py-6 sm:py-8">
+            <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-cyan-400 mx-auto"></div>
+            <p className="mt-2 text-gray-400 text-xs sm:text-sm">
+              {texts.loadingContacts}
+            </p>
           </div>
         ) : contacts.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
-            <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p>{texts.noContactsFound}</p>
+          <div className="text-center py-6 sm:py-8 text-gray-400">
+            <MessageSquare className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 opacity-50" />
+            <p className="text-xs sm:text-sm sm:text-base">
+              {texts.noContactsFound}
+            </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {contacts.map((contact) => (
               <div
                 key={contact._id}
-                className="border border-[#212121] rounded-lg p-4 hover:bg-gray-900/50 transition-colors"
+                className="border border-[#212121] rounded-lg p-3 sm:p-4 hover:bg-gray-900/50 transition-colors"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                      <h3 className="font-semibold text-sm sm:text-base md:text-lg">
                         {contact.fullName}
                       </h3>
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-xs ${getStatusColor(
-                          contact.status
-                        )}`}
-                      >
-                        {getStatusIcon(contact.status)}
-                        {contact.status.toUpperCase()}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-xs ${getPriorityColor(
-                          contact.priority
-                        )}`}
-                      >
-                        {contact.priority.toUpperCase()}
-                      </span>
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-[10px] sm:text-xs ${getStatusColor(
+                            contact.status
+                          )}`}
+                        >
+                          {getStatusIcon(contact.status)}
+                          {contact.status.toUpperCase()}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-[10px] sm:text-xs ${getPriorityColor(
+                            contact.priority
+                          )}`}
+                        >
+                          {contact.priority.toUpperCase()}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-400">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400">
                       <span className="flex items-center gap-1">
                         <Mail className="w-3 h-3" />
-                        {contact.email}
+                        <span className="truncate">{contact.email}</span>
                       </span>
                       <span className="flex items-center gap-1">
                         <MessageSquare className="w-3 h-3" />
-                        {contact.subject}
+                        <span className="truncate">{contact.subject}</span>
                       </span>
-                      <span>
+                      <span className="text-xs sm:text-sm">
                         {new Date(contact.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => openModal(contact)}
-                      className="flex items-center gap-1 px-3 py-2 text-xs font-medium"
+                      className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1 sm:py-2 text-[10px] sm:text-xs font-medium"
                     >
                       <Eye className="w-3 h-3" />
                       {texts.view}
@@ -380,7 +394,7 @@ const ContactManagement = () => {
                         variant="danger"
                         size="sm"
                         onClick={() => handleStatusChange(contact._id, "close")}
-                        className="flex items-center gap-1 px-3 py-2 text-xs font-medium bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700"
+                        className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1 sm:py-2 text-[10px] sm:text-xs font-medium bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700"
                       >
                         <X className="w-3 h-3" />
                         {texts.closeTicket}
@@ -392,7 +406,7 @@ const ContactManagement = () => {
                         onClick={() =>
                           handleStatusChange(contact._id, "reopen")
                         }
-                        className="flex items-center gap-1 px-3 py-2 text-xs font-medium bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700"
+                        className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1 sm:py-2 text-[10px] sm:text-xs font-medium bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700"
                       >
                         <CheckCircle className="w-3 h-3" />
                         {texts.reopen}
@@ -409,56 +423,62 @@ const ContactManagement = () => {
       {/* Contact Details Modal */}
       {showModal && selectedContact && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-black border border-[#212121] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-white">
+          <div className="bg-black border border-[#212121] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h3 className="text-lg sm:text-xl font-bold text-white">
                   {texts.contactDetails}
                 </h3>
                 <button
                   onClick={() => setShowModal(false)}
                   className="text-gray-400 hover:text-white"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
               </div>
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
                       {texts.name}
                     </label>
-                    <p className="text-white">{selectedContact.fullName}</p>
+                    <p className="text-white text-xs sm:text-sm">
+                      {selectedContact.fullName}
+                    </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
                       {texts.email}
                     </label>
-                    <p className="text-white">{selectedContact.email}</p>
+                    <p className="text-white text-xs sm:text-sm break-all">
+                      {selectedContact.email}
+                    </p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
                     {texts.subject}
                   </label>
-                  <p className="text-white">{selectedContact.subject}</p>
+                  <p className="text-white text-xs sm:text-sm">
+                    {selectedContact.subject}
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
                     {texts.message}
                   </label>
-                  <div className="bg-gray-900/50 rounded-lg p-3">
-                    <p className="text-white whitespace-pre-wrap">
+                  <div className="bg-gray-900/50 rounded-lg p-2 sm:p-3">
+                    <p className="text-white whitespace-pre-wrap text-xs sm:text-sm">
                       {selectedContact.description}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                     {texts.adminNotes}
                   </label>
                   <textarea
@@ -466,18 +486,18 @@ const ContactManagement = () => {
                     onChange={(e) => setAdminNotes(e.target.value)}
                     placeholder={texts.addAdminNotes}
                     rows={3}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 sm:px-3 py-2 text-white text-xs sm:text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                     {texts.priority}
                   </label>
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value)}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 sm:px-3 py-2 text-white text-xs sm:text-sm"
                   >
                     <option value="low">{texts.low}</option>
                     <option value="medium">{texts.medium}</option>
@@ -485,17 +505,17 @@ const ContactManagement = () => {
                   </select>
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
                   <Button
                     onClick={handleUpdateContact}
-                    className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-black font-medium py-2 px-4 rounded-lg transition-colors"
+                    className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-black font-medium py-2 px-3 sm:px-4 rounded-lg transition-colors text-xs sm:text-sm"
                   >
                     {texts.updateContact}
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => setShowModal(false)}
-                    className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                    className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white font-medium py-2 px-3 sm:px-4 rounded-lg transition-colors text-xs sm:text-sm"
                   >
                     {texts.close}
                   </Button>

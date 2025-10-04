@@ -214,23 +214,23 @@ const UsersBalances = () => {
   }, []);
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white mb-4">{texts.heading}</h1>
+    <div className="p-4 sm:p-6 px-4 sm:px-6 lg:px-8">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">{texts.heading}</h1>
 
         {/* Search */}
-        <div className="mb-4">
+        <div className="mb-3 sm:mb-4">
           <input
             type="text"
             placeholder={texts.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && searchUsers(searchTerm)}
-            className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+            className="w-full px-3 sm:px-4 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none text-xs sm:text-sm"
           />
           <button
             onClick={() => searchUsers(searchTerm)}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="mt-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm"
           >
             {texts.search}
           </button>
@@ -242,16 +242,16 @@ const UsersBalances = () => {
             <table className="w-full">
               <thead className="bg-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-white font-medium">
+                  <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-white font-medium text-xs sm:text-sm">
                     {texts.user}
                   </th>
-                  <th className="px-4 py-3 text-left text-white font-medium">
+                  <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-white font-medium text-xs sm:text-sm">
                     {texts.email}
                   </th>
-                  <th className="px-4 py-3 text-left text-white font-medium">
+                  <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-white font-medium text-xs sm:text-sm">
                     {texts.balance}
                   </th>
-                  <th className="px-4 py-3 text-left text-white font-medium">
+                  <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-white font-medium text-xs sm:text-sm">
                     {texts.actions}
                   </th>
                 </tr>
@@ -261,7 +261,7 @@ const UsersBalances = () => {
                   <tr>
                     <td
                       colSpan="4"
-                      className="px-4 py-8 text-center text-gray-400"
+                      className="px-2 sm:px-4 py-6 sm:py-8 text-center text-gray-400 text-xs sm:text-sm"
                     >
                       {texts.loadingUsers}
                     </td>
@@ -270,7 +270,7 @@ const UsersBalances = () => {
                   <tr>
                     <td
                       colSpan="4"
-                      className="px-4 py-8 text-center text-gray-400"
+                      className="px-2 sm:px-4 py-6 sm:py-8 text-center text-gray-400 text-xs sm:text-sm"
                     >
                       {texts.noUsersFound}
                     </td>
@@ -281,34 +281,36 @@ const UsersBalances = () => {
                       key={user._id}
                       className="border-t border-gray-700 hover:bg-gray-750"
                     >
-                      <td className="px-4 py-3 text-white">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-white">
                         <div>
-                          <div className="font-medium">
+                          <div className="font-medium text-xs sm:text-sm">
                             {user.profile?.firstName} {user.profile?.lastName}
                           </div>
-                          <div className="text-sm text-gray-400">
+                          <div className="text-[10px] sm:text-xs text-gray-400">
                             @{user.profile?.username}
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-300">{user.email}</td>
-                      <td className="px-4 py-3 text-white font-medium">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-gray-300 text-xs sm:text-sm break-all">
+                        {user.email}
+                      </td>
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-white font-medium text-xs sm:text-sm">
                         ${user.balance?.toFixed(2) || "0.00"}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3">
+                        <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
                           <button
                             onClick={() => {
                               setSelectedUser(user);
                               getDepositHistory(user._id);
                             }}
-                            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                            className="px-2 sm:px-3 py-1 bg-green-600 text-white text-[10px] sm:text-xs rounded hover:bg-green-700 transition-colors"
                           >
                             {texts.viewHistory}
                           </button>
                           <button
                             onClick={() => setSelectedUser(user)}
-                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                            className="px-2 sm:px-3 py-1 bg-blue-600 text-white text-[10px] sm:text-xs rounded hover:bg-blue-700 transition-colors"
                           >
                             {texts.updateBalance}
                           </button>
@@ -325,28 +327,28 @@ const UsersBalances = () => {
 
       {/* Deposit History Modal */}
       {showDepositModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-lg w-full max-w-4xl max-h-[80vh] overflow-hidden">
-            <div className="flex justify-between items-center p-6 border-b border-gray-700">
-              <h2 className="text-xl font-bold text-white">
+            <div className="flex justify-between items-center p-4 sm:p-6 border-b border-gray-700">
+              <h2 className="text-lg sm:text-xl font-bold text-white">
                 {texts.balanceHistory} - {selectedUser?.profile?.firstName}{" "}
                 {selectedUser?.profile?.lastName}
               </h2>
               <button
                 onClick={closeDepositModal}
-                className="text-gray-400 hover:text-white text-2xl"
+                className="text-gray-400 hover:text-white text-xl sm:text-2xl"
               >
                 ×
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[60vh]">
               {historyLoading ? (
-                <div className="text-center py-8 text-gray-300">
+                <div className="text-center py-6 sm:py-8 text-gray-300 text-xs sm:text-sm">
                   {texts.loadingBalanceHistory}
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {depositHistory.map((transaction) => {
                     // Determine if it's a credit (green) or debit (red) transaction
                     const isCredit = [
@@ -365,20 +367,20 @@ const UsersBalances = () => {
                     return (
                       <div
                         key={transaction._id}
-                        className="flex justify-between items-center p-4 bg-gray-700 rounded-lg"
+                        className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 sm:p-4 bg-gray-700 rounded-lg gap-2 sm:gap-0"
                       >
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-white">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs sm:text-sm font-medium text-white">
                               {transaction.displayName}
                             </span>
-                            <span className="text-xs text-gray-400">
+                            <span className="text-[10px] sm:text-xs text-gray-400">
                               {new Date(
                                 transaction.createdAt
                               ).toLocaleDateString()}
                             </span>
                             <span
-                              className={`text-xs px-2 py-1 rounded ${
+                              className={`text-[10px] sm:text-xs px-2 py-1 rounded ${
                                 isCredit
                                   ? "bg-green-900 text-green-300"
                                   : "bg-red-900 text-red-300"
@@ -387,22 +389,22 @@ const UsersBalances = () => {
                               {transaction.type}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-300 mt-1">
+                          <p className="text-xs sm:text-sm text-gray-300 mt-1">
                             {transaction.description}
                           </p>
                           {transaction.adminId && (
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
                               {texts.by}{" "}
                               {transaction.adminId.profile?.firstName}{" "}
                               {transaction.adminId.profile?.lastName}
                             </p>
                           )}
                         </div>
-                        <div className="text-right">
-                          <p className={`text-lg font-semibold ${colorClass}`}>
+                        <div className="text-left sm:text-right">
+                          <p className={`text-sm sm:text-lg font-semibold ${colorClass}`}>
                             {sign}${Math.abs(amount).toFixed(2)}
                           </p>
-                          <p className="text-sm text-gray-300">
+                          <p className="text-xs sm:text-sm text-gray-300">
                             {texts.balanceLabel} $
                             {transaction.newBalance.toFixed(2)}
                           </p>
@@ -411,7 +413,7 @@ const UsersBalances = () => {
                     );
                   })}
                   {depositHistory.length === 0 && (
-                    <div className="text-center py-8 text-gray-400">
+                    <div className="text-center py-6 sm:py-8 text-gray-400 text-xs sm:text-sm">
                       {texts.noBalanceHistoryFound}
                     </div>
                   )}
@@ -422,26 +424,26 @@ const UsersBalances = () => {
         </div>
       )}
 
-      {/* Update Balance Modal - Only show when selectedUser is set AND deposit modal is not open */}
+      {/* Update Balance Modal */}
       {selectedUser && !showDepositModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg w-full max-w-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg w-full max-w-md p-4 sm:p-6">
+            <div className="flex justify-between items-center mb-3 sm:mb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-white">
                 {texts.updateBalanceModal} - {selectedUser.profile?.firstName}{" "}
                 {selectedUser.profile?.lastName}
               </h2>
               <button
                 onClick={() => setSelectedUser(null)}
-                className="text-gray-400 hover:text-white text-2xl"
+                className="text-gray-400 hover:text-white text-xl sm:text-2xl"
               >
                 ×
               </button>
             </div>
 
-            <form onSubmit={updateBalance} className="space-y-4">
+            <form onSubmit={updateBalance} className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                   {texts.transactionType}
                 </label>
                 <select
@@ -449,7 +451,7 @@ const UsersBalances = () => {
                   onChange={(e) =>
                     setUpdateForm({ ...updateForm, type: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none text-xs sm:text-sm"
                 >
                   <option value="admin_add">{texts.addBalance}</option>
                   <option value="admin_deduct">{texts.deductBalance}</option>
@@ -457,7 +459,7 @@ const UsersBalances = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                   {texts.amount}
                 </label>
                 <input
@@ -468,14 +470,14 @@ const UsersBalances = () => {
                   onChange={(e) =>
                     setUpdateForm({ ...updateForm, amount: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none text-xs sm:text-sm"
                   placeholder={texts.enterAmount}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                   {texts.description}
                 </label>
                 <textarea
@@ -486,24 +488,24 @@ const UsersBalances = () => {
                       description: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none text-xs sm:text-sm"
                   rows="3"
                   placeholder={texts.enterDescription}
                   required
                 />
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm"
                 >
                   {texts.updateBalanceButton}
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedUser(null)}
-                  className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-xs sm:text-sm"
                 >
                   {texts.cancel}
                 </button>

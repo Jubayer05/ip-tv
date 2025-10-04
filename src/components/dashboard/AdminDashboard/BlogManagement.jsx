@@ -417,23 +417,23 @@ const BlogManagement = () => {
   }
 
   return (
-    <div className="mt-4 sm:mt-6 font-secondary">
-      <h2 className="text-4xl font-bold text-white mb-4">{texts.heading}</h2>
+    <div className="mt-4 sm:mt-6 font-secondary px-4 sm:px-6 lg:px-8">
+      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4">{texts.heading}</h2>
 
-      <div className="border border-[#212121] bg-black rounded-[15px] p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-semibold text-white">
+      <div className="border border-[#212121] bg-black rounded-[15px] p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
+          <h3 className="text-xl sm:text-2xl font-semibold text-white">
             {texts.manageBlogs}
           </h3>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
             <select
               value={filter}
               onChange={(e) => {
                 setFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="px-4 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition-colors"
+              className="px-3 sm:px-4 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition-colors text-xs sm:text-sm w-full sm:w-auto"
             >
               <option value="all">{texts.allBlogs}</option>
               <option value="published">{texts.published}</option>
@@ -442,37 +442,37 @@ const BlogManagement = () => {
 
             <button
               onClick={handleCreate}
-              className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors flex items-center gap-2"
+              className="px-3 sm:px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors flex items-center gap-2 text-xs sm:text-sm w-full sm:w-auto justify-center sm:justify-start"
             >
-              <FaPlus /> {texts.createBlog}
+              <FaPlus className="w-3 h-3 sm:w-4 sm:h-4" /> {texts.createBlog}
             </button>
           </div>
         </div>
 
         {/* Blog Form */}
         {showForm && (
-          <div className="mb-8 bg-[#0c171c] rounded-lg border border-[#212121] p-6">
-            <h4 className="text-xl font-semibold text-white mb-4">
+          <div className="mb-6 sm:mb-8 bg-[#0c171c] rounded-lg border border-[#212121] p-4 sm:p-6">
+            <h4 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">
               {editingBlog ? texts.editBlog : texts.createNewBlog}
             </h4>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                     {texts.title} *
                   </label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={handleTitleChange}
-                    className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                     placeholder={texts.enterBlogTitle}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                     {texts.slug} *
                   </label>
                   <input
@@ -481,18 +481,18 @@ const BlogManagement = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, slug: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                     placeholder={texts.blogUrlSlug}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
                     {texts.urlFriendlyVersion}
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                     {texts.authorName} *
                   </label>
                   <input
@@ -501,13 +501,13 @@ const BlogManagement = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, authorName: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                     placeholder={texts.enterAuthorName}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                     {texts.tags}
                   </label>
                   <input
@@ -516,20 +516,20 @@ const BlogManagement = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, tags: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                     placeholder={texts.enterTagsSeparated}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                   {texts.image} *
                 </label>
 
                 {/* File Upload Section */}
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                     <input
                       type="file"
                       accept="image/*"
@@ -539,14 +539,14 @@ const BlogManagement = () => {
                     />
                     <label
                       htmlFor="image-upload"
-                      className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded cursor-pointer transition-colors"
+                      className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-3 sm:px-4 py-2 rounded cursor-pointer transition-colors text-xs sm:text-sm"
                     >
-                      <Upload className="w-4 h-4" />
+                      <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
                       {texts.chooseImage}
                     </label>
                     {selectedFile && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-gray-300">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm">
+                        <span className="text-gray-300 break-all">
                           {selectedFile.name}
                         </span>
                         <button
@@ -554,7 +554,7 @@ const BlogManagement = () => {
                           onClick={removeFile}
                           className="text-red-400 cursor-pointer hover:text-red-300"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-3 h-3 sm:w-4 sm:h-4" />
                         </button>
                       </div>
                     )}
@@ -563,13 +563,13 @@ const BlogManagement = () => {
                   {/* Show current image if editing and no new file selected */}
                   {editingBlog && formData.image && !selectedFile && (
                     <div className="mt-2">
-                      <p className="text-sm text-gray-400 mb-2">
+                      <p className="text-xs sm:text-sm text-gray-400 mb-2">
                         {texts.currentImage}
                       </p>
                       <img
                         src={formData.image}
                         alt="Current blog image"
-                        className="w-32 h-20 object-cover rounded border border-gray-600"
+                        className="w-24 h-16 sm:w-32 sm:h-20 object-cover rounded border border-gray-600"
                         onError={(e) => {
                           e.target.style.display = "none";
                         }}
@@ -580,23 +580,23 @@ const BlogManagement = () => {
                   {/* Show preview of selected file */}
                   {selectedFile && (
                     <div className="mt-2">
-                      <p className="text-sm text-gray-400 mb-2">
+                      <p className="text-xs sm:text-sm text-gray-400 mb-2">
                         {texts.preview}
                       </p>
                       <img
                         src={URL.createObjectURL(selectedFile)}
                         alt="Preview"
-                        className="w-32 h-20 object-cover rounded border border-gray-600"
+                        className="w-24 h-16 sm:w-32 sm:h-20 object-cover rounded border border-gray-600"
                       />
                     </div>
                   )}
 
-                  <p className="text-xs text-gray-400">{texts.maxFileSize}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-400">{texts.maxFileSize}</p>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                   {texts.content} *
                 </label>
                 <RichTextEditor
@@ -609,7 +609,7 @@ const BlogManagement = () => {
                 />
               </div>
 
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3 sm:space-x-4">
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -620,20 +620,20 @@ const BlogManagement = () => {
                         isPublished: e.target.checked,
                       })
                     }
-                    className="rounded border-white/15 bg-[#0c171c] text-cyan-500 focus:ring-cyan-400"
+                    className="rounded border-white/15 bg-[#0c171c] text-cyan-500 focus:ring-cyan-400 w-3 h-3 sm:w-4 sm:h-4"
                   />
-                  <span className="text-gray-300">
+                  <span className="text-gray-300 text-xs sm:text-sm">
                     {texts.publishImmediately}
                   </span>
                 </label>
               </div>
 
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center gap-2"
+                  className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center gap-2 text-xs sm:text-sm justify-center"
                 >
-                  <FaSave /> {editingBlog ? texts.update : texts.create}
+                  <FaSave className="w-3 h-3 sm:w-4 sm:h-4" /> {editingBlog ? texts.update : texts.create}
                 </button>
                 <button
                   type="button"
@@ -641,9 +641,9 @@ const BlogManagement = () => {
                     setShowForm(false);
                     setEditingBlog(null);
                   }}
-                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors flex items-center gap-2"
+                  className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors flex items-center gap-2 text-xs sm:text-sm justify-center"
                 >
-                  <FaTimes /> {texts.cancel}
+                  <FaTimes className="w-3 h-3 sm:w-4 sm:h-4" /> {texts.cancel}
                 </button>
               </div>
             </form>
@@ -652,19 +652,19 @@ const BlogManagement = () => {
 
         {/* Blogs List */}
         {blogs.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">{texts.noBlogsFound}</p>
+          <div className="text-center py-8 sm:py-12">
+            <p className="text-gray-400 text-base sm:text-lg">{texts.noBlogsFound}</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {blogs.map((blog) => (
               <div
                 key={blog._id}
-                className="bg-[#0c171c] rounded-lg border border-[#212121] p-6"
+                className="bg-[#0c171c] rounded-lg border border-[#212121] p-4 sm:p-6"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 bg-gray-700 rounded-lg overflow-hidden">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-start mb-3 sm:mb-4 gap-3">
+                  <div className="flex items-center space-x-3 sm:space-x-4 w-full sm:w-auto">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
                       <img
                         src={blog.image}
                         alt={blog.title}
@@ -675,19 +675,19 @@ const BlogManagement = () => {
                         }}
                       />
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-white text-lg">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-white text-sm sm:text-lg break-words">
                         {blog.title}
                       </h3>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-gray-400 text-xs sm:text-sm">
                         By {blog.authorName} •{" "}
                         {new Date(blog.createdAt).toLocaleDateString()}
                       </p>
-                      <div className="flex flex-wrap gap-2 mt-2">
+                      <div className="flex flex-wrap gap-1 sm:gap-2 mt-1 sm:mt-2">
                         {blog.tags.map((tag, index) => (
                           <span
                             key={index}
-                            className="px-2 py-1 bg-cyan-500/20 text-cyan-400 text-xs rounded-full border border-cyan-500/30"
+                            className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-cyan-500/20 text-cyan-400 text-[10px] sm:text-xs rounded-full border border-cyan-500/30"
                           >
                             {tag}
                           </span>
@@ -698,7 +698,7 @@ const BlogManagement = () => {
 
                   <div className="flex items-center space-x-2">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      className={`px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium ${
                         blog.isPublished
                           ? "bg-green-500/20 text-green-400 border border-green-500/30"
                           : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
@@ -709,13 +709,13 @@ const BlogManagement = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <div className="flex space-x-2">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() =>
                         togglePublishStatus(blog._id, blog.isPublished)
                       }
-                      className={`px-3 py-1 rounded text-sm font-semibold transition-colors ${
+                      className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-semibold transition-colors ${
                         blog.isPublished
                           ? "bg-yellow-600 text-white hover:bg-yellow-700"
                           : "bg-green-600 text-white hover:bg-green-700"
@@ -726,20 +726,20 @@ const BlogManagement = () => {
 
                     <button
                       onClick={() => handleEdit(blog)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-semibold flex items-center gap-1"
+                      className="px-2 sm:px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs sm:text-sm font-semibold flex items-center gap-1"
                     >
-                      <FaEdit className="mr-1" /> {texts.edit}
+                      <FaEdit className="w-2 h-2 sm:w-3 sm:h-3 sm:mr-1" /> {texts.edit}
                     </button>
 
                     <button
                       onClick={() => handleDelete(blog._id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-semibold flex items-center gap-1"
+                      className="px-2 sm:px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs sm:text-sm font-semibold flex items-center gap-1"
                     >
-                      <FaTrash className="mr-1" /> {texts.delete}
+                      <FaTrash className="w-2 h-2 sm:w-3 sm:h-3 sm:mr-1" /> {texts.delete}
                     </button>
                   </div>
 
-                  <div className="text-xs text-gray-500">Slug: {blog.slug}</div>
+                  <div className="text-[10px] sm:text-xs text-gray-500 break-all">Slug: {blog.slug}</div>
                 </div>
               </div>
             ))}
@@ -748,12 +748,12 @@ const BlogManagement = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-center mt-8">
-            <div className="flex space-x-2">
+          <div className="flex justify-center mt-6 sm:mt-8">
+            <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-[#1a1a1a] transition-colors"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm"
               >
                 {texts.previous}
               </button>
@@ -762,7 +762,7 @@ const BlogManagement = () => {
                 <button
                   key={index}
                   onClick={() => setCurrentPage(index + 1)}
-                  className={`px-3 py-2 border border-white/15 rounded-lg transition-colors ${
+                  className={`px-2 sm:px-3 py-1.5 sm:py-2 border border-white/15 rounded-lg transition-colors text-xs sm:text-sm ${
                     currentPage === index + 1
                       ? "bg-cyan-500 text-white border-cyan-500"
                       : "bg-[#0c171c] text-white hover:bg-[#1a1a1a]"
@@ -777,7 +777,7 @@ const BlogManagement = () => {
                   setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                 }
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-[#1a1a1a] transition-colors"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm"
               >
                 {texts.next}
               </button>

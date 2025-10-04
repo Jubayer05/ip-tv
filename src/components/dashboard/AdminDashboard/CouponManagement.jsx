@@ -1,4 +1,5 @@
 "use client";
+import TableCustom from "@/components/ui/TableCustom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
@@ -65,7 +66,8 @@ const CouponManagement = () => {
     delete: "Delete",
     noCoupons: "No coupons",
     deleteCoupon: "Delete Coupon?",
-    areYouSureDelete: "Are you sure you want to delete coupon \"{code}\"? This action cannot be undone.",
+    areYouSureDelete:
+      'Are you sure you want to delete coupon "{code}"? This action cannot be undone.',
     yesDeleteIt: "Yes, delete it!",
     cancelAction: "Cancel",
     deleted: "Deleted!",
@@ -269,28 +271,143 @@ const CouponManagement = () => {
     await loadCoupons();
   };
 
-  return (
-    <div className="p-4 text-white font-secondary">
-      <h2 className="text-xl font-bold mb-4">{texts.heading}</h2>
+  // Define columns for TableCustom
+  const columns = [
+    {
+      title: texts.code,
+      dataIndex: "code",
+      key: "code",
+      render: (code) => (
+        <span className="text-white text-xs sm:text-sm font-semibold">
+          {code}
+        </span>
+      ),
+    },
+    {
+      title: texts.type,
+      dataIndex: "discountType",
+      key: "discountType",
+      render: (type) => (
+        <span className="text-gray-300 text-[10px] sm:text-xs capitalize">
+          {type}
+        </span>
+      ),
+    },
+    {
+      title: texts.value,
+      key: "value",
+      render: (_, record) => (
+        <span className="text-white text-[10px] sm:text-xs">
+          {record.discountType === "percentage"
+            ? `${record.discountValue}%`
+            : `$${record.discountValue}`}
+        </span>
+      ),
+    },
+    {
+      title: texts.min,
+      key: "min",
+      render: (_, record) => (
+        <span className="text-gray-300 text-[10px] sm:text-xs">
+          ${record.minOrderAmount || 0}
+        </span>
+      ),
+    },
+    {
+      title: texts.max,
+      key: "max",
+      render: (_, record) => (
+        <span className="text-gray-300 text-[10px] sm:text-xs">
+          {record.maxDiscountAmount ? `$${record.maxDiscountAmount}` : "-"}
+        </span>
+      ),
+    },
+    {
+      title: texts.usage,
+      key: "usage",
+      render: (_, record) => (
+        <span className="text-gray-300 text-[10px] sm:text-xs">
+          {record.usedCount || 0}/{record.usageLimit || "∞"}
+        </span>
+      ),
+    },
+    {
+      title: texts.active,
+      dataIndex: "isActive",
+      key: "isActive",
+      render: (isActive) => (
+        <span
+          className={`text-[10px] sm:text-xs px-2 py-1 rounded-full ${
+            isActive
+              ? "bg-green-500/20 text-green-400 border border-green-500/30"
+              : "bg-red-500/20 text-red-400 border border-red-500/30"
+          }`}
+        >
+          {isActive ? "Yes" : "No"}
+        </span>
+      ),
+    },
+    {
+      title: texts.validTill,
+      dataIndex: "endDate",
+      key: "endDate",
+      render: (endDate) => (
+        <span className="text-gray-300 text-[10px] sm:text-xs">
+          {endDate ? new Date(endDate).toLocaleDateString() : "-"}
+        </span>
+      ),
+    },
+    {
+      title: texts.actions,
+      key: "actions",
+      render: (_, record) => (
+        <div className="flex gap-1 sm:gap-2">
+          <button
+            className="bg-white/10 hover:bg-white/20 px-2 sm:px-3 py-1 rounded text-[10px] sm:text-xs transition-colors"
+            onClick={() => startEdit(record)}
+          >
+            {texts.edit}
+          </button>
+          <button
+            className="bg-red-600 hover:bg-red-700 px-2 sm:px-3 py-1 rounded text-[10px] sm:text-xs transition-colors"
+            onClick={() => remove(record.code)}
+          >
+            {texts.delete}
+          </button>
+        </div>
+      ),
+    },
+  ];
 
-      <form onSubmit={onSearch} className="mb-4 flex gap-2">
+  return (
+    <div className="p-3 sm:p-4 text-white font-secondary">
+      <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4">
+        {texts.heading}
+      </h2>
+
+      <form
+        onSubmit={onSearch}
+        className="mb-3 sm:mb-4 flex flex-col sm:flex-row gap-2"
+      >
         <input
-          className="bg-black border border-white/20 rounded px-3 py-2"
+          className="bg-black border border-white/20 rounded px-2 sm:px-3 py-2 text-xs sm:text-sm flex-1"
           placeholder={texts.searchByCode}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <button className="cursor-pointer bg-primary px-4 rounded">
+        <button className="cursor-pointer bg-primary px-3 sm:px-4 py-2 rounded text-xs sm:text-sm">
           {texts.search}
         </button>
       </form>
 
       <form
         onSubmit={submit}
-        className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-black/50 border border-white/10 p-4 rounded"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 bg-black/50 border border-white/10 p-3 sm:p-4 rounded mb-4 sm:mb-6"
       >
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">{texts.couponCode} *</label>
+          <label className="text-xs sm:text-sm text-gray-300">
+            {texts.couponCode} *
+          </label>
           <input
             name="code"
             placeholder="CODE"
@@ -298,28 +415,32 @@ const CouponManagement = () => {
             onChange={onChange}
             required
             disabled={!!editingCode}
-            className="bg-black border border-white/20 rounded px-3 py-2 uppercase w-full"
+            className="bg-black border border-white/20 rounded px-2 sm:px-3 py-2 uppercase w-full text-xs sm:text-sm"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">{texts.description}</label>
+          <label className="text-xs sm:text-sm text-gray-300">
+            {texts.description}
+          </label>
           <input
             name="description"
             placeholder={texts.description}
             value={form.description}
             onChange={onChange}
-            className="bg-black border border-white/20 rounded px-3 py-2 w-full"
+            className="bg-black border border-white/20 rounded px-2 sm:px-3 py-2 w-full text-xs sm:text-sm"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">{texts.discountType}</label>
+          <label className="text-xs sm:text-sm text-gray-300">
+            {texts.discountType}
+          </label>
           <select
             name="discountType"
             value={form.discountType}
             onChange={onChange}
-            className="bg-black border border-white/20 rounded px-3 py-2 w-full"
+            className="bg-black border border-white/20 rounded px-2 sm:px-3 py-2 w-full text-xs sm:text-sm"
           >
             <option value="percentage">{texts.percentage}</option>
             <option value="fixed">{texts.fixed}</option>
@@ -327,43 +448,51 @@ const CouponManagement = () => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">{texts.discountValue} *</label>
+          <label className="text-xs sm:text-sm text-gray-300">
+            {texts.discountValue} *
+          </label>
           <input
             type="number"
             name="discountValue"
             placeholder={texts.discountValue}
             value={form.discountValue}
             onChange={onChange}
-            className="bg-black border border-white/20 rounded px-3 py-2 w-full"
+            className="bg-black border border-white/20 rounded px-2 sm:px-3 py-2 w-full text-xs sm:text-sm"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">{texts.minOrderAmount}</label>
+          <label className="text-xs sm:text-sm text-gray-300">
+            {texts.minOrderAmount}
+          </label>
           <input
             type="number"
             name="minOrderAmount"
             placeholder={texts.minOrderAmount}
             value={form.minOrderAmount}
             onChange={onChange}
-            className="bg-black border border-white/20 rounded px-3 py-2 w-full"
+            className="bg-black border border-white/20 rounded px-2 sm:px-3 py-2 w-full text-xs sm:text-sm"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">{texts.maxDiscountAmount}</label>
+          <label className="text-xs sm:text-sm text-gray-300">
+            {texts.maxDiscountAmount}
+          </label>
           <input
             type="number"
             name="maxDiscountAmount"
             placeholder={texts.maxDiscountNone}
             value={form.maxDiscountAmount}
             onChange={onChange}
-            className="bg-black border border-white/20 rounded px-3 py-2 w-full"
+            className="bg-black border border-white/20 rounded px-2 sm:px-3 py-2 w-full text-xs sm:text-sm"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">{texts.startDate}</label>
+          <label className="text-xs sm:text-sm text-gray-300">
+            {texts.startDate}
+          </label>
           <DatePicker
             selected={form.startDate ? new Date(form.startDate) : null}
             onChange={(date) =>
@@ -374,7 +503,7 @@ const CouponManagement = () => {
                 },
               })
             }
-            className="bg-black border border-white/20 rounded px-3 py-2 w-full text-white"
+            className="bg-black border border-white/20 rounded px-2 sm:px-3 py-2 w-full text-white text-xs sm:text-sm"
             placeholderText={texts.selectStartDate}
             dateFormat="MMM dd, yyyy"
             isClearable
@@ -382,7 +511,9 @@ const CouponManagement = () => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">{texts.endDate}</label>
+          <label className="text-xs sm:text-sm text-gray-300">
+            {texts.endDate}
+          </label>
           <DatePicker
             selected={form.endDate ? new Date(form.endDate) : null}
             onChange={(date) =>
@@ -393,7 +524,7 @@ const CouponManagement = () => {
                 },
               })
             }
-            className="bg-black border border-white/20 rounded px-3 py-2 w-full text-white"
+            className="bg-black border border-white/20 rounded px-2 sm:px-3 py-2 w-full text-white text-xs sm:text-sm"
             placeholderText={texts.selectEndDate}
             dateFormat="MMM dd, yyyy"
             isClearable
@@ -401,35 +532,39 @@ const CouponManagement = () => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">{texts.usageLimit}</label>
+          <label className="text-xs sm:text-sm text-gray-300">
+            {texts.usageLimit}
+          </label>
           <input
             type="number"
             name="usageLimit"
             placeholder={texts.usageLimitUnlimited}
             value={form.usageLimit}
             onChange={onChange}
-            className="bg-black border border-white/20 rounded px-3 py-2 w-full"
+            className="bg-black border border-white/20 rounded px-2 sm:px-3 py-2 w-full text-xs sm:text-sm"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm text-gray-300">{texts.status}</label>
+          <label className="text-xs sm:text-sm text-gray-300">
+            {texts.status}
+          </label>
           <label className="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               name="isActive"
               checked={form.isActive}
               onChange={onChange}
-              className="rounded"
+              className="rounded w-3 h-3 sm:w-4 sm:h-4"
             />
-            <span className="text-sm">{texts.active}</span>
+            <span className="text-xs sm:text-sm">{texts.active}</span>
           </label>
         </div>
 
-        <div className="col-span-1 md:col-span-3 flex gap-2">
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col sm:flex-row gap-2">
           <button
             disabled={saving}
-            className="cursor-pointer bg-primary px-4 py-2 rounded"
+            className="cursor-pointer bg-primary px-3 sm:px-4 py-2 rounded text-xs sm:text-sm"
           >
             {editingCode ? texts.update : texts.create}
           </button>
@@ -437,7 +572,7 @@ const CouponManagement = () => {
             <button
               type="button"
               onClick={resetForm}
-              className="bg-white/10 px-4 py-2 rounded"
+              className="bg-white/10 px-3 sm:px-4 py-2 rounded text-xs sm:text-sm"
             >
               {texts.cancel}
             </button>
@@ -445,75 +580,24 @@ const CouponManagement = () => {
         </div>
       </form>
 
-      <div className="mt-6">
-        <h3 className="font-semibold mb-2">{texts.coupons} ({coupons.length})</h3>
+      <div className="mt-4 sm:mt-6">
+        <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">
+          {texts.coupons} ({coupons.length})
+        </h3>
         {loading ? (
-          <div>{texts.loading}</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border border-white/10">
-              <thead className="bg-white/5">
-                <tr>
-                  <th className="text-left p-2">{texts.code}</th>
-                  <th className="text-left p-2">{texts.type}</th>
-                  <th className="text-left p-2">{texts.value}</th>
-                  <th className="text-left p-2">{texts.min}</th>
-                  <th className="text-left p-2">{texts.max}</th>
-                  <th className="text-left p-2">{texts.usage}</th>
-                  <th className="text-left p-2">{texts.active}</th>
-                  <th className="text-left p-2">{texts.validTill}</th>
-                  <th className="text-left p-2">{texts.actions}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {coupons.map((c) => (
-                  <tr key={c.code} className="border-t border-white/10">
-                    <td className="p-2 font-semibold">{c.code}</td>
-                    <td className="p-2">{c.discountType}</td>
-                    <td className="p-2">
-                      {c.discountType === "percentage"
-                        ? `${c.discountValue}%`
-                        : `$${c.discountValue}`}
-                    </td>
-                    <td className="p-2">${c.minOrderAmount || 0}</td>
-                    <td className="p-2">
-                      {c.maxDiscountAmount ? `$${c.maxDiscountAmount}` : "-"}
-                    </td>
-                    <td className="p-2">
-                      {c.usedCount || 0}/{c.usageLimit || "∞"}
-                    </td>
-                    <td className="p-2">{c.isActive ? "Yes" : "No"}</td>
-                    <td className="p-2">
-                      {c.endDate
-                        ? new Date(c.endDate).toLocaleDateString()
-                        : "-"}
-                    </td>
-                    <td className="p-2 flex gap-2">
-                      <button
-                        className="bg-white/10 px-3 py-1 rounded"
-                        onClick={() => startEdit(c)}
-                      >
-                        {texts.edit}
-                      </button>
-                      <button
-                        className="bg-red-600 px-3 py-1 rounded"
-                        onClick={() => remove(c.code)}
-                      >
-                        {texts.delete}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {coupons.length === 0 && (
-                  <tr>
-                    <td className="p-3 text-center" colSpan={9}>
-                      {texts.noCoupons}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div className="text-center py-4 sm:py-8">
+            <div className="text-xs sm:text-sm">{texts.loading}</div>
           </div>
+        ) : (
+          <TableCustom
+            title=""
+            data={coupons}
+            columns={columns}
+            pageSize={5}
+            showButton={false}
+            rowKey="code"
+            className="overflow-x-scroll w-full"
+          />
         )}
       </div>
     </div>

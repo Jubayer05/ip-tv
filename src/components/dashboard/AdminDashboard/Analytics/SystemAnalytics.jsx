@@ -170,7 +170,7 @@ const PopularPlansChart = ({ popularPlans, texts }) => (
     </h3>
     <div className="space-y-4">
       {popularPlans?.slice(0, 5).map((plan, index) => (
-        <div key={plan._id} className="flex items-center justify-between">
+        <div key={index} className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
               <span className="text-blue-400 text-sm font-bold">

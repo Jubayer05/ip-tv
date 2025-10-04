@@ -458,23 +458,23 @@ const PaymentMethodsManagement = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-white">{texts.heading}</h2>
+    <div className="p-4 sm:p-6 px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-white">{texts.heading}</h2>
         <button
           onClick={() => {
             setEditingSetting(null);
             resetForm();
             setShowModal(true);
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-xs sm:text-sm"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
           {texts.addPaymentMethod}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {settings
           .filter((s) =>
             [
@@ -493,35 +493,35 @@ const PaymentMethodsManagement = () => {
             return (
               <div
                 key={setting._id}
-                className="bg-gray-800 rounded-lg shadow-md p-6 border border-gray-700"
+                className="bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 border border-gray-700"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     {/* Display custom image if available, otherwise use default logo */}
                     {setting.imageUrl ? (
                       <img
                         src={setting.imageUrl}
                         alt={setting.name}
-                        className="w-8 h-8 object-contain rounded"
+                        className="w-6 h-6 sm:w-8 sm:h-8 object-contain rounded"
                       />
                     ) : gatewayInfo?.logo ? (
                       <img
                         src={gatewayInfo.logo}
                         alt={setting.name}
-                        className="w-8 h-8 object-contain"
+                        className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
                       />
                     ) : (
-                      <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center">
-                        <ImageIcon className="w-4 h-4 text-gray-400" />
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-600 rounded flex items-center justify-center">
+                        <ImageIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                       </div>
                     )}
-                    <h3 className="text-lg font-semibold text-white">
+                    <h3 className="text-sm sm:text-lg font-semibold text-white">
                       {setting.name}
                     </h3>
                   </div>
                   <button
                     onClick={() => toggleActive(setting._id, setting.isActive)}
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
                       setting.isActive
                         ? "bg-green-600 text-green-100"
                         : "bg-gray-600 text-gray-300"
@@ -531,7 +531,7 @@ const PaymentMethodsManagement = () => {
                   </button>
                 </div>
 
-                <div className="space-y-2 text-sm text-gray-300">
+                <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-300">
                   <p>
                     <span className="font-medium text-gray-400">
                       {texts.gateway}:
@@ -558,13 +558,13 @@ const PaymentMethodsManagement = () => {
 
                 {/* Bonus Settings Display */}
                 {setting.bonusSettings && setting.bonusSettings.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="font-medium text-sm text-gray-400 mb-2">
+                  <div className="mt-3 sm:mt-4">
+                    <h4 className="font-medium text-xs sm:text-sm text-gray-400 mb-2">
                       {texts.bonusSettings}:
                     </h4>
                     <div className="space-y-1">
                       {setting.bonusSettings.map((bonus, index) => (
-                        <div key={index} className="text-xs text-gray-300">
+                        <div key={index} className="text-[10px] sm:text-xs text-gray-300">
                           <span className="text-gray-400">
                             ${bonus.minAmount}+
                           </span>{" "}
@@ -580,11 +580,11 @@ const PaymentMethodsManagement = () => {
 
                 {/* Fee Settings Display */}
                 {setting.feeSettings && setting.feeSettings.isActive && (
-                  <div className="mt-4">
-                    <h4 className="font-medium text-sm text-gray-400 mb-2">
+                  <div className="mt-3 sm:mt-4">
+                    <h4 className="font-medium text-xs sm:text-sm text-gray-400 mb-2">
                       {texts.serviceFee}:
                     </h4>
-                    <div className="text-xs text-gray-300">
+                    <div className="text-[10px] sm:text-xs text-gray-300">
                       {setting.feeSettings.feeType === "percentage" ? (
                         <span>
                           <span className="text-red-400">
@@ -615,17 +615,17 @@ const PaymentMethodsManagement = () => {
                   </div>
                 )}
 
-                <div className="flex gap-2 mt-4">
+                <div className="flex flex-col sm:flex-row gap-2 mt-3 sm:mt-4">
                   <button
                     onClick={() => handleEdit(setting)}
-                    className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 flex items-center justify-center gap-1 transition-colors"
+                    className="flex-1 bg-blue-600 text-white px-2 sm:px-3 py-2 rounded text-xs sm:text-sm hover:bg-blue-700 flex items-center justify-center gap-1 transition-colors"
                   >
                     <Edit className="w-3 h-3" />
                     {texts.edit}
                   </button>
                   <button
                     onClick={() => handleDelete(setting._id)}
-                    className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700 flex items-center justify-center gap-1 transition-colors"
+                    className="flex-1 bg-red-600 text-white px-2 sm:px-3 py-2 rounded text-xs sm:text-sm hover:bg-red-700 flex items-center justify-center gap-1 transition-colors"
                   >
                     <Trash2 className="w-3 h-3" />
                     {texts.delete}
@@ -638,10 +638,10 @@ const PaymentMethodsManagement = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-white">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-3 sm:mb-4">
+              <h3 className="text-base sm:text-lg font-semibold text-white">
                 {editingSetting
                   ? texts.editPaymentMethod
                   : texts.addPaymentMethodModal}
@@ -650,14 +650,14 @@ const PaymentMethodsManagement = () => {
                 onClick={() => setShowModal(false)}
                 className="text-gray-400 hover:text-white"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
                     {texts.gateway} *
                   </label>
                   <select
@@ -683,7 +683,7 @@ const PaymentMethodsManagement = () => {
                         }));
                       }
                     }}
-                    className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                     required
                     disabled={!!editingSetting}
                   >
@@ -697,7 +697,7 @@ const PaymentMethodsManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
                     {texts.name} *
                   </label>
                   <input
@@ -706,39 +706,39 @@ const PaymentMethodsManagement = () => {
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, name: e.target.value }))
                     }
-                    className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                     required
                   />
                 </div>
 
                 {/* Image Upload Section */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
                     {texts.uploadImage}
                   </label>
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     {/* Image Preview */}
                     {formData.imageUrl && (
                       <div className="relative">
                         <img
                           src={formData.imageUrl}
                           alt="Payment method preview"
-                          className="w-20 h-20 object-contain bg-gray-800 rounded-lg border border-gray-600"
+                          className="w-16 h-16 sm:w-20 sm:h-20 object-contain bg-gray-800 rounded-lg border border-gray-600"
                         />
                         <button
                           type="button"
                           onClick={handleRemoveImage}
-                          className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700"
+                          className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-600 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-xs hover:bg-red-700"
                         >
-                          <X className="w-3 h-3" />
+                          <X className="w-2 h-2 sm:w-3 sm:h-3" />
                         </button>
                       </div>
                     )}
 
                     {/* File Upload */}
-                    <div className="flex items-center gap-3">
-                      <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors">
-                        <Upload className="w-4 h-4" />
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <label className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors text-xs sm:text-sm">
+                        <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
                         {uploadingImage
                           ? texts.uploadingImage
                           : texts.selectImageFile}
@@ -751,11 +751,11 @@ const PaymentMethodsManagement = () => {
                         />
                       </label>
                       {uploadingImage && (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-blue-600"></div>
                       )}
                     </div>
 
-                    <p className="text-xs text-gray-400">
+                    <p className="text-[10px] sm:text-xs text-gray-400">
                       {texts.imageRequirements}
                     </p>
                   </div>
@@ -763,7 +763,7 @@ const PaymentMethodsManagement = () => {
 
                 {showApiKey && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
                       {texts.apiKey} *
                     </label>
                     <div className="relative">
@@ -777,7 +777,7 @@ const PaymentMethodsManagement = () => {
                             apiKey: e.target.value,
                           }))
                         }
-                        className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                         required
                       />
                       <button
@@ -829,7 +829,7 @@ const PaymentMethodsManagement = () => {
 
                 {showApiSecret && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
                       {texts.apiSecret} *
                     </label>
                     <div className="relative">
@@ -842,7 +842,7 @@ const PaymentMethodsManagement = () => {
                             apiSecret: e.target.value,
                           }))
                         }
-                        className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                         required
                       />
                       <button
@@ -894,7 +894,7 @@ const PaymentMethodsManagement = () => {
 
                 {showMerchantId && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
                       {merchantLabel} *
                     </label>
                     <input
@@ -906,14 +906,14 @@ const PaymentMethodsManagement = () => {
                           merchantId: e.target.value,
                         }))
                       }
-                      className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                       required
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
                     {texts.minAmountLabel} *
                   </label>
                   <input
@@ -927,7 +927,7 @@ const PaymentMethodsManagement = () => {
                         minAmount: parseFloat(e.target.value),
                       }))
                     }
-                    className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                     required
                   />
                 </div>
@@ -936,19 +936,19 @@ const PaymentMethodsManagement = () => {
               {/* Bonus Settings */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium text-gray-300">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300">
                     {texts.bonusSettingsLabel}
                   </label>
                   <button
                     type="button"
                     onClick={addBonusSetting}
-                    className="text-blue-400 hover:text-blue-300 text-sm"
+                    className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
                   >
                     + {texts.addBonus}
                   </button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {formData.bonusSettings.map((bonus, index) => (
                     <div
                       key={index}
@@ -972,7 +972,7 @@ const PaymentMethodsManagement = () => {
                                 parseFloat(e.target.value) || 0
                               )
                             }
-                            className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         <div className="flex-1">
@@ -993,7 +993,7 @@ const PaymentMethodsManagement = () => {
                                 parseFloat(e.target.value) || 0
                               )
                             }
-                            className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         <div className="flex items-end">
@@ -1028,18 +1028,18 @@ const PaymentMethodsManagement = () => {
                         },
                       }))
                     }
-                    className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 text-xs sm:text-sm"
                   />
                   <label
                     htmlFor="feeActive"
-                    className="text-sm font-medium text-gray-300"
+                    className="text-xs sm:text-sm font-medium text-gray-300"
                   >
                     {texts.enableServiceFee}
                   </label>
                 </div>
 
                 {formData.feeSettings.isActive && (
-                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-600 space-y-3">
+                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-600 space-y-2 sm:space-y-3">
                     <div>
                       <label className="block text-xs font-medium text-gray-400 mb-1">
                         {texts.feeType}
@@ -1055,7 +1055,7 @@ const PaymentMethodsManagement = () => {
                             },
                           }))
                         }
-                        className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="percentage">{texts.percentage}</option>
                         <option value="fixed">{texts.fixedAmount}</option>
@@ -1083,7 +1083,7 @@ const PaymentMethodsManagement = () => {
                               },
                             }))
                           }
-                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     ) : (
@@ -1106,7 +1106,7 @@ const PaymentMethodsManagement = () => {
                               },
                             }))
                           }
-                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     )}
@@ -1125,28 +1125,28 @@ const PaymentMethodsManagement = () => {
                       isActive: e.target.checked,
                     }))
                   }
-                  className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500"
+                  className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 text-xs sm:text-sm"
                 />
                 <label
                   htmlFor="isActive"
-                  className="text-sm font-medium text-gray-300"
+                  className="text-xs sm:text-sm font-medium text-gray-300"
                 >
                   {texts.active}
                 </label>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+                  className="flex-1 bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 text-xs sm:text-sm"
                 >
-                  <Save className="w-4 h-4" />
+                  <Save className="w-3 h-3 sm:w-4 sm:h-4" />
                   {editingSetting ? texts.update : texts.create}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                  className="flex-1 bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-700 text-xs sm:text-sm"
                 >
                   {texts.cancel}
                 </button>

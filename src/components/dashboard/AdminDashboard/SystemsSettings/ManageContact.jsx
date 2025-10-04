@@ -147,21 +147,25 @@ const ManageContact = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 font-secondary">
-      <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <h2 className="text-3xl text-center font-bold mb-4">{texts.heading}</h2>
-        <p className="text-gray-300 text-sm mb-6">{texts.subtitle}</p>
+    <div className="flex flex-col gap-4 font-secondary px-4 sm:px-6 lg:px-8">
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
+        <h2 className="text-xl sm:text-2xl md:text-3xl text-center font-bold mb-3 sm:mb-4">
+          {texts.heading}
+        </h2>
+        <p className="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6">
+          {texts.subtitle}
+        </p>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
           {/* Contact Information Section */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-white">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-white">
               {texts.contactDetails}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-2">
-                <label className="flex items-center space-x-2 text-sm text-gray-300">
-                  <Phone className="w-4 h-4 text-gray-400" />
+                <label className="flex items-center space-x-2 text-xs sm:text-sm text-gray-300">
+                  <Phone className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                   <span>{texts.phoneNumber}</span>
                 </label>
                 <input
@@ -171,13 +175,13 @@ const ManageContact = () => {
                     handleContactChange("phoneNumber", e.target.value)
                   }
                   placeholder={texts.phoneNumberPlaceholder}
-                  className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                  className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 text-xs sm:text-sm"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="flex items-center space-x-2 text-sm text-gray-300">
-                  <Mail className="w-4 h-4 text-gray-400" />
+                <label className="flex items-center space-x-2 text-xs sm:text-sm text-gray-300">
+                  <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                   <span>{texts.emailAddress}</span>
                 </label>
                 <input
@@ -187,7 +191,7 @@ const ManageContact = () => {
                     handleContactChange("emailAddress", e.target.value)
                   }
                   placeholder={texts.emailAddressPlaceholder}
-                  className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                  className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 text-xs sm:text-sm"
                 />
               </div>
             </div>
@@ -195,12 +199,12 @@ const ManageContact = () => {
 
           {/* Business Hours Section */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-white">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-white">
               {texts.businessHours}
             </h3>
             <div className="space-y-2">
-              <label className="flex items-center space-x-2 text-sm text-gray-300">
-                <Clock className="w-4 h-4 text-gray-400" />
+              <label className="flex items-center space-x-2 text-xs sm:text-sm text-gray-300">
+                <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                 <span>{texts.businessHoursLabel}</span>
               </label>
               <input
@@ -210,20 +214,22 @@ const ManageContact = () => {
                   handleContactChange("businessHours", e.target.value)
                 }
                 placeholder={texts.businessHoursPlaceholder}
-                className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 text-xs sm:text-sm"
               />
-              <p className="text-xs text-gray-500">{texts.businessHoursNote}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500">
+                {texts.businessHoursNote}
+              </p>
             </div>
           </div>
 
           {/* Support Message Section */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-white">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-white">
               {texts.supportMessage}
             </h3>
             <div className="space-y-2">
-              <label className="flex items-center space-x-2 text-sm text-gray-300">
-                <MessageSquare className="w-4 h-4 text-gray-400" />
+              <label className="flex items-center space-x-2 text-xs sm:text-sm text-gray-300">
+                <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                 <span>{texts.helpMessage}</span>
               </label>
               <textarea
@@ -231,20 +237,22 @@ const ManageContact = () => {
                 onChange={(e) => handleContactChange("message", e.target.value)}
                 placeholder={texts.helpMessagePlaceholder}
                 rows={3}
-                className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 resize-none"
+                className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 resize-none text-xs sm:text-sm"
               />
-              <p className="text-xs text-gray-500">{texts.helpMessageNote}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500">
+                {texts.helpMessageNote}
+              </p>
             </div>
           </div>
 
           {/* Support Ticket Settings Section */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-white">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-white">
               {texts.supportTicketSettings}
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div className="space-y-2">
-                <label className="text-sm text-gray-300">
+                <label className="text-xs sm:text-sm text-gray-300">
                   {texts.buttonText}
                 </label>
                 <input
@@ -257,13 +265,15 @@ const ManageContact = () => {
                     )
                   }
                   placeholder={texts.buttonTextPlaceholder}
-                  className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                  className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 text-xs sm:text-sm"
                 />
-                <p className="text-xs text-gray-500">{texts.buttonTextNote}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500">
+                  {texts.buttonTextNote}
+                </p>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm text-gray-300">
+                <label className="text-xs sm:text-sm text-gray-300">
                   {texts.successMessage}
                 </label>
                 <textarea
@@ -276,9 +286,9 @@ const ManageContact = () => {
                   }
                   placeholder={texts.successMessagePlaceholder}
                   rows={2}
-                  className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 resize-none"
+                  className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 resize-none text-xs sm:text-sm"
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-[10px] sm:text-xs text-gray-500">
                   {texts.successMessageNote}
                 </p>
               </div>
@@ -288,33 +298,33 @@ const ManageContact = () => {
           {/* Status Messages */}
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-              <p className="text-sm text-red-400">{error}</p>
+              <p className="text-xs sm:text-sm text-red-400">{error}</p>
             </div>
           )}
           {saved && (
             <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-              <p className="text-sm text-green-400">
+              <p className="text-xs sm:text-sm text-green-400">
                 {texts.settingsSavedSuccess}
               </p>
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <button
               type="button"
               onClick={fetchSettings}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-2 px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
             >
               {texts.refresh}
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
             >
-              <Save className="w-4 h-4" />
+              <Save className="w-3 h-3 sm:w-4 sm:h-4" />
               {loading ? texts.saving : texts.saveChanges}
             </button>
           </div>

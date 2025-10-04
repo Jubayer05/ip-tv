@@ -49,8 +49,21 @@ export async function POST(request) {
     );
     const finalAmount = feeCalculation.totalAmount;
 
-    // Update the service with database credentials
-    paygateService.merchantAddress = paymentSettings.merchantAddress;
+    // Get the merchant address from the correct field
+    const merchantAddress = paymentSettings.merchantId;
+
+    if (!merchantAddress) {
+      return NextResponse.json(
+        {
+          error: "PayGate merchant address not configured",
+          details:
+            "Please configure the merchant address (merchantId) in PayGate payment settings",
+        },
+        { status: 400 }
+      );
+    }
+
+    paygateService.setMerchantAddress(merchantAddress);
 
     const origin = new URL(request.url).origin;
 

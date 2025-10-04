@@ -1,4 +1,5 @@
 "use client";
+import TableCustom from "@/components/ui/TableCustom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Crown, Edit, Plus, Save, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -51,6 +52,7 @@ export default function RankSystemManagement() {
     created: "Rank system created successfully",
     updated: "Rank system updated successfully",
     deleted: "Rank system deleted successfully",
+    spendingRange: "Spending Range",
   };
 
   const [texts, setTexts] = useState(ORIGINAL_TEXTS);
@@ -276,41 +278,121 @@ export default function RankSystemManagement() {
     setShowForm(true);
   };
 
+  // Define columns for TableCustom
+  const columns = [
+    {
+      title: texts.order,
+      dataIndex: "order",
+      key: "order",
+      render: (order) => (
+        <span className="text-white pl-2 text-xs sm:text-sm font-medium">
+          {order}
+        </span>
+      ),
+    },
+    {
+      title: texts.name,
+      dataIndex: "name",
+      key: "name",
+      render: (name) => (
+        <div className="flex items-center">
+          <Crown className="w-3 h-3 sm:w-4 sm:h-4 text-primary mr-1 sm:mr-2 flex-shrink-0" />
+          <span className="text-white text-xs sm:text-sm font-medium truncate">
+            {name}
+          </span>
+        </div>
+      ),
+    },
+    {
+      title: texts.benefits,
+      dataIndex: "benefits",
+      key: "benefits",
+      render: (benefits) => (
+        <span className="text-gray-300 text-[10px] sm:text-xs max-w-xs truncate block">
+          {benefits}
+        </span>
+      ),
+    },
+    {
+      title: texts.spendingRange,
+      key: "spendingRange",
+      render: (_, record) => (
+        <span className="text-gray-300 text-[10px] sm:text-xs">
+          ${record.spending.min} - ${record.spending.max}
+        </span>
+      ),
+    },
+    {
+      title: texts.discount,
+      dataIndex: "discount",
+      key: "discount",
+      render: (discount) => (
+        <span className="text-white text-[10px] sm:text-xs font-medium">
+          {discount}%
+        </span>
+      ),
+    },
+    {
+      title: texts.actions,
+      key: "actions",
+      render: (_, record) => (
+        <div className="flex space-x-1 sm:space-x-2">
+          <button
+            onClick={() => handleEdit(record)}
+            className="text-blue-400 hover:text-blue-300 transition-colors p-1"
+            title={texts.edit}
+          >
+            <Edit size={14} className="sm:w-4 sm:h-4" />
+          </button>
+          <button
+            onClick={() => handleDelete(record._id)}
+            className="text-red-400 hover:text-red-300 transition-colors p-1"
+            title={texts.delete}
+          >
+            <Trash2 size={14} className="sm:w-4 sm:h-4" />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-white">{texts.loading}</div>
+      <div className="flex items-center justify-center h-48 sm:h-64">
+        <div className="text-white text-xs sm:text-sm">{texts.loading}</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 font-secondary">
+    <div className="space-y-4 sm:space-y-6 font-secondary px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
         <div>
-          <h1 className="text-3xl font-bold text-white">{texts.title}</h1>
-          <p className="text-gray-400">{texts.subtitle}</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+            {texts.title}
+          </h1>
+          <p className="text-gray-400 text-xs sm:text-sm">{texts.subtitle}</p>
         </div>
         <button
           onClick={addNewRank}
-          className="bg-primary hover:bg-primary/80 cursor-pointer text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          className="bg-primary hover:bg-primary/80 cursor-pointer text-white px-3 sm:px-4 py-2 rounded-lg flex items-center gap-1 sm:gap-2 transition-colors text-xs sm:text-sm"
         >
-          <Plus size={20} />
+          <Plus size={16} className="sm:w-5 sm:h-5" />
           {texts.addNew}
         </button>
       </div>
 
       {/* Form */}
       {showForm && (
-        <div className="bg-black border border-[#212121] rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-white mb-4">
+        <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">
             {editingId ? texts.edit : texts.addNew}
           </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                   {texts.name}
                 </label>
                 <input
@@ -319,12 +401,12 @@ export default function RankSystemManagement() {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-3 py-2 text-white focus:border-primary focus:outline-none"
+                  className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-2 sm:px-3 py-2 text-white focus:border-primary focus:outline-none text-xs sm:text-sm"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                   {texts.order}
                 </label>
                 <input
@@ -336,7 +418,7 @@ export default function RankSystemManagement() {
                       order: parseInt(e.target.value),
                     })
                   }
-                  className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-3 py-2 text-white focus:border-primary focus:outline-none"
+                  className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-2 sm:px-3 py-2 text-white focus:border-primary focus:outline-none text-xs sm:text-sm"
                   min="1"
                   required
                 />
@@ -344,7 +426,7 @@ export default function RankSystemManagement() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                 {texts.benefits}
               </label>
               <textarea
@@ -352,15 +434,15 @@ export default function RankSystemManagement() {
                 onChange={(e) =>
                   setFormData({ ...formData, benefits: e.target.value })
                 }
-                className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-3 py-2 text-white focus:border-primary focus:outline-none"
+                className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-2 sm:px-3 py-2 text-white focus:border-primary focus:outline-none text-xs sm:text-sm"
                 rows="3"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                   {texts.minSpending}
                 </label>
                 <input
@@ -375,14 +457,14 @@ export default function RankSystemManagement() {
                       },
                     })
                   }
-                  className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-3 py-2 text-white focus:border-primary focus:outline-none"
+                  className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-2 sm:px-3 py-2 text-white focus:border-primary focus:outline-none text-xs sm:text-sm"
                   min="0"
                   step="0.01"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                   {texts.maxSpending}
                 </label>
                 <input
@@ -397,14 +479,14 @@ export default function RankSystemManagement() {
                       },
                     })
                   }
-                  className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-3 py-2 text-white focus:border-primary focus:outline-none"
+                  className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-2 sm:px-3 py-2 text-white focus:border-primary focus:outline-none text-xs sm:text-sm"
                   min="0"
                   step="0.01"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                   {texts.discount}
                 </label>
                 <input
@@ -416,7 +498,7 @@ export default function RankSystemManagement() {
                       discount: parseFloat(e.target.value),
                     })
                   }
-                  className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-3 py-2 text-white focus:border-primary focus:outline-none"
+                  className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-2 sm:px-3 py-2 text-white focus:border-primary focus:outline-none text-xs sm:text-sm"
                   min="0"
                   max="100"
                   step="0.1"
@@ -425,9 +507,9 @@ export default function RankSystemManagement() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                   {texts.bonusDevices}
                 </label>
                 <input
@@ -439,13 +521,13 @@ export default function RankSystemManagement() {
                       bonusDevices: parseInt(e.target.value),
                     })
                   }
-                  className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-3 py-2 text-white focus:border-primary focus:outline-none"
+                  className="w-full bg-[#0E0E11] border border-white/15 rounded-lg px-2 sm:px-3 py-2 text-white focus:border-primary focus:outline-none text-xs sm:text-sm"
                   min="0"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -453,9 +535,9 @@ export default function RankSystemManagement() {
                   onChange={(e) =>
                     setFormData({ ...formData, earlyAccess: e.target.checked })
                   }
-                  className="rounded border-white/15 bg-[#0E0E11] text-primary focus:ring-primary"
+                  className="rounded border-white/15 bg-[#0E0E11] text-primary focus:ring-primary w-3 h-3 sm:w-4 sm:h-4"
                 />
-                <span className="text-sm text-gray-300">
+                <span className="text-xs sm:text-sm text-gray-300">
                   {texts.earlyAccess}
                 </span>
               </label>
@@ -466,9 +548,9 @@ export default function RankSystemManagement() {
                   onChange={(e) =>
                     setFormData({ ...formData, vipSupport: e.target.checked })
                   }
-                  className="rounded border-white/15 bg-[#0E0E11] text-primary focus:ring-primary"
+                  className="rounded border-white/15 bg-[#0E0E11] text-primary focus:ring-primary w-3 h-3 sm:w-4 sm:h-4"
                 />
-                <span className="text-sm text-gray-300">
+                <span className="text-xs sm:text-sm text-gray-300">
                   {texts.vipSupport}
                 </span>
               </label>
@@ -482,9 +564,9 @@ export default function RankSystemManagement() {
                       customCoupons: e.target.checked,
                     })
                   }
-                  className="rounded border-white/15 bg-[#0E0E11] text-primary focus:ring-primary"
+                  className="rounded border-white/15 bg-[#0E0E11] text-primary focus:ring-primary w-3 h-3 sm:w-4 sm:h-4"
                 />
-                <span className="text-sm text-gray-300">
+                <span className="text-xs sm:text-sm text-gray-300">
                   {texts.customCoupons}
                 </span>
               </label>
@@ -498,20 +580,20 @@ export default function RankSystemManagement() {
                       exclusivePerks: e.target.checked,
                     })
                   }
-                  className="rounded border-white/15 bg-[#0E0E11] text-primary focus:ring-primary"
+                  className="rounded border-white/15 bg-[#0E0E11] text-primary focus:ring-primary w-3 h-3 sm:w-4 sm:h-4"
                 />
-                <span className="text-sm text-gray-300">
+                <span className="text-xs sm:text-sm text-gray-300">
                   {texts.exclusivePerks}
                 </span>
               </label>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
               <button
                 type="submit"
-                className="bg-primary hover:bg-primary/80 cursor-pointer text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                className="bg-primary hover:bg-primary/80 cursor-pointer text-white px-3 sm:px-4 py-2 rounded-lg flex items-center gap-1 sm:gap-2 transition-colors text-xs sm:text-sm"
               >
-                <Save size={20} />
+                <Save size={16} className="sm:w-5 sm:h-5" />
                 {texts.save}
               </button>
               <button
@@ -521,9 +603,9 @@ export default function RankSystemManagement() {
                   setEditingId(null);
                   resetForm();
                 }}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center gap-1 sm:gap-2 transition-colors text-xs sm:text-sm"
               >
-                <X size={20} />
+                <X size={16} className="sm:w-5 sm:h-5" />
                 {texts.cancel}
               </button>
             </div>
@@ -531,90 +613,16 @@ export default function RankSystemManagement() {
         </div>
       )}
 
-      {/* Rank Systems List */}
-      <div className="bg-black border border-[#212121] rounded-lg overflow-hidden">
-        <div className="p-6 border-b border-gray-800">
-          <h3 className="text-lg font-semibold text-white">
-            Current Rank Systems
-          </h3>
-        </div>
-
-        {rankSystems.length === 0 ? (
-          <div className="p-6 text-center text-gray-400">{texts.noRanks}</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[#0E0E11] border-b border-gray-800">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    {texts.order}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    {texts.name}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    {texts.benefits}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Spending Range
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    {texts.discount}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    {texts.actions}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {rankSystems.map((rank) => (
-                  <tr
-                    key={rank._id}
-                    className="hover:bg-[#0E0E11] transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      {rank.order}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Crown className="w-5 h-5 text-primary mr-2" />
-                        <span className="text-sm font-medium text-white">
-                          {rank.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-300 max-w-xs truncate">
-                      {rank.benefits}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                      ${rank.spending.min} - ${rank.spending.max}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      {rank.discount}%
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEdit(rank)}
-                          className="text-blue-400 hover:text-blue-300 transition-colors"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(rank._id)}
-                          className="text-red-400 hover:text-red-300 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Rank Systems Table */}
+      <TableCustom
+        title="Current Rank Systems"
+        data={rankSystems}
+        columns={columns}
+        pageSize={5}
+        showButton={false}
+        rowKey="_id"
+        className="overflow-x-scroll w-full"
+      />
     </div>
   );
 }

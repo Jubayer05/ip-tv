@@ -192,11 +192,13 @@ const SupportTicketAdmin = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case "open":
-        return <Clock className="w-4 h-4 text-yellow-500" />;
+        return <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />;
       case "reply":
-        return <MessageCircle className="w-4 h-4 text-blue-500" />;
+        return (
+          <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500" />
+        );
       case "close":
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />;
       default:
         return null;
     }
@@ -245,19 +247,21 @@ const SupportTicketAdmin = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-4 font-secondary">
+    <div className="flex flex-col gap-3 sm:gap-4 font-secondary px-4 sm:px-6 lg:px-8">
       {/* Header with Stats */}
-      <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">{texts.heading}</h2>
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-3 sm:mb-4 space-y-3 lg:space-y-0">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold">
+            {texts.heading}
+          </h2>
 
           {/* Tab System */}
-          <div className="flex bg-gray-900/50 rounded-lg p-1">
+          <div className="flex bg-gray-900/50 rounded-lg p-1 overflow-x-auto">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                className={`px-2 sm:px-4 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors flex items-center gap-1 sm:gap-2 whitespace-nowrap ${
                   activeTab === tab.id
                     ? "bg-primary text-black"
                     : "text-gray-400 hover:text-white hover:bg-gray-800/50"
@@ -265,7 +269,7 @@ const SupportTicketAdmin = () => {
               >
                 {tab.label}
                 <span
-                  className={`text-xs px-2 py-1 rounded-full ${
+                  className={`text-[10px] sm:text-xs px-1 sm:px-2 py-0.5 sm:py-1 rounded-full ${
                     activeTab === tab.id
                       ? "bg-black/20 text-black"
                       : "bg-gray-700 text-gray-300"
@@ -279,46 +283,60 @@ const SupportTicketAdmin = () => {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-4 gap-4 text-center">
-          <div className="bg-gray-900/50 rounded-lg p-3">
-            <div className="text-2xl font-bold text-white">{stats.total}</div>
-            <div className="text-xs text-gray-400">{texts.total}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-center">
+          <div className="bg-gray-900/50 rounded-lg p-2 sm:p-3">
+            <div className="text-lg sm:text-2xl font-bold text-white">
+              {stats.total}
+            </div>
+            <div className="text-[10px] sm:text-xs text-gray-400">
+              {texts.total}
+            </div>
           </div>
-          <div className="bg-yellow-900/20 rounded-lg p-3">
-            <div className="text-2xl font-bold text-yellow-300">
+          <div className="bg-yellow-900/20 rounded-lg p-2 sm:p-3">
+            <div className="text-lg sm:text-2xl font-bold text-yellow-300">
               {stats.open}
             </div>
-            <div className="text-xs text-gray-400">{texts.open}</div>
+            <div className="text-[10px] sm:text-xs text-gray-400">
+              {texts.open}
+            </div>
           </div>
-          <div className="bg-blue-900/20 rounded-lg p-3">
-            <div className="text-2xl font-bold text-blue-300">
+          <div className="bg-blue-900/20 rounded-lg p-2 sm:p-3">
+            <div className="text-lg sm:text-2xl font-bold text-blue-300">
               {stats.reply}
             </div>
-            <div className="text-xs text-gray-400">{texts.reply}</div>
+            <div className="text-[10px] sm:text-xs text-gray-400">
+              {texts.reply}
+            </div>
           </div>
-          <div className="bg-green-900/20 rounded-lg p-3">
-            <div className="text-2xl font-bold text-green-300">
+          <div className="bg-green-900/20 rounded-lg p-2 sm:p-3">
+            <div className="text-lg sm:text-2xl font-bold text-green-300">
               {stats.closed}
             </div>
-            <div className="text-xs text-gray-400">{texts.closed}</div>
+            <div className="text-[10px] sm:text-xs text-gray-400">
+              {texts.closed}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Tickets List */}
-      <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
         {loading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-gray-400">{texts.loadingTickets}</p>
+          <div className="text-center py-6 sm:py-8">
+            <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-gray-400 text-xs sm:text-sm">
+              {texts.loadingTickets}
+            </p>
           </div>
         ) : tickets.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
-            <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p>{texts.noTicketsFound}</p>
+          <div className="text-center py-6 sm:py-8 text-gray-400">
+            <MessageCircle className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 opacity-50" />
+            <p className="text-xs sm:text-sm sm:text-base">
+              {texts.noTicketsFound}
+            </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {tickets.map((t) => (
               <div
                 key={t._id}
@@ -326,46 +344,48 @@ const SupportTicketAdmin = () => {
               >
                 {/* Ticket Header */}
                 <div
-                  className={`bg-gray-900/50 p-4 border-b border-[#212121] ${
+                  className={`bg-gray-900/50 p-3 sm:p-4 border-b border-[#212121] ${
                     hasNewMessages(t) ? "border-l-4 border-l-primary" : ""
                   }`}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-lg mb-1">
+                        <h4 className="font-semibold text-sm sm:text-base md:text-lg mb-1">
                           {t.title}
                         </h4>
                         {hasNewMessages(t) && (
-                          <span className="bg-primary text-black text-xs px-2 py-1 rounded-full font-semibold">
+                          <span className="bg-primary text-black text-[10px] sm:text-xs px-1 sm:px-2 py-0.5 sm:py-1 rounded-full font-semibold">
                             NEW
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-gray-400">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-400">
                         <span className="flex items-center gap-1">
                           <User className="w-3 h-3" />
                           {texts.user}: {t.userDisplayName || t.user}
                         </span>
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-xs ${getStatusColor(
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-[10px] sm:text-xs ${getStatusColor(
                             t.status
                           )}`}
                         >
                           {getStatusIcon(t.status)}
                           {t.status.toUpperCase()}
                         </span>
-                        <span>{new Date(t.createdAt).toLocaleString()}</span>
-                        <span>
+                        <span className="text-xs sm:text-sm">
+                          {new Date(t.createdAt).toLocaleString()}
+                        </span>
+                        <span className="text-xs sm:text-sm">
                           {t.messages?.length || 0} {texts.messages}
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
                       {t.status !== "close" && (
                         <button
                           onClick={() => setStatus(t._id, "close")}
-                          className="flex items-center gap-1 text-xs bg-red-900/50 hover:bg-red-900 text-red-300 px-3 py-2 rounded transition-colors"
+                          className="flex items-center gap-1 text-[10px] sm:text-xs bg-red-900/50 hover:bg-red-900 text-red-300 px-2 sm:px-3 py-1 sm:py-2 rounded transition-colors"
                         >
                           <X className="w-3 h-3" />
                           {texts.close}
@@ -374,7 +394,7 @@ const SupportTicketAdmin = () => {
                       {t.status === "close" && (
                         <button
                           onClick={() => setStatus(t._id, "open")}
-                          className="flex items-center gap-1 text-xs bg-green-900/50 hover:bg-green-900 text-green-300 px-3 py-2 rounded transition-colors"
+                          className="flex items-center gap-1 text-[10px] sm:text-xs bg-green-900/50 hover:bg-green-900 text-green-300 px-2 sm:px-3 py-1 sm:py-2 rounded transition-colors"
                         >
                           {texts.reopen}
                         </button>
@@ -387,7 +407,7 @@ const SupportTicketAdmin = () => {
                             markAsViewed(t._id, t.messages?.length || 0);
                           }
                         }}
-                        className="text-xs bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded transition-colors"
+                        className="text-[10px] sm:text-xs bg-gray-700 hover:bg-gray-600 px-3 sm:px-4 py-1 sm:py-2 rounded transition-colors"
                       >
                         {activeId === t._id ? texts.hideChat : texts.openChat}
                       </button>
@@ -399,7 +419,7 @@ const SupportTicketAdmin = () => {
                 {activeId === t._id && (
                   <div className="bg-gray-950/50">
                     {/* Messages */}
-                    <div className="h-96 overflow-y-auto p-4 space-y-3">
+                    <div className="h-64 sm:h-96 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-3">
                       {t.messages?.map((m, idx) => (
                         <div
                           key={idx}
@@ -410,21 +430,23 @@ const SupportTicketAdmin = () => {
                           }`}
                         >
                           <div
-                            className={`max-w-[80%] rounded-lg p-3 ${
+                            className={`max-w-[80%] rounded-lg p-2 sm:p-3 ${
                               m.sender === "admin"
                                 ? "bg-primary text-black"
                                 : "bg-gray-800 text-white"
                             }`}
                           >
-                            <div className="text-xs opacity-70 mb-1">
+                            <div className="text-[10px] sm:text-xs opacity-70 mb-1">
                               {m.sender === "admin"
                                 ? texts.youAdmin
                                 : texts.user}{" "}
                               • {new Date(m.createdAt).toLocaleString()}
                             </div>
-                            {m.text && <div className="text-sm">{m.text}</div>}
+                            {m.text && (
+                              <div className="text-xs sm:text-sm">{m.text}</div>
+                            )}
                             {m.image && (
-                              <div className="mt-2">
+                              <div className="mt-1 sm:mt-2">
                                 <div
                                   className="relative group cursor-pointer"
                                   onClick={() => setExpandedImage(m.image)}
@@ -432,7 +454,7 @@ const SupportTicketAdmin = () => {
                                   <img
                                     src={m.image}
                                     alt="Attachment"
-                                    className="max-w-full h-auto max-h-48 rounded-lg border border-gray-600 hover:opacity-90 transition-opacity"
+                                    className="max-w-full h-auto max-h-32 sm:max-h-48 rounded-lg border border-gray-600 hover:opacity-90 transition-opacity"
                                     onError={(e) => {
                                       e.target.style.display = "none";
                                       e.target.nextSibling.style.display =
@@ -440,14 +462,14 @@ const SupportTicketAdmin = () => {
                                     }}
                                   />
                                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center">
-                                    <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <ZoomIn className="w-6 h-6 sm:w-8 sm:h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                                   </div>
                                 </div>
                                 <a
                                   href={m.image}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className={`text-xs underline mt-1 block ${
+                                  className={`text-[10px] sm:text-xs underline mt-1 block ${
                                     m.sender === "admin"
                                       ? "text-black"
                                       : "text-primary"
@@ -465,10 +487,10 @@ const SupportTicketAdmin = () => {
 
                     {/* Message Input */}
                     {t.status !== "close" && (
-                      <div className="border-t border-[#212121] p-4">
-                        <div className="flex gap-2">
+                      <div className="border-t border-[#212121] p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <input
-                            className="flex-1 bg-black border border-[#212121] rounded-lg px-4 py-3 text-white placeholder-gray-400"
+                            className="flex-1 bg-black border border-[#212121] rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white placeholder-gray-400 text-xs sm:text-sm"
                             placeholder={texts.typeYourReply}
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
@@ -482,9 +504,9 @@ const SupportTicketAdmin = () => {
                           <button
                             onClick={() => sendMessage(t._id)}
                             disabled={replying || !replyText.trim()}
-                            className="bg-primary hover:bg-primary/80 text-black px-4 py-3 rounded-lg disabled:opacity-50 flex items-center gap-2 transition-colors"
+                            className="bg-primary hover:bg-primary/80 text-black px-3 sm:px-4 py-2 sm:py-3 rounded-lg disabled:opacity-50 flex items-center gap-1 sm:gap-2 transition-colors text-xs sm:text-sm"
                           >
-                            <Send className="w-4 h-4" />
+                            <Send className="w-3 h-3 sm:w-4 sm:h-4" />
                             {replying ? texts.sending : texts.send}
                           </button>
                         </div>
@@ -509,9 +531,9 @@ const SupportTicketAdmin = () => {
             />
             <button
               onClick={() => setExpandedImage(null)}
-              className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+              className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-black/50 hover:bg-black/70 text-white p-1 sm:p-2 rounded-full transition-colors"
             >
-              <X size={20} />
+              <X size={16} className="sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>

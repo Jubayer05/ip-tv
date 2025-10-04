@@ -53,16 +53,15 @@ export async function POST(request) {
     );
     const finalAmount = feeCalculation.totalAmount;
 
-    // Update the service with database credentials
-    const merchantAddress =
-      paymentSettings.merchantAddress;
+    // Get the merchant address from the correct field
+    const merchantAddress = paymentSettings.merchantId;
 
     if (!merchantAddress) {
       return NextResponse.json(
         {
           error: "PayGate merchant address not configured",
           details:
-            "Please configure PAYGATE_MERCHANT_ADDRESS in environment variables or payment settings",
+            "Please configure the merchant address (merchantId) in PayGate payment settings",
         },
         { status: 400 }
       );
@@ -85,7 +84,11 @@ export async function POST(request) {
       amount: Number(finalAmount), // Use final amount including fees
       currency: currency.toUpperCase(),
       customerEmail: customerEmail || "",
-      description: `${orderName}${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
+      description: `${orderName}${
+        feeCalculation.feeAmount > 0
+          ? ` (${formatFeeInfo(feeCalculation)})`
+          : ""
+      }`,
       callbackReceived: false,
       lastStatusUpdate: new Date(),
       metadata: paygateMetadata,
@@ -98,7 +101,11 @@ export async function POST(request) {
         amount: finalAmount, // Use final amount including fees
         currency,
         customerEmail,
-        description: `${orderName}${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
+        description: `${orderName}${
+          feeCalculation.feeAmount > 0
+            ? ` (${formatFeeInfo(feeCalculation)})`
+            : ""
+        }`,
         callbackUrl: `${origin}/api/payments/paygate/webhook`,
         successUrl: `${origin}/payment-status/paygate-${Date.now()}`,
         provider: preferredProvider,

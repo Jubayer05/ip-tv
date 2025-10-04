@@ -1,6 +1,6 @@
 "use client";
-import { useApi } from "@/hooks/useApi";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useApi } from "@/hooks/useApi";
 import { Eye, EyeOff, Globe, Key, Languages, Mail, Tv } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -42,7 +42,8 @@ const APIKeyManagement = () => {
   // Original static texts
   const ORIGINAL_TEXTS = {
     heading: "API Key Management",
-    subtitle: "Manage API keys and configuration for various services. All values are stored securely in the database.",
+    subtitle:
+      "Manage API keys and configuration for various services. All values are stored securely in the database.",
     smtpConfiguration: "SMTP Configuration",
     smtpDescription: "Email server settings for sending emails",
     smtpHost: "SMTP Host",
@@ -55,11 +56,13 @@ const APIKeyManagement = () => {
     apiKey: "API Key",
     baseUrl: "Base URL",
     deeplTranslation: "DeepL Translation",
-    deeplDescription: "DeepL API for high-quality translations (Swedish, Norwegian, Danish, Finnish, French, German, Spanish, Italian, Russian, Turkish)",
+    deeplDescription:
+      "DeepL API for high-quality translations (Swedish, Norwegian, Danish, Finnish, French, German, Spanish, Italian, Russian, Turkish)",
     deeplApiKey: "DeepL API Key",
     deeplBaseUrl: "DeepL Base URL",
     googleTranslate: "Google Translate",
-    googleTranslateDescription: "Google Translate API for additional languages (Arabic, Hindi, Chinese)",
+    googleTranslateDescription:
+      "Google Translate API for additional languages (Arabic, Hindi, Chinese)",
     googleApiKey: "Google API Key",
     googleTranslateBaseUrl: "Google Translate Base URL",
     jwtConfiguration: "JWT Configuration",
@@ -116,7 +119,12 @@ const APIKeyManagement = () => {
           placeholder: "smtp.gmail.com",
           type: "text",
         },
-        { key: "port", label: texts.smtpPort, placeholder: "587", type: "number" },
+        {
+          key: "port",
+          label: texts.smtpPort,
+          placeholder: "587",
+          type: "number",
+        },
         {
           key: "user",
           label: texts.smtpUser,
@@ -325,7 +333,7 @@ const APIKeyManagement = () => {
 
     return (
       <div key={field.key}>
-        <label className="block text-xs text-gray-300 mb-1">
+        <label className="block text-[10px] sm:text-xs text-gray-300 mb-1">
           {field.label}
         </label>
         <div className="relative">
@@ -334,16 +342,20 @@ const APIKeyManagement = () => {
             value={fieldValue}
             onChange={(e) => onChange(field.key, e.target.value)}
             placeholder={placeholder}
-            className="w-full px-3 py-2 bg-[#0c171c] border border-[#333] rounded-md text-white text-xs placeholder-gray-500 focus:outline-none focus:border-cyan-400 transition-colors pr-10"
+            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-[#0c171c] border border-[#333] rounded-md text-white text-[10px] sm:text-xs placeholder-gray-500 focus:outline-none focus:border-cyan-400 transition-colors pr-8 sm:pr-10"
             disabled={loading}
           />
           {isPassword && (
             <button
               type="button"
               onClick={() => toggleSecretVisibility(section, field.key)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+              className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
             >
-              {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
+              {showSecret ? (
+                <EyeOff size={12} className="sm:w-4 sm:h-4" />
+              ) : (
+                <Eye size={12} className="sm:w-4 sm:h-4" />
+              )}
             </button>
           )}
         </div>
@@ -352,17 +364,17 @@ const APIKeyManagement = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 font-secondary">
-      <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <h2 className="text-3xl text-center font-bold mb-4">
+    <div className="flex flex-col gap-4 font-secondary px-4 sm:px-6 lg:px-8">
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
+        <h2 className="text-xl sm:text-2xl md:text-3xl text-center font-bold mb-3 sm:mb-4">
           {texts.heading}
         </h2>
-        <p className="text-gray-300 text-sm mb-6 text-center">
+        <p className="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6 text-center">
           {texts.subtitle}
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 gap-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:gap-6">
             {apiKeyConfigs.map((config) => {
               const IconComponent = config.icon;
               const isSmtp = config.key === "smtp";
@@ -371,21 +383,23 @@ const APIKeyManagement = () => {
               return (
                 <div
                   key={config.key}
-                  className="border border-[#333] rounded-lg p-4 hover:border-[#555] transition-colors"
+                  className="border border-[#333] rounded-lg p-3 sm:p-4 hover:border-[#555] transition-colors"
                 >
-                  <div className="flex items-center gap-3 mb-4">
-                    <IconComponent className={`w-5 h-5 ${config.color}`} />
+                  <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                    <IconComponent
+                      className={`w-4 h-4 sm:w-5 sm:h-5 ${config.color}`}
+                    />
                     <div>
-                      <h3 className="text-white font-semibold text-sm">
+                      <h3 className="text-white font-semibold text-xs sm:text-sm">
                         {config.label}
                       </h3>
-                      <p className="text-gray-400 text-xs mt-1">
+                      <p className="text-gray-400 text-[10px] sm:text-xs mt-1">
                         {config.description}
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     {config.fields.map((field) => {
                       if (field.type === "checkbox") {
                         return (
@@ -399,10 +413,10 @@ const APIKeyManagement = () => {
                               onChange={(e) =>
                                 handleSmtpChange(field.key, e.target.checked)
                               }
-                              className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                              className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
                               disabled={loading}
                             />
-                            <label className="text-xs text-gray-300">
+                            <label className="text-[10px] sm:text-xs text-gray-300">
                               {field.label}
                             </label>
                           </div>
@@ -427,26 +441,28 @@ const APIKeyManagement = () => {
             })}
           </div>
 
-          {error && <div className="text-sm text-red-400">{error}</div>}
+          {error && (
+            <div className="text-xs sm:text-sm text-red-400">{error}</div>
+          )}
           {saved && (
-            <div className="text-sm text-green-400 text-center">
+            <div className="text-xs sm:text-sm text-green-400 text-center">
               {texts.apiKeysUpdatedSuccess}
             </div>
           )}
 
-          <div className="flex gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               type="button"
               onClick={fetchSettings}
               disabled={loading}
-              className="px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
             >
               {texts.refresh}
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
             >
               {loading ? texts.updating : texts.updateApiKeys}
             </button>

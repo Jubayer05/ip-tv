@@ -1,5 +1,9 @@
 import UserManagement from "@/components/dashboard/AdminDashboard/UserManagement";
 
 export default function AdminUsersPage() {
-  return <UserManagement />;
+  return (
+    <div className="px-4">
+      <UserManagement />
+    </div>
+  );
 }

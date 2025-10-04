@@ -136,17 +136,19 @@ const EmailManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-6 lg:px-8">
       <div>
-        <h2 className="text-2xl font-bold text-white mb-2">{texts.title}</h2>
-        <p className="text-gray-400">{texts.subtitle}</p>
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
+          {texts.title}
+        </h2>
+        <p className="text-gray-400 text-xs sm:text-sm">{texts.subtitle}</p>
       </div>
 
-      <div className="bg-black border border-[#212121] rounded-lg p-6">
-        <div className="space-y-6">
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Single Content Section */}
           <div>
-            <label className="block text-white font-medium mb-3">
+            <label className="block text-white font-medium mb-2 sm:mb-3 text-sm sm:text-base">
               {texts.contentLabel}
             </label>
             <RichTextEditor
@@ -162,16 +164,16 @@ const EmailManagement = () => {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="bg-primary hover:bg-primary/80 text-black px-6 py-3 rounded-lg font-medium disabled:opacity-50 flex items-center gap-2 transition-colors"
+              className="bg-primary hover:bg-primary/80 text-black px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium disabled:opacity-50 flex items-center gap-2 transition-colors text-xs sm:text-sm"
             >
               {saving ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
+                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-black"></div>
                   {texts.savingButton}
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4" />
+                  <Save className="w-3 h-3 sm:w-4 sm:h-4" />
                   {texts.saveButton}
                 </>
               )}

@@ -84,33 +84,33 @@ const GuideManagement = () => {
   }
 
   return (
-    <div className="min-h-screen border-1 border-gray-700 rounded-lg p-6">
+    <div className="min-h-screen border-1 border-gray-700 rounded-lg p-4 sm:p-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2">
             User Guide Management
           </h1>
-          <p className="text-gray-400">
+          <p className="text-gray-400 text-xs sm:text-sm">
             Create and manage your user guide content with rich text editing
           </p>
         </div>
 
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div className="mb-6">
-            <label className="block text-white text-sm font-medium mb-2">
+        <div className="bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-700">
+          <div className="mb-4 sm:mb-6">
+            <label className="block text-white text-xs sm:text-sm font-medium mb-2">
               Guide Title
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              className="w-full px-3 sm:px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 text-xs sm:text-sm"
               placeholder="Enter guide title..."
             />
           </div>
 
-          <div className="mb-6">
-            <label className="block text-white text-sm font-medium mb-2">
+          <div className="mb-4 sm:mb-6">
+            <label className="block text-white text-xs sm:text-sm font-medium mb-2">
               Guide Content
             </label>
             <RichTextEditor
@@ -120,7 +120,7 @@ const GuideManagement = () => {
             />
           </div>
 
-          <div className="flex justify-end space-x-4">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
             <button
               onClick={() => {
                 setContent(settings.legalContent?.userGuide?.content || "");
@@ -128,14 +128,14 @@ const GuideManagement = () => {
                   settings.legalContent?.userGuide?.title || "User Guide"
                 );
               }}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              className="px-4 sm:px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-xs sm:text-sm"
             >
               Reset
             </button>
             <button
               onClick={saveGuide}
               disabled={saving}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
             >
               {saving ? "Saving..." : "Save Guide"}
             </button>
@@ -143,7 +143,7 @@ const GuideManagement = () => {
         </div>
 
         {settings?.legalContent?.userGuide?.lastUpdated && (
-          <div className="mt-4 text-sm text-gray-400">
+          <div className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-400">
             Last updated:{" "}
             {new Date(
               settings.legalContent.userGuide.lastUpdated

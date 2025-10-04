@@ -118,39 +118,39 @@ const CardPayment = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-cyan-500/20 rounded-lg">
-          <CreditCard className="w-6 h-6 text-cyan-400" />
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="p-1.5 sm:p-2 bg-cyan-500/20 rounded-lg">
+          <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
         </div>
         <div>
-          <h2 className="text-xl font-semibold text-white">
+          <h2 className="text-lg sm:text-xl font-semibold text-white">
             {texts.heading}
           </h2>
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-400 text-xs sm:text-sm">
             {texts.description}
           </p>
         </div>
       </div>
 
       {/* Card Payment Toggle */}
-      <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
+      <div className="bg-gray-800/50 rounded-lg p-4 sm:p-6 border border-gray-700">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
               {cardSettings.isEnabled ? (
-                <ToggleRight className="w-8 h-8 text-green-400" />
+                <ToggleRight className="w-6 h-6 sm:w-8 sm:h-8 text-green-400" />
               ) : (
-                <ToggleLeft className="w-8 h-8 text-gray-400" />
+                <ToggleLeft className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
               )}
               <div>
-                <h3 className="text-lg font-medium text-white">
+                <h3 className="text-base sm:text-lg font-medium text-white">
                   {cardSettings.isEnabled
                     ? texts.enableCardPayment
                     : texts.disableCardPayment}
                 </h3>
-                <p className="text-sm text-gray-400">
+                <p className="text-xs sm:text-sm text-gray-400">
                   {cardSettings.isEnabled
                     ? texts.cardPaymentEnabled
                     : texts.cardPaymentDisabled}
@@ -161,7 +161,7 @@ const CardPayment = () => {
           <button
             onClick={toggleCardPayment}
             disabled={updating}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 sm:px-6 py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm ${
               cardSettings.isEnabled
                 ? "bg-red-600 hover:bg-red-700 text-white"
                 : "bg-green-600 hover:bg-green-700 text-white"
@@ -178,13 +178,13 @@ const CardPayment = () => {
 
       {/* Additional Settings (when enabled) */}
       {cardSettings.isEnabled && (
-        <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
-          <h3 className="text-lg font-medium text-white mb-4">
+        <div className="bg-gray-800/50 rounded-lg p-4 sm:p-6 border border-gray-700">
+          <h3 className="text-base sm:text-lg font-medium text-white mb-3 sm:mb-4">
             Card Payment Configuration
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                 Minimum Amount
               </label>
               <input
@@ -196,13 +196,13 @@ const CardPayment = () => {
                     minAmount: parseFloat(e.target.value) || 0,
                   })
                 }
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 text-xs sm:text-sm"
                 min="0.01"
                 step="0.01"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                 Maximum Amount
               </label>
               <input
@@ -214,15 +214,15 @@ const CardPayment = () => {
                     maxAmount: parseFloat(e.target.value) || 0,
                   })
                 }
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 text-xs sm:text-sm"
                 min="1"
                 step="0.01"
               />
             </div>
           </div>
           
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+          <div className="mt-3 sm:mt-4">
+            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
               Description
             </label>
             <textarea
@@ -233,7 +233,7 @@ const CardPayment = () => {
                   description: e.target.value,
                 })
               }
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 text-xs sm:text-sm"
               rows="3"
             />
           </div>
@@ -241,7 +241,7 @@ const CardPayment = () => {
           <button
             onClick={() => updateCardSettings(cardSettings)}
             disabled={updating}
-            className="mt-4 px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-3 sm:mt-4 px-4 sm:px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
           >
             {updating ? "Saving..." : "Save Settings"}
           </button>

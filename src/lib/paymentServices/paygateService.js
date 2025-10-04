@@ -1,6 +1,6 @@
 class PayGateService {
   constructor() {
-    this.merchantAddress = null; // Remove process.env
+    this.merchantAddress = null;
     this.baseUrl = "https://api.paygate.to";
     this.checkoutUrl = "https://checkout.paygate.to";
   }
@@ -65,6 +65,48 @@ class PayGateService {
         polygon_address_in: data.polygon_address_in,
         callback_url: data.callback_url,
         ipn_token: data.ipn_token,
+      },
+    };
+  }
+
+  async convertToUSD(fromCurrency, amount) {
+    if (!fromCurrency || !amount) {
+      throw new Error("Currency code and amount are required for conversion");
+    }
+
+    const params = new URLSearchParams({
+      from: fromCurrency.toUpperCase(),
+      value: Number(amount).toFixed(2),
+    });
+
+    const response = await fetch(
+      `${this.baseUrl}/control/convert.php?${params.toString()}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+
+    const data = await response.json();
+    console.log("PayGate convert response:", { status: response.status, data });
+
+    if (!response.ok) {
+      throw new Error(
+        `PayGate Convert API Error (${response.status}): ${JSON.stringify(
+          data
+        )}`
+      );
+    }
+
+    return {
+      success: true,
+      data: {
+        status: data.status,
+        value_coin: data.value_coin,
+        exchange_rate: data.exchange_rate,
       },
     };
   }
@@ -166,7 +208,7 @@ class PayGateService {
     successUrl,
     provider = "moonpay",
     metadata = {},
-    userRegion = null, // Add this parameter
+    userRegion = null,
   }) {
     // Provider fallback based on region
     const getProviderForRegion = (region) => {
@@ -187,6 +229,26 @@ class PayGateService {
       ? getProviderForRegion(userRegion)
       : provider;
 
+    // Convert amount to USD if needed (for providers that only support USD)
+    let finalAmount = amount;
+    let conversionRate = 1;
+
+    if (currency.toUpperCase() !== "USD") {
+      try {
+        const conversionResult = await this.convertToUSD(currency, amount);
+        if (conversionResult.success) {
+          finalAmount = conversionResult.data.value_coin;
+          conversionRate = conversionResult.data.exchange_rate;
+        }
+      } catch (conversionError) {
+        console.warn(
+          "Currency conversion failed, using original amount:",
+          conversionError.message
+        );
+        // Continue with original amount if conversion fails
+      }
+    }
+
     const walletResult = await this.createWallet({
       address: this.merchantAddress,
       callbackUrl,
@@ -194,10 +256,10 @@ class PayGateService {
 
     const paymentUrl = this.generatePaymentUrl({
       address_in: walletResult.data.address_in,
-      amount,
+      amount: finalAmount,
       provider: selectedProvider,
       email: customerEmail,
-      currency,
+      currency: "USD", // Always use USD for PayGate
     });
 
     return {
@@ -206,8 +268,11 @@ class PayGateService {
         id: `paygate-${Date.now()}`,
         payment_url: paymentUrl,
         status: "pending",
-        amount: Number(amount),
-        currency: currency.toUpperCase(),
+        amount: Number(finalAmount),
+        currency: "USD", // Always return USD
+        originalAmount: Number(amount),
+        originalCurrency: currency.toUpperCase(),
+        conversionRate: conversionRate,
         wallet_data: walletResult.data,
         metadata,
         provider: selectedProvider,

@@ -96,39 +96,61 @@ const AffiliateManagement = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 font-secondary">
-      <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <h2 className="text-xl font-bold mb-4">{texts.heading}</h2>
-        <p className="text-gray-300 text-sm mb-6">{texts.subtitle}</p>
+    <div className="flex flex-col gap-3 sm:gap-4 font-secondary px-4 sm:px-6 lg:px-8">
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4">
+          {texts.heading}
+        </h2>
+        <p className="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6">
+          {texts.subtitle}
+        </p>
 
-        <div className="flex items-center gap-3 mb-4">
-          <label className="text-sm text-gray-300 min-w-[160px]">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <label className="text-xs sm:text-sm text-gray-300 min-w-0 sm:min-w-[160px]">
             {texts.commissionPercentage}
           </label>
-          <Input
-            type="number"
-            min={0}
-            max={100}
-            step="0.1"
-            value={pct}
-            onChange={(e) => setPct(Number(e.target.value))}
-            disabled={loading}
-          />
-          <span className="text-gray-400">{texts.orderTotal}</span>
+          <div className="flex items-center gap-2 sm:gap-3 flex-1">
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              step="0.1"
+              value={pct}
+              onChange={(e) => setPct(Number(e.target.value))}
+              disabled={loading}
+              className="flex-1 max-w-[120px] sm:max-w-none"
+            />
+            <span className="text-gray-400 text-xs sm:text-sm whitespace-nowrap">
+              {texts.orderTotal}
+            </span>
+          </div>
         </div>
 
-        {error && <div className="mb-3 text-sm text-red-400">{error}</div>}
+        {error && (
+          <div className="mb-2 sm:mb-3 text-xs sm:text-sm text-red-400">
+            {error}
+          </div>
+        )}
         {saved && (
-          <div className="mb-3 text-sm text-green-400">
+          <div className="mb-2 sm:mb-3 text-xs sm:text-sm text-green-400">
             {texts.settingsSaved}
           </div>
         )}
 
-        <div className="flex gap-3">
-          <Button onClick={load} variant="outline" disabled={loading}>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <Button
+            onClick={load}
+            variant="outline"
+            disabled={loading}
+            className="text-xs sm:text-sm px-3 sm:px-4 py-2"
+          >
             {texts.refresh}
           </Button>
-          <Button onClick={save} disabled={loading}>
+          <Button
+            onClick={save}
+            disabled={loading}
+            className="text-xs sm:text-sm px-3 sm:px-4 py-2"
+          >
             {loading ? texts.saving : texts.save}
           </Button>
         </div>

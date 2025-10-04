@@ -194,21 +194,23 @@ const MetaManagement = () => {
   const currentPageMeta = settings.metaManagement[activePage] || {};
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-white">{texts.heading}</h3>
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h3 className="text-lg sm:text-xl font-semibold text-white">
+          {texts.heading}
+        </h3>
         <Button onClick={handleSave} disabled={saving}>
           {saving ? texts.saving : texts.saveChanges}
         </Button>
       </div>
 
       {/* Page Selection */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
         {pages.map((page) => (
           <button
             key={page.id}
             onClick={() => setActivePage(page.id)}
-            className={`p-3 text-sm rounded-md border-2 cursor-pointer transition-colors ${
+            className={`p-2 sm:p-3 text-xs sm:text-sm rounded-md border-2 cursor-pointer transition-colors ${
               activePage === page.id
                 ? "border-blue-500 bg-blue-500/10 text-blue-400"
                 : "border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
@@ -220,75 +222,75 @@ const MetaManagement = () => {
       </div>
 
       {/* Meta Fields */}
-      <div className="space-y-6 bg-gray-900/50 p-6 rounded-lg">
-        <h4 className="text-2xl font-medium text-white font-secondary">
+      <div className="space-y-4 sm:space-y-6 bg-gray-900/50 p-4 sm:p-6 rounded-lg">
+        <h4 className="text-xl sm:text-2xl font-medium text-white font-secondary">
           {texts.metaSettingsFor}{" "}
           <span className="text-blue-500">
             {pages.find((p) => p.id === activePage)?.label}
           </span>
         </h4>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
               {texts.pageTitle}
             </label>
             <Input
               value={currentPageMeta.title || ""}
               onChange={(e) => handleInputChange("title", e.target.value)}
               placeholder={texts.enterPageTitle}
-              className="w-full"
+              className="w-full text-xs sm:text-sm"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
               {texts.metaDescription}
             </label>
             <Input
               value={currentPageMeta.description || ""}
               onChange={(e) => handleInputChange("description", e.target.value)}
               placeholder={texts.enterMetaDescription}
-              className="w-full"
+              className="w-full text-xs sm:text-sm"
             />
           </div>
 
           {/* Keywords */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
               {texts.keywords}
             </label>
             <Input
               value={currentPageMeta.keywords || ""}
               onChange={(e) => handleInputChange("keywords", e.target.value)}
               placeholder={texts.enterKeywords}
-              className="w-full"
+              className="w-full text-xs sm:text-sm"
             />
           </div>
         </div>
 
         {/* Open Graph Section */}
-        <div className="border-t border-gray-700 pt-6">
-          <h5 className="text-md font-medium text-white mb-4">
+        <div className="border-t border-gray-700 pt-4 sm:pt-6">
+          <h5 className="text-sm sm:text-md font-medium text-white mb-3 sm:mb-4">
             {texts.openGraphSettings}
           </h5>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                 {texts.openGraphTitle}
               </label>
               <Input
                 value={currentPageMeta.openGraph?.title || ""}
                 onChange={(e) => handleOpenGraphChange("title", e.target.value)}
                 placeholder={texts.enterOpenGraphTitle}
-                className="w-full"
+                className="w-full text-xs sm:text-sm"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
                 {texts.openGraphDescription}
               </label>
               <Input
@@ -297,7 +299,7 @@ const MetaManagement = () => {
                   handleOpenGraphChange("description", e.target.value)
                 }
                 placeholder={texts.enterOpenGraphDescription}
-                className="w-full"
+                className="w-full text-xs sm:text-sm"
               />
             </div>
           </div>

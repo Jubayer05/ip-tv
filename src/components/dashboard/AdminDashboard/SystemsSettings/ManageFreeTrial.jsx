@@ -190,30 +190,32 @@ const ManageFreeTrial = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 font-secondary">
-      <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <h2 className="text-3xl text-center font-bold mb-4">{texts.heading}</h2>
-        <p className="text-gray-300 text-sm mb-6 text-center">
+    <div className="flex flex-col gap-4 font-secondary px-4 sm:px-6 lg:px-8">
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
+        <h2 className="text-xl sm:text-2xl md:text-3xl text-center font-bold mb-3 sm:mb-4">
+          {texts.heading}
+        </h2>
+        <p className="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6 text-center">
           {texts.subtitle}
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Main Title and Description */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <label className="block text-white font-semibold text-sm mb-2">
+              <label className="block text-white font-semibold text-xs sm:text-sm mb-2">
                 {texts.mainTitle}
               </label>
               <input
                 type="text"
                 value={freeTrialContent.title}
                 onChange={(e) => handleContentChange("title", e.target.value)}
-                className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500 text-xs sm:text-sm"
                 disabled={loading}
               />
             </div>
             <div>
-              <label className="block text-white font-semibold text-sm mb-2">
+              <label className="block text-white font-semibold text-xs sm:text-sm mb-2">
                 {texts.description}
               </label>
               <textarea
@@ -221,25 +223,25 @@ const ManageFreeTrial = () => {
                 onChange={(e) =>
                   handleContentChange("description", e.target.value)
                 }
-                className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500 h-20 resize-none"
+                className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500 h-16 sm:h-20 resize-none text-xs sm:text-sm"
                 disabled={loading}
               />
             </div>
           </div>
 
           {/* Features Section */}
-          <div className="space-y-4">
-            <h3 className="text-white font-semibold text-lg">
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-white font-semibold text-base sm:text-lg">
               {texts.features}
             </h3>
             {freeTrialContent.features.map((feature, index) => (
               <div
                 key={feature.id}
-                className="border border-[#333] rounded-lg p-4"
+                className="border border-[#333] rounded-lg p-3 sm:p-4"
               >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-white font-semibold text-sm mb-2">
+                    <label className="block text-white font-semibold text-xs sm:text-sm mb-2">
                       {texts.title}
                     </label>
                     <input
@@ -248,12 +250,12 @@ const ManageFreeTrial = () => {
                       onChange={(e) =>
                         handleFeatureChange(index, "title", e.target.value)
                       }
-                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500"
+                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500 text-xs sm:text-sm"
                       disabled={loading}
                     />
                   </div>
                   <div>
-                    <label className="block text-white font-semibold text-sm mb-2">
+                    <label className="block text-white font-semibold text-xs sm:text-sm mb-2">
                       {texts.descriptionLabel}
                     </label>
                     <input
@@ -266,12 +268,12 @@ const ManageFreeTrial = () => {
                           e.target.value
                         )
                       }
-                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500"
+                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500 text-xs sm:text-sm"
                       disabled={loading}
                     />
                   </div>
                   <div>
-                    <label className="block text-white font-semibold text-sm mb-2">
+                    <label className="block text-white font-semibold text-xs sm:text-sm mb-2">
                       {texts.icon}
                     </label>
                     <select
@@ -279,7 +281,7 @@ const ManageFreeTrial = () => {
                       onChange={(e) =>
                         handleFeatureChange(index, "icon", e.target.value)
                       }
-                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500"
+                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500 text-xs sm:text-sm"
                       disabled={loading}
                     >
                       <option value="clock">{texts.clock}</option>
@@ -294,9 +296,9 @@ const ManageFreeTrial = () => {
           </div>
 
           {/* What's Included Section */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <label className="block text-white font-semibold text-sm mb-2">
+              <label className="block text-white font-semibold text-xs sm:text-sm mb-2">
                 {texts.includedSectionTitle}
               </label>
               <input
@@ -305,12 +307,12 @@ const ManageFreeTrial = () => {
                 onChange={(e) =>
                   handleContentChange("includedTitle", e.target.value)
                 }
-                className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500 text-xs sm:text-sm"
                 disabled={loading}
               />
             </div>
             <div>
-              <label className="block text-white font-semibold text-sm mb-2">
+              <label className="block text-white font-semibold text-xs sm:text-sm mb-2">
                 {texts.includedItems}
               </label>
               {freeTrialContent.includedItems.map((item, index) => (
@@ -321,13 +323,13 @@ const ManageFreeTrial = () => {
                     onChange={(e) =>
                       handleIncludedItemChange(index, e.target.value)
                     }
-                    className="flex-1 px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500"
+                    className="flex-1 px-3 py-2 bg-[#212121] border border-[#333] rounded-md text-white focus:outline-none focus:border-blue-500 text-xs sm:text-sm"
                     disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => removeIncludedItem(index)}
-                    className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                    className="px-2 sm:px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-xs sm:text-sm"
                     disabled={loading}
                   >
                     {texts.remove}
@@ -337,7 +339,7 @@ const ManageFreeTrial = () => {
               <button
                 type="button"
                 onClick={addIncludedItem}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs sm:text-sm"
                 disabled={loading}
               >
                 {texts.addItem}
@@ -345,26 +347,28 @@ const ManageFreeTrial = () => {
             </div>
           </div>
 
-          {error && <div className="text-sm text-red-400">{error}</div>}
+          {error && (
+            <div className="text-xs sm:text-sm text-red-400">{error}</div>
+          )}
           {saved && (
-            <div className="text-sm text-green-400 text-center">
+            <div className="text-xs sm:text-sm text-green-400 text-center">
               {texts.freeTrialContentUpdatedSuccess}
             </div>
           )}
 
-          <div className="flex gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               type="button"
               onClick={fetchSettings}
               disabled={loading}
-              className="px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
             >
               {texts.refresh}
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
             >
               {loading ? texts.updating : texts.updateContent}
             </button>

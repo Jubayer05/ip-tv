@@ -46,7 +46,7 @@ const Navbar = () => {
     "EXPLORE",
     "PACKAGES",
     "AFFILIATE",
-    "OUR PRODUCTS",
+    "OUR WEBSITES",
   ];
   const ORIGINAL_USER_MENU_LABELS = [
     "Dashboard",
@@ -146,7 +146,7 @@ const Navbar = () => {
     { href: "/explore", label: "EXPLORE" },
     { href: "/packages", label: "PACKAGES" },
     { href: "/affiliate", label: "AFFILIATE" },
-    { href: "#", label: "OUR PRODUCTS", hasDropdown: true },
+    { href: "#", label: "OUR WEBSITES", hasDropdown: true },
   ];
 
   const userMenuItems = [
@@ -215,7 +215,7 @@ const Navbar = () => {
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
 
-            <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
+            <div className="hidden lg:flex items-center space-x-6 lg:space-x-8">
               {navigationLinks.map((link, i) => (
                 <div key={link.href} className="relative">
                   {link.hasDropdown ? (
@@ -234,7 +234,7 @@ const Navbar = () => {
                         <div className="absolute top-full left-0 -mt-2 w-[280px] bg-white rounded-lg shadow-xl z-50 border border-gray-200">
                           <div className="p-4">
                             <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                              Our Products
+                              Our Websites
                             </h3>
                             {productsLoading ? (
                               <div className="flex items-center justify-center py-8">
@@ -273,7 +273,7 @@ const Navbar = () => {
                               </div>
                             ) : (
                               <div className="text-center py-8 text-gray-500">
-                                <p className="text-sm">No products available</p>
+                                <p className="text-sm">No products</p>
                               </div>
                             )}
                           </div>
@@ -320,7 +320,7 @@ const Navbar = () => {
             <NotificationBell />
 
             {user && (
-              <div className="hidden sm:flex items-center space-x-2 sm:space-x-4">
+              <div className="hidden lg:flex items-center space-x-2 sm:space-x-4">
                 {/* Main Balance */}
                 <span className="bg-primary/15 border border-primary text-primary rounded-full px-3 py-1 text-xs font-bold">
                   ${Number(user.balance || 0).toFixed(2)}
@@ -477,13 +477,13 @@ const Navbar = () => {
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden">
           <div
             className="fixed inset-0 bg-black bg-opacity-50"
             onClick={toggleMobileMenu}
           ></div>
-          <div className="fixed top-0 left-0 w-64 h-full bg-gray-900 shadow-xl">
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <div className="fixed top-0 left-0 w-64 h-full bg-gray-900 shadow-xl flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
               <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
                 <span className="text-black font-bold text-sm">L</span>
               </div>
@@ -495,7 +495,7 @@ const Navbar = () => {
               </button>
             </div>
 
-            <div className="p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4">
               {navigationLinks.map((link, i) => (
                 <div key={link.href}>
                   {link.hasDropdown ? (
@@ -540,7 +540,7 @@ const Navbar = () => {
                           ))
                         ) : (
                           <div className="text-gray-400 text-xs">
-                            No products available
+                            No products
                           </div>
                         )}
                       </div>

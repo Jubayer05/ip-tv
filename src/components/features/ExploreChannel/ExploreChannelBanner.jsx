@@ -247,35 +247,6 @@ const ExploreChannelBanner = () => {
           </PolygonUpperLine>
         ))}
       </Slider>
-
-      {/* Custom Indicators */}
-      <div className="absolute bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-20">
-        <div className="flex items-center gap-2 sm:gap-3">
-          {slides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                goToSlide(index);
-                window.sliderRef?.slickGoTo(index);
-              }}
-              className="group relative"
-            >
-              {/* Progress Container */}
-              <div className="relative">
-                {/* Background Line */}
-                <div className="w-12 sm:w-16 h-1 bg-white/20 rounded-full overflow-hidden">
-                  {/* Progress Fill */}
-                  <div
-                    className={`h-full bg-white rounded-full transition-all duration-300 ${
-                      currentSlide === index ? "w-full" : "w-0"
-                    }`}
-                  />
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };

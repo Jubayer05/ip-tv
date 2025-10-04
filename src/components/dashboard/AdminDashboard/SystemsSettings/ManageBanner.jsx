@@ -239,21 +239,28 @@ const ManageBanner = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-4 font-secondary">
-      <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <h2 className="text-3xl text-center font-bold mb-4">{texts.heading}</h2>
-        <p className="text-gray-300 text-sm mb-6">{texts.subtitle}</p>
+    <div className="flex flex-col gap-4 font-secondary px-4 sm:px-6 lg:px-8">
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
+        <h2 className="text-xl sm:text-2xl md:text-3xl text-center font-bold mb-3 sm:mb-4">
+          {texts.heading}
+        </h2>
+        <p className="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6">
+          {texts.subtitle}
+        </p>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
           {bannerPages.map((page) => (
-            <div key={page.key} className="border border-[#333] rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4 text-white">
+            <div
+              key={page.key}
+              className="border border-[#333] rounded-lg p-3 sm:p-4"
+            >
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-white">
                 {page.label}
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-300">
+                  <label className="text-xs sm:text-sm text-gray-300">
                     {texts.headingPart1}
                   </label>
                   <input
@@ -263,12 +270,12 @@ const ManageBanner = () => {
                       handleBannerChange(page.key, "heading1", e.target.value)
                     }
                     placeholder={texts.headingPart1Placeholder}
-                    className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                    className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 text-xs sm:text-sm"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-300">
+                  <label className="text-xs sm:text-sm text-gray-300">
                     {texts.headingPart2}
                   </label>
                   <input
@@ -278,13 +285,13 @@ const ManageBanner = () => {
                       handleBannerChange(page.key, "heading2", e.target.value)
                     }
                     placeholder={texts.headingPart2Placeholder}
-                    className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                    className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 text-xs sm:text-sm"
                   />
                 </div>
               </div>
 
-              <div className="mt-4 space-y-2">
-                <label className="text-sm text-gray-300">
+              <div className="mt-3 sm:mt-4 space-y-2">
+                <label className="text-xs sm:text-sm text-gray-300">
                   {texts.paragraph}
                 </label>
                 <textarea
@@ -294,14 +301,14 @@ const ManageBanner = () => {
                   }
                   placeholder={texts.paragraphPlaceholder}
                   rows={3}
-                  className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                  className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 text-xs sm:text-sm"
                 />
               </div>
 
               {page.hasButton && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mt-3 sm:mt-4">
                   <div className="space-y-2">
-                    <label className="text-sm text-gray-300">
+                    <label className="text-xs sm:text-sm text-gray-300">
                       {texts.inputPlaceholder}
                     </label>
                     <input
@@ -315,12 +322,12 @@ const ManageBanner = () => {
                         )
                       }
                       placeholder={texts.inputPlaceholderPlaceholder}
-                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 text-xs sm:text-sm"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm text-gray-300">
+                    <label className="text-xs sm:text-sm text-gray-300">
                       {texts.buttonText}
                     </label>
                     <input
@@ -334,15 +341,15 @@ const ManageBanner = () => {
                         )
                       }
                       placeholder={texts.buttonTextPlaceholder}
-                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 text-xs sm:text-sm"
                     />
                   </div>
                 </div>
               )}
 
               {page.hasTrialNote && (
-                <div className="mt-4 space-y-2">
-                  <label className="text-sm text-gray-300">
+                <div className="mt-3 sm:mt-4 space-y-2">
+                  <label className="text-xs sm:text-sm text-gray-300">
                     {texts.trialNote}
                   </label>
                   <input
@@ -352,15 +359,15 @@ const ManageBanner = () => {
                       handleBannerChange(page.key, "trialNote", e.target.value)
                     }
                     placeholder={texts.trialNotePlaceholder}
-                    className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                    className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 text-xs sm:text-sm"
                   />
                 </div>
               )}
 
               {page.hasWatchNow && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mt-3 sm:mt-4">
                   <div className="space-y-2">
-                    <label className="text-sm text-gray-300">
+                    <label className="text-xs sm:text-sm text-gray-300">
                       {texts.watchNowButton}
                     </label>
                     <input
@@ -370,11 +377,11 @@ const ManageBanner = () => {
                         handleBannerChange(page.key, "watchNow", e.target.value)
                       }
                       placeholder={texts.watchNowPlaceholder}
-                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 text-xs sm:text-sm"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm text-gray-300">
+                    <label className="text-xs sm:text-sm text-gray-300">
                       {texts.myWishlistButton}
                     </label>
                     <input
@@ -388,7 +395,7 @@ const ManageBanner = () => {
                         )
                       }
                       placeholder={texts.wishlistPlaceholder}
-                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 text-xs sm:text-sm"
                     />
                   </div>
                 </div>
@@ -396,24 +403,28 @@ const ManageBanner = () => {
             </div>
           ))}
 
-          {error && <div className="text-sm text-red-400">{error}</div>}
+          {error && (
+            <div className="text-xs sm:text-sm text-red-400">{error}</div>
+          )}
           {saved && (
-            <div className="text-sm text-green-400">{texts.settingsSaved}</div>
+            <div className="text-xs sm:text-sm text-green-400">
+              {texts.settingsSaved}
+            </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               type="button"
               onClick={fetchSettings}
               disabled={loading}
-              className="px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
             >
               {texts.refresh}
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
             >
               {loading ? texts.saving : texts.save}
             </button>

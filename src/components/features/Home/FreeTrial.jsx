@@ -544,58 +544,70 @@ const FreeTrialCard = () => {
 
   if (success && trialData) {
     return (
-      <div className="max-w-4xl mx-auto p-6 font-secondary">
-        <div className="bg-gradient-to-br from-[#0C171C] to-[#1a1a1a] border border-[#00b877]/30 rounded-2xl p-8 text-center">
-          <div className="mb-6">
-            <CheckCircle className="w-16 h-16 text-[#00b877] mx-auto mb-4" />
-            <h2 className="text-3xl font-bold text-white mb-2">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 font-secondary">
+        <div className="bg-gradient-to-br from-[#0C171C] to-[#1a1a1a] border border-[#00b877]/30 rounded-2xl p-4 sm:p-6 lg:p-8 text-center">
+          <div className="mb-4 sm:mb-6">
+            <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-[#00b877] mx-auto mb-3 sm:mb-4" />
+            <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white mb-2">
               {translatedTexts.freeTrialCreatedSuccessfully}
             </h2>
-            <p className="text-gray-300 text-lg">
+            <p className="text-gray-300 text-sm sm:text-base lg:text-lg">
               {translatedTexts.your24HourFreeTrialIsNowActive}
             </p>
           </div>
 
           {/* Complete Trial Information */}
-          <div className="bg-black/30 rounded-xl p-6 mb-6 text-left">
-            <h3 className="text-xl font-semibold text-white mb-4">
+          <div className="bg-black/30 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 text-left">
+            <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">
               {translatedTexts.trialDetails}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div className="bg-black/50 rounded-lg p-4">
-                <span className="text-gray-400 block mb-1">Username:</span>
-                <span className="text-white font-mono text-base break-all">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
+              <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
+                  Username:
+                </span>
+                <span className="text-white font-mono text-sm sm:text-base break-all">
                   {trialData.username}
                 </span>
               </div>
-              <div className="bg-black/50 rounded-lg p-4">
-                <span className="text-gray-400 block mb-1">Password:</span>
-                <span className="text-white font-mono text-base break-all">
+              <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
+                  Password:
+                </span>
+                <span className="text-white font-mono text-sm sm:text-base break-all">
                   {trialData.password}
                 </span>
               </div>
-              <div className="bg-black/50 rounded-lg p-4">
-                <span className="text-gray-400 block mb-1">Package:</span>
-                <span className="text-white text-base">
+              <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
+                  Package:
+                </span>
+                <span className="text-white text-sm sm:text-base">
                   {trialData.packageName}
                 </span>
               </div>
-              <div className="bg-black/50 rounded-lg p-4">
-                <span className="text-gray-400 block mb-1">Template:</span>
-                <span className="text-white text-base">
+              <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
+                  Template:
+                </span>
+                <span className="text-white text-sm sm:text-base">
                   {trialData.templateName}
                 </span>
               </div>
-              <div className="bg-black/50 rounded-lg p-4">
-                <span className="text-gray-400 block mb-1">Expires:</span>
-                <span className="text-white text-base">
+              <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
+                  Expires:
+                </span>
+                <span className="text-white text-sm sm:text-base">
                   {new Date(trialData.expire * 1000).toLocaleString()}
                 </span>
               </div>
               {trialData.lineId && (
-                <div className="bg-black/50 rounded-lg p-4">
-                  <span className="text-gray-400 block mb-1">Line ID:</span>
-                  <span className="text-white font-mono text-base break-all">
+                <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                  <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
+                    Line ID:
+                  </span>
+                  <span className="text-white font-mono text-sm sm:text-base break-all">
                     {trialData.lineId}
                   </span>
                 </div>
@@ -604,19 +616,19 @@ const FreeTrialCard = () => {
           </div>
 
           {/* Connection Information */}
-          <div className="bg-black/30 rounded-xl p-6 mb-6 text-left">
-            <h3 className="text-xl font-semibold text-white mb-4">
+          <div className="bg-black/30 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 text-left">
+            <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">
               {translatedTexts.connectionInformation}
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* M3U Playlist URL */}
               {trialData.lineInfo &&
                 trialData.lineInfo.includes("m3u_plus") && (
-                  <div className="bg-black/50 rounded-lg p-4">
-                    <p className="text-gray-400 text-sm mb-2 font-medium">
+                  <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                    <p className="text-gray-400 text-xs sm:text-sm mb-2 font-medium">
                       M3U Playlist URL:
                     </p>
-                    <p className="text-white font-mono text-sm break-all bg-gray-900/50 p-2 rounded">
+                    <p className="text-white font-mono text-xs sm:text-sm break-all bg-gray-900/50 p-2 rounded">
                       {trialData.lineInfo
                         .split("\n")
                         .find((line) => line.includes("m3u_plus"))}
@@ -627,11 +639,11 @@ const FreeTrialCard = () => {
               {/* IPTV URL */}
               {trialData.lineInfo &&
                 trialData.lineInfo.includes("IPTV Url:") && (
-                  <div className="bg-black/50 rounded-lg p-4">
-                    <p className="text-gray-400 text-sm mb-2 font-medium">
+                  <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                    <p className="text-gray-400 text-xs sm:text-sm mb-2 font-medium">
                       IPTV URL:
                     </p>
-                    <p className="text-white font-mono text-sm break-all bg-gray-900/50 p-2 rounded">
+                    <p className="text-white font-mono text-xs sm:text-sm break-all bg-gray-900/50 p-2 rounded">
                       {trialData.lineInfo
                         .split("\n")
                         .find((line) => line.includes("IPTV Url:"))
@@ -643,8 +655,8 @@ const FreeTrialCard = () => {
 
               {/* Additional connection info from lineInfo */}
               {trialData.lineInfo && (
-                <div className="bg-black/50 rounded-lg p-4">
-                  <p className="text-gray-400 text-sm mb-2 font-medium">
+                <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                  <p className="text-gray-400 text-xs sm:text-sm mb-2 font-medium">
                     Complete Connection Details:
                   </p>
                   <div className="space-y-2">
@@ -653,7 +665,7 @@ const FreeTrialCard = () => {
                         return (
                           <div
                             key={index}
-                            className="text-white text-sm font-mono bg-gray-900/50 p-2 rounded"
+                            className="text-white text-xs sm:text-sm font-mono bg-gray-900/50 p-2 rounded"
                           >
                             {line}
                           </div>
@@ -668,7 +680,7 @@ const FreeTrialCard = () => {
           </div>
 
           {/* Copy to Clipboard Button */}
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <Button
               variant="secondary"
               size="md"
@@ -685,7 +697,7 @@ const FreeTrialCard = () => {
                 navigator.clipboard.writeText(connectionDetails);
                 // You might want to add a toast notification here
               }}
-              className="mr-3"
+              className="mr-3 w-full sm:w-auto"
             >
               Copy All Details
             </Button>
@@ -698,7 +710,7 @@ const FreeTrialCard = () => {
               setSuccess(false);
               setTrialData(null);
             }}
-            className="w-full md:w-auto"
+            className="w-full sm:w-auto"
           >
             {translatedTexts.startAnotherTrial}
           </Button>
@@ -708,30 +720,30 @@ const FreeTrialCard = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 font-secondary text-center mt-5">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 font-secondary text-center mt-3 sm:mt-5">
       {/* VPN Status Display - Only show if user hasn't used free trial */}
       {!hasUsedFreeTrial && vpnChecking && (
-        <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg flex items-center justify-center gap-2">
+        <div className="mb-3 sm:mb-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg flex items-center justify-center gap-2">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
-          <span className="text-blue-400 text-sm">
+          <span className="text-blue-400 text-xs sm:text-sm">
             {translatedTexts.checkingVpnStatus}
           </span>
         </div>
       )}
 
       {!hasUsedFreeTrial && vpnStatus && vpnStatus.status === "error" && (
-        <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg flex items-center justify-center gap-2">
+        <div className="mb-3 sm:mb-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg flex items-center justify-center gap-2">
           <AlertCircle className="w-4 h-4 text-yellow-400" />
-          <span className="text-yellow-400 text-sm">
+          <span className="text-yellow-400 text-xs sm:text-sm">
             {translatedTexts.vpnDetectionUnavailable}
           </span>
         </div>
       )}
 
       {!hasUsedFreeTrial && vpnStatus && isVpnBlocked && (
-        <div className="mb-4 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center justify-center gap-2">
-          <WifiOff className="w-5 h-5 text-red-400" />
-          <span className="text-red-400 text-sm font-medium">
+        <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center justify-center gap-2">
+          <WifiOff className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
+          <span className="text-red-400 text-xs sm:text-sm font-medium">
             {translatedTexts.vpnProxyTorDetected}
           </span>
         </div>
@@ -739,57 +751,61 @@ const FreeTrialCard = () => {
 
       <div className="bg-gradient-to-br from-[#0C171C] to-[#1a1a1a] border border-[#FFFFFF26] rounded-2xl overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#00b877] to-[#44dcf3] p-8 text-center">
-          <div className="flex items-center justify-center mb-4">
-            <Play className="w-8 h-8 mr-3" />
-            <h1 className="text-4xl font-bold text-black">
+        <div className="bg-gradient-to-r from-[#00b877] to-[#44dcf3] p-4 sm:p-6 lg:p-8 text-center">
+          <div className="flex items-center justify-center mb-3 sm:mb-4">
+            <Play className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black">
               {freeTrialContent.title}
             </h1>
           </div>
-          <p className="text-black/80 text-xl font-medium">
+          <p className="text-black/80 text-base sm:text-lg lg:text-xl font-medium">
             {freeTrialContent.description}
           </p>
         </div>
 
         {/* Features */}
-        <div className="p-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
             {freeTrialContent.features.map((feature) => {
               const IconComponent = iconMap[feature.icon] || Clock;
               return (
                 <div key={feature.id} className="text-center">
-                  <IconComponent className="w-12 h-12 text-[#00b877] mx-auto mb-3" />
-                  <h3 className="text-white font-semibold text-lg mb-2">
+                  <IconComponent className="w-10 h-10 sm:w-12 sm:h-12 text-[#00b877] mx-auto mb-2 sm:mb-3" />
+                  <h3 className="text-white font-semibold text-base sm:text-lg mb-1 sm:mb-2">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-400 text-sm">{feature.description}</p>
+                  <p className="text-gray-400 text-xs sm:text-sm">
+                    {feature.description}
+                  </p>
                 </div>
               );
             })}
           </div>
 
           {/* Line Type Selection */}
-          <div className="mb-8">
-            <h3 className="text-white font-semibold text-xl mb-4 flex items-center">
-              <Zap className="w-6 h-6 mr-2 text-[#44dcf3]" />
+          <div className="mb-6 sm:mb-8">
+            <h3 className="text-white font-semibold text-lg sm:text-xl mb-3 sm:mb-4 flex items-center justify-center sm:justify-start">
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-[#44dcf3]" />
               {translatedTexts.chooseYourDeviceType}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {lineTypes.map((type) => (
                 <div
                   key={type.id}
-                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                  className={`p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                     selectedLineType === type.id
                       ? "border-[#00b877] bg-[#00b877]/10"
                       : "border-[#FFFFFF26] hover:border-[#44dcf3]/50"
                   }`}
                   onClick={() => handleLineTypeChange(type.id)}
                 >
-                  <div className="text-2xl mb-2">{type.icon}</div>
-                  <h4 className="text-white font-medium text-base mb-1">
+                  <div className="text-xl sm:text-2xl mb-2">{type.icon}</div>
+                  <h4 className="text-white font-medium text-sm sm:text-base mb-1">
                     {type.name}
                   </h4>
-                  <p className="text-gray-400 text-sm">{type.description}</p>
+                  <p className="text-gray-400 text-xs sm:text-sm">
+                    {type.description}
+                  </p>
                 </div>
               ))}
             </div>
@@ -797,8 +813,8 @@ const FreeTrialCard = () => {
 
           {/* MAC Address Input (for MAG and Enigma2) */}
           {selectedLineType > 0 && (
-            <div className="mb-8">
-              <h3 className="text-white font-semibold text-lg mb-3">
+            <div className="mb-6 sm:mb-8">
+              <h3 className="text-white font-semibold text-base sm:text-lg mb-2 sm:mb-3">
                 {translatedTexts.macAddress}
               </h3>
               <Input
@@ -806,9 +822,9 @@ const FreeTrialCard = () => {
                 placeholder={translatedTexts.enterMacAddress}
                 value={macAddress}
                 onChange={(e) => setMacAddress(e.target.value)}
-                className="max-w-md"
+                className="max-w-md w-full"
               />
-              <p className="text-gray-400 text-sm mt-2">
+              <p className="text-gray-400 text-xs sm:text-sm mt-2">
                 {`${translatedTexts.requiredForDevices} ${lineTypes[selectedLineType].name} ${translatedTexts.devices}`}
               </p>
             </div>
@@ -816,9 +832,9 @@ const FreeTrialCard = () => {
 
           {/* Error Display */}
           {error && (
-            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center">
-              <AlertCircle className="w-5 h-5 text-red-400 mr-3 flex-shrink-0" />
-              <span className="text-red-400">{error}</span>
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center">
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 mr-2 sm:mr-3 flex-shrink-0" />
+              <span className="text-red-400 text-xs sm:text-sm">{error}</span>
             </div>
           )}
 
@@ -830,10 +846,10 @@ const FreeTrialCard = () => {
                 <Button
                   variant="primary"
                   size="md"
-                  className="w-full md:w-auto"
+                  className="w-full sm:w-auto"
                 >
-                  <div className="flex items-center">
-                    <Crown className="w-5 h-5 mr-2" />
+                  <div className="flex items-center justify-center">
+                    <Crown className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     {translatedTexts.upgradeToPremium}
                   </div>
                 </Button>
@@ -851,16 +867,16 @@ const FreeTrialCard = () => {
                   (!hasUsedFreeTrial && vpnStatus && isVpnBlocked) ||
                   (selectedLineType > 0 && !macAddress)
                 }
-                className="w-full md:w-auto"
+                className="w-full sm:w-auto"
               >
                 {loading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black mr-2"></div>
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-black mr-2"></div>
                     {translatedTexts.creatingTrial}
                   </div>
                 ) : (
-                  <div className="flex items-center">
-                    <Play className="w-5 h-5 mr-2" />
+                  <div className="flex items-center justify-center">
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     {translatedTexts.start24HourFreeTrial}
                   </div>
                 )}
@@ -868,40 +884,44 @@ const FreeTrialCard = () => {
             )}
 
             {!user && (
-              <p className="text-gray-400 text-sm mt-3">
+              <p className="text-gray-400 text-xs sm:text-sm mt-2 sm:mt-3">
                 {translatedTexts.youNeedToBeLoggedIn}
               </p>
             )}
 
             {hasUsedFreeTrial && (
-              <p className="text-gray-400 text-sm mt-3">
+              <p className="text-gray-400 text-xs sm:text-sm mt-2 sm:mt-3">
                 {translatedTexts.youHaveAlreadyUsed}
               </p>
             )}
 
             {!hasUsedFreeTrial && isVpnBlocked && (
-              <p className="text-red-400 text-sm mt-3">
+              <p className="text-red-400 text-xs sm:text-sm mt-2 sm:mt-3">
                 {translatedTexts.pleaseDisableYourVpn}
               </p>
             )}
           </div>
 
           {/* Additional Info */}
-          <div className="mt-8 p-6 bg-black/30 rounded-xl">
-            <h3 className="text-white font-semibold text-lg mb-3">
+          <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-black/30 rounded-xl">
+            <h3 className="text-white font-semibold text-base sm:text-lg mb-2 sm:mb-3">
               {freeTrialContent.includedTitle}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
               {freeTrialContent.includedItems.map((item, index) => (
                 <div key={index} className="flex items-start">
-                  <CheckCircle className="w-4 h-4 text-[#00b877] mr-2 mt-0.5 flex-shrink-0" />
+                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-[#00b877] mr-2 mt-0.5 flex-shrink-0" />
                   <span className="text-gray-300">{item}</span>
                 </div>
               ))}
             </div>
           </div>
           <Link href="/packages">
-            <Button variant="primary" size="md" className="mt-5">
+            <Button
+              variant="primary"
+              size="md"
+              className="mt-4 sm:mt-5 w-full sm:w-auto"
+            >
               {translatedTexts.buyPackages}
             </Button>
           </Link>

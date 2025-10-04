@@ -1,5 +1,4 @@
 "use client";
-import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Rating } from "@smastrom/react-rating";
 import "@smastrom/react-rating/style.css";
@@ -8,7 +7,6 @@ import { FaCheck, FaEdit, FaPlus, FaTimes, FaTrash } from "react-icons/fa";
 import Swal from "sweetalert2";
 
 const ReviewManagement = () => {
-  const { hasAdminAccess } = useAuth();
   const { language, translate, isLanguageLoaded } = useLanguage();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +71,8 @@ const ReviewManagement = () => {
     previous: "Previous",
     next: "Next",
     noReviewsFound: "No reviews found.",
+    approve: "Approve",
+    reject: "Reject",
   };
 
   const [texts, setTexts] = useState(ORIGINAL_TEXTS);
@@ -325,8 +325,8 @@ const ReviewManagement = () => {
   if (loading) {
     return (
       <div className="border border-[#212121] bg-black rounded-[15px] mt-4 sm:mt-6 w-full max-w-7xl mx-auto font-secondary">
-        <div className="flex items-center justify-center h-32">
-          <div className="text-gray-400 text-sm text-center">
+        <div className="flex items-center justify-center h-24 sm:h-32">
+          <div className="text-gray-400 text-xs sm:text-sm text-center">
             {texts.loadingReviews}
           </div>
         </div>
@@ -335,21 +335,24 @@ const ReviewManagement = () => {
   }
 
   return (
-    <div className="mt-4 sm:mt-6 font-secondary">
-      <h2 className="text-4xl font-bold text-white mb-4">{texts.heading}</h2>
+    <div className="mt-4 sm:mt-6 font-secondary px-4 sm:px-6 lg:px-8">
+      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3 sm:mb-4">
+        {texts.heading}
+      </h2>
 
-      <div className="border border-[#212121] bg-black rounded-[15px] p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-semibold text-white">
+      <div className="border border-[#212121] bg-black rounded-[15px] p-3 sm:p-4 md:p-6">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 sm:mb-6 space-y-3 lg:space-y-0">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-white">
             {texts.customerReviews}
           </h3>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
             <button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+              className="flex items-center justify-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-xs sm:text-sm font-medium transition-colors"
             >
-              <FaPlus className="mr-2" /> {texts.addReview}
+              <FaPlus className="mr-1 sm:mr-2 w-3 h-3 sm:w-4 sm:h-4" />{" "}
+              {texts.addReview}
             </button>
 
             <select
@@ -358,7 +361,7 @@ const ReviewManagement = () => {
                 setFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="px-4 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition-colors"
+              className="px-3 sm:px-4 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition-colors text-xs sm:text-sm"
             >
               <option value="all">{texts.allReviews}</option>
               <option value="pending">{texts.pendingApproval}</option>
@@ -369,13 +372,13 @@ const ReviewManagement = () => {
 
         {/* Add Review Form */}
         {showAddForm && (
-          <div className="bg-[#0c171c] rounded-lg border border-[#212121] p-6 mb-6">
-            <h4 className="text-white font-medium mb-4">
+          <div className="bg-[#0c171c] rounded-lg border border-[#212121] p-3 sm:p-4 md:p-6 mb-4 sm:mb-6">
+            <h4 className="text-white font-medium mb-3 sm:mb-4 text-sm sm:text-base md:text-lg">
               {texts.addNewReview}
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                   {texts.reviewerName}
                 </label>
                 <input
@@ -384,21 +387,21 @@ const ReviewManagement = () => {
                   onChange={(e) =>
                     setAddForm({ ...addForm, reviewerName: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-2 sm:px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                   placeholder={texts.enterReviewerName}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                   {texts.rating}
                 </label>
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                   <Rating
                     value={addForm.rating}
                     onChange={(value) =>
                       setAddForm({ ...addForm, rating: value })
                     }
-                    style={{ maxWidth: 150 }}
+                    style={{ maxWidth: 120 }}
                   />
                   <input
                     type="number"
@@ -412,12 +415,12 @@ const ReviewManagement = () => {
                         rating: parseFloat(e.target.value) || 1,
                       })
                     }
-                    className="w-20 px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full sm:w-16 px-2 sm:px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                   {texts.createdDate}
                 </label>
                 <input
@@ -426,11 +429,11 @@ const ReviewManagement = () => {
                   onChange={(e) =>
                     setAddForm({ ...addForm, createdAt: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-2 sm:px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                   {texts.status}
                 </label>
                 <select
@@ -441,15 +444,15 @@ const ReviewManagement = () => {
                       isApproved: e.target.value === "true",
                     })
                   }
-                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-2 sm:px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                 >
                   <option value="true">{texts.approved}</option>
                   <option value="false">{texts.pendingApproval}</option>
                 </select>
               </div>
             </div>
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+            <div className="mt-3 sm:mt-4">
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                 {texts.comment}
               </label>
               <textarea
@@ -458,20 +461,20 @@ const ReviewManagement = () => {
                   setAddForm({ ...addForm, comment: e.target.value })
                 }
                 rows="3"
-                className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                className="w-full px-2 sm:px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm resize-none"
                 placeholder={texts.enterReviewComment}
               />
             </div>
-            <div className="flex space-x-2 mt-4">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-3 sm:mt-4">
               <button
                 onClick={handleAddReview}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-xs sm:text-sm font-medium transition-colors"
               >
                 {texts.addReview}
               </button>
               <button
                 onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
+                className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-xs sm:text-sm font-medium transition-colors"
               >
                 {texts.cancel}
               </button>
@@ -480,39 +483,41 @@ const ReviewManagement = () => {
         )}
 
         {reviews.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">{texts.noReviewsFound}</p>
+          <div className="text-center py-8 sm:py-12">
+            <p className="text-gray-400 text-sm sm:text-base md:text-lg">
+              {texts.noReviewsFound}
+            </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {reviews.map((review) => (
               <div
                 key={review._id}
-                className="bg-[#0c171c] rounded-lg border border-[#212121] p-6"
+                className="bg-[#0c171c] rounded-lg border border-[#212121] p-3 sm:p-4 md:p-6"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 sm:mb-4 space-y-2 sm:space-y-0">
+                  <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 text-xs sm:text-sm">
                       {review.userId?.profile?.firstName?.charAt(0) ||
                         review.uniqueName?.charAt(0) ||
                         "A"}
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-white text-sm">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-white text-xs sm:text-sm md:text-base truncate">
                         {review.userId?.profile?.firstName &&
                         review.userId?.profile?.lastName
                           ? `${review.userId.profile.firstName} ${review.userId.profile.lastName}`
                           : review.uniqueName || texts.anonymous}
                       </h3>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-[10px] sm:text-xs text-gray-400">
                         {new Date(review.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-end sm:justify-start">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      className={`px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap ${
                         review.isApproved
                           ? "bg-green-500/20 text-green-400 border border-green-500/30"
                           : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
@@ -526,19 +531,19 @@ const ReviewManagement = () => {
                 </div>
 
                 {editingReview === review._id ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                           {texts.rating}
                         </label>
-                        <div className="flex items-center space-x-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                           <Rating
                             value={editForm.rating}
                             onChange={(value) =>
                               setEditForm({ ...editForm, rating: value })
                             }
-                            style={{ maxWidth: 150 }}
+                            style={{ maxWidth: 120 }}
                           />
                           <input
                             type="number"
@@ -552,12 +557,12 @@ const ReviewManagement = () => {
                                 rating: parseFloat(e.target.value) || 1,
                               })
                             }
-                            className="w-20 px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                            className="w-full sm:w-16 px-2 sm:px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                           {texts.createdDate}
                         </label>
                         <input
@@ -569,11 +574,11 @@ const ReviewManagement = () => {
                               createdAt: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                          className="w-full px-2 sm:px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                           {texts.status}
                         </label>
                         <select
@@ -584,7 +589,7 @@ const ReviewManagement = () => {
                               isApproved: e.target.value === "true",
                             })
                           }
-                          className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                          className="w-full px-2 sm:px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                         >
                           <option value="true">{texts.approved}</option>
                           <option value="false">{texts.pendingApproval}</option>
@@ -592,7 +597,7 @@ const ReviewManagement = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                         {texts.comment}
                       </label>
                       <textarea
@@ -601,19 +606,19 @@ const ReviewManagement = () => {
                           setEditForm({ ...editForm, comment: e.target.value })
                         }
                         rows="3"
-                        className="w-full px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                        className="w-full px-2 sm:px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm resize-none"
                       />
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                       <button
                         onClick={() => handleSaveEdit(review._id)}
-                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                        className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-xs sm:text-sm font-medium transition-colors"
                       >
                         {texts.save}
                       </button>
                       <button
                         onClick={() => setEditingReview(null)}
-                        className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
+                        className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-xs sm:text-sm font-medium transition-colors"
                       >
                         {texts.cancel}
                       </button>
@@ -621,58 +626,62 @@ const ReviewManagement = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center mb-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center mb-2 space-y-1 sm:space-y-0 sm:space-x-3">
                       <Rating
                         value={review.rating}
                         readOnly
-                        style={{ maxWidth: 150 }}
+                        style={{ maxWidth: 120 }}
                       />
-                      <span className="ml-2 text-sm text-gray-300">
+                      <span className="text-xs sm:text-sm text-gray-300">
                         {review.rating}/5
                       </span>
                     </div>
 
-                    <p className="text-gray-300 mb-4 text-sm">
+                    <p className="text-gray-300 mb-3 sm:mb-4 text-xs sm:text-sm leading-relaxed">
                       {review.comment}
                     </p>
 
-                    <div className="flex justify-between items-center">
-                      <div className="flex space-x-2">
+                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-2 lg:space-y-0">
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
                         {!review.isApproved && (
                           <button
                             onClick={() => handleApprove(review._id, true)}
-                            className="flex items-center px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+                            className="flex items-center px-2 sm:px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-[10px] sm:text-xs font-medium transition-colors"
                           >
-                            <FaCheck className="mr-1" /> {texts.approved}
+                            <FaCheck className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
+                            {texts.approve}
                           </button>
                         )}
 
                         {review.isApproved && (
                           <button
                             onClick={() => handleApprove(review._id, false)}
-                            className="flex items-center px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700 text-xs"
+                            className="flex items-center px-2 sm:px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-[10px] sm:text-xs font-medium transition-colors"
                           >
-                            <FaTimes className="mr-1" /> {texts.pendingApproval}
+                            <FaTimes className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
+                            {texts.reject}
                           </button>
                         )}
 
                         <button
                           onClick={() => handleEdit(review)}
-                          className="flex items-center px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+                          className="flex items-center px-2 sm:px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-[10px] sm:text-xs font-medium transition-colors"
                         >
-                          <FaEdit className="mr-1" /> {texts.edit}
+                          <FaEdit className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
+                          {texts.edit}
                         </button>
 
                         <button
                           onClick={() => handleDelete(review._id)}
-                          className="flex items-center px-3 py-1 bg-red-600 text-white rounded hover:bg-red-600 text-xs"
+                          className="flex items-center px-2 sm:px-3 py-1 bg-red-600 text-white rounded hover:bg-red-600 text-[10px] sm:text-xs font-medium transition-colors"
                         >
-                          <FaTrash className="mr-1" /> {texts.delete}
+                          <FaTrash className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
+                          {texts.delete}
                         </button>
                       </div>
 
                       {review.approvedBy && (
-                        <p className="text-xs text-gray-500">
+                        <p className="text-[10px] sm:text-xs text-gray-500 text-right lg:text-left">
                           Approved by: {review.approvedBy.profile?.firstName}{" "}
                           {review.approvedBy.profile?.lastName}
                         </p>
@@ -687,12 +696,12 @@ const ReviewManagement = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-center mt-8">
-            <div className="flex space-x-2">
+          <div className="flex justify-center mt-6 sm:mt-8">
+            <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-[#1a1a1a] transition-colors"
+                className="px-2 sm:px-3 py-1 sm:py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm font-medium"
               >
                 {texts.previous}
               </button>
@@ -701,7 +710,7 @@ const ReviewManagement = () => {
                 <button
                   key={index}
                   onClick={() => setCurrentPage(index + 1)}
-                  className={`px-3 py-2 border border-white/15 rounded-lg transition-colors ${
+                  className={`px-2 sm:px-3 py-1 sm:py-2 border border-white/15 rounded-lg transition-colors text-xs sm:text-sm font-medium ${
                     currentPage === index + 1
                       ? "bg-cyan-500 text-white border-cyan-500"
                       : "bg-[#0c171c] text-white hover:bg-[#1a1a1a]"
@@ -716,7 +725,7 @@ const ReviewManagement = () => {
                   setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                 }
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-[#1a1a1a] transition-colors"
+                className="px-2 sm:px-3 py-1 sm:py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm font-medium"
               >
                 {texts.next}
               </button>

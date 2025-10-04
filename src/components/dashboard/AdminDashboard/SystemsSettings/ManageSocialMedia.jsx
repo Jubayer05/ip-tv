@@ -139,18 +139,22 @@ const ManageSocialMedia = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-4 font-secondary">
-      <div className="bg-black border border-[#212121] rounded-lg p-6 text-white">
-        <h2 className="text-3xl text-center font-bold mb-4">{texts.heading}</h2>
-        <p className="text-gray-300 text-sm mb-6">{texts.subtitle}</p>
+    <div className="flex flex-col gap-3 sm:gap-4 font-secondary">
+      <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
+        <h2 className="text-xl sm:text-2xl lg:text-3xl text-center font-bold mb-3 sm:mb-4">
+          {texts.heading}
+        </h2>
+        <p className="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6 text-center sm:text-left">
+          {texts.subtitle}
+        </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Social Media Section */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-white">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-white">
               {texts.socialMediaLinks}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {socialPlatforms.map((platform) => {
                 const IconComponent = platform.icon;
                 const placeholderMap = {
@@ -161,8 +165,10 @@ const ManageSocialMedia = () => {
                 };
                 return (
                   <div key={platform.key} className="space-y-2">
-                    <label className="flex items-center space-x-2 text-sm text-gray-300">
-                      <IconComponent className={`w-4 h-4 ${platform.color}`} />
+                    <label className="flex items-center space-x-2 text-xs sm:text-sm text-gray-300">
+                      <IconComponent
+                        className={`w-3 h-3 sm:w-4 sm:h-4 ${platform.color}`}
+                      />
                       <span>{platform.label}</span>
                     </label>
                     <input
@@ -172,7 +178,7 @@ const ManageSocialMedia = () => {
                         handleSocialMediaChange(platform.key, e.target.value)
                       }
                       placeholder={placeholderMap[platform.key]}
-                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                      className="w-full px-3 py-2 bg-[#212121] border border-[#333] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 text-xs sm:text-sm"
                     />
                   </div>
                 );
@@ -180,24 +186,30 @@ const ManageSocialMedia = () => {
             </div>
           </div>
 
-          {error && <div className="text-sm text-red-400">{error}</div>}
+          {error && (
+            <div className="text-xs sm:text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+              {error}
+            </div>
+          )}
           {saved && (
-            <div className="text-sm text-green-400">{texts.settingsSaved}</div>
+            <div className="text-xs sm:text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+              {texts.settingsSaved}
+            </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <button
               type="button"
               onClick={fetchSettings}
               disabled={loading}
-              className="px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 border border-[#333] text-white rounded-md hover:bg-[#212121] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-medium"
             >
               {texts.refresh}
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-medium"
             >
               {loading ? texts.saving : texts.save}
             </button>
