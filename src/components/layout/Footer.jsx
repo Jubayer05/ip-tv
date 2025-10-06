@@ -450,17 +450,6 @@ export default function Footer() {
         <p className="text-gray-400 text-[10px] sm:text-sm font-secondary">
           {copyright} {new Date().getFullYear()} . {allRights}
         </p>
-        <p className="text-gray-400 text-[10px] sm:text-sm font-secondary mt-1 sm:mt-0">
-          {developedBy}{" "}
-          <a
-            href="https://weberspoint.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            Weberspoint
-          </a>
-        </p>
       </div>
     </footer>
   );

@@ -10,28 +10,27 @@ import ReviewShowHome from "@/components/features/UserReview/ReviewShowHome";
 
 export async function generateMetadata() {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/admin/settings`,
-      {
-        cache: "no-store",
-      }
-    );
-    const data = await response.json();
+    // Read settings directly from DB (no HTTP, no env URL issues)
+    const { connectToDatabase } = await import("@/lib/db");
+    const Settings = (await import("@/models/Settings")).default;
 
-    if (data.success && data.data.metaManagement?.home) {
-      const meta = data.data.metaManagement.home;
+    await connectToDatabase();
+    const settings = await Settings.getSettings();
+
+    const meta = settings?.metaManagement?.home;
+    if (meta) {
       return {
         title: meta.title,
         description: meta.description,
         keywords: meta.keywords,
         openGraph: {
-          title: meta.openGraph.title,
-          description: meta.openGraph.description,
+          title: meta.openGraph?.title || meta.title,
+          description: meta.openGraph?.description || meta.description,
         },
       };
     }
   } catch (error) {
-    console.error("Failed to fetch meta settings:", error);
+    console.error("Failed to load meta settings:", error);
   }
 
   // Fallback metadata
