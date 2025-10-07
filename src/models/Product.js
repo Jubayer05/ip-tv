@@ -147,7 +147,7 @@ const productSchema = new mongoose.Schema(
 );
 
 // Ensure uniqueness at DB level
-productSchema.index({ uniquePath: 1 }, { unique: true });
+// productSchema.index({ uniquePath: 1 }, { unique: true });
 
 // Helper: generate slug from name if not provided
 function slugify(input) {

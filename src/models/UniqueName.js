@@ -30,7 +30,7 @@ const uniqueNameSchema = new mongoose.Schema(
 );
 
 // Index for faster queries
-uniqueNameSchema.index({ name: 1 });
+// uniqueNameSchema.index({ name: 1 });
 uniqueNameSchema.index({ reviewUsed: 1 });
 
 // Pre-save middleware to update updatedAt

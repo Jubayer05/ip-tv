@@ -38,7 +38,7 @@ const CouponSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-CouponSchema.index({ code: 1 }, { unique: true });
+// CouponSchema.index({ code: 1 }, { unique: true });
 
 CouponSchema.methods.isCurrentlyValid = function (amount) {
   if (!this.isActive) return false;
