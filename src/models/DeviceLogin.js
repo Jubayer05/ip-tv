@@ -70,7 +70,6 @@ const deviceLoginSchema = new mongoose.Schema(
 
 // Index for efficient queries
 deviceLoginSchema.index({ userId: 1, loginDate: -1 });
-deviceLoginSchema.index({ sessionId: 1 });
 deviceLoginSchema.index({ status: 1 });
 
 // Static method to create device login

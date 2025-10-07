@@ -16,6 +16,7 @@
     "@tanstack/react-table": "^8.21.3",
     "antd": "^5.26.7",
     "bcryptjs": "^3.0.2",
+    "critters": "^0.0.23",
     "firebase": "^12.1.0",
     "jodit-react": "^5.2.19",
     "jsonwebtoken": "^9.0.2",
