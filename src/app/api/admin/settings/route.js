@@ -8,23 +8,15 @@ export async function GET() {
   try {
     await connectToDatabase();
     const settings = await Settings.getSettings();
-    return NextResponse.json({
-      success: true,
-      data: {
-        affiliateCommissionPct: settings.affiliateCommissionPct,
-        socialMedia: settings.socialMedia,
-        contactInfo: settings.contactInfo,
-        banners: settings.banners,
-        addons: settings.addons,
-        apiKeys: settings.apiKeys || {},
-        loginOptions: settings.loginOptions || {},
-        socialApiKeys: settings.socialApiKeys || {},
-        smtp: settings.smtp || {},
-        otherApiKeys: settings.otherApiKeys || {},
-        metaManagement: settings.metaManagement,
-        freeTrialContent: settings.freeTrialContent,
-      },
-    });
+    const response = NextResponse.json({ success: true, data: settings });
+
+    // Add caching headers
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=300, stale-while-revalidate=600"
+    );
+
+    return response;
   } catch (e) {
     console.error("Settings GET error:", e);
     return NextResponse.json(

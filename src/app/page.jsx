@@ -3,10 +3,36 @@ import FAQ from "@/components/features/Home/FaqHome";
 import FeatureHome from "@/components/features/Home/FeatureHome";
 import FreeTrialCard from "@/components/features/Home/FreeTrial";
 import HomeSubscribe from "@/components/features/Home/HomeSubscribe";
-import LatestTrailers from "@/components/features/Home/LatestTrailers";
 import MainBanner from "@/components/features/Home/MainBanner";
-import TrendingMovies from "@/components/features/Home/TrendingMovie";
-import ReviewShowHome from "@/components/features/UserReview/ReviewShowHome";
+import dynamic from "next/dynamic";
+
+// Lazy load heavy components
+const LatestTrailers = dynamic(
+  () => import("@/components/features/Home/LatestTrailers"),
+  {
+    loading: () => (
+      <div className="h-64 bg-gray-800 animate-pulse rounded-lg" />
+    ),
+  }
+);
+
+const TrendingMovies = dynamic(
+  () => import("@/components/features/Home/TrendingMovie"),
+  {
+    loading: () => (
+      <div className="h-64 bg-gray-800 animate-pulse rounded-lg" />
+    ),
+  }
+);
+
+const ReviewShowHome = dynamic(
+  () => import("@/components/features/UserReview/ReviewShowHome"),
+  {
+    loading: () => (
+      <div className="h-64 bg-gray-800 animate-pulse rounded-lg" />
+    ),
+  }
+);
 
 export async function generateMetadata() {
   try {

@@ -5,6 +5,10 @@ module.exports = {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  // Add CSS purging
+  safelist: [
+    // Add any dynamic classes that might be purged
+  ],
   theme: {
     extend: {
       fontFamily: {

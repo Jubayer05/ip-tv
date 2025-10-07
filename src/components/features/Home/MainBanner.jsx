@@ -50,11 +50,11 @@ const MainBanner = () => {
       const [tHeading1, tHeading2, tParagraph, tPlaceholder, tButtonText] =
         translated;
 
-      setHeading1(tHeading1);
-      setHeading2(tHeading2);
-      setParagraph(tParagraph);
-      setPlaceholder(tPlaceholder);
-      setButtonText(tButtonText);
+      // setHeading1(tHeading1); // This line is no longer needed as heading1 is now directly from settings
+      // setHeading2(tHeading2); // This line is no longer needed
+      // setParagraph(tParagraph); // This line is no longer needed
+      // setPlaceholder(tPlaceholder); // This line is no longer needed
+      // setButtonText(tButtonText); // This line is no longer needed
     })();
 
     return () => {

@@ -49,37 +49,41 @@ export default function TawkTo() {
     if (!enabled || !propertyId || !widgetId || loaded) return;
     if (typeof window === "undefined") return;
 
-    const srcUrl = `https://embed.tawk.to/${propertyId}/${widgetId}`;
+    // Lazy load when user scrolls or after 3 seconds
+    const loadTawk = () => {
+      const srcUrl = `https://embed.tawk.to/${propertyId}/${widgetId}`;
 
-    // Avoid duplicate
-    if (document.querySelector(`script[src="${srcUrl}"]`)) {
-      setLoaded(true);
-      return;
-    }
+      if (document.querySelector(`script[src="${srcUrl}"]`)) {
+        setLoaded(true);
+        return;
+      }
 
-    // Per docs: set globals before script loads
-    window.Tawk_API = window.Tawk_API || {};
-    window.Tawk_LoadStart = new Date();
+      window.Tawk_API = window.Tawk_API || {};
+      window.Tawk_LoadStart = new Date();
 
-    const s1 = document.createElement("script");
-    s1.async = true;
-    s1.src = srcUrl;
-    s1.charset = "UTF-8";
-    s1.setAttribute("crossorigin", "*");
-    s1.onload = () => {
-      console.log("Tawk.to loaded successfully");
-      setLoaded(true);
-    };
-    s1.onerror = (error) => {
-      console.error("Failed to load Tawk.to:", error);
-      setLoaded(false);
+      const s1 = document.createElement("script");
+      s1.async = true;
+      s1.src = srcUrl;
+      s1.charset = "UTF-8";
+      s1.setAttribute("crossorigin", "*");
+      s1.onload = () => setLoaded(true);
+
+      document.head.appendChild(s1);
     };
 
-    const s0 = document.getElementsByTagName("script")[0];
-    if (s0?.parentNode) s0.parentNode.insertBefore(s1, s0);
-    else document.head.appendChild(s1);
+    // Load after 3 seconds or on user interaction
+    const timer = setTimeout(loadTawk, 3000);
+    const loadOnInteraction = () => {
+      clearTimeout(timer);
+      loadTawk();
+      document.removeEventListener("scroll", loadOnInteraction);
+      document.removeEventListener("click", loadOnInteraction);
+    };
 
-    console.log("Loading Tawk.to with:", { propertyId, widgetId, srcUrl });
+    document.addEventListener("scroll", loadOnInteraction, { once: true });
+    document.addEventListener("click", loadOnInteraction, { once: true });
+
+    return () => clearTimeout(timer);
   }, [enabled, propertyId, widgetId, loaded]);
 
   return null;

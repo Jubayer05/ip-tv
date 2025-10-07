@@ -5,21 +5,24 @@ import Navbar from "@/components/layout/Navbar";
 import { AuthContextProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { UserSpendingContextProvider } from "@/contexts/UserSpendingContext";
+import QueryProvider from "@/providers/QueryProvider";
 import { Manrope, Rajdhani } from "next/font/google";
 import "./globals.css";
 
 const rajdhani = Rajdhani({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "600", "700"], // Only 3 weights
   variable: "--font-rajdhani",
   fallback: ["Arial", "sans-serif"],
+  display: "swap", // Add this for better performance
 });
 
 const manrope = Manrope({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "600"], // Only 2 weights
   variable: "--font-manrope",
   fallback: ["Arial", "sans-serif"],
+  display: "swap", // Add this for better performance
 });
 
 export const metadata = {
@@ -97,17 +100,19 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="antialiased font-primary">
-        <AuthContextProvider>
-          <LanguageProvider>
-            <UserSpendingContextProvider>
-              <TawkTo />
-              <Navbar />
-              <ScrollToTop />
-              <main className="min-h-screen">{children}</main>
-              <Footer />
-            </UserSpendingContextProvider>
-          </LanguageProvider>
-        </AuthContextProvider>
+        <QueryProvider>
+          <AuthContextProvider>
+            <LanguageProvider>
+              <UserSpendingContextProvider>
+                <TawkTo />
+                <Navbar />
+                <ScrollToTop />
+                <main className="min-h-screen">{children}</main>
+                <Footer />
+              </UserSpendingContextProvider>
+            </LanguageProvider>
+          </AuthContextProvider>
+        </QueryProvider>
       </body>
     </html>
   );
