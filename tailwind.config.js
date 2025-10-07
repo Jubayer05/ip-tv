@@ -5,9 +5,16 @@ module.exports = {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-  // Add CSS purging
+  // Optimize CSS purging
   safelist: [
     // Add any dynamic classes that might be purged
+    "animate-pulse",
+    "bg-gray-800",
+    "rounded-lg",
+    "transition-transform",
+    "duration-300",
+    "group-hover:scale-110",
+    "object-cover",
   ],
   theme: {
     extend: {
@@ -35,4 +42,8 @@ module.exports = {
     },
   },
   plugins: [],
+  // Add CSS optimization
+  corePlugins: {
+    preflight: true,
+  },
 };

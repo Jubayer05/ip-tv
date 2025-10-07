@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { BsFillTrashFill } from "react-icons/bs";
+import { Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useState } from "react";
 
@@ -175,7 +175,7 @@ const PaymentMethods = () => {
 
               {/* Delete Button */}
               <button className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-gray-600 flex items-center justify-center text-gray-400 hover:text-white hover:border-red-400 hover:bg-red-400 transition-colors cursor-pointer flex-shrink-0">
-                <BsFillTrashFill className="w-3 h-3 sm:w-4 sm:h-4" />
+                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>

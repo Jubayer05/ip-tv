@@ -1,11 +1,15 @@
 "use client";
 import Button from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  MessageSquare,
+  Quote,
+  Star,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { FaQuoteLeft, FaStar } from "react-icons/fa";
-import { MdReviews } from "react-icons/md";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
@@ -101,10 +105,11 @@ const ReviewShowHome = () => {
 
   const renderStars = (rating) => {
     return [...Array(5)].map((star, index) => (
-      <FaStar
+      <Star
         key={index}
         color={index < rating ? "#00b877" : "#ffffff40"}
         size={16}
+        fill={index < rating ? "#00b877" : "transparent"}
       />
     ));
   };
@@ -288,7 +293,7 @@ const ReviewShowHome = () => {
                 <div className="relative group cursor-pointer">
                   <div className="bg-gray-800 rounded-lg p-6 h-full border border-gray-700 hover:border-[#00b877] transition-all duration-300">
                     <div className="flex items-center mb-4">
-                      <FaQuoteLeft className="text-[#00b877] text-2xl mr-3" />
+                      <Quote className="text-[#00b877] text-2xl mr-3" />
                       <div className="flex items-center">
                         {renderStars(review.rating)}
                         <span className="ml-2 text-sm text-gray-400">
@@ -324,7 +329,7 @@ const ReviewShowHome = () => {
           <Link href="/reviews">
             <Button variant="primary" size="md" className="w-full md:w-auto">
               <div className="flex items-center">
-                <MdReviews className="w-5 h-5 mr-2" />
+                <MessageSquare className="w-5 h-5 mr-2" />
                 {translatedTexts.seeAllReviews}
               </div>
             </Button>

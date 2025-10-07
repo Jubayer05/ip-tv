@@ -2,10 +2,8 @@
 
 import PolygonUpperLine from "@/components/ui/polygonUpperLine";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Plus, Share2 } from "lucide-react";
+import { Circle, Play, Plus, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { GoDotFill } from "react-icons/go";
-import { IoPlaySharp } from "react-icons/io5";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
@@ -194,16 +192,25 @@ const ExploreChannelBanner = () => {
                         {slide.rating}
                       </span>
                     </div>
-                    <GoDotFill className="text-white/30 text-xs sm:text-sm" />
+                    <Circle
+                      className="text-white/30 text-xs sm:text-sm"
+                      fill="currentColor"
+                    />
 
                     <span className="px-2 sm:px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-full">
                       {slide.status}
                     </span>
-                    <GoDotFill className="text-white/30 text-xs sm:text-sm" />
+                    <Circle
+                      className="text-white/30 text-xs sm:text-sm"
+                      fill="currentColor"
+                    />
                     <span className="text-xs sm:text-sm font-medium text-white/60">
                       {slide.year}
                     </span>
-                    <GoDotFill className="text-white/30 text-xs sm:text-sm" />
+                    <Circle
+                      className="text-white/30 text-xs sm:text-sm"
+                      fill="currentColor"
+                    />
                     <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                       {slide.genres.map((genre, index) => (
                         <span
@@ -225,7 +232,7 @@ const ExploreChannelBanner = () => {
                   {/* Action Buttons */}
                   <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
                     <button className="cursor-pointer flex items-center gap-1 sm:gap-2 bg-white text-black px-3 sm:px-6 py-2 rounded-full font-semibold hover:bg-gray-200 transition-colors duration-200 text-xs sm:text-sm">
-                      <IoPlaySharp
+                      <Play
                         className="w-4 h-4 sm:w-5 sm:h-5"
                         fill="currentColor"
                       />

@@ -1,5 +1,4 @@
-import { Check } from "lucide-react";
-import { RiFireFill } from "react-icons/ri";
+import { Check, Flame } from "lucide-react";
 
 const SubscriptionPlans = ({
   product,
@@ -33,7 +32,7 @@ const SubscriptionPlans = ({
           {variant.recommended && (
             <div className="absolute w-full mx-auto -top-4 sm:-top-5 left-1/2 transform -translate-x-1/2 bg-cyan-400 text-black px-3 sm:px-4 py-1 rounded-t-[20px] text-xs font-semibold flex items-center justify-center gap-1 font-secondary">
               <span>
-                <RiFireFill />
+                <Flame />
               </span>
               <span className="hidden sm:inline">
                 {texts.controls.devices.recommended}

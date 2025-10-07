@@ -13,9 +13,8 @@ import {
   getFirebaseErrorMessage,
   isFirebaseError,
 } from "@/lib/firebaseErrorHandler";
+import { Chrome, Facebook, Twitter } from "lucide-react";
 import { useEffect, useState } from "react";
-import { FaFacebook, FaTwitter } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
 
 export default function SocialLogin({ onSuccess, onError, loading = false }) {
   const { language, translate, isLanguageLoaded } = useLanguage();
@@ -170,7 +169,7 @@ export default function SocialLogin({ onSuccess, onError, loading = false }) {
             disabled={loading || socialLoading.google}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-700 rounded-lg text-white hover:bg-gray-800/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FcGoogle size={20} />
+            <Chrome size={20} />
             <span className="font-medium">
               {socialLoading.google
                 ? texts.signingIn
@@ -187,7 +186,7 @@ export default function SocialLogin({ onSuccess, onError, loading = false }) {
             disabled={loading || socialLoading.facebook}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-700 rounded-lg text-white hover:bg-gray-800/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FaFacebook size={20} className="text-blue-500" />
+            <Facebook size={20} className="text-blue-500" />
             <span className="font-medium">
               {socialLoading.facebook
                 ? texts.signingIn
@@ -204,7 +203,7 @@ export default function SocialLogin({ onSuccess, onError, loading = false }) {
             disabled={loading || socialLoading.twitter}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-700 rounded-lg text-white hover:bg-gray-800/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FaTwitter size={20} className="text-blue-400" />
+            <Twitter size={20} className="text-blue-400" />
             <span className="font-medium">
               {socialLoading.twitter
                 ? texts.redirecting

@@ -1,4 +1,5 @@
 "use client";
+import AdImage from "@/components/ui/AdImage";
 import TableCustom from "@/components/ui/TableCustom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -339,10 +340,10 @@ const AdManagement = () => {
       render: (text, record) => (
         <div className="flex items-center gap-3">
           {record.imageUrl && (
-            <img
+            <AdImage
               src={record.imageUrl}
               alt={record.title}
-              className="w-12 h-12 object-cover rounded-lg"
+              className="w-12 h-12 rounded-lg"
             />
           )}
           <div>
@@ -535,10 +536,10 @@ const AdManagement = () => {
                 </label>
                 {formData.imageUrl ? (
                   <div className="space-y-2">
-                    <img
+                    <AdImage
                       src={formData.imageUrl}
                       alt="Ad preview"
-                      className="w-32 h-20 object-cover rounded-lg border border-gray-600"
+                      className="w-32 h-20 rounded-lg border border-gray-600"
                     />
                     <div className="flex flex-col sm:flex-row gap-2">
                       <input

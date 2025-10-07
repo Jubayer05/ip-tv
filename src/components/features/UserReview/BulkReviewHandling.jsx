@@ -1,8 +1,8 @@
 "use client";
 import TableCustom from "@/components/ui/TableCustom";
 import { Rating } from "@smastrom/react-rating";
+import { Upload } from "lucide-react";
 import { useEffect, useState } from "react";
-import { FaUpload } from "react-icons/fa";
 import Swal from "sweetalert2";
 
 // Import the rating styles
@@ -487,7 +487,7 @@ const BulkReviewHandling = () => {
                 disabled={uploading || !bulkText.trim()}
                 className="flex items-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-xs sm:text-sm"
               >
-                <FaUpload className="mr-2 w-3 h-3 sm:w-4 sm:h-4" />
+                <Upload className="mr-2 w-3 h-3 sm:w-4 sm:h-4" />
                 {uploading ? "Scheduling..." : "Schedule Reviews"}
               </button>
             </div>

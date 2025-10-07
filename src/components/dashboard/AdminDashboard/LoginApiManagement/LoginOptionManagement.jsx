@@ -1,9 +1,8 @@
 "use client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useApi } from "@/hooks/useApi";
+import { Chrome, Facebook, Twitter } from "lucide-react";
 import { useEffect, useState } from "react";
-import { FaFacebook, FaTwitter } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
 
 const LoginOptionManagement = () => {
   const { apiCall } = useApi();
@@ -68,21 +67,21 @@ const LoginOptionManagement = () => {
       key: "google",
       label: texts.googleLogin,
       description: texts.googleDescription,
-      icon: FcGoogle,
+      icon: Chrome,
       color: "text-blue-500",
     },
     {
       key: "facebook",
       label: texts.facebookLogin,
       description: texts.facebookDescription,
-      icon: FaFacebook,
+      icon: Facebook,
       color: "text-blue-600",
     },
     {
       key: "twitter",
       label: texts.twitterLogin,
       description: texts.twitterDescription,
-      icon: FaTwitter,
+      icon: Twitter,
       color: "text-blue-400",
     },
   ];

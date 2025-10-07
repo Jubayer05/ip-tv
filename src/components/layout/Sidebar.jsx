@@ -6,6 +6,7 @@ import {
   BarChart3,
   Bell,
   CreditCard,
+  FileText,
   Gift,
   HelpCircle,
   History,
@@ -13,6 +14,7 @@ import {
   List,
   Megaphone,
   MessageCircle,
+  MessageSquare,
   Monitor,
   Package,
   Scale,
@@ -24,8 +26,6 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { IoDocument } from "react-icons/io5";
-import { MdOutlineDashboard, MdReviews } from "react-icons/md";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -58,7 +58,7 @@ export default function Sidebar() {
     {
       href: "/dashboard",
       label: "Dashboard",
-      icon: MdOutlineDashboard,
+      icon: BarChart3,
     },
     {
       href: "/dashboard/orders",
@@ -157,12 +157,12 @@ export default function Sidebar() {
     {
       href: "/admin/review",
       label: "Review Management",
-      icon: MdReviews,
+      icon: MessageSquare,
     },
     {
       href: "/admin/blog",
       label: "Blogs Management",
-      icon: IoDocument,
+      icon: FileText,
     },
     {
       href: "/admin/legal",

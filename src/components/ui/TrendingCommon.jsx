@@ -1,8 +1,7 @@
 "use client";
 import Button from "@/components/ui/button";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Circle } from "lucide-react";
 import Image from "next/image";
-import { GoDotFill } from "react-icons/go";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
@@ -126,7 +125,7 @@ const TrendingCommon = ({
                   </div>
                 )}
 
-                <GoDotFill className="text-white/30 text-xs" />
+                <Circle className="text-white/30 text-xs" fill="currentColor" />
                 {/* Year */}
                 {item.year && (
                   <div className="text-white/60 text-xs font-bold">

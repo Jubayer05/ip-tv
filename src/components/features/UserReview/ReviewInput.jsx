@@ -1,7 +1,7 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Star } from "lucide-react";
 import { useEffect, useState } from "react";
-import { FaStar } from "react-icons/fa";
 import Swal from "sweetalert2";
 
 const ReviewInput = () => {
@@ -194,12 +194,13 @@ const ReviewInput = () => {
                     onClick={() => setRating(ratingValue)}
                     className="hidden"
                   />
-                  <FaStar
+                  <Star
                     className="cursor-pointer transition-colors duration-200"
                     color={
                       ratingValue <= (hover || rating) ? "#00b877" : "#ffffff40"
                     }
                     size={24}
+                    fill={ratingValue <= (hover || rating) ? "#00b877" : "transparent"}
                     onMouseEnter={() => setHover(ratingValue)}
                     onMouseLeave={() => setHover(0)}
                   />

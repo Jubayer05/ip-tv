@@ -2,10 +2,10 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUserSpending } from "@/contexts/UserSpendingContext";
+import { Edit } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { TiPencil } from "react-icons/ti";
 
 export default function AffiliateProfile() {
   const { language, translate, isLanguageLoaded } = useLanguage();
@@ -215,7 +215,7 @@ export default function AffiliateProfile() {
             </div>
             {/* Verification badge */}
             <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-white border border-white/25 rounded-full flex items-center justify-center">
-              <TiPencil className="text-black text-xs sm:text-sm" />
+              <Edit className="text-black text-xs sm:text-sm" />
             </div>
           </div>
 

@@ -11,18 +11,20 @@ import "./globals.css";
 
 const rajdhani = Rajdhani({
   subsets: ["latin"],
-  weight: ["400", "600", "700"], // Only 3 weights
+  weight: ["400", "600", "700"],
   variable: "--font-rajdhani",
   fallback: ["Arial", "sans-serif"],
-  display: "swap", // Add this for better performance
+  display: "swap",
+  preload: true, // Add preload
 });
 
 const manrope = Manrope({
   subsets: ["latin"],
-  weight: ["400", "600"], // Only 2 weights
+  weight: ["400", "600"],
   variable: "--font-manrope",
   fallback: ["Arial", "sans-serif"],
-  display: "swap", // Add this for better performance
+  display: "swap",
+  preload: true, // Add preload
 });
 
 export const metadata = {
@@ -98,6 +100,29 @@ export default function RootLayout({ children }) {
           name="google-site-verification"
           content="HasIvEgidg_qkrrpsRaTSR2HUUwEnnc8osHzgjibMCw"
         />
+
+        {/* Preload critical resources */}
+        <link
+          rel="preload"
+          href="/background/banner_bg.webp"
+          as="image"
+          fetchPriority="high"
+        />
+
+        {/* Preconnect to external domains */}
+        <link
+          rel="preconnect"
+          href="https://ip-tv-weberspoint.firebaseapp.com"
+        />
+        <link rel="preconnect" href="https://apis.google.com" />
+        <link rel="preconnect" href="https://www.googleapis.com" />
+
+        {/* DNS prefetch for CDNs */}
+        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+
+        {/* Add resource hints for better performance */}
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
       </head>
       <body className="antialiased font-primary">
         <QueryProvider>

@@ -2,8 +2,8 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Rating } from "@smastrom/react-rating";
 import "@smastrom/react-rating/style.css";
+import { Check, Edit, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { FaCheck, FaEdit, FaPlus, FaTimes, FaTrash } from "react-icons/fa";
 import Swal from "sweetalert2";
 
 const ReviewManagement = () => {
@@ -351,7 +351,7 @@ const ReviewManagement = () => {
               onClick={() => setShowAddForm(!showAddForm)}
               className="flex items-center justify-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-xs sm:text-sm font-medium transition-colors"
             >
-              <FaPlus className="mr-1 sm:mr-2 w-3 h-3 sm:w-4 sm:h-4" />{" "}
+              <Plus className="mr-1 sm:mr-2 w-3 h-3 sm:w-4 sm:h-4" />{" "}
               {texts.addReview}
             </button>
 
@@ -648,7 +648,7 @@ const ReviewManagement = () => {
                             onClick={() => handleApprove(review._id, true)}
                             className="flex items-center px-2 sm:px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-[10px] sm:text-xs font-medium transition-colors"
                           >
-                            <FaCheck className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
+                            <Check className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
                             {texts.approve}
                           </button>
                         )}
@@ -658,7 +658,7 @@ const ReviewManagement = () => {
                             onClick={() => handleApprove(review._id, false)}
                             className="flex items-center px-2 sm:px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-[10px] sm:text-xs font-medium transition-colors"
                           >
-                            <FaTimes className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
+                            <X className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
                             {texts.reject}
                           </button>
                         )}
@@ -667,7 +667,7 @@ const ReviewManagement = () => {
                           onClick={() => handleEdit(review)}
                           className="flex items-center px-2 sm:px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-[10px] sm:text-xs font-medium transition-colors"
                         >
-                          <FaEdit className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
+                          <Edit className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
                           {texts.edit}
                         </button>
 
@@ -675,7 +675,7 @@ const ReviewManagement = () => {
                           onClick={() => handleDelete(review._id)}
                           className="flex items-center px-2 sm:px-3 py-1 bg-red-600 text-white rounded hover:bg-red-600 text-[10px] sm:text-xs font-medium transition-colors"
                         >
-                          <FaTrash className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
+                          <Trash2 className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
                           {texts.delete}
                         </button>
                       </div>

@@ -1,15 +1,15 @@
 "use client";
-import { useEffect, useState } from "react";
 import {
-  FaCheck,
-  FaDownload,
-  FaEdit,
-  FaSearch,
-  FaTimes,
-  FaTrash,
-  FaUpload,
-  FaUser,
-} from "react-icons/fa";
+  Check,
+  Download,
+  Edit,
+  Search,
+  Trash2,
+  Upload,
+  User,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 const UniqueNameHandle = () => {
@@ -462,7 +462,7 @@ const UniqueNameHandle = () => {
                 disabled={uploading || !bulkText.trim()}
                 className="flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-sm"
               >
-                <FaUpload className="mr-2" />
+                <Upload className="mr-2" />
                 {uploading ? "Uploading..." : "Upload Names"}
               </button>
 
@@ -470,7 +470,7 @@ const UniqueNameHandle = () => {
                 onClick={handleExport}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
               >
-                <FaDownload className="mr-2" />
+                <Download className="mr-2" />
                 Export CSV
               </button>
 
@@ -478,7 +478,7 @@ const UniqueNameHandle = () => {
                 onClick={handleClearAll}
                 className="flex items-center px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
               >
-                <FaTrash className="mr-2" />
+                <Trash2 className="mr-2" />
                 Clear All
               </button>
             </div>
@@ -489,7 +489,7 @@ const UniqueNameHandle = () => {
         <div className="bg-[#0c171c] rounded-lg border border-[#212121] p-4 mb-6">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             <div className="relative flex-1 max-w-md">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search names..."
@@ -579,14 +579,14 @@ const UniqueNameHandle = () => {
                             className="p-1 text-green-400 hover:text-green-300"
                             title="Save"
                           >
-                            <FaCheck size={14} />
+                            <Check size={14} />
                           </button>
                           <button
                             onClick={() => setEditingName(null)}
                             className="p-1 text-red-400 hover:text-red-300"
                             title="Cancel"
                           >
-                            <FaTimes size={14} />
+                            <X size={14} />
                           </button>
                         </>
                       ) : (
@@ -596,7 +596,7 @@ const UniqueNameHandle = () => {
                             className="p-1 text-blue-400 hover:text-blue-300"
                             title="Edit Name"
                           >
-                            <FaEdit size={14} />
+                            <Edit size={14} />
                           </button>
                           <button
                             onClick={() =>
@@ -613,14 +613,14 @@ const UniqueNameHandle = () => {
                                 : "Mark as Used"
                             }
                           >
-                            <FaUser size={14} />
+                            <User size={14} />
                           </button>
                           <button
                             onClick={() => handleDelete(name._id)}
                             className="p-1 text-red-400 hover:text-red-300"
                             title="Delete"
                           >
-                            <FaTrash size={14} />
+                            <Trash2 size={14} />
                           </button>
                         </>
                       )}
