@@ -95,7 +95,6 @@ export async function DELETE(request) {
       });
     } catch (unlinkError) {
       // File might not exist, which is okay
-      console.log("File not found for deletion:", filePath);
       return NextResponse.json({
         success: true,
         message: "Image deleted successfully",

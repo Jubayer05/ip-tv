@@ -1,4 +1,5 @@
 import { connectToDatabase } from "@/lib/db";
+import { getTemplateIdByAdultChannels } from "@/lib/iptvUtils";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
 import Settings from "@/models/Settings";
@@ -57,7 +58,7 @@ export async function POST(request) {
 
       // IPTV Configuration
       lineType = 0,
-      templateId = 2,
+      // Remove templateId from input, we'll auto-assign it
       macAddresses = [],
       adultChannelsConfig = [],
 
@@ -80,13 +81,19 @@ export async function POST(request) {
       );
     }
 
-    // Validate templateId - ensure it's a valid template ID
-    const validTemplateIds = [1, 2, 3, 4, 5, 6, 7, 8];
-    if (!validTemplateIds.includes(templateId)) {
-      return NextResponse.json(
-        { error: "Invalid templateId. Must be 1-8" },
-        { status: 400 }
+    // Auto-assign templateId based on adult channels
+    // For M3U: use the single adultChannels boolean
+    // For MAG/Enigma2: check if ANY device has adult channels enabled
+    let templateId;
+    if (lineType === 0) {
+      // M3U
+      templateId = getTemplateIdByAdultChannels(adultChannels);
+    } else {
+      // MAG/Enigma2 - check if any device has adult channels
+      const hasAnyAdultChannels = adultChannelsConfig.some(
+        (enabled) => enabled
       );
+      templateId = getTemplateIdByAdultChannels(hasAnyAdultChannels);
     }
 
     // Validate MAC addresses for MAG/Enigma2
@@ -280,7 +287,7 @@ export async function POST(request) {
       finalTotal = Math.round((discountedTotal + adultFee) * 100) / 100;
     }
 
-    // Update the orderProducts to include generatedCredentials only if provided
+    // Update the orderProducts to use auto-assigned templateId
     const orderProducts = [
       {
         productId: product._id,
@@ -293,7 +300,7 @@ export async function POST(request) {
 
         // IPTV Configuration
         lineType: Number(lineType),
-        templateId: Number(templateId),
+        templateId: Number(templateId), // Use auto-assigned templateId
         macAddresses: lineType > 0 ? macAddresses : [],
         adultChannelsConfig: lineType > 0 ? adultChannelsConfig : [],
 
@@ -391,10 +398,6 @@ export async function POST(request) {
             const currentEarnings = Number(referrer.referral?.earnings || 0);
             referrer.referral.earnings = currentEarnings + commission;
             await referrer.save();
-
-            console.log(
-              `Added $${commission} commission to referrer ${referrer.email}. New total earnings: $${referrer.referral.earnings}`
-            );
           }
         }
       } catch (commissionError) {

@@ -9,10 +9,8 @@ export const useDeviceLogin = () => {
 
   const recordDeviceLogin = async () => {
     try {
-      console.log("Attempting to record device login...");
       const token = await getAuthToken();
       if (!token) {
-        console.log("No auth token available, skipping device login recording");
         return;
       }
 
@@ -20,11 +18,6 @@ export const useDeviceLogin = () => {
       const sessionId = `session_${Date.now()}_${Math.random()
         .toString(36)
         .substr(2, 9)}`;
-
-      console.log(
-        "Recording device login with token:",
-        token.substring(0, 20) + "..."
-      );
 
       const response = await fetch("/api/device-login", {
         method: "POST",
@@ -44,7 +37,6 @@ export const useDeviceLogin = () => {
       }
 
       const result = await response.json();
-      console.log("Device login recorded successfully:", result);
 
       // Don't refresh here - let the component handle it
       return result;
@@ -55,17 +47,14 @@ export const useDeviceLogin = () => {
 
   const fetchDeviceLogins = useCallback(async () => {
     try {
-      console.log("Fetching device logins...");
       setLoading(true);
       setError(null);
 
       const token = await getAuthToken();
       if (!token) {
-        console.log("No auth token available for fetching device logins");
         return;
       }
 
-      console.log("Fetching with token:", token.substring(0, 20) + "...");
 
       const response = await fetch("/api/device-login?limit=15", {
         headers: {
@@ -78,7 +67,6 @@ export const useDeviceLogin = () => {
       }
 
       const data = await response.json();
-      console.log("Device logins fetched:", data);
       setDeviceLogins(data.data || []);
     } catch (error) {
       console.error("Fetch device logins error:", error);
@@ -116,7 +104,6 @@ export const useDeviceLogin = () => {
   // Fetch device logins when authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      console.log("User is authenticated, fetching device logins...");
       fetchDeviceLogins();
     }
   }, [isAuthenticated, fetchDeviceLogins]);

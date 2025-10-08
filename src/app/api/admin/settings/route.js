@@ -32,7 +32,7 @@ export async function PUT(request) {
     await connectToDatabase();
 
     const body = await request.json();
-    const { addons, apiKeys, smtp, otherApiKeys } = body;
+    const { addons, apiKeys, smtp, otherApiKeys, metaManagement } = body;
 
     // Validate API keys structure
     if (apiKeys) {
@@ -128,6 +128,15 @@ export async function PUT(request) {
       await Settings.findOneAndUpdate(
         {},
         { $set: { addons: addons } },
+        { upsert: true, new: true }
+      );
+    }
+
+    // Handle meta management settings
+    if (metaManagement) {
+      await Settings.findOneAndUpdate(
+        {},
+        { $set: { metaManagement } },
         { upsert: true, new: true }
       );
     }

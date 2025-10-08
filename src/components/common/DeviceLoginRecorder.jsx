@@ -27,7 +27,6 @@ export default function DeviceLoginRecorder() {
 
         const token = getAuthToken();
         if (!token) {
-          console.log("No auth token available for device login recording");
           return;
         }
 
@@ -42,7 +41,6 @@ export default function DeviceLoginRecorder() {
           .toString(36)
           .substr(2, 9)}`;
 
-        console.log("Recording device login for user:", user.email);
 
         const response = await fetch("/api/device-login", {
           method: "POST",
@@ -58,7 +56,6 @@ export default function DeviceLoginRecorder() {
 
         if (response.ok) {
           const result = await response.json();
-          console.log("Device login recorded successfully:", result);
           hasRecorded.current = true;
         } else {
           const errorData = await response.json();

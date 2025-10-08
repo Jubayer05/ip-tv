@@ -52,7 +52,6 @@ class HoodPayService {
     );
 
     const data = await response.json();
-    console.log("HoodPay response:", { status: response.status, data });
 
     if (!response.ok) {
       throw new Error(
@@ -83,8 +82,6 @@ class HoodPayService {
       throw new Error("HOODPAY_BUSINESS_ID not configured");
     }
 
-    console.log(`Fetching HoodPay payment: ${paymentId}`);
-
     // Use the correct endpoint with business ID
     const response = await fetch(
       `${this.baseUrl}/businesses/${this.businessId}/payments/${paymentId}`,
@@ -98,13 +95,9 @@ class HoodPayService {
       }
     );
 
-    console.log(
-      `HoodPay status response: ${response.status} ${response.statusText}`
-    );
 
     // Check if response is empty or not JSON
     const text = await response.text();
-    console.log(`HoodPay raw response:`, text);
 
     if (!text) {
       throw new Error("Empty response from HoodPay API");

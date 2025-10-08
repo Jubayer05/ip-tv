@@ -50,7 +50,6 @@ class PayGateService {
     );
 
     const data = await response.json();
-    console.log("PayGate wallet response:", { status: response.status, data });
 
     if (!response.ok) {
       throw new Error(
@@ -91,7 +90,6 @@ class PayGateService {
     );
 
     const data = await response.json();
-    console.log("PayGate convert response:", { status: response.status, data });
 
     if (!response.ok) {
       throw new Error(
@@ -165,7 +163,6 @@ class PayGateService {
     );
 
     const data = await response.json();
-    console.log("PayGate status response:", { status: response.status, data });
 
     if (!response.ok) {
       throw new Error(

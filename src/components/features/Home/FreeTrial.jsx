@@ -22,7 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 const FreeTrialCard = () => {
   const { user } = useAuth();
   const { translate } = useLanguage();
-  const [selectedTemplate, setSelectedTemplate] = useState(2); // Europe template (ID 2)
+  const [selectedTemplate, setSelectedTemplate] = useState(1271); // Europe template (ID 2)
   const [selectedLineType, setSelectedLineType] = useState(0);
   const [macAddress, setMacAddress] = useState("");
   const [loading, setLoading] = useState(false);

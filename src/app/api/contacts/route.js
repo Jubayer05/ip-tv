@@ -31,7 +31,6 @@ async function verifyRecaptcha(token) {
     );
 
     const data = await response.json();
-    console.log("reCAPTCHA verification response:", data);
     return data.success;
   } catch (error) {
     console.error("reCAPTCHA verification error:", error);
@@ -127,20 +126,12 @@ export async function POST(request) {
     await connectToDatabase();
 
     const body = await request.json();
-    console.log("Received contact form data:", body);
 
     const { firstName, lastName, email, subject, description, recaptchaToken } =
       body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !subject || !description) {
-      console.log("Missing required fields:", {
-        firstName,
-        lastName,
-        email,
-        subject,
-        description,
-      });
       return NextResponse.json(
         { success: false, error: "All fields are required" },
         { status: 400 }
@@ -149,18 +140,13 @@ export async function POST(request) {
 
     // Verify reCAPTCHA if token is provided
     if (recaptchaToken) {
-      console.log("Verifying reCAPTCHA token...");
       const recaptchaValid = await verifyRecaptcha(recaptchaToken);
       if (!recaptchaValid) {
-        console.log("reCAPTCHA verification failed");
         return NextResponse.json(
           { success: false, error: "reCAPTCHA verification failed" },
           { status: 400 }
         );
       }
-      console.log("reCAPTCHA verification successful");
-    } else {
-      console.log("No reCAPTCHA token provided, skipping verification");
     }
 
     // Create new contact
@@ -173,7 +159,6 @@ export async function POST(request) {
     });
 
     await contact.save();
-    console.log("Contact saved successfully:", contact._id);
 
     // Send email notification to admin
     try {
@@ -184,7 +169,6 @@ export async function POST(request) {
         subject,
         description,
       });
-      console.log("Contact form email sent successfully");
     } catch (emailError) {
       console.error("Failed to send contact form email:", emailError);
       // Don't fail the request if email sending fails

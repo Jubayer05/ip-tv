@@ -51,9 +51,6 @@ async function createIPTVAccount({
     requestPayload.mac = macAddress;
   }
 
-  console.log("Creating IPTV account with payload:", requestPayload);
-  console.log("IPTV API Key exists:", !!iptvApiKey);
-
   try {
     const response = await fetch("http://zlive.cc/api/create-account", {
       method: "POST",
@@ -72,8 +69,6 @@ async function createIPTVAccount({
     } catch (error) {
       throw new Error(`Invalid API response: ${responseText}`);
     }
-
-    console.log("IPTV API Parsed response:", data);
 
     if (data.code !== 200) {
       throw new Error(
@@ -105,10 +100,7 @@ export async function POST(request) {
     const body = await request.json();
     const { orderNumber } = body;
 
-    console.log("Redownload credentials request:", { orderNumber });
-
     if (!orderNumber) {
-      console.log("Error: Order number is required");
       return NextResponse.json(
         { error: "Order number is required" },
         { status: 400 }
@@ -122,28 +114,12 @@ export async function POST(request) {
       orderNumber,
     });
 
-    console.log(
-      "Found order:",
-      order
-        ? {
-            orderNumber: order.orderNumber,
-            paymentStatus: order.paymentStatus,
-            hasCredentials: order.iptvCredentials?.length > 0,
-          }
-        : "Not found"
-    );
-
     if (!order) {
-      console.log("Error: Order not found");
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
     // Check if order is completed
     if (order.paymentStatus !== "completed") {
-      console.log(
-        "Error: Order payment not completed, status:",
-        order.paymentStatus
-      );
       return NextResponse.json(
         { error: "Order payment not completed" },
         { status: 400 }
@@ -152,8 +128,6 @@ export async function POST(request) {
 
     // If credentials don't exist, create them
     if (!order.iptvCredentials || order.iptvCredentials.length === 0) {
-      console.log("No credentials found, creating new ones...");
-
       const product = order.products[0]; // Assuming single product per order
       const credentials = [];
 
@@ -229,8 +203,6 @@ export async function POST(request) {
         // Update order with credentials
         order.iptvCredentials = credentials;
         await order.save();
-
-        console.log("Successfully created IPTV credentials");
       } catch (iptvError) {
         console.error("IPTV account creation failed:", iptvError);
 
@@ -255,14 +227,11 @@ export async function POST(request) {
     });
 
     if (!emailSent) {
-      console.log("Error: Failed to send credentials email");
       return NextResponse.json(
         { error: "Failed to send credentials email" },
         { status: 500 }
       );
     }
-
-    console.log("Success: Credentials sent successfully");
     return NextResponse.json({
       success: true,
       message: "IPTV credentials have been sent to your email address",

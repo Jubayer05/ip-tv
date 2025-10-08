@@ -112,7 +112,6 @@ export default function SocialLogin({ onSuccess, onError, loading = false }) {
           await generateAuthToken(data.user);
 
           // Record device login BEFORE redirecting
-          console.log("Recording device login for social login...");
           await recordDeviceLogin();
 
           // Force page reload to trigger AuthContext re-initialization

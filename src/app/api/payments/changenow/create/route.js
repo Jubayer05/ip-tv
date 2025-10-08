@@ -91,8 +91,6 @@ export async function POST(request) {
       estimatedAmount = Number(finalAmount) * 0.00002;
     }
 
-    console.log(paymentSettings);
-
     // Use wallet address from database or fallback
     const walletAddress = paymentSettings?.merchantId;
 

@@ -92,7 +92,6 @@ const DeviceLoginTable = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      console.log("Fetching device logins...");
       fetchDeviceLogins();
     }
   }, [isAuthenticated, fetchDeviceLogins]);
@@ -247,11 +246,6 @@ const DeviceLoginTable = () => {
       ),
     },
   ];
-
-  // Debug log to see what data we have
-  console.log("DeviceLoginTable - deviceLogins:", deviceLogins);
-  console.log("DeviceLoginTable - loading:", loading);
-  console.log("DeviceLoginTable - error:", error);
 
   if (loading) {
     return (

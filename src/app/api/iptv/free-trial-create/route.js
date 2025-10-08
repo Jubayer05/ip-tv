@@ -51,7 +51,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { key, username, password, templateId, lineType, mac, visitorId } =
+    const { key, username, password, lineType, mac, visitorId, templateId } =
       body;
 
     // If visitorId provided, block if already used on this device/browser
@@ -67,18 +67,9 @@ export async function POST(request) {
     }
 
     // Validate required fields
-    if (!key || !templateId || lineType === undefined) {
+    if (!key || lineType === undefined || !templateId) {
       return NextResponse.json(
-        { error: "API key, templateId, and lineType are required" },
-        { status: 400 }
-      );
-    }
-
-    // Validate templateId based on API documentation
-    const validTemplateIds = [1, 2, 3, 4, 5, 6, 7, 8];
-    if (!validTemplateIds.includes(templateId)) {
-      return NextResponse.json(
-        { error: "Invalid templateId. Must be 1-8" },
+        { error: "API key, lineType, and templateId are required" },
         { status: 400 }
       );
     }
@@ -102,20 +93,14 @@ export async function POST(request) {
     // Prepare request payload
     const requestPayload = {
       key,
-      templateId,
       lineType,
+      templateId, // Add this line
     };
 
     // Add optional fields only if they have values
     if (username) requestPayload.username = username;
     if (password) requestPayload.password = password;
     if (mac) requestPayload.mac = mac;
-
-    console.log("=== IPTV API Request Payload ===");
-    console.log(JSON.stringify(requestPayload, null, 2));
-
-    // Call external IPTV API
-    console.log("Calling IPTV API: http://zlive.cc/api/free-trail-create");
 
     const iptvResponse = await fetch("http://zlive.cc/api/free-trail-create", {
       method: "POST",
@@ -126,16 +111,8 @@ export async function POST(request) {
       body: JSON.stringify(requestPayload),
     });
 
-    console.log("=== IPTV API Response Debug ===");
-    console.log("Response Status:", iptvResponse.status);
-    console.log(
-      "Response Headers:",
-      Object.fromEntries(iptvResponse.headers.entries())
-    );
-
     // Get response text first to debug
     const responseText = await iptvResponse.text();
-    console.log("Raw Response Text:", responseText);
 
     // Check if response is HTML (error page)
     if (
@@ -205,17 +182,13 @@ export async function POST(request) {
             "freeTrial.trialData": {
               lineId: "FRAUD_DETECTED",
               username: "FRAUD_DETECTED",
-              templateId: 0,
+              templateId: templateId, // Changed from hardcoded 1271
               templateName: "Fraud Detection",
               lineType: 0,
               expireDate: new Date(),
             },
           },
         });
-
-        console.log(
-          `FRAUD DETECTED: User ${authResult.user.email} tried to create trial on device ${visitorId} that already used trial`
-        );
 
         return NextResponse.json(
           {
@@ -240,8 +213,9 @@ export async function POST(request) {
               trialUsedAt: new Date(),
               "trialData.lineId": iptvData.data.lineId || iptvData.data.id,
               "trialData.username": iptvData.data.username || username,
-              "trialData.templateId": templateId,
-              "trialData.templateName": `Template ${templateId}`,
+              "trialData.templateId": templateId, // Changed from hardcoded 1271
+              "trialData.templateName":
+                iptvData.data.templateName || `Template ${templateId}`,
               "trialData.lineType": lineType,
               "trialData.expireDate": expireUnix
                 ? new Date(expireUnix * 1000)
@@ -261,8 +235,8 @@ export async function POST(request) {
         lineId: iptvData.data.lineId || iptvData.data.id,
         username: iptvData.data.username || username,
         password: iptvData.data.password, // Add password from IPTV response
-        templateId: templateId,
-        templateName: `Template ${templateId}`,
+        templateId: templateId, // Changed from hardcoded 1271
+        templateName: iptvData.data.templateName || `Template ${templateId}`,
         lineType: lineType,
         expire: iptvData.data.expire || iptvData.data.expireDate,
       });

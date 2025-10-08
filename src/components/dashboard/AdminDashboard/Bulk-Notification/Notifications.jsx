@@ -179,8 +179,6 @@ const Notifications = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log(formData);
-
     if (!formData.title.trim() || isRichTextEmpty(formData.message)) {
       Swal.fire({
         icon: "error",

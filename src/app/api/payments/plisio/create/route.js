@@ -90,8 +90,6 @@ export async function POST(request) {
     // Find existing order or create new one
     let order = await Order.findOne({ orderNumber });
 
-    console.log("ORDER NOT FOUND:" + order);
-
     if (!order) {
       // Only validate product fields if we're creating a new order
       if (!productId || !variantId) {

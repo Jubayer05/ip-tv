@@ -86,33 +86,21 @@ export async function POST(request) {
       );
     }
 
-    console.log("Free trial upgrade API called:", {
-      key: process.env.ZLIVE_API_KEY || "your_api_key_here",
-      username: username,
-      password: password,
-      action: "update",
-      val: val,
-      con: con,
-    });
-
     // Call external IPTV API
-    const iptvResponse = await fetch(
-       "http://zlive.cc/api/free-trail-upgrade",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          key,
-          username,
-          password,
-          action,
-          val,
-          con,
-        }),
-      }
-    );
+    const iptvResponse = await fetch("http://zlive.cc/api/free-trail-upgrade", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        key,
+        username,
+        password,
+        action,
+        val,
+        con,
+      }),
+    });
 
     if (!iptvResponse.ok) {
       const errorData = await iptvResponse.json();

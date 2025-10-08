@@ -43,10 +43,7 @@ class NOWPaymentsService {
       customer_email: customerEmail || "",
     };
 
-    console.log(
-      "NOWPayments request payload:",
-      JSON.stringify(payload, null, 2)
-    );
+
 
     const response = await fetch(`${this.baseUrl}/payment`, {
       method: "POST",
@@ -59,7 +56,6 @@ class NOWPaymentsService {
     });
 
     const data = await response.json();
-    console.log("NOWPayments response:", { status: response.status, data });
 
     if (!response.ok) {
       throw new Error(

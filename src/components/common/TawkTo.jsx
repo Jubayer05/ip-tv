@@ -27,12 +27,6 @@ export default function TawkTo() {
 
         setPropertyId(pid);
         setWidgetId(wid);
-
-        console.log("TawkTo settings loaded:", {
-          enabled: !!json?.data?.addons?.tawkTo,
-          propertyId: pid,
-          widgetId: wid,
-        });
       } catch (error) {
         console.error("Failed to load TawkTo settings:", error);
       }

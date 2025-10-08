@@ -15,28 +15,12 @@ export async function GET(request, { params }) {
       );
     }
 
-    console.log("Looking for order with orderNumber:", orderNumber); // Add this debug log
-
     await connectToDatabase();
 
     const order = await Order.findOne({ orderNumber });
     if (!order) {
-      console.log("Order not found in database. Available orders:"); // Add debug logging
-      const allOrders = await Order.find({}).select("orderNumber").limit(10);
-      console.log(
-        "Sample orders:",
-        allOrders.map((o) => o.orderNumber)
-      );
-
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
-
-    console.log("Order found:", {
-      id: order._id,
-      orderNumber: order.orderNumber,
-      userId: order.userId,
-      paymentStatus: order.paymentStatus,
-    }); // Add this debug log
 
     let plisioStatus = null;
 
@@ -115,14 +99,7 @@ export async function GET(request, { params }) {
                   );
               }
 
-              console.log("Free trial upgrade API called:", {
-                key: process.env.ZLIVE_API_KEY || "your_api_key_here",
-                username: user.freeTrial.trialData.username,
-                password: user.freeTrial.trialData.password,
-                action: "update",
-                val: packageId,
-                con: deviceCount,
-              });
+             
 
               // Call the free trial upgrade API
               const upgradeResponse = await fetch(
@@ -145,7 +122,6 @@ export async function GET(request, { params }) {
 
               if (upgradeResponse.ok) {
                 const upgradeData = await upgradeResponse.json();
-                console.log("Free trial upgraded successfully:", upgradeData);
 
                 // Optionally update order with upgrade information
                 order.plisioPayment.upgradeAttempted = true;

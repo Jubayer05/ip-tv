@@ -196,7 +196,6 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
 
         if (iptvResponse.ok) {
           const iptvData = await iptvResponse.json();
-          console.log("IPTV accounts created:", iptvData);
         } else {
           console.error(
             "Failed to create IPTV accounts:",

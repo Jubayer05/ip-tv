@@ -32,10 +32,6 @@ export async function POST(req) {
     const libretranslateSource =
       source === "auto" ? "auto" : libretranslateLanguageMap[source] || source;
 
-    console.log(
-      `LibreTranslate: Translating from ${libretranslateSource} to ${libretranslateTarget}`
-    );
-
     const translateOne = async (text) => {
       return await translateWithLibreTranslate(
         text,
@@ -79,8 +75,6 @@ async function translateWithLibreTranslate(text, source, target) {
     format: "text",
   };
 
-  console.log(`LibreTranslate request:`, requestBody);
-
   const response = await fetch(`${LIBRETRANSLATE_URL}/translate`, {
     method: "POST",
     headers: {
@@ -102,7 +96,6 @@ async function translateWithLibreTranslate(text, source, target) {
   }
 
   const data = await response.json();
-  console.log("LibreTranslate Response:", data);
 
   // Validate response structure
   if (!data.translatedText) {

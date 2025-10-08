@@ -105,9 +105,6 @@ export async function GET(request) {
     let orders = [];
 
     if (isAdminUser && isAdmin) {
-      // Admin users can see all orders
-      console.log("Loading all orders for admin user");
-
       // Build query for admin
       if (status) {
         query.paymentStatus = status;

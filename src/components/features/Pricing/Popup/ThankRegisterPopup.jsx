@@ -159,7 +159,6 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
 
         if (iptvResponse.ok) {
           const iptvData = await iptvResponse.json();
-          console.log("IPTV accounts created:", iptvData);
         } else {
           console.error(
             "Failed to create IPTV accounts:",

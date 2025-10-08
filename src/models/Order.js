@@ -16,7 +16,7 @@ const OrderProductSchema = new mongoose.Schema(
 
     // IPTV Configuration
     lineType: { type: Number, default: 0 }, // 0: M3U, 1: MAG, 2: Enigma2
-    templateId: { type: Number, default: 2 },
+    templateId: { type: Number, default: 1271 }, // Default to NoAdult template
     macAddresses: [{ type: String, default: "" }], // For MAG/Enigma2
     adultChannelsConfig: [{ type: Boolean, default: false }], // Per-device adult config
   },
@@ -355,13 +355,15 @@ const OrderSchema = new mongoose.Schema(
 
     // IPTV Configuration
     lineType: { type: Number, default: 0 },
-    templateId: { type: Number, default: 2 },
+    templateId: { type: Number, default: 1271 }, // Default to NoAdult template
     macAddresses: [{ type: String }],
     adultChannelsConfig: [{ type: Boolean }],
-    generatedCredentials: [{
-      username: String,
-      password: String
-    }],
+    generatedCredentials: [
+      {
+        username: String,
+        password: String,
+      },
+    ],
     val: { type: Number }, // Package ID parameter
     con: { type: Number }, // Device count parameter
   },

@@ -84,7 +84,6 @@ export async function POST(request) {
         "usdt", // From USDT
         "eth" // To BTC
       );
-      console.log("Estimate result:", estimateResult); // Debug log
       estimatedAmount = estimateResult?.data?.estimatedAmount || 0;
     } catch (estimateError) {
       console.warn(

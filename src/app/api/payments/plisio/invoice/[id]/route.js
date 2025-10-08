@@ -24,10 +24,6 @@ export async function GET(request, { params }) {
     const order = await Order.findOne({ "plisioPayment.invoiceId": id });
 
     if (order) {
-      console.log(
-        `Syncing order ${order._id} with Plisio invoice: ${invoice.status}`
-      );
-
       await applyPaymentUpdate({
         order,
         gatewayKey: "plisioPayment",
@@ -37,10 +33,6 @@ export async function GET(request, { params }) {
           actualSum: invoice.actual_sum || "0.00000000",
         },
       });
-
-      console.log(
-        `Order ${order._id} synced: paymentStatus=${order.paymentStatus}, status=${order.status}`
-      );
     } else {
       console.warn(`No order found for Plisio invoice ID: ${id}`);
     }

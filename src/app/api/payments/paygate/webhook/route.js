@@ -27,8 +27,6 @@ export async function GET(request) {
       address_in: searchParams.get("address_in"), // Should match polygon_address_in from step 1
     };
 
-    console.log("PayGate callback received:", callbackData);
-
     // Validate required PayGate parameters
     if (!callbackData.value_coin || !callbackData.address_in) {
       console.warn("Missing required PayGate callback parameters:", callbackData);
@@ -91,7 +89,6 @@ export async function GET(request) {
               user.balance = Number(user.balance || 0) + creditAmount;
               await user.save();
               
-              console.log(`Credited ${creditAmount} to user ${userId} balance`);
             }
           }
         }
@@ -123,7 +120,6 @@ export async function GET(request) {
           user.balance = Number(user.balance || 0) + creditAmount;
           await user.save();
           
-          console.log(`Credited ${creditAmount} to user ${deposit.userId} balance from deposit`);
         }
       }
     }

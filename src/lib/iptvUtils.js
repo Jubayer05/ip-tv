@@ -6,16 +6,10 @@ export const IPTV_PACKAGES = {
   5: "12 Month Subscription",
 };
 
-// IPTV Template IDs
+// IPTV Template IDs - Auto-selected based on Adult Channels
 export const IPTV_TEMPLATES = {
-  1: "Bouquet Sorting in Americas",
-  2: "Bouquet Sorting in Europe",
-  3: "Bouquet Sorting in Middle East",
-  4: "Bouquet Sorting in Spain",
-  5: "Channels of Arab Countries",
-  6: "Channels of Spain",
-  7: "Channels of Americas",
-  8: "Channels of Europe",
+  1271: "NoAdult", // Used when Adult Channels is OFF
+  1266: "All", // Used when Adult Channels is ON
 };
 
 // Line Types
@@ -44,4 +38,9 @@ export function validateDeviceCount(count) {
 
 export function validateStatusValue(val) {
   return [0, 1].includes(val);
+}
+
+// Helper function to get templateId based on adult channels setting
+export function getTemplateIdByAdultChannels(adultChannels) {
+  return adultChannels ? 1266 : 1271;
 }

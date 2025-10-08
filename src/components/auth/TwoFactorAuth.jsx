@@ -112,7 +112,6 @@ export default function TwoFactorAuth({ email, onBack, visitorId }) {
 
       if (result.success) {
         // Record device login BEFORE completing 2FA login
-        console.log("Recording device login for 2FA completion...");
         await recordDeviceLogin();
 
         const loginResult = await complete2FALogin(email);

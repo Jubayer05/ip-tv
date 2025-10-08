@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
 import { sendIPTVCredentialsEmail } from "@/lib/email";
+import { getTemplateIdByAdultChannels } from "@/lib/iptvUtils";
 import { getServerIptvApiKey } from "@/lib/serverApiKeys";
 import Order from "@/models/Order";
 
@@ -157,10 +158,6 @@ async function createIPTVAccount({
     throw new Error("IPTV API key not configured in settings");
   }
 
-  console.log("=== CREATING IPTV ACCOUNT (Two-Step Process) ===");
-  console.log("Step 1: Create free trial account");
-  console.log("Step 2: Upgrade to official account");
-
   // Step 1: Create free trial account
   const freeTrialPayload = {
     key: iptvApiKey,
@@ -175,8 +172,6 @@ async function createIPTVAccount({
     freeTrialPayload.mac = macAddress;
   }
 
-  console.log("Free trial payload:", JSON.stringify(freeTrialPayload, null, 2));
-
   try {
     // Create free trial account
     const trialResponse = await fetch("http://zlive.cc/api/free-trail-create", {
@@ -189,11 +184,8 @@ async function createIPTVAccount({
     });
 
     const trialResponseText = await trialResponse.text();
-    console.log("Free trial response status:", trialResponse.status);
-    console.log("Free trial raw response:", trialResponseText);
 
     const trialData = JSON.parse(trialResponseText);
-    console.log("Free trial parsed response:", trialData);
 
     if (trialData.code !== 200) {
       throw new Error(
@@ -203,11 +195,6 @@ async function createIPTVAccount({
       );
     }
 
-    console.log("✅ Free trial account created successfully");
-
-    // Step 2: Upgrade to official account
-    console.log("Upgrading to official account...");
-
     const upgradePayload = {
       key: iptvApiKey,
       username: username,
@@ -216,8 +203,6 @@ async function createIPTVAccount({
       val: packageId, // Use val parameter or fallback to packageId
       con: deviceCount, // Use con parameter or fallback to 1
     };
-
-    console.log("Upgrade payload:", JSON.stringify(upgradePayload, null, 2));
 
     const upgradeResponse = await fetch(
       "http://zlive.cc/api/free-trail-upgrade",
@@ -232,11 +217,8 @@ async function createIPTVAccount({
     );
 
     const upgradeResponseText = await upgradeResponse.text();
-    console.log("Upgrade response status:", upgradeResponse.status);
-    console.log("Upgrade raw response:", upgradeResponseText);
 
     const upgradeData = JSON.parse(upgradeResponseText);
-    console.log("Upgrade parsed response:", upgradeData);
 
     if (upgradeData.code !== 200) {
       throw new Error(
@@ -245,8 +227,6 @@ async function createIPTVAccount({
         }`
       );
     }
-
-    console.log("✅ Account upgraded to official successfully");
 
     // Return the trial data (which contains the account info) with updated package info
     return {
@@ -298,13 +278,11 @@ export async function handlePaymentCompleted(orderNumber) {
 
     // Check if order payment is completed
     if (order.paymentStatus !== "completed") {
-      console.log(`Order ${orderNumber} payment not completed yet`);
       return { success: false, error: "Payment not completed" };
     }
 
     // Check if IPTV credentials already exist
     if (order.iptvCredentials && order.iptvCredentials.length > 0) {
-      console.log(`IPTV credentials already exist for order ${orderNumber}`);
 
       // Send email if not already sent
       if (!order.credentialsEmailSent) {
@@ -330,6 +308,11 @@ export async function handlePaymentCompleted(orderNumber) {
       // Use the generated credentials from the order if available, otherwise generate new ones
       const generatedCredentials = product.generatedCredentials || [];
 
+      // Ensure templateId is set correctly based on adult channels
+      const templateId =
+        product.templateId ||
+        getTemplateIdByAdultChannels(product.adultChannels);
+
       // Create credentials based on line type and quantity
       if (product.lineType === 0) {
         // M3U
@@ -350,7 +333,7 @@ export async function handlePaymentCompleted(orderNumber) {
         const iptvData = await createIPTVAccount({
           username,
           password,
-          templateId: product.templateId,
+          templateId: templateId, // Use the validated templateId
           lineType: product.lineType,
           macAddress: null,
           durationMonths: product.duration,
@@ -363,7 +346,7 @@ export async function handlePaymentCompleted(orderNumber) {
           expire: iptvData.expire,
           packageId: iptvData.package,
           packageName: iptvData.packageName,
-          templateId: product.templateId,
+          templateId: templateId, // Use the validated templateId
           templateName: iptvData.templateName,
           lineType: product.lineType,
           macAddress: "",
@@ -394,7 +377,7 @@ export async function handlePaymentCompleted(orderNumber) {
           const iptvData = await createIPTVAccount({
             username,
             password,
-            templateId: product.templateId,
+            templateId: templateId, // Use the validated templateId
             lineType: product.lineType,
             macAddress,
             durationMonths: product.duration,
@@ -407,7 +390,7 @@ export async function handlePaymentCompleted(orderNumber) {
             expire: iptvData.expire,
             packageId: iptvData.package,
             packageName: iptvData.packageName,
-            templateId: product.templateId,
+            templateId: templateId, // Use the validated templateId
             templateName: iptvData.templateName,
             lineType: product.lineType,
             macAddress,
@@ -434,9 +417,7 @@ export async function handlePaymentCompleted(orderNumber) {
         await order.save();
       }
 
-      console.log(
-        `Successfully created IPTV credentials for order ${orderNumber}`
-      );
+
 
       return {
         success: true,

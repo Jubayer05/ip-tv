@@ -27,7 +27,7 @@ export async function POST(request) {
     await connectToDatabase();
 
     const { token, password, firebaseUid } = await request.json();
-    console.log(firebaseUid);
+
     if (!token || !password) {
       return NextResponse.json(
         { error: "Token and password are required" },
@@ -40,8 +40,6 @@ export async function POST(request) {
       used: false,
       expiresAt: { $gt: new Date() },
     });
-
-    console.log(verificationTokenDoc);
 
     if (!verificationTokenDoc) {
       return NextResponse.json(

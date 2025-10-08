@@ -50,10 +50,6 @@ async function createIPTVAccount({
     throw new Error("IPTV API key not configured in settings");
   }
 
-  console.log("=== CREATING IPTV ACCOUNT (Two-Step Process) ===");
-  console.log("Step 1: Create free trial account");
-  console.log("Step 2: Upgrade to official account");
-
   // Step 1: Create free trial account with fallback candidates
   const validTemplateIds = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -100,7 +96,6 @@ async function createIPTVAccount({
   let chosenTemplateId = normalizeTemplateId(templateId);
 
   for (const cand of templateCandidates) {
-    console.log(`Trying free trial with templateId=${cand}`);
     const res = await tryCreateTrial(cand);
 
     if (res?.code === 200) {
@@ -122,14 +117,6 @@ async function createIPTVAccount({
     throw new Error(`Free trial creation failed: ${lastError}`);
   }
 
-  console.log(
-    "✅ Free trial account created successfully with templateId:",
-    chosenTemplateId
-  );
-
-  // Step 2: Upgrade to official account
-  console.log("Upgrading to official account...");
-
   const upgradePayload = {
     key: iptvApiKey,
     username,
@@ -138,8 +125,6 @@ async function createIPTVAccount({
     val: packageId, // Use val parameter or fallback to packageId
     con: deviceCount, // Use con parameter or fallback to 1
   };
-
-  console.log("Upgrade payload:", JSON.stringify(upgradePayload, null, 2));
 
   const upgradeResponse = await fetch(
     "http://zlive.cc/api/free-trail-upgrade",
@@ -154,8 +139,6 @@ async function createIPTVAccount({
   );
 
   const upgradeResponseText = await upgradeResponse.text();
-  console.log("Upgrade response status:", upgradeResponse.status);
-  console.log("Upgrade raw response:", upgradeResponseText);
 
   let upgradeData;
   try {
@@ -164,8 +147,6 @@ async function createIPTVAccount({
     throw new Error(`Invalid upgrade API response: ${upgradeResponseText}`);
   }
 
-  console.log("Upgrade parsed response:", upgradeData);
-
   if (upgradeData.code !== 200) {
     throw new Error(
       `Upgrade failed: ${
@@ -173,8 +154,6 @@ async function createIPTVAccount({
       }`
     );
   }
-
-  console.log("✅ Account upgraded to official successfully");
 
   // Return the trial data (which contains the account info) with updated package info
   return {
