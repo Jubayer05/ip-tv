@@ -1,7 +1,7 @@
 "use client";
 import RichTextEditor from "@/components/ui/RichTextEditor";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Upload, X, Edit, Plus, Save, Trash2 } from "lucide-react";
+import { Edit, Plus, Save, Trash2, Upload, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -416,8 +416,10 @@ const BlogManagement = () => {
   }
 
   return (
-    <div className="mt-4 sm:mt-6 font-secondary px-4 sm:px-6 lg:px-8">
-      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4">{texts.heading}</h2>
+    <div className="mt-4 sm:mt-6 font-secondary sm:px-6 lg:px-8">
+      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4">
+        {texts.heading}
+      </h2>
 
       <div className="border border-[#212121] bg-black rounded-[15px] p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
@@ -590,7 +592,9 @@ const BlogManagement = () => {
                     </div>
                   )}
 
-                  <p className="text-[10px] sm:text-xs text-gray-400">{texts.maxFileSize}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-400">
+                    {texts.maxFileSize}
+                  </p>
                 </div>
               </div>
 
@@ -632,7 +636,8 @@ const BlogManagement = () => {
                   type="submit"
                   className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center gap-2 text-xs sm:text-sm justify-center"
                 >
-                  <Save className="w-3 h-3 sm:w-4 sm:h-4" /> {editingBlog ? texts.update : texts.create}
+                  <Save className="w-3 h-3 sm:w-4 sm:h-4" />{" "}
+                  {editingBlog ? texts.update : texts.create}
                 </button>
                 <button
                   type="button"
@@ -652,7 +657,9 @@ const BlogManagement = () => {
         {/* Blogs List */}
         {blogs.length === 0 ? (
           <div className="text-center py-8 sm:py-12">
-            <p className="text-gray-400 text-base sm:text-lg">{texts.noBlogsFound}</p>
+            <p className="text-gray-400 text-base sm:text-lg">
+              {texts.noBlogsFound}
+            </p>
           </div>
         ) : (
           <div className="space-y-3 sm:space-y-4">
@@ -727,18 +734,22 @@ const BlogManagement = () => {
                       onClick={() => handleEdit(blog)}
                       className="px-2 sm:px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs sm:text-sm font-semibold flex items-center gap-1"
                     >
-                      <Edit className="w-2 h-2 sm:w-3 sm:h-3 sm:mr-1" /> {texts.edit}
+                      <Edit className="w-2 h-2 sm:w-3 sm:h-3 sm:mr-1" />{" "}
+                      {texts.edit}
                     </button>
 
                     <button
                       onClick={() => handleDelete(blog._id)}
                       className="px-2 sm:px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs sm:text-sm font-semibold flex items-center gap-1"
                     >
-                      <Trash2 className="w-2 h-2 sm:w-3 sm:h-3 sm:mr-1" /> {texts.delete}
+                      <Trash2 className="w-2 h-2 sm:w-3 sm:h-3 sm:mr-1" />{" "}
+                      {texts.delete}
                     </button>
                   </div>
 
-                  <div className="text-[10px] sm:text-xs text-gray-500 break-all">Slug: {blog.slug}</div>
+                  <div className="text-[10px] sm:text-xs text-gray-500 break-all">
+                    Slug: {blog.slug}
+                  </div>
                 </div>
               </div>
             ))}

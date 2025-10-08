@@ -335,7 +335,7 @@ const ReviewManagement = () => {
   }
 
   return (
-    <div className="mt-4 sm:mt-6 font-secondary px-4 sm:px-6 lg:px-8">
+    <div className="mt-4 sm:mt-6 font-secondary sm:px-6 lg:px-8">
       <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3 sm:mb-4">
         {texts.heading}
       </h2>
