@@ -81,6 +81,13 @@ export async function POST(request) {
       await user.save();
     }
 
+    console.log(
+      "Social login - generating token with secret length:",
+      process.env.JWT_SECRET?.length,
+      "first 8 chars:",
+      process.env.JWT_SECRET?.substring(0, 8)
+    );
+
     // Generate JWT access token
     const accessToken = jwt.sign(
       {

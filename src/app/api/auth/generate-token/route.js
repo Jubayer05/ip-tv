@@ -23,6 +23,14 @@ export async function POST(request) {
       );
     }
 
+    // Add this debug line
+    console.log(
+      "Generating token with secret length:",
+      secret.length,
+      "first 8 chars:",
+      secret.substring(0, 8)
+    );
+
     // Generate access token (7 days)
     const accessToken = jwt.sign(
       {
@@ -33,7 +41,7 @@ export async function POST(request) {
       secret,
       { expiresIn: "7d" }
     );
-
+    
     // Generate refresh token (30 days)
     const refreshToken = jwt.sign(
       {

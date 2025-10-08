@@ -4,6 +4,8 @@ import DeviceLogin from "@/models/DeviceLogin";
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 // Create device login
 export async function POST(request) {
   try {
@@ -16,21 +18,22 @@ export async function POST(request) {
     }
 
     const token = authHeader.split(" ")[1];
-    let decoded;
 
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return NextResponse.json(
+        { error: "JWT_SECRET is not set" },
+        { status: 500 }
+      );
+    }
+
+    let decoded;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key", {
+      decoded = jwt.verify(token, secret, {
         algorithms: ["HS256"],
       });
     } catch (jwtError) {
-      try {
-        decoded = jwt.verify(
-          token,
-          process.env.JWT_SECRET || "your-secret-key"
-        );
-      } catch (defaultError) {
-        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-      }
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
     await connectToDatabase();
@@ -94,21 +97,22 @@ export async function GET(request) {
     }
 
     const token = authHeader.split(" ")[1];
-    let decoded;
 
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return NextResponse.json(
+        { error: "JWT_SECRET is not set" },
+        { status: 500 }
+      );
+    }
+
+    let decoded;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key", {
+      decoded = jwt.verify(token, secret, {
         algorithms: ["HS256"],
       });
     } catch (jwtError) {
-      try {
-        decoded = jwt.verify(
-          token,
-          process.env.JWT_SECRET || "your-secret-key"
-        );
-      } catch (defaultError) {
-        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-      }
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
     await connectToDatabase();

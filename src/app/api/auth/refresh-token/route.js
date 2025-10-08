@@ -3,6 +3,8 @@ import User from "@/models/User";
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -15,13 +17,18 @@ export async function POST(request) {
       );
     }
 
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return NextResponse.json(
+        { error: "JWT_SECRET is not set" },
+        { status: 500 }
+      );
+    }
+
     // Verify the refresh token
     let decoded;
     try {
-      decoded = jwt.verify(
-        refreshToken,
-        process.env.JWT_SECRET || "your-secret-key"
-      );
+      decoded = jwt.verify(refreshToken, secret);
     } catch (error) {
       console.error("Refresh token verification failed:", error);
       return NextResponse.json(
@@ -48,7 +55,7 @@ export async function POST(request) {
         email: user.email,
         role: user.role,
       },
-      process.env.JWT_SECRET || "your-secret-key",
+      secret,
       { expiresIn: "7d" }
     );
 
@@ -60,7 +67,7 @@ export async function POST(request) {
         role: user.role,
         type: "refresh",
       },
-      process.env.JWT_SECRET || "your-secret-key",
+      secret,
       { expiresIn: "30d" }
     );
 

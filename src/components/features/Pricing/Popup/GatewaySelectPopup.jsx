@@ -175,7 +175,6 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
 
     // Fallback to default logos
     const logoMap = {
-      stripe: "/payment_logo/stripe.png",
       plisio: "/payment_logo/plisio.png",
       hoodpay: "/payment_logo/hoodpay.jpeg",
       nowpayment: "/payment_logo/now_payments.png",
@@ -190,7 +189,6 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
   // Helper function to get display name
   const getDisplayName = (gateway) => {
     const nameMap = {
-      stripe: "Stripe",
       plisio: "Plisio",
       hoodpay: "HoodPay",
       nowpayment: "NOWPayments",
@@ -205,7 +203,6 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
   // Helper function to get payment type
   const getPaymentType = (gateway) => {
     const typeMap = {
-      stripe: "Card",
       plisio: "Crypto",
       hoodpay: "Payment",
       nowpayment: "Crypto",

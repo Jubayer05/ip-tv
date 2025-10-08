@@ -227,7 +227,6 @@ export default function DepositPopup({
 
     // Fallback to default logos
     const logoMap = {
-      stripe: "/payment_logo/stripe.png",
       plisio: "/payment_logo/plisio.png",
       hoodpay: "/payment_logo/hoodpay.jpeg",
       nowpayment: "/payment_logo/now_payments.png",
@@ -242,7 +241,6 @@ export default function DepositPopup({
   // Helper function to get payment type
   const getPaymentType = (gateway) => {
     const typeMap = {
-      stripe: texts.card,
       plisio: texts.crypto,
       hoodpay: texts.payment,
       nowpayment: texts.crypto,

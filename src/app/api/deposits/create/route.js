@@ -38,7 +38,7 @@ export async function POST(request) {
       userId,
       amount: Number(amount),
       currency,
-      paymentMethod: paymentGateway === "stripe" ? "Card" : "Cryptocurrency",
+      paymentMethod: "Cryptocurrency",
       paymentGateway,
       [paymentGateway + "Payment"]: gatewayData,
     });

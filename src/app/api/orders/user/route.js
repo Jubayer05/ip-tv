@@ -4,6 +4,8 @@ import User from "@/models/User";
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 // Simple authentication middleware
 async function authenticateUser(request) {
   try {
@@ -14,28 +16,24 @@ async function authenticateUser(request) {
 
     const token = authHeader.split(" ")[1];
 
-    // Try different algorithms to handle tokens created with different methods
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error("JWT_SECRET is not set");
+      return { error: "Server misconfiguration", status: 500 };
+    }
+
     let decoded;
     try {
-      // First try with explicit HS256
-      decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key", {
-        algorithms: ["HS256"],
-      });
+      decoded = jwt.verify(token, secret, { algorithms: ["HS256"] });
     } catch (hs256Error) {
       try {
-        // If HS256 fails, try without algorithm specification (default behavior)
-        decoded = jwt.verify(
-          token,
-          process.env.JWT_SECRET || "your-secret-key"
-        );
+        decoded = jwt.verify(token, secret);
       } catch (defaultError) {
-        console.error("JWT verification failed with both methods:", {
+        console.error("JWT verification failed:", {
           hs256Error: hs256Error.message,
           defaultError: defaultError.message,
-          tokenLength: token.length,
-          tokenStart: token.substring(0, 20) + "...",
         });
-        throw defaultError;
+        return { error: "Invalid or expired token", status: 401 };
       }
     }
 
@@ -75,53 +73,9 @@ export async function GET(request) {
     let user = null;
 
     // Try JWT authentication first
-    const authHeader = request.headers.get("authorization");
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      try {
-        const token = authHeader.split(" ")[1];
-
-        // Try different algorithms to handle tokens created with different methods
-        let decoded;
-        try {
-          // First try with explicit HS256
-          decoded = jwt.verify(
-            token,
-            process.env.JWT_SECRET || "your-secret-key",
-            {
-              algorithms: ["HS256"],
-            }
-          );
-        } catch (hs256Error) {
-          try {
-            // If HS256 fails, try without algorithm specification (default behavior)
-            decoded = jwt.verify(
-              token,
-              process.env.JWT_SECRET || "your-secret-key"
-            );
-          } catch (defaultError) {
-            console.error("JWT verification failed with both methods:", {
-              hs256Error: hs256Error.message,
-              defaultError: defaultError.message,
-              tokenLength: token.length,
-              tokenStart: token.substring(0, 20) + "...",
-            });
-            throw defaultError;
-          }
-        }
-
-        await connectToDatabase();
-        user = await User.findById(decoded.userId);
-
-        if (!user || !user.isActive) {
-          return NextResponse.json(
-            { error: "Invalid or inactive user" },
-            { status: 401 }
-          );
-        }
-      } catch (jwtError) {
-        console.error("JWT authentication failed:", jwtError);
-        // Fall through to email-based authentication
-      }
+    const authResult = await authenticateUser(request);
+    if (authResult?.user) {
+      user = authResult.user;
     }
 
     // Fallback to email-based authentication
@@ -160,13 +114,15 @@ export async function GET(request) {
       }
 
       if (search) {
-        // Search by order number or customer email
+        // Search by order number or customer email/name
         query.$or = [
           { orderNumber: { $regex: search, $options: "i" } },
           { "contactInfo.email": { $regex: search, $options: "i" } },
           { "contactInfo.fullName": { $regex: search, $options: "i" } },
         ];
       }
+
+      await connectToDatabase();
 
       // Get total count for pagination
       const totalCount = await Order.countDocuments(query);
@@ -191,6 +147,8 @@ export async function GET(request) {
       });
     } else {
       // Regular users can only see their own orders
+      await connectToDatabase();
+
       query.userId = user._id;
 
       orders = await Order.find(query).sort({ createdAt: -1 }).limit(limit);

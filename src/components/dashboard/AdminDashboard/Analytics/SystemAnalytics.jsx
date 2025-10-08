@@ -41,7 +41,6 @@ const FilterControls = ({ filters, setFilters, texts }) => (
         className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
       >
         <option value="all">{texts.allPaymentMethods}</option>
-        <option value="stripe">{texts.stripe}</option>
         <option value="plisio">{texts.plisio}</option>
         <option value="hoodpay">{texts.hoodpay}</option>
         <option value="nowpayments">{texts.nowpayments}</option>
@@ -267,7 +266,6 @@ const SystemAnalytics = () => {
     pending: "Pending",
     cancelled: "Cancelled",
     allPaymentMethods: "All Payment Methods",
-    stripe: "Stripe",
     plisio: "Plisio",
     hoodpay: "HoodPay",
     nowpayments: "NOWPayments",
@@ -474,9 +472,7 @@ const SystemAnalytics = () => {
         <div className="text-center">
           <span
             className={`px-3 py-1 rounded-full text-xs font-medium ${
-              paymentGateway === "stripe"
-                ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                : paymentGateway === "plisio"
+              paymentGateway === "plisio"
                 ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
                 : paymentGateway === "hoodpay"
                 ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
