@@ -15,7 +15,7 @@ export async function POST(request) {
     }
 
     // Create upload directory if it doesn't exist
-    const uploadDir = process.env.UPLOAD_DIR || "./public/uploads";
+    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
     await mkdir(uploadDir, { recursive: true });
 
     // Generate unique filename

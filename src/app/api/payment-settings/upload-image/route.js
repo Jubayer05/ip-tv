@@ -36,7 +36,7 @@ export async function POST(request) {
     }
 
     // Create payment-images directory if it doesn't exist
-    const uploadDir = process.env.UPLOAD_DIR || "./public/uploads";
+    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
     const paymentImagesDir = path.join(uploadDir, "payment-images");
     await mkdir(paymentImagesDir, { recursive: true });
 
@@ -84,7 +84,7 @@ export async function DELETE(request) {
 
     // Extract filename from URL
     const filename = path.basename(imageUrl);
-    const uploadDir = process.env.UPLOAD_DIR || "./public/uploads";
+    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
     const filePath = path.join(uploadDir, "payment-images", filename);
 
     try {

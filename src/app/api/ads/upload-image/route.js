@@ -40,7 +40,7 @@ export async function POST(request) {
     const buffer = Buffer.from(bytes);
 
     // Create upload directory
-    const uploadDir = process.env.UPLOAD_DIR || "./public/uploads";
+    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
     const adsDir = path.join(uploadDir, "ads");
     await mkdir(adsDir, { recursive: true });
 
@@ -83,7 +83,7 @@ export async function DELETE(request) {
 
     // Extract filename from URL
     const filename = path.basename(imageUrl);
-    const uploadDir = process.env.UPLOAD_DIR || "./public/uploads";
+    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
     const filepath = path.join(uploadDir, "ads", filename);
 
     // Delete file
