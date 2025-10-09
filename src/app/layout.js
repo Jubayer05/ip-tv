@@ -93,13 +93,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${rajdhani.variable} ${manrope.variable}`}>
       <head>
+        {/* Simplified favicon setup */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/live.png" />
+
+        {/* Theme and other meta tags */}
         <meta name="theme-color" content="#000000" />
-        <meta
-          name="google-site-verification"
-          content="HasIvEgidg_qkrrpsRaTSR2HUUwEnnc8osHzgjibMCw"
-        />
 
         {/* Preload critical resources */}
         <link
