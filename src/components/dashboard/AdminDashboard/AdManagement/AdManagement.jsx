@@ -14,6 +14,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -331,22 +332,25 @@ const AdManagement = () => {
     });
   };
 
-  // Define table columns
   const columns = [
     {
       title: texts.title,
       dataIndex: "title",
+      width: 250,
       key: "title",
+      align: "center",
       render: (text, record) => (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 pl-2">
           {record.imageUrl && (
-            <AdImage
+            <Image
               src={record.imageUrl}
               alt={record.title}
               className="w-12 h-12 rounded-lg"
+              width={48}
+              height={48}
             />
           )}
-          <div>
+          <div className="text-left">
             <p className="text-white font-medium">{text}</p>
             <p className="text-gray-400 text-sm">{record.description}</p>
           </div>
@@ -356,43 +360,41 @@ const AdManagement = () => {
     {
       title: texts.status,
       dataIndex: "isActive",
+      width: "100px",
       key: "status",
+
       render: (isActive, record) => (
-        <button
-          onClick={() => toggleAdStatus(record)}
-          className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
-            isActive
-              ? "bg-green-500/20 text-green-400"
-              : "bg-red-500/20 text-red-400"
-          }`}
-        >
-          {isActive ? (
-            <Eye className="w-3 h-3" />
-          ) : (
-            <EyeOff className="w-3 h-3" />
-          )}
-          {isActive ? texts.active : texts.inactive}
-        </button>
+        <div className="flex items-center justify-center">
+          <button
+            onClick={() => toggleAdStatus(record)}
+            className={`flex items-center justify-center gap-1 px-2 py-1 rounded-full text-xs ${
+              isActive
+                ? "bg-green-500/20 text-green-400"
+                : "bg-red-500/20 text-red-400"
+            }`}
+          >
+            {isActive ? (
+              <Eye className="w-3 h-3" />
+            ) : (
+              <EyeOff className="w-3 h-3" />
+            )}
+            {isActive ? texts.active : texts.inactive}
+          </button>
+        </div>
       ),
     },
     {
-      title: texts.clicks,
-      dataIndex: "clickCount",
-      key: "clicks",
-      render: (count) => (
-        <span className="text-white">{count?.toLocaleString() || 0}</span>
-      ),
+      title: texts.sortOrder,
+      dataIndex: "sortOrder",
+      width: 100,
+      key: "sortOrder",
+      align: "center",
+      render: (text) => <span className="text-white text-center">{text}</span>,
     },
-    {
-      title: texts.impressions,
-      dataIndex: "impressionCount",
-      key: "impressions",
-      render: (count) => (
-        <span className="text-white">{count?.toLocaleString() || 0}</span>
-      ),
-    },
+
     {
       title: texts.actions,
+      width: "100px",
       key: "actions",
       render: (_, record) => (
         <div className="flex items-center gap-2">
@@ -473,8 +475,7 @@ const AdManagement = () => {
           pageSize={10}
           showButton={false}
           rowKey="_id"
-          containerClassName="w-full"
-          className="min-w-full"
+          className="overflow-x-auto"
         />
       </div>
 

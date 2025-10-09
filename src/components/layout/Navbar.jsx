@@ -28,6 +28,12 @@ const langToCountry = {
   zh: "CN",
 };
 
+const initialUserMenuItems = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/dashboard/orders", label: "Order History" },
+  { href: "/dashboard/devices", label: "Device Management" },
+];
+
 const Navbar = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -36,9 +42,16 @@ const Navbar = () => {
   const [isProductsMenuOpen, setIsProductsMenuOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
+  const [userMenuItems, setUserMenuItems] = useState(initialUserMenuItems);
 
   const { user, logout, refreshUserData } = useAuth();
   const { language, setLanguage, languages, translate } = useLanguage();
+
+  const ORIGINAL_USER_MENU_LABELS = [
+    "Dashboard",
+    "Order History",
+    "Device Management",
+  ];
 
   // Originals
   const ORIGINAL_NAV_LABELS = [
@@ -48,12 +61,7 @@ const Navbar = () => {
     "AFFILIATE",
     "OUR WEBSITES",
   ];
-  const ORIGINAL_USER_MENU_LABELS = [
-    "Dashboard",
-    "Order History",
-    "Device Management",
-    "Payment Method",
-  ];
+
   const ORIGINAL_ADMIN_MENU_LABELS = [
     "Admin Dashboard",
     "User Management",
@@ -87,6 +95,7 @@ const Navbar = () => {
     ORIGINAL_DEPOSIT_FUNDS
   );
   const [guestLoginLabel, setGuestLoginLabel] = useState(ORIGINAL_GUEST_LOGIN);
+  const [mainLogo, setMainLogo] = useState("/logos/logo.png");
 
   // Fetch products for dropdown
   const fetchProducts = async () => {
@@ -110,11 +119,57 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
+    const fetchCardPaymentSettings = async () => {
+      try {
+        const response = await fetch("/api/settings/card-payment");
+        const data = await response.json();
+
+        if (data.success && data.data?.isEnabled) {
+          // Insert Payment Method at position 3 (after Device Management)
+          setUserMenuItems([
+            ...initialUserMenuItems,
+            { href: "/dashboard/payment", label: "Payment Method" },
+          ]);
+        } else {
+          setUserMenuItems(initialUserMenuItems);
+        }
+      } catch (error) {
+        console.error("Error fetching card payment settings:", error);
+        setUserMenuItems(initialUserMenuItems);
+      }
+    };
+
+    fetchCardPaymentSettings();
+  }, []);
+
+  useEffect(() => {
+    const fetchLogoSettings = async () => {
+      try {
+        const response = await fetch("/api/admin/settings/logos");
+        const data = await response.json();
+
+        if (data.success && data.data.mainLogo) {
+          setMainLogo(data.data.mainLogo);
+        }
+      } catch (error) {
+        console.error("Error fetching logo settings:", error);
+        // Keep default logo on error
+      }
+    };
+
+    fetchLogoSettings();
+  }, []);
+
+  // Update the translation logic to dynamically handle the array
+  useEffect(() => {
     let isMounted = true;
     (async () => {
+      // Build dynamic ORIGINAL array based on current userMenuItems
+      const currentUserMenuLabels = userMenuItems.map((item) => item.label);
+
       const items = [
         ...ORIGINAL_NAV_LABELS,
-        ...ORIGINAL_USER_MENU_LABELS,
+        ...currentUserMenuLabels, // Use dynamic labels
         ...ORIGINAL_ADMIN_MENU_LABELS,
         ORIGINAL_SIGN_IN,
         ORIGINAL_SIGN_OUT,
@@ -126,20 +181,24 @@ const Navbar = () => {
       if (!isMounted) return;
 
       setNavLabels(translated.slice(0, 5));
-      setUserMenuLabels(translated.slice(5, 9));
-      setAdminMenuLabels(translated.slice(9, 17));
-      setSignInLabel(translated[17]);
-      setSignOutLabel(translated[18]);
-      setUserMenuHeading(translated[19]);
-      setDepositFundsLabel(translated[20]);
-      setGuestLoginLabel(translated[21]);
+      setUserMenuLabels(translated.slice(5, 5 + currentUserMenuLabels.length)); // Dynamic slice
+      setAdminMenuLabels(
+        translated.slice(
+          5 + currentUserMenuLabels.length,
+          5 + currentUserMenuLabels.length + 8
+        )
+      );
+      setSignInLabel(translated[5 + currentUserMenuLabels.length + 8]);
+      setSignOutLabel(translated[5 + currentUserMenuLabels.length + 9]);
+      setUserMenuHeading(translated[5 + currentUserMenuLabels.length + 10]);
+      setDepositFundsLabel(translated[5 + currentUserMenuLabels.length + 11]);
+      setGuestLoginLabel(translated[5 + currentUserMenuLabels.length + 12]);
     })();
 
     return () => {
       isMounted = false;
     };
-    // Update when language changes - add null check
-  }, [language?.code, translate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [language?.code, translate, userMenuItems]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const navigationLinks = [
     { href: "/", label: "HOME" },
@@ -147,13 +206,6 @@ const Navbar = () => {
     { href: "/packages", label: "PACKAGES" },
     { href: "/affiliate", label: "AFFILIATE" },
     { href: "#", label: "OUR WEBSITES", hasDropdown: true },
-  ];
-
-  const userMenuItems = [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/dashboard/orders", label: "Order History" },
-    { href: "/dashboard/devices", label: "Device Management" },
-    { href: "/dashboard/payment", label: "Payment Method" },
   ];
 
   const adminMenuItems = [
@@ -296,12 +348,7 @@ const Navbar = () => {
           {/* Center Section - Logo */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center top-[13px]">
             <Link href="/">
-              <Image
-                src="/logos/logo.png"
-                alt="Logo"
-                width={100}
-                height={100}
-              />
+              <Image src={mainLogo} alt="Logo" width={100} height={100} />
             </Link>
           </div>
 

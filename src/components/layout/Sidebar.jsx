@@ -33,6 +33,69 @@ export default function Sidebar() {
   const [cardPaymentEnabled, setCardPaymentEnabled] = useState(false);
   const { language, translate } = useLanguage();
   const { user, hasAdminAccess, isSuperAdminUser } = useAuth();
+  // Initial user menu items WITHOUT Payment Methods
+  const initialUserMenuItems = [
+    {
+      href: "/dashboard",
+      label: "Dashboard",
+      icon: BarChart3,
+    },
+    {
+      href: "/dashboard/orders",
+      label: "Order History",
+      icon: History,
+    },
+    {
+      href: "/dashboard/devices",
+      label: "Device Management",
+      icon: Monitor,
+    },
+    {
+      href: "/dashboard/support",
+      label: "Support Tickets",
+      icon: Ticket,
+    },
+    {
+      href: "/dashboard/settings",
+      label: "Settings",
+      icon: Settings,
+    },
+  ];
+
+  const [userDashMenu, setUserDashMenu] = useState(initialUserMenuItems);
+
+  // Fetch and update menu based on payment settings
+  useEffect(() => {
+    const fetchCardPaymentSettings = async () => {
+      try {
+        const response = await fetch("/api/settings/card-payment");
+        const data = await response.json();
+
+        console.log(data?.data?.isEnabled);
+
+        if (data.success && data.data?.isEnabled) {
+          // Payment enabled - insert Payment Methods item at position 3 (after devices, before support)
+          setUserDashMenu((prev) => [
+            ...prev.slice(0, 3),
+            {
+              href: "/dashboard/payment",
+              label: "Payment Methods",
+              icon: CreditCard,
+            },
+            ...prev.slice(3),
+          ]);
+        } else {
+          // Payment disabled - keep original menu
+          setUserDashMenu(initialUserMenuItems);
+        }
+      } catch (error) {
+        console.error("Error fetching card payment settings:", error);
+        setUserDashMenu(initialUserMenuItems);
+      }
+    };
+
+    fetchCardPaymentSettings();
+  }, []);
 
   const ORIGINAL_BACK_TO_TEXT = "Back to Cheap Stream";
 
@@ -52,45 +115,6 @@ export default function Sidebar() {
   useEffect(() => {
     fetchCardPaymentSettings();
   }, []);
-
-  // User menu items (regular users)
-  const ORIGINAL_USER_MENU_ITEMS = [
-    {
-      href: "/dashboard",
-      label: "Dashboard",
-      icon: BarChart3,
-    },
-    {
-      href: "/dashboard/orders",
-      label: "Order History",
-      icon: History,
-    },
-    {
-      href: "/dashboard/devices",
-      label: "Device Management",
-      icon: Monitor,
-    },
-    // Conditionally show Payment Methods based on card payment settings
-    ...(cardPaymentEnabled
-      ? [
-          {
-            href: "/dashboard/payment",
-            label: "Payment Methods",
-            icon: CreditCard,
-          },
-        ]
-      : []),
-    {
-      href: "/dashboard/support",
-      label: "Support Tickets",
-      icon: Ticket,
-    },
-    {
-      href: "/dashboard/settings",
-      label: "Settings",
-      icon: Settings,
-    },
-  ];
 
   // Admin menu items (admin, support, super admin)
   const ORIGINAL_ADMIN_MENU_ITEMS = [
@@ -207,7 +231,7 @@ export default function Sidebar() {
     if (hasAdminAccess()) {
       return ORIGINAL_ADMIN_MENU_ITEMS;
     }
-    return ORIGINAL_USER_MENU_ITEMS;
+    return userDashMenu;
   };
 
   const [backToText, setBackToText] = useState(ORIGINAL_BACK_TO_TEXT);

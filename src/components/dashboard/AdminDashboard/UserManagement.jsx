@@ -356,7 +356,7 @@ const UserManagement = () => {
   ];
 
   return (
-    <div className="space-y-4 sm:space-y-6 font-secondary px-4 sm:px-6 lg:px-8">
+    <div className="space-y-4 sm:space-y-6 font-secondary sm:px-6 lg:px-8">
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
           {texts.heading}
@@ -390,7 +390,7 @@ const UserManagement = () => {
             pageSize={10}
             showButton={false}
             rowKey="_id"
-            containerClassName="w-full"
+            className="overflow-x-auto"
           />
         )}
       </div>

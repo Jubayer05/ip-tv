@@ -47,7 +47,9 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Tab Content */}
-      <div>{tabs.find((tab) => tab.id === activeTab)?.component}</div>
+      <div className="px-4">
+        {tabs.find((tab) => tab.id === activeTab)?.component}
+      </div>
     </div>
   );
 }

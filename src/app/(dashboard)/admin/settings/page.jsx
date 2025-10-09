@@ -4,6 +4,7 @@ import ManageAddons from "@/components/dashboard/AdminDashboard/SystemsSettings/
 import ManageBanner from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageBanner";
 import ManageContact from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageContact";
 import ManageFreeTrial from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageFreeTrial";
+import ManageLogo from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageLogo";
 import ManageSocialMediaContact from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageSocialMedia";
 import MetaManagement from "@/components/dashboard/AdminDashboard/SystemsSettings/MetaManagement";
 import { useState } from "react";
@@ -47,10 +48,15 @@ export default function AdminSettingsPage() {
       label: "Free Trial Management",
       component: <ManageFreeTrial />,
     },
+    {
+      id: "logo",
+      label: "Logo Management",
+      component: <ManageLogo />,
+    },
   ];
 
   return (
-    <div className="space-y-4 sm:space-y-6 font-secondary px-4 sm:px-6 lg:px-8">
+    <div className="space-y-4 sm:space-y-6 font-secondary sm:px-6 lg:px-8">
       {/* Tab Navigation */}
       <div className="border-b border-[#212121]">
         <nav className="flex flex-wrap gap-2 sm:gap-4  overflow-x-auto">

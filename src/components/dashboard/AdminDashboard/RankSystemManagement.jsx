@@ -365,7 +365,7 @@ export default function RankSystemManagement() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 font-secondary px-4 sm:px-6 lg:px-8">
+    <div className="space-y-4 sm:space-y-6 font-secondary sm:px-6 lg:px-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
         <div>

@@ -226,7 +226,7 @@ const ContactManagement = () => {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 font-secondary px-4 sm:px-6 lg:px-8 w-[350px] sm:w-[600px] md:w-full">
+    <div className="space-y-4 sm:space-y-6 font-secondary sm:px-6 lg:px-8 w-[350px] sm:w-[600px] md:w-full">
       {/* Header with Stats */}
       <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
         <div className="flex items-center justify-between mb-3 sm:mb-4">

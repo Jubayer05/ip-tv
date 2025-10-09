@@ -20,7 +20,7 @@ export default function AdminLoginApiPage() {
   ];
 
   return (
-    <div className="space-y-4 sm:space-y-6 font-secondary px-4 sm:px-6 lg:px-8">
+    <div className="space-y-4 sm:space-y-6 font-secondary sm:px-6 lg:px-8">
       {/* Tab Navigation */}
       <div className="border-b border-[#212121]">
         <nav className="flex space-x-4 sm:space-x-8 overflow-x-auto">
@@ -41,7 +41,9 @@ export default function AdminLoginApiPage() {
       </div>
 
       {/* Tab Content */}
-      <div>{tabs.find((tab) => tab.id === activeTab)?.component}</div>
+      <div className="px-4">
+        {tabs.find((tab) => tab.id === activeTab)?.component}
+      </div>
     </div>
   );
 }

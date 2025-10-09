@@ -33,6 +33,16 @@ const settingsSchema = new mongoose.Schema(
       },
     },
 
+    // Logo Management
+    logos: {
+      mainLogo: { type: String, default: "/logos/logo.png" },
+      cheapStreamLogo: {
+        type: String,
+        default: "/logos/cheap_stream_logo.png",
+      },
+      favicon: { type: String, default: "/favicon.ico" },
+    },
+
     // Banner content management
     banners: {
       home: {
@@ -302,7 +312,10 @@ const settingsSchema = new mongoose.Schema(
         feePercentage: { type: Number, default: 0, min: 0, max: 100 },
         fixedAmount: { type: Number, default: 0, min: 0 },
       },
-      description: { type: String, default: "Pay securely with your credit or debit card" },
+      description: {
+        type: String,
+        default: "Pay securely with your credit or debit card",
+      },
     },
 
     // Meta management for SEO
@@ -641,6 +654,11 @@ settingsSchema.statics.getSettings = async function () {
         supportTicketSuccessMessage:
           "Your contact request has been submitted successfully. We'll get back to you soon!",
       },
+      logos: {
+        mainLogo: "/logos/logo.png",
+        cheapStreamLogo: "/logos/cheap_stream_logo.png",
+        favicon: "/favicon.ico",
+      },
       banners: {
         home: {
           heading1: "YOUR TICKET TO ENDLESS",
@@ -857,7 +875,8 @@ settingsSchema.statics.getSettings = async function () {
           keywords:
             "affiliate program, IPTV affiliate, earn money, referral program, Cheap Stream affiliate",
           openGraph: {
-            title: "Affiliate Program - Cheap Stream | Earn Money Promoting IPTV",
+            title:
+              "Affiliate Program - Cheap Stream | Earn Money Promoting IPTV",
             description:
               "Join Cheap Stream's affiliate program and earn money by promoting our premium IPTV services. Refer friends and earn commissions.",
           },
@@ -973,6 +992,7 @@ settingsSchema.statics.getSettings = async function () {
     doc.socialMedia = { x: "", linkedin: "", instagram: "", youtube: "" };
     modified = true;
   }
+
   if (!doc.contactInfo) {
     doc.contactInfo = {
       phoneNumber: "+123 456 7890",
@@ -983,6 +1003,16 @@ settingsSchema.statics.getSettings = async function () {
       supportTicketButtonText: "Submit Request",
       supportTicketSuccessMessage:
         "Your contact request has been submitted successfully. We'll get back to you soon!",
+    };
+    modified = true;
+  }
+
+  // Add logos backfill
+  if (!doc.logos) {
+    doc.logos = {
+      mainLogo: "/logos/logo.png",
+      cheapStreamLogo: "/logos/cheap_stream_logo.png",
+      favicon: "/favicon.ico",
     };
     modified = true;
   }

@@ -177,7 +177,7 @@ const GuestSupportTicketAdmin = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 font-secondary px-4 sm:px-6 lg:px-8">
+    <div className="space-y-4 sm:space-y-6 font-secondary sm:px-6 lg:px-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white flex items-center gap-2">
           <UserX className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
