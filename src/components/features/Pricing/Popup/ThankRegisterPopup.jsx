@@ -103,7 +103,7 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
         paymentMethod: "Manual",
         paymentGateway: "None",
         paymentStatus: "completed", // ensure completion on create
-        
+
         // IPTV Configuration - include val and con parameters
         lineType: sel.lineType || 0,
         templateId: sel.templateId || 2,
@@ -112,7 +112,7 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
         generatedCredentials: sel.generatedCredentials || [],
         val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1), // Add val parameter
         con: sel.con || Number(sel.devices || 1), // Add con parameter
-        
+
         contactInfo: {
           fullName:
             `${user?.profile?.firstName || ""} ${
@@ -227,19 +227,18 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
 
           <div className="space-y-3 sm:space-y-4">
             {/* Pay with Balance Button - Only show if user has balance */}
-            {user?.balance > 0 && (
-              <button
-                onClick={() => setShowBalanceCheckout(true)}
-                disabled={placing}
-                className="w-full bg-green-600 text-white py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-green-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
-              >
-                <Wallet size={16} className="sm:w-5 sm:h-5" />
-                {texts.buttons.payWithBalance}
-                <span className="text-xs opacity-75">
-                  (${user?.balance?.toFixed(2)})
-                </span>
-              </button>
-            )}
+
+            <button
+              onClick={() => setShowBalanceCheckout(true)}
+              disabled={placing}
+              className="w-full bg-green-600 text-white py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-green-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              <Wallet size={16} className="sm:w-5 sm:h-5" />
+              {texts.buttons.payWithBalance}
+              <span className="text-xs opacity-75">
+                (${user?.balance?.toFixed(2)})
+              </span>
+            </button>
 
             <button
               onClick={() => setShowGatewaySelect(true)}
