@@ -305,7 +305,7 @@ export default function Sidebar() {
 
   return (
     <div
-      className={`w-full md:w-[300px] transition-all duration-300 ease-in-out border border-[#212121] bg-black md:rounded-[15px] flex flex-col overflow-hidden ${
+      className={`w-full md:w-[300px] min-h-[48px] transition-all duration-300 ease-in-out border border-[#212121] bg-black md:rounded-[15px] flex flex-col overflow-hidden z-50 md:z-auto ${
         isExpanded ? "h-screen" : "h-[48px] md:h-screen"
       }`}
     >
@@ -418,39 +418,38 @@ export default function Sidebar() {
       {/* Mobile: Show only active item when collapsed */}
       {!isExpanded && (
         <div className="md:hidden">
-          {menuItems.map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
+          {(() => {
+            const activeItem =
+              menuItems.find(
+                (i) => pathname === i.href || pathname.startsWith(i.href + "/")
+              ) || menuItems[0];
 
-            if (isActive) {
-              return (
-                <div
-                  key={item.href}
-                  className="relative flex items-center justify-between gap-3 text-black bg-primary shadow-lg h-[48px] rounded-lg md:mx-2"
+            if (!activeItem) return null;
+            const Icon = activeItem.icon;
+
+            return (
+              <div className="relative flex items-center justify-between gap-3 text-black bg-primary shadow-lg h-[48px] rounded-lg md:mx-2">
+                <Link
+                  href={activeItem.href}
+                  scroll={true}
+                  onClick={handleNavigation}
+                  className="relative flex items-center gap-3 px-4 py-3 transition-all duration-200 w-full rounded-lg"
                 >
-                  <Link
-                    href={item.href}
-                    scroll={true}
-                    onClick={handleNavigation}
-                    className="relative flex items-center gap-3 px-4 py-3 transition-all duration-200 w-full rounded-lg"
-                  >
-                    <div className="h-[24px] w-[5px] rounded-r-[3px] bg-[#0e0e11] absolute left-0" />
-                    <Icon size={20} />
-                    <span className="font-semibold text-sm font-secondary">
-                      {item.label}
-                    </span>
-                  </Link>
-                  <button
-                    onClick={toggleExpanded}
-                    className="mr-4 p-1 hover:bg-black/20 rounded transition-colors"
-                  >
-                    <List className="transition-transform duration-300" />
-                  </button>
-                </div>
-              );
-            }
-            return null;
-          })}
+                  <div className="h-[24px] w-[5px] rounded-r-[3px] bg-[#0e0e11] absolute left-0" />
+                  <Icon size={20} />
+                  <span className="font-semibold text-sm font-secondary">
+                    {activeItem.label || "Menu"}
+                  </span>
+                </Link>
+                <button
+                  onClick={toggleExpanded}
+                  className="mr-4 p-1 hover:bg-black/20 rounded transition-colors"
+                >
+                  <List className="transition-transform duration-300" />
+                </button>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
