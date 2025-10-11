@@ -248,13 +248,13 @@ export default function PaymentSuccessPage() {
                 <Download className="w-5 h-5" />
                 {texts.buttons.viewOrder}
               </Button>
-              <Button
-                onClick={() => router.push("/dashboard")}
+              <Link
+                href="/dashboard"
                 className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-gray-700"
               >
                 <Home className="w-5 h-5" />
                 {texts.buttons.dashboard}
-              </Button>
+              </Link>
               <Link
                 href="/"
                 className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-gray-700"

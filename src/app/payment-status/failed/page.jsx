@@ -249,13 +249,13 @@ export default function PaymentFailedPage() {
                 <RefreshCw className="w-5 h-5" />
                 {texts.buttons.tryAgain}
               </Button>
-              <Button
-                onClick={() => router.push("/support/contact")}
-                className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-gray-700"
+              <Link
+                href="/support/contact"
+                className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-gray-700 text-center"
               >
                 <Mail className="w-5 h-5" />
                 {texts.buttons.contactSupport}
-              </Button>
+              </Link>
             </div>
 
             <div className="flex gap-3 mt-3">
