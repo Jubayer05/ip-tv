@@ -1,7 +1,7 @@
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Check, Home, X } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, Home, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
   const { language, translate, isLanguageLoaded } = useLanguage();
@@ -53,15 +53,139 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
     totalPaid: "",
   });
 
+  const [showPasswords, setShowPasswords] = useState({});
+  const [copiedItems, setCopiedItems] = useState({});
+
   const getLineTypeName = (lineType) => {
     const names = { 0: "M3U Playlist", 1: "MAG Device", 2: "Enigma2" };
     return names[lineType] || "M3U Playlist";
+  };
+
+  // Helper function to build M3U URL
+  const buildM3uUrl = (credential) => {
+    // Try to extract from lineInfo first
+    if (credential.lineInfo) {
+      const lines = credential.lineInfo.split("\n");
+      const m3uLine = lines.find((line) => line.includes("m3u_plus"));
+      if (m3uLine) return m3uLine;
+    }
+
+    // Otherwise construct it (use hfast.xyz as per your requirement)
+    if (credential.username && credential.password) {
+      return `http://hfast.xyz/get.php?username=${credential.username}&password=${credential.password}&type=m3u_plus&output=ts`;
+    }
+
+    return "";
+  };
+
+  // Dummy data for testing/preview (remove in production or use when order is null)
+  const dummyOrder = useMemo(() => {
+    if (order || process.env.NODE_ENV !== "development") return null;
+
+    return {
+      _id: "dummy123456789",
+      orderNumber: "CS-20250922-U6PBMY",
+      createdAt: new Date(),
+      totalAmount: 29.99,
+      paymentMethod: "Stripe",
+      paymentStatus: "completed",
+      products: [
+        {
+          duration: 3,
+          devicesAllowed: 1,
+          adultChannels: false,
+          lineType: 0,
+          quantity: 1,
+        },
+      ],
+      iptvCredentials: [
+        {
+          lineId: 12345,
+          username: "fnuqcp4p",
+          password: "pxhi7av4",
+          expire: Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60,
+          packageId: 1,
+          packageName: "Premium IPTV Package",
+          templateId: 1,
+          templateName: "Standard Template",
+          lineType: 0,
+          macAddress: "",
+          adultChannels: false,
+          lineInfo: `Username: fnuqcp4p
+Password: pxhi7av4
+M3U Playlist URL: http://hfast.xyz/get.php?username=fnuqcp4p&password=pxhi7av4&type=m3u_plus&output=ts
+IPTV Url: http://hfast.xyz:8080
+EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
+          isActive: true,
+          createdAt: new Date(),
+        },
+      ],
+    };
+  }, [order]);
+
+  // Use dummy order if no real order is provided (for testing)
+  const displayOrder = order || dummyOrder;
+
+  const togglePasswordVisibility = (index) => {
+    setShowPasswords((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
+
+  const copyToClipboard = (text, key) => {
+    navigator.clipboard.writeText(text);
+    setCopiedItems((prev) => ({ ...prev, [key]: true }));
+    setTimeout(() => {
+      setCopiedItems((prev) => ({ ...prev, [key]: false }));
+    }, 2000);
   };
 
   useEffect(() => {
     // Update texts when order prop changes
     setTexts(getOriginalTexts());
   }, [order]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // If order prop is provided, derive values from it
+    if (displayOrder) {
+      const product = displayOrder?.products?.[0] || {};
+      setOrderInfo({
+        orderNumber: displayOrder?.orderNumber || "",
+        orderDate: new Date(
+          displayOrder?.createdAt || Date.now()
+        ).toLocaleDateString(),
+        service: "IPTV Subscription",
+        duration: product?.duration ? `${product.duration} month(s)` : "",
+        devicesAllowed: product?.devicesAllowed || "",
+        adultChannels: product?.adultChannels ? "Yes" : "No",
+        totalPaid: `$${(displayOrder?.totalAmount || 0).toFixed(2)}`,
+      });
+      return;
+    }
+
+    // Fallback to previous localStorage behavior
+    try {
+      const raw = localStorage.getItem("cs_last_order");
+      if (raw) {
+        const o = JSON.parse(raw);
+        const product = o?.products?.[0] || {};
+        setOrderInfo({
+          orderNumber: o?.orderNumber || "CS-20250922-U6PBMY",
+          orderDate: new Date(o?.createdAt || Date.now()).toLocaleDateString(),
+          service: "IPTV Subscription",
+          duration: product?.duration
+            ? `${product.duration} month(s)`
+            : "1 month(s)",
+          devicesAllowed: product?.devicesAllowed || "1",
+          adultChannels: product?.adultChannels ? "Yes" : "No",
+          totalPaid: `$${(o?.totalAmount || 0.02).toFixed(2)}`,
+        });
+      }
+    } catch {}
+  }, [isOpen, order, displayOrder]);
 
   useEffect(() => {
     // Only translate when language is loaded and not English
@@ -128,47 +252,6 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
     };
   }, [language.code, isLanguageLoaded, translate, order]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    // If order prop is provided, derive values from it
-    if (order) {
-      const product = order?.products?.[0] || {};
-      setOrderInfo({
-        orderNumber: order?.orderNumber || "",
-        orderDate: new Date(
-          order?.createdAt || Date.now()
-        ).toLocaleDateString(),
-        service: "IPTV Subscription",
-        duration: product?.duration ? `${product.duration} month(s)` : "",
-        devicesAllowed: product?.devicesAllowed || "",
-        adultChannels: product?.adultChannels ? "Yes" : "No",
-        totalPaid: `$${(order?.totalAmount || 0).toFixed(2)}`,
-      });
-      return;
-    }
-
-    // Fallback to previous localStorage behavior
-    try {
-      const raw = localStorage.getItem("cs_last_order");
-      if (raw) {
-        const o = JSON.parse(raw);
-        const product = o?.products?.[0] || {};
-        setOrderInfo({
-          orderNumber: o?.orderNumber || "CS-20250922-U6PBMY",
-          orderDate: new Date(o?.createdAt || Date.now()).toLocaleDateString(),
-          service: "IPTV Subscription",
-          duration: product?.duration
-            ? `${product.duration} month(s)`
-            : "1 month(s)",
-          devicesAllowed: product?.devicesAllowed || "1",
-          adultChannels: product?.adultChannels ? "Yes" : "No",
-          totalPaid: `$${(o?.totalAmount || 0.02).toFixed(2)}`,
-        });
-      }
-    } catch {}
-  }, [isOpen, order]);
-
   const handleBackToHome = () => {
     onClose();
     router.push("/");
@@ -181,8 +264,8 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
       <div
         className="bg-black rounded-2xl sm:rounded-3xl p-4 sm:pm-6 md:p-8 w-full max-w-sm sm:max-w-md md:max-w-lg mx-auto relative border border-[#FFFFFF26] max-h-[90vh] overflow-y-auto"
         style={{
-          scrollbarWidth: "none" /* Firefox */,
-          msOverflowStyle: "none" /* Internet Explorer 10+ */,
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
         }}
       >
         <style jsx>{`
@@ -289,14 +372,14 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
         </div>
 
         {/* Additional details when order is provided */}
-        {order && (
+        {displayOrder && (
           <div className="space-y-2 mt-2">
             <div className="flex justify-between items-center">
               <span className="text-white/75 text-xs sm:text-sm">
                 Order ID:
               </span>
               <span className="text-white text-xs sm:text-sm font-medium">
-                {order._id}
+                {displayOrder._id}
               </span>
             </div>
             <div className="flex justify-between items-center">
@@ -304,7 +387,7 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
                 Payment Method:
               </span>
               <span className="text-white text-xs sm:text-sm font-medium">
-                {order.paymentMethod || "N/A"}
+                {displayOrder.paymentMethod || "N/A"}
               </span>
             </div>
             <div className="flex justify-between items-center">
@@ -312,17 +395,17 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
                 Payment Status:
               </span>
               <span className="text-white text-xs sm:text-sm font-medium">
-                {order.paymentStatus || "Unknown"}
+                {displayOrder.paymentStatus || "Unknown"}
               </span>
             </div>
-            {order.products?.[0] && (
+            {displayOrder.products?.[0] && (
               <>
                 <div className="flex justify-between items-center">
                   <span className="text-white/75 text-xs sm:text-sm">
                     Device Type:
                   </span>
                   <span className="text-white text-xs sm:text-sm font-medium">
-                    {getLineTypeName(order.products[0].lineType)}
+                    {getLineTypeName(displayOrder.products[0].lineType)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -330,23 +413,176 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
                     Quantity:
                   </span>
                   <span className="text-white text-xs sm:text-sm font-medium">
-                    {order.products[0].quantity ?? 1}
+                    {displayOrder.products[0].quantity ?? 1}
                   </span>
                 </div>
               </>
             )}
-            {Array.isArray(order.iptvCredentials) && (
+            {Array.isArray(displayOrder.iptvCredentials) && (
               <div className="flex justify-between items-center">
                 <span className="text-white/75 text-xs sm:text-sm">
                   Accounts:
                 </span>
                 <span className="text-white text-xs sm:text-sm font-medium">
-                  {order.iptvCredentials.length}
+                  {displayOrder.iptvCredentials.length}
                 </span>
               </div>
             )}
           </div>
         )}
+
+        {/* IPTV Credentials Section */}
+        {displayOrder &&
+          displayOrder.iptvCredentials &&
+          displayOrder.iptvCredentials.length > 0 && (
+            <div className="mt-6 space-y-4">
+              <h3 className="text-white font-semibold text-sm sm:text-base border-b border-[#313131] pb-2">
+                IPTV Credentials
+              </h3>
+
+              {displayOrder.iptvCredentials.map((credential, index) => {
+                const isPasswordVisible = showPasswords[index];
+                const m3uUrl = buildM3uUrl(credential);
+
+                return (
+                  <div
+                    key={index}
+                    className="bg-gray-900/50 rounded-lg p-3 sm:p-4 border border-gray-700 space-y-3"
+                  >
+                    {/* Account Header */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-cyan-400 text-xs sm:text-sm font-medium">
+                        Account #{index + 1}
+                      </span>
+                      <span className="text-gray-400 text-xs">
+                        {getLineTypeName(credential.lineType)}
+                      </span>
+                    </div>
+
+                    {/* Username */}
+                    <div>
+                      <label className="text-white/75 text-xs block mb-1">
+                        Username:
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={credential.username}
+                          readOnly
+                          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-xs sm:text-sm font-mono"
+                        />
+                        <button
+                          onClick={() =>
+                            copyToClipboard(
+                              credential.username,
+                              `username-${index}`
+                            )
+                          }
+                          className="p-2 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors"
+                        >
+                          {copiedItems[`username-${index}`] ? (
+                            <Check size={16} className="text-green-400" />
+                          ) : (
+                            <Copy size={16} className="text-white" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Password */}
+                    <div>
+                      <label className="text-white/75 text-xs block mb-1">
+                        Password:
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type={isPasswordVisible ? "text" : "password"}
+                          value={credential.password}
+                          readOnly
+                          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-xs sm:text-sm font-mono"
+                        />
+                        <button
+                          onClick={() => togglePasswordVisibility(index)}
+                          className="p-2 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors"
+                        >
+                          {isPasswordVisible ? (
+                            <EyeOff size={16} className="text-white" />
+                          ) : (
+                            <Eye size={16} className="text-white" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() =>
+                            copyToClipboard(
+                              credential.password,
+                              `password-${index}`
+                            )
+                          }
+                          className="p-2 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors"
+                        >
+                          {copiedItems[`password-${index}`] ? (
+                            <Check size={16} className="text-green-400" />
+                          ) : (
+                            <Copy size={16} className="text-white" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* M3U Link - Only show for M3U Playlist type (lineType === 0) */}
+                    {credential.lineType === 0 && m3uUrl && (
+                      <div>
+                        <label className="text-white/75 text-xs block mb-1">
+                          M3U Link:
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-xs font-mono overflow-x-auto whitespace-nowrap">
+                            {m3uUrl}
+                          </div>
+                          <button
+                            onClick={() =>
+                              copyToClipboard(m3uUrl, `m3u-${index}`)
+                            }
+                            className="p-2 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors"
+                          >
+                            {copiedItems[`m3u-${index}`] ? (
+                              <Check size={16} className="text-green-400" />
+                            ) : (
+                              <Copy size={16} className="text-white" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Line Info - if available */}
+                    {credential.lineInfo && (
+                      <div>
+                        <label className="text-white/75 text-xs block mb-1">
+                          Connection Details:
+                        </label>
+                        <div className="px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-xs font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
+                          {credential.lineInfo}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Expiry Date - if available */}
+                    {credential.expire && (
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-700">
+                        <span className="text-white/75 text-xs">Expires:</span>
+                        <span className="text-white text-xs font-medium">
+                          {new Date(
+                            credential.expire * 1000
+                          ).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
         {/* Action Buttons */}
         <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8 mt-2 md:mt-5">

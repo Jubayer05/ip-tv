@@ -51,15 +51,15 @@ async function createIPTVAccount({
   }
 
   // Step 1: Create free trial account with fallback candidates
-  const validTemplateIds = [1, 2, 3, 4, 5, 6, 7, 8];
+  const validTemplateIds = [1271, 1266]; // 1271: NoAdult, 1266: All
 
   const normalizeTemplateId = (t) => {
     const n = Number(t);
-    return validTemplateIds.includes(n) ? n : 2; // default to 2 (Europe)
+    return validTemplateIds.includes(n) ? n : 1271; // default to 1271 (NoAdult)
   };
 
   const templateCandidates = Array.from(
-    new Set([normalizeTemplateId(templateId), 2, 7, 8, 3, 4, 5, 6, 1])
+    new Set([normalizeTemplateId(templateId), 1271, 1266]) // Try requested, then NoAdult, then All
   );
 
   const tryCreateTrial = async (tplId) => {

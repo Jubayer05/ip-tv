@@ -1,12 +1,14 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowRight, Check, Wallet, X } from "lucide-react";
+import { ArrowRight, BadgeDollarSign, Check, Wallet, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import BalanceCheckoutPopup from "./BalanceCheckoutPopup";
 import GatewaySelectPopup from "./GatewaySelectPopup";
 import PaymentConfirmPopup from "./PaymentConfirmPopup";
+// Add to imports at the top
+import DepositPopup from "@/components/features/AffiliateRank/DepositPopup";
 
 export default function ThankRegisterPopup({ isOpen, onClose }) {
   const { language, translate, isLanguageLoaded } = useLanguage();
@@ -15,8 +17,11 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
   const [placing, setPlacing] = useState(false);
   const [showGatewaySelect, setShowGatewaySelect] = useState(false);
   const [showBalanceCheckout, setShowBalanceCheckout] = useState(false);
+  const [showDepositPopup, setShowDepositPopup] = useState(false);
+  const [orderWithCredentials, setOrderWithCredentials] = useState(null);
 
   // Original text constants
+  // Update the ORIGINAL_TEXTS object to include depositFunds
   const ORIGINAL_TEXTS = {
     title: "THANK YOU FOR YOUR ORDER!",
     subtitle:
@@ -25,6 +30,7 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
       backToHome: "Back To Home Page",
       paymentConfirm: "Confirm Your Payment",
       payWithBalance: "Pay with Balance",
+      depositFunds: "Deposit Funds", // Add this
       cancel: "Cancel",
     },
     footer: {
@@ -43,10 +49,11 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
     let isMounted = true;
     (async () => {
       try {
+        // Update the translation logic in useEffect (around line 49)
         const items = [
           ORIGINAL_TEXTS.title,
           ORIGINAL_TEXTS.subtitle,
-          ...Object.values(ORIGINAL_TEXTS.buttons),
+          ...Object.values(ORIGINAL_TEXTS.buttons), // This will now include depositFunds
           ...Object.values(ORIGINAL_TEXTS.footer),
         ];
 
@@ -54,7 +61,7 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
         if (!isMounted) return;
 
         const [tTitle, tSubtitle, ...tButtons] = translated;
-        const tFooter = tButtons.slice(4);
+        const tFooter = tButtons.slice(5); // Changed from 4 to 5 because we added one button
 
         setTexts({
           title: tTitle,
@@ -63,7 +70,8 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
             backToHome: tButtons[0],
             paymentConfirm: tButtons[1],
             payWithBalance: tButtons[2],
-            cancel: tButtons[3],
+            depositFunds: tButtons[3], // Add this
+            cancel: tButtons[4], // Changed from tButtons[3]
           },
           footer: {
             receipt: tFooter[0],
@@ -83,6 +91,7 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
   const handlePaymentConfirm = async () => {
     if (placing) return;
     setPlacing(true);
+
     try {
       const selRaw = localStorage.getItem("cs_order_selection");
       const sel = selRaw ? JSON.parse(selRaw) : null;
@@ -102,16 +111,16 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
         couponCode: "",
         paymentMethod: "Manual",
         paymentGateway: "None",
-        paymentStatus: "completed", // ensure completion on create
+        paymentStatus: "completed",
 
-        // IPTV Configuration - include val and con parameters
+        // IPTV Configuration
         lineType: sel.lineType || 0,
         templateId: sel.templateId || 2,
         macAddresses: sel.macAddresses || [],
         adultChannelsConfig: sel.adultChannelsConfig || [],
         generatedCredentials: sel.generatedCredentials || [],
-        val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1), // Add val parameter
-        con: sel.con || Number(sel.devices || 1), // Add con parameter
+        val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1),
+        con: sel.con || Number(sel.devices || 1),
 
         contactInfo: {
           fullName:
@@ -125,11 +134,22 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
         },
       };
 
+      // Show loading indicator
+      Swal.fire({
+        title: "Processing Order...",
+        text: "Please wait while we create your IPTV account",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err?.error || "Failed to place order");
@@ -145,7 +165,9 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
         });
       }
 
-      // Create IPTV accounts with val and con parameters
+      // Create IPTV accounts
+      let orderWithCreds = null;
+
       try {
         const iptvResponse = await fetch("/api/iptv/create-account", {
           method: "POST",
@@ -159,21 +181,120 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
 
         if (iptvResponse.ok) {
           const iptvData = await iptvResponse.json();
+          console.log("✅ IPTV credentials created:", iptvData);
+
+          // Update loading message
+          Swal.update({
+            title: "Creating IPTV Credentials...",
+            text: "Almost done, fetching your account details",
+          });
+
+          // Retry fetching order with credentials (try up to 5 times)
+          const maxRetries = 5;
+          let credentialsFound = false;
+
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            // Wait progressively longer: 1s, 1.5s, 2s, 2.5s, 3s
+            await new Promise((resolve) =>
+              setTimeout(resolve, attempt * 500 + 500)
+            );
+
+            console.log(
+              `🔄 Fetching order (attempt ${attempt}/${maxRetries})...`
+            );
+
+            const updatedOrderResponse = await fetch(
+              `/api/orders/by-number/${data.order.orderNumber}`
+            );
+
+            if (updatedOrderResponse.ok) {
+              const updatedData = await updatedOrderResponse.json();
+
+              // Verify credentials exist and have the required data
+              if (
+                updatedData.order?.iptvCredentials &&
+                updatedData.order.iptvCredentials.length > 0 &&
+                updatedData.order.iptvCredentials[0].username &&
+                updatedData.order.iptvCredentials[0].password
+              ) {
+                console.log("✅ Order with credentials fetched successfully!");
+                orderWithCreds = updatedData.order;
+                localStorage.setItem(
+                  "cs_last_order",
+                  JSON.stringify(updatedData.order)
+                );
+                credentialsFound = true;
+                break; // Success! Exit retry loop
+              } else {
+                console.log(
+                  `⚠️ Credentials not ready yet (attempt ${attempt}/${maxRetries})`
+                );
+              }
+            } else {
+              console.error(
+                `❌ Failed to fetch order (attempt ${attempt}):`,
+                await updatedOrderResponse.text()
+              );
+            }
+          }
+
+          // Close loading and proceed based on whether we got credentials
+          Swal.close();
+
+          if (credentialsFound && orderWithCreds) {
+            // SUCCESS: Show popup with credentials
+            setOrderWithCredentials(orderWithCreds);
+            setShowPaymentConfirm(true);
+          } else {
+            // FALLBACK: Credentials not ready, but order was created
+            console.warn("⚠️ Could not fetch credentials in time");
+
+            Swal.fire({
+              icon: "warning",
+              title: "Order Created",
+              html: `
+                Your order has been placed successfully!<br><br>
+                <strong>Order Number:</strong> ${data.order.orderNumber}<br><br>
+                Your IPTV credentials are being generated and will be sent to your email within a few minutes.<br><br>
+                You can also check your order history to view the credentials.
+              `,
+              confirmButtonColor: "#00b877",
+              confirmButtonText: "View Order History",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                window.location.href = "/dashboard/orders";
+              }
+            });
+
+            // Store order without credentials as fallback
+            localStorage.setItem("cs_last_order", JSON.stringify(data.order));
+          }
         } else {
-          console.error(
-            "Failed to create IPTV accounts:",
-            await iptvResponse.text()
+          Swal.close();
+          throw new Error(
+            "Failed to create IPTV accounts: " + (await iptvResponse.text())
           );
         }
       } catch (iptvError) {
-        console.error("Error creating IPTV accounts:", iptvError);
-      }
+        Swal.close();
+        console.error("❌ Error creating IPTV accounts:", iptvError);
 
-      try {
+        // Show error but still allow user to check order history
+        Swal.fire({
+          icon: "error",
+          title: "IPTV Account Creation Issue",
+          html: `
+            Your order was placed but there was an issue creating your IPTV account.<br><br>
+            <strong>Order Number:</strong> ${data.order.orderNumber}<br><br>
+            Please contact support or check your order history in a few minutes.
+          `,
+          confirmButtonColor: "#00b877",
+        });
+
         localStorage.setItem("cs_last_order", JSON.stringify(data.order));
-      } catch {}
-      setShowPaymentConfirm(true);
+      }
     } catch (e) {
+      Swal.close();
       console.error(e);
       Swal.fire({
         icon: "error",
@@ -187,10 +308,25 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
 
   const closePaymentConfirm = () => {
     setShowPaymentConfirm(false);
+    setOrderWithCredentials(null);
   };
 
   const handleBalancePaymentSuccess = () => {
     setShowPaymentConfirm(true);
+  };
+  // Add this handler function after handleBalancePaymentSuccess
+  const handleDepositSuccess = async () => {
+    setShowDepositPopup(false);
+    // Refresh user data after deposit
+    setTimeout(async () => {
+      if (user?._id) {
+        window.location.reload();
+      }
+    }, 1500);
+  };
+
+  const handleDepositFunds = () => {
+    setShowDepositPopup(true);
   };
 
   if (!isOpen) return null;
@@ -205,7 +341,6 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
           >
             <X size={20} className="sm:w-6 sm:h-6" />
           </button>
-
           <div className="flex justify-center mb-4 sm:mb-6">
             <div className="bg-cyan-400 rounded-full w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center">
               <Check
@@ -215,7 +350,6 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
               />
             </div>
           </div>
-
           <div className="text-center mb-6 sm:mb-8">
             <h1 className="text-white text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 tracking-wide">
               {texts.title}
@@ -226,20 +360,34 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
           </div>
 
           <div className="space-y-3 sm:space-y-4">
-            {/* Pay with Balance Button - Only show if user has balance */}
+            {/* Pay with Balance Button */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowBalanceCheckout(true)}
+                disabled={placing}
+                className="w-full flex-[0.6]  bg-green-600 text-white py-2 rounded-full font-semibold text-xs sm:text-sm hover:bg-green-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                <Wallet size={16} className="sm:w-5 sm:h-5" />
+                <div className="flex flex-col ">
+                  {texts.buttons.payWithBalance}
+                  <span className="text-xs opacity-75">
+                    (${user?.balance?.toFixed(2)})
+                  </span>
+                </div>
+              </button>
 
-            <button
-              onClick={() => setShowBalanceCheckout(true)}
-              disabled={placing}
-              className="w-full bg-green-600 text-white py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-green-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              <Wallet size={16} className="sm:w-5 sm:h-5" />
-              {texts.buttons.payWithBalance}
-              <span className="text-xs opacity-75">
-                (${user?.balance?.toFixed(2)})
-              </span>
-            </button>
+              {/* Deposit Funds Button - NEW */}
+              <button
+                onClick={handleDepositFunds}
+                disabled={placing}
+                className="w-full flex-[0.4] bg-purple-600 text-white py-2 rounded-full font-semibold text-xs sm:text-sm hover:bg-purple-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                <BadgeDollarSign size={16} className="sm:w-5 sm:h-5" />
+                {texts.buttons.depositFunds}
+              </button>
+            </div>
 
+            {/* Payment Confirm Button */}
             <button
               onClick={() => setShowGatewaySelect(true)}
               disabled={placing}
@@ -249,6 +397,7 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
               <ArrowRight size={16} className="sm:w-5 sm:h-5" />
             </button>
 
+            {/* Cancel Button */}
             <button
               onClick={onClose}
               className="w-full bg-transparent border-2 border-primary text-primary py-3 sm:py-4 rounded-full font-semibold text-xs sm:text-sm hover:bg-cyan-400 hover:text-black transition-colors"
@@ -256,19 +405,17 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
               {texts.buttons.cancel}
             </button>
           </div>
-
           <div className="text-center mt-6 sm:mt-8 space-y-2">
             <p className="text-gray-300 text-xs">{texts.footer.receipt}</p>
             <p className="text-gray-400 text-xs">{texts.footer.contact}</p>
           </div>
         </div>
       </div>
-
       <PaymentConfirmPopup
         isOpen={showPaymentConfirm}
         onClose={closePaymentConfirm}
+        order={orderWithCredentials}
       />
-
       <GatewaySelectPopup
         isOpen={showGatewaySelect}
         onClose={() => setShowGatewaySelect(false)}
@@ -279,6 +426,14 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
         isOpen={showBalanceCheckout}
         onClose={() => setShowBalanceCheckout(false)}
         onSuccess={handleBalancePaymentSuccess}
+      />
+      {/* Add this DepositPopup */}
+      <DepositPopup
+        isOpen={showDepositPopup}
+        onClose={() => setShowDepositPopup(false)}
+        onSuccess={handleDepositSuccess}
+        userId={user?._id}
+        userEmail={user?.email}
       />
     </>
   );

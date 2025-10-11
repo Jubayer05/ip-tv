@@ -17,8 +17,9 @@ export default function DashboardLayout({ children }) {
         </div>
 
         <div className="container flex flex-col md:flex-row gap-6">
-          <div className="px-4">
+          <div className="sticky z-10 md:block top-0 px-2 md:px-4 ">
             <Sidebar />
+            <div className="h-[1px] w-full bg-gray-800"></div>
           </div>
           <main className="flex-1 max-w-5xl mx-auto">{children}</main>
         </div>

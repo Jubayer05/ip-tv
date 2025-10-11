@@ -382,8 +382,8 @@ export async function sendIPTVCredentialsEmail({ toEmail, fullName, order }) {
           // If M3U URL is not found in lineInfo, construct it
           if (!m3uUrl && cred.username && cred.password) {
             // Construct M3U URL based on common IPTV service patterns
-            m3uUrl = `http://zlive.cc:8080/get.php?username=${cred.username}&password=${cred.password}&type=m3u_plus&output=ts`;
-            iptvUrl = `http://zlive.cc:8080/get.php?username=${cred.username}&password=${cred.password}&type=m3u_plus&output=ts`;
+            m3uUrl = `http://hfast.xyz/get.php?username=${cred.username}&password=${cred.password}&type=m3u_plus&output=ts`;
+            iptvUrl = `http://hfast.xyz/get.php?username=${cred.username}&password=${cred.password}&type=m3u_plus&output=ts`;
           }
 
           return `

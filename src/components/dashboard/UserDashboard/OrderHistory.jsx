@@ -3,7 +3,17 @@ import PaymentConfirmPopup from "@/components/features/Pricing/Popup/PaymentConf
 import Button from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { BookOpen, Check, Copy, Eye, EyeOff, Mail, X } from "lucide-react";
+import {
+  BookOpen,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Eye,
+  EyeOff,
+  Mail,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -19,8 +29,8 @@ const OrderHistory = () => {
   const [guideContent, setGuideContent] = useState("");
   const [showPasswords, setShowPasswords] = useState({});
   const [copiedCredentials, setCopiedCredentials] = useState({});
+  const [expandedCredentials, setExpandedCredentials] = useState({});
 
-  // Original static texts
   const ORIGINAL_TEXTS = {
     loadingOrders: "Loading your orders...",
     noOrdersYet: "No Orders Yet",
@@ -62,11 +72,15 @@ const OrderHistory = () => {
     copyCredentials: "Copy Credentials",
     credentialsCopied: "Credentials Copied!",
     iptvCredentials: "IPTV Credentials",
+    showDetails: "Show Details",
+    hideDetails: "Hide Details",
+    m3uLink: "M3U Link",
+    connectionDetails: "Connection Details",
+    expires: "Expires",
   };
 
   const [texts, setTexts] = useState(ORIGINAL_TEXTS);
 
-  // Translate texts
   useEffect(() => {
     if (!isLanguageLoaded || language?.code === "en") {
       setTexts(ORIGINAL_TEXTS);
@@ -189,6 +203,13 @@ const OrderHistory = () => {
     }));
   };
 
+  const toggleCredentialDetails = (orderId, credentialIndex) => {
+    setExpandedCredentials((prev) => ({
+      ...prev,
+      [`${orderId}-${credentialIndex}`]: !prev[`${orderId}-${credentialIndex}`],
+    }));
+  };
+
   const copyCredentials = async (orderId, credential) => {
     const credentialText = `${texts.username}: ${credential.username}\n${texts.password}: ${credential.password}`;
 
@@ -199,7 +220,6 @@ const OrderHistory = () => {
         [`${orderId}-${credential.username}`]: true,
       }));
 
-      // Reset the copied state after 2 seconds
       setTimeout(() => {
         setCopiedCredentials((prev) => ({
           ...prev,
@@ -209,6 +229,32 @@ const OrderHistory = () => {
     } catch (error) {
       console.error("Failed to copy credentials:", error);
     }
+  };
+
+  const copyToClipboard = async (text, key) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedCredentials((prev) => ({ ...prev, [key]: true }));
+      setTimeout(() => {
+        setCopiedCredentials((prev) => ({ ...prev, [key]: false }));
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  };
+
+  const buildM3uUrl = (credential) => {
+    if (credential.lineInfo) {
+      const lines = credential.lineInfo.split("\n");
+      const m3uLine = lines.find((line) => line.includes("m3u_plus"));
+      if (m3uLine) return m3uLine;
+    }
+
+    if (credential.username && credential.password) {
+      return `http://hfast.xyz/get.php?username=${credential.username}&password=${credential.password}&type=m3u_plus&output=ts`;
+    }
+
+    return "";
   };
 
   const getLineTypeName = (lineType) => {
@@ -274,11 +320,7 @@ const OrderHistory = () => {
           return (
             <div
               key={order._id}
-              className="bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#FFFFFF26] rounded-xl p-6 cursor-pointer"
-              onClick={() => {
-                setSelectedOrder(order);
-                setPopupOpen(true);
-              }}
+              className=" overflow-x-auto overflow-hidden bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#FFFFFF26] rounded-xl p-6"
             >
               {/* Order Header */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -428,6 +470,18 @@ const OrderHistory = () => {
                           </>
                         )}
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedOrder(order);
+                          setPopupOpen(true);
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        View Order
+                      </Button>
                     </div>
                   </div>
 
@@ -443,43 +497,75 @@ const OrderHistory = () => {
                           {order.iptvCredentials.map((credential, index) => {
                             const isPasswordVisible =
                               showPasswords[`${order._id}-${index}`];
-                            const isCopied =
-                              copiedCredentials[
-                                `${order._id}-${credential.username}`
-                              ];
+                            const isExpanded =
+                              expandedCredentials[`${order._id}-${index}`];
+                            const m3uUrl = buildM3uUrl(credential);
 
                             return (
                               <div
                                 key={index}
-                                className="bg-black/30 rounded-lg p-3"
+                                className="bg-black/30 rounded-lg p-3 space-y-3"
                               >
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-xs text-gray-400">
-                                    {texts.account} #{index + 1}
-                                  </span>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      copyCredentials(order._id, credential);
-                                    }}
-                                    className="flex items-center gap-1 text-xs px-2 py-1 h-6"
-                                  >
-                                    {isCopied ? (
-                                      <>
-                                        <Check className="w-3 h-3" />
-                                        {texts.credentialsCopied}
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Copy className="w-3 h-3" />
-                                        {texts.copyCredentials}
-                                      </>
-                                    )}
-                                  </Button>
+                                {/* Header with Account # and Toggle */}
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-400">
+                                      {texts.account} #{index + 1}
+                                    </span>
+                                    <span className="text-xs text-cyan-400">
+                                      {getLineTypeName(credential.lineType)}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        copyCredentials(order._id, credential)
+                                      }
+                                      className="flex items-center gap-1 text-xs px-2 py-1 h-6"
+                                    >
+                                      {copiedCredentials[
+                                        `${order._id}-${credential.username}`
+                                      ] ? (
+                                        <>
+                                          <Check className="w-3 h-3" />
+                                          {texts.credentialsCopied}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy className="w-3 h-3" />
+                                          {texts.copyCredentials}
+                                        </>
+                                      )}
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        toggleCredentialDetails(
+                                          order._id,
+                                          index
+                                        )
+                                      }
+                                      className="flex items-center gap-1 text-xs px-2 py-1 h-6"
+                                    >
+                                      {isExpanded ? (
+                                        <>
+                                          <ChevronUp className="w-3 h-3" />
+                                          {texts.hideDetails}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ChevronDown className="w-3 h-3" />
+                                          {texts.showDetails}
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
                                 </div>
 
+                                {/* Basic Credentials (Always Visible) */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   <div>
                                     <label className="text-xs text-gray-400 block mb-1">
@@ -491,17 +577,15 @@ const OrderHistory = () => {
                                         value={credential.username}
                                         readOnly
                                         className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm font-mono"
-                                        onClick={(e) => e.stopPropagation()}
                                       />
                                       <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
+                                        onClick={() =>
                                           navigator.clipboard.writeText(
                                             credential.username
-                                          );
-                                        }}
+                                          )
+                                        }
                                         className="px-2 py-1 h-8"
                                       >
                                         <Copy className="w-3 h-3" />
@@ -510,7 +594,7 @@ const OrderHistory = () => {
                                   </div>
 
                                   <div>
-                                    <label className="text-xs text-gray-400 block mb-1">
+                                    <label className="text-xs text-gray-400 mb-1 ">
                                       {texts.password}
                                     </label>
                                     <div className="flex items-center gap-2">
@@ -523,18 +607,16 @@ const OrderHistory = () => {
                                         value={credential.password}
                                         readOnly
                                         className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm font-mono"
-                                        onClick={(e) => e.stopPropagation()}
                                       />
                                       <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
+                                        onClick={() =>
                                           togglePasswordVisibility(
                                             order._id,
                                             index
-                                          );
-                                        }}
+                                          )
+                                        }
                                         className="px-2 py-1 h-8"
                                       >
                                         {isPasswordVisible ? (
@@ -546,12 +628,11 @@ const OrderHistory = () => {
                                       <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
+                                        onClick={() =>
                                           navigator.clipboard.writeText(
                                             credential.password
-                                          );
-                                        }}
+                                          )
+                                        }
                                         className="px-2 py-1 h-8"
                                       >
                                         <Copy className="w-3 h-3" />
@@ -559,6 +640,70 @@ const OrderHistory = () => {
                                     </div>
                                   </div>
                                 </div>
+
+                                {/* Extended Details (Collapsible) */}
+                                {isExpanded && (
+                                  <div className="space-y-3 pt-3 border-t border-gray-700">
+                                    {/* M3U Link - Only for M3U Playlist type */}
+                                    {credential.lineType === 0 && m3uUrl && (
+                                      <div>
+                                        <label className="text-xs text-gray-400 block mb-1">
+                                          {texts.m3uLink}
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                          <div className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-xs font-mono overflow-x-auto whitespace-nowrap">
+                                            {m3uUrl}
+                                          </div>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                              copyToClipboard(
+                                                m3uUrl,
+                                                `m3u-${order._id}-${index}`
+                                              )
+                                            }
+                                            className="px-2 py-1 h-8"
+                                          >
+                                            {copiedCredentials[
+                                              `m3u-${order._id}-${index}`
+                                            ] ? (
+                                              <Check className="w-3 h-3 text-green-400" />
+                                            ) : (
+                                              <Copy className="w-3 h-3" />
+                                            )}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Line Info */}
+                                    {credential.lineInfo && (
+                                      <div>
+                                        <label className="text-xs text-gray-400 block mb-1">
+                                          {texts.connectionDetails}
+                                        </label>
+                                        <div className="px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-xs font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
+                                          {credential.lineInfo}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Expiry Date */}
+                                    {credential.expire && (
+                                      <div className="flex justify-between items-center pt-2 border-t border-gray-700">
+                                        <span className="text-xs text-gray-400">
+                                          {texts.expires}:
+                                        </span>
+                                        <span className="text-xs text-white font-medium">
+                                          {new Date(
+                                            credential.expire * 1000
+                                          ).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             );
                           })}

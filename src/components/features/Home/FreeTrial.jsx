@@ -22,7 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 const FreeTrialCard = () => {
   const { user } = useAuth();
   const { translate } = useLanguage();
-  const [selectedTemplate, setSelectedTemplate] = useState(1271); // Europe template (ID 2)
+  const [selectedTemplate, setSelectedTemplate] = useState(1271);
   const [selectedLineType, setSelectedLineType] = useState(0);
   const [macAddress, setMacAddress] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,7 +67,6 @@ const FreeTrialCard = () => {
     ],
   });
 
-  // Add state to store original untranslated content
   const [originalFreeTrialContent, setOriginalFreeTrialContent] =
     useState(null);
 
@@ -78,7 +77,6 @@ const FreeTrialCard = () => {
     let isMounted = true;
     (async () => {
       try {
-        // Collect all translatable texts from original content
         const textsToTranslate = [
           originalFreeTrialContent.title,
           originalFreeTrialContent.description,
@@ -93,7 +91,6 @@ const FreeTrialCard = () => {
         const translated = await translate(textsToTranslate);
         if (!isMounted) return;
 
-        // Calculate indices for different sections
         const titleIndex = 0;
         const descriptionIndex = 1;
         const featuresStartIndex = 2;
@@ -101,7 +98,6 @@ const FreeTrialCard = () => {
         const includedTitleIndex = featuresStartIndex + featuresCount * 2;
         const includedItemsStartIndex = includedTitleIndex + 1;
 
-        // Reconstruct the translated freeTrialContent
         const translatedFreeTrialContent = {
           title: translated[titleIndex],
           description: translated[descriptionIndex],
@@ -127,7 +123,7 @@ const FreeTrialCard = () => {
     };
   }, [translate, originalFreeTrialContent]);
 
-  // Update the fetch function to handle both backend and default content
+  // Fetch free trial content - SINGLE useEffect (removed duplicate)
   useEffect(() => {
     const fetchFreeTrialContent = async () => {
       try {
@@ -135,10 +131,8 @@ const FreeTrialCard = () => {
         const data = await response.json();
 
         if (data.success && data.data.freeTrialContent) {
-          // Store the original untranslated content from backend
           setOriginalFreeTrialContent(data.data.freeTrialContent);
         } else {
-          // Use default content if no content from API
           setOriginalFreeTrialContent({
             title: "Start Your Free Trial",
             description:
@@ -174,7 +168,6 @@ const FreeTrialCard = () => {
         }
       } catch (error) {
         console.error("Failed to fetch free trial content:", error);
-        // Use default content on error
         setOriginalFreeTrialContent({
           title: "Start Your Free Trial",
           description:
@@ -211,17 +204,14 @@ const FreeTrialCard = () => {
     };
 
     fetchFreeTrialContent();
-  }, []); // Only run once on mount
+  }, []);
 
-  // Memoize hasUsedFreeTrial to prevent dependency array changes
   const hasUsedFreeTrial = useMemo(() => {
     return user?.freeTrial?.hasUsed || visitorEligible === false;
   }, [user?.freeTrial?.hasUsed, visitorEligible]);
 
-  // Check if VPN is detected and blocking
   const isVpnBlocked = vpnStatus?.isVPN === true;
 
-  // Initialize FingerprintJS
   useEffect(() => {
     const initFingerprint = async () => {
       try {
@@ -237,11 +227,10 @@ const FreeTrialCard = () => {
     initFingerprint();
   }, []);
 
-  // After visitorId is set, check/register it
   useEffect(() => {
     if (!visitorId) return;
 
-    let isMounted = true; // Prevent state updates if component unmounts
+    let isMounted = true;
 
     (async () => {
       try {
@@ -252,54 +241,42 @@ const FreeTrialCard = () => {
         });
         const json = await res.json();
 
-        // Only update state if component is still mounted
         if (!isMounted) return;
 
         if (json.success) {
           setVisitorEligible(json.eligible);
 
-          // If fraud detected, refresh user data to get updated freeTrial status
           if (!json.eligible && user?.email) {
-            // Trigger a refresh of user data in AuthContext
-            window.location.reload(); // Simple approach - you might want to implement a more elegant refresh
+            window.location.reload();
           }
         } else {
-          // Set to false instead of true to prevent infinite loop
-          // Only allow trial if we can't determine eligibility
           setVisitorEligible(false);
         }
       } catch (e) {
         console.error("Visitor check error:", e);
-        // Set to false instead of true to prevent infinite loop
-        // Only allow trial if we can't determine eligibility
         if (isMounted) {
           setVisitorEligible(false);
         }
       }
     })();
 
-    // Cleanup function to prevent state updates after unmount
     return () => {
       isMounted = false;
     };
-  }, [visitorId]); // Remove user?.email dependency to prevent unnecessary re-runs
+  }, [visitorId]);
 
-  // Check VPN status when user is logged in and visitor is eligible
   useEffect(() => {
-    // Only check VPN if user hasn't used free trial yet
     if (!user || visitorEligible === false || hasUsedFreeTrial) return;
 
     const checkVpnStatus = async () => {
       setVpnChecking(true);
       try {
-        // Get user's IP address
         const ipResponse = await fetch("https://api.ipify.org?format=json");
         if (!ipResponse.ok) {
           throw new Error("Failed to get IP address");
         }
         const { ip } = await ipResponse.json();
 
-        // Check VPN status
         const vpnResponse = await fetch("/api/vpn/check", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -318,7 +295,6 @@ const FreeTrialCard = () => {
         }
       } catch (error) {
         console.error("VPN check error:", error);
-        // Default to allowing if we can't detect VPN status
         setVpnStatus({ isVPN: false, status: "error", error: error.message });
       } finally {
         setVpnChecking(false);
@@ -326,9 +302,8 @@ const FreeTrialCard = () => {
     };
 
     checkVpnStatus();
-  }, [user, visitorEligible, hasUsedFreeTrial]); // Now hasUsedFreeTrial is stable
+  }, [user, visitorEligible, hasUsedFreeTrial]);
 
-  // Load IPTV API key on component mount
   useEffect(() => {
     const loadIptvApiKey = async () => {
       try {
@@ -342,7 +317,6 @@ const FreeTrialCard = () => {
     loadIptvApiKey();
   }, []);
 
-  // Line type options
   const lineTypes = [
     {
       id: 0,
@@ -370,7 +344,6 @@ const FreeTrialCard = () => {
       return;
     }
 
-    // Only check VPN if user hasn't used free trial yet
     if (!hasUsedFreeTrial && isVpnBlocked) {
       setError(
         "VPN, Proxy, or Tor connections are not allowed for free trials. Please disable your VPN and try again."
@@ -388,7 +361,6 @@ const FreeTrialCard = () => {
     setSuccess(false);
 
     try {
-      // Use user's email or username as the token
       const token = user.email || user.profile?.username;
 
       if (!token) {
@@ -403,7 +375,7 @@ const FreeTrialCard = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          key: iptvApiKey, // Use the API key from database
+          key: iptvApiKey,
           templateId: selectedTemplate,
           lineType: selectedLineType,
           mac: selectedLineType > 0 ? macAddress : undefined,
@@ -418,7 +390,6 @@ const FreeTrialCard = () => {
         setTrialData(data.data);
         setError("");
 
-        // Send email with trial credentials
         try {
           const emailResponse = await fetch("/api/emails/send-free-trial", {
             method: "POST",
@@ -441,7 +412,6 @@ const FreeTrialCard = () => {
           }
         } catch (emailError) {
           console.error("❌ Error sending free trial email:", emailError);
-          // Don't show error to user as the trial was successful
         }
       } else {
         setError(data.error || "Failed to create free trial");
@@ -457,30 +427,10 @@ const FreeTrialCard = () => {
   const handleLineTypeChange = (lineType) => {
     setSelectedLineType(lineType);
     if (lineType === 0) {
-      setMacAddress(""); // Clear MAC address for M3U
+      setMacAddress("");
     }
   };
 
-  // Fetch free trial content
-  useEffect(() => {
-    const fetchFreeTrialContent = async () => {
-      try {
-        const response = await fetch("/api/admin/settings");
-        const data = await response.json();
-        if (data.success && data.data.freeTrialContent) {
-          // Store the original untranslated content from backend
-          setOriginalFreeTrialContent(data.data.freeTrialContent);
-        }
-      } catch (error) {
-        console.error("Failed to fetch free trial content:", error);
-        // Keep default content if fetch fails
-      }
-    };
-
-    fetchFreeTrialContent();
-  }, []); // Only run once on mount
-
-  // Icon mapping for dynamic features
   const iconMap = {
     clock: Clock,
     star: Star,
@@ -489,7 +439,6 @@ const FreeTrialCard = () => {
     checkCircle: CheckCircle,
   };
 
-  // Original text constants for translation
   const ORIGINAL_TEXTS = {
     freeTrialCreatedSuccessfully: "Free Trial Created Successfully!",
     your24HourFreeTrialIsNowActive: "Your 24-hour free trial is now active",
@@ -519,10 +468,8 @@ const FreeTrialCard = () => {
     upgradeToPremium: "Upgrade to Premium",
   };
 
-  // Translated text state
   const [translatedTexts, setTranslatedTexts] = useState(ORIGINAL_TEXTS);
 
-  // Translate texts when language changes
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -556,7 +503,7 @@ const FreeTrialCard = () => {
             </p>
           </div>
 
-          {/* Complete Trial Information */}
+          {/* Trial Details - Shows each field once */}
           <div className="bg-black/30 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 text-left">
             <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">
               {translatedTexts.trialDetails}
@@ -615,13 +562,12 @@ const FreeTrialCard = () => {
             </div>
           </div>
 
-          {/* Connection Information */}
+          {/* Connection Information - Shows M3U and IPTV URLs */}
           <div className="bg-black/30 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 text-left">
             <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">
               {translatedTexts.connectionInformation}
             </h3>
             <div className="space-y-3 sm:space-y-4">
-              {/* M3U Playlist URL */}
               {trialData.lineInfo &&
                 trialData.lineInfo.includes("m3u_plus") && (
                   <div className="bg-black/50 rounded-lg p-3 sm:p-4">
@@ -636,7 +582,6 @@ const FreeTrialCard = () => {
                   </div>
                 )}
 
-              {/* IPTV URL */}
               {trialData.lineInfo &&
                 trialData.lineInfo.includes("IPTV Url:") && (
                   <div className="bg-black/50 rounded-lg p-3 sm:p-4">
@@ -652,34 +597,10 @@ const FreeTrialCard = () => {
                     </p>
                   </div>
                 )}
-
-              {/* Additional connection info from lineInfo */}
-              {trialData.lineInfo && (
-                <div className="bg-black/50 rounded-lg p-3 sm:p-4">
-                  <p className="text-gray-400 text-xs sm:text-sm mb-2 font-medium">
-                    Complete Connection Details:
-                  </p>
-                  <div className="space-y-2">
-                    {trialData.lineInfo.split("\n").map((line, index) => {
-                      if (line.trim()) {
-                        return (
-                          <div
-                            key={index}
-                            className="text-white text-xs sm:text-sm font-mono bg-gray-900/50 p-2 rounded"
-                          >
-                            {line}
-                          </div>
-                        );
-                      }
-                      return null;
-                    })}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Copy to Clipboard Button */}
+          {/* Copy Button */}
           <div className="mb-4 sm:mb-6">
             <Button
               variant="secondary"
@@ -695,7 +616,6 @@ const FreeTrialCard = () => {
                   trialData.lineInfo || "No connection details available"
                 }`;
                 navigator.clipboard.writeText(connectionDetails);
-                // You might want to add a toast notification here
               }}
               className="mr-3 w-full sm:w-auto"
             >
@@ -721,7 +641,6 @@ const FreeTrialCard = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 font-secondary text-center mt-3 sm:mt-5">
-      {/* VPN Status Display - Only show if user hasn't used free trial */}
       {!hasUsedFreeTrial && vpnChecking && (
         <div className="mb-3 sm:mb-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg flex items-center justify-center gap-2">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
@@ -750,7 +669,6 @@ const FreeTrialCard = () => {
       )}
 
       <div className="bg-gradient-to-br from-[#0C171C] to-[#1a1a1a] border border-[#FFFFFF26] rounded-2xl overflow-hidden">
-        {/* Header */}
         <div className="bg-gradient-to-r from-[#00b877] to-[#44dcf3] p-4 sm:p-6 lg:p-8 text-center">
           <div className="flex items-center justify-center mb-3 sm:mb-4">
             <Play className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
@@ -763,7 +681,6 @@ const FreeTrialCard = () => {
           </p>
         </div>
 
-        {/* Features */}
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
             {freeTrialContent.features.map((feature) => {
@@ -782,7 +699,6 @@ const FreeTrialCard = () => {
             })}
           </div>
 
-          {/* Line Type Selection */}
           <div className="mb-6 sm:mb-8">
             <h3 className="text-white font-semibold text-lg sm:text-xl mb-3 sm:mb-4 flex items-center justify-center sm:justify-start">
               <Zap className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-[#44dcf3]" />
@@ -811,7 +727,6 @@ const FreeTrialCard = () => {
             </div>
           </div>
 
-          {/* MAC Address Input (for MAG and Enigma2) */}
           {selectedLineType > 0 && (
             <div className="mb-6 sm:mb-8">
               <h3 className="text-white font-semibold text-base sm:text-lg mb-2 sm:mb-3">
@@ -830,7 +745,6 @@ const FreeTrialCard = () => {
             </div>
           )}
 
-          {/* Error Display */}
           {error && (
             <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center">
               <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 mr-2 sm:mr-3 flex-shrink-0" />
@@ -838,10 +752,8 @@ const FreeTrialCard = () => {
             </div>
           )}
 
-          {/* Start Trial Button */}
           <div className="text-center">
             {hasUsedFreeTrial ? (
-              // Show upgrade button if user has used free trial
               <Link href="/packages">
                 <Button
                   variant="primary"
@@ -855,7 +767,6 @@ const FreeTrialCard = () => {
                 </Button>
               </Link>
             ) : (
-              // Show start trial button if user hasn't used free trial
               <Button
                 variant="primary"
                 size="md"
@@ -902,7 +813,6 @@ const FreeTrialCard = () => {
             )}
           </div>
 
-          {/* Additional Info */}
           <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-black/30 rounded-xl">
             <h3 className="text-white font-semibold text-base sm:text-lg mb-2 sm:mb-3">
               {freeTrialContent.includedTitle}
