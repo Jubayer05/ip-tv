@@ -2,7 +2,7 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 export default function DepositPopup({
@@ -20,7 +20,6 @@ export default function DepositPopup({
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [loadingMethods, setLoadingMethods] = useState(true);
   const [selectedGateway, setSelectedGateway] = useState(null);
-  const pollRef = useRef(null);
 
   // Original text constants for translation
   const ORIGINAL_TEXTS = {
@@ -101,14 +100,7 @@ export default function DepositPopup({
       setLoading(false);
       setStatusText("");
       setSelectedGateway(null);
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
     }
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
   }, [isOpen]);
 
   const fetchPaymentMethods = async () => {
@@ -190,30 +182,16 @@ export default function DepositPopup({
         throw new Error("Invalid deposit creation response");
       }
 
+      // Open payment gateway in new tab
       window.open(checkoutUrl, "_blank", "noopener,noreferrer");
 
-      setStatusText(texts.waitingForConfirmation);
-      pollRef.current = setInterval(async () => {
-        try {
-          const st = await fetch(`/api/deposits/status/${depositId}`);
-          if (!st.ok) return;
-          const s = await st.json();
-          if (s?.status === "completed") {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-            setStatusText(texts.paymentConfirmed);
-            onSuccess?.();
-            onClose?.();
-          } else if (s?.status === "failed" || s?.status === "cancelled") {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-            setStatusText(texts.paymentFailed);
-          }
-        } catch {}
-      }, 4000);
+      // Redirect to payment status page instead of polling here
+      window.location.href = `/payment-status/${depositId}?provider=${selectedGateway.gateway}&type=deposit`;
+
+      // Close the popup
+      onClose?.();
     } catch (e) {
       setStatusText(e?.message || texts.failedToStartPayment);
-    } finally {
       setLoading(false);
     }
   };

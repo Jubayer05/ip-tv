@@ -2,7 +2,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
   const { user } = useAuth();
@@ -12,7 +12,6 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
   const [loadingMethods, setLoadingMethods] = useState(true);
   const [guide, setGuide] = useState({ title: "", content: "" });
   const [loadingGuide, setLoadingGuide] = useState(true);
-  const pollRef = useRef(null);
 
   // Fetch payment methods when popup opens
   useEffect(() => {
@@ -20,9 +19,6 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
       fetchPaymentMethods();
       fetchGuide();
     }
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
   }, [isOpen]);
 
   const fetchPaymentMethods = async () => {
@@ -129,39 +125,16 @@ export default function GatewaySelectPopup({ isOpen, onClose, onSuccess }) {
         throw new Error("Invalid payment creation response");
       }
 
-      // Open provider checkout
+      // Open provider checkout in new tab
       window.open(checkoutUrl, "_blank", "noopener,noreferrer");
 
-      // Start polling provider status through our API
-      setStatusText("Waiting for payment confirmation...");
-      pollRef.current = setInterval(async () => {
-        try {
-          const st = await fetch(
-            `/api/payments/${gateway}/status/${paymentId}`
-          );
-          if (!st.ok) return;
-          const s = await st.json();
-          if (
-            s?.status === "completed" ||
-            s?.status === "paid" ||
-            s?.paid === true
-          ) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-            setStatusText("Payment confirmed.");
-            // Let parent finalize order using existing callback
-            onSuccess?.();
-            onClose?.();
-          } else if (s?.status === "failed" || s?.status === "canceled") {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-            setStatusText("Payment failed or canceled.");
-          }
-        } catch {}
-      }, 4000);
+      // Redirect to payment status page instead of polling here
+      window.location.href = `/payment-status/${paymentId}?provider=${gateway}`;
+
+      // Close the popup
+      onClose?.();
     } catch (e) {
       setStatusText(e?.message || "Failed to start payment");
-    } finally {
       setLoading(false);
     }
   };
