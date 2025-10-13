@@ -81,19 +81,28 @@ export async function POST(request) {
       );
     }
 
-    // Auto-assign templateId based on adult channels
-    // For M3U: use the single adultChannels boolean
-    // For MAG/Enigma2: check if ANY device has adult channels enabled
+    // Auto-assign templateId based on adult channels for multiple accounts
     let templateId;
-    if (lineType === 0) {
-      // M3U
-      templateId = getTemplateIdByAdultChannels(adultChannels);
-    } else {
-      // MAG/Enigma2 - check if any device has adult channels
-      const hasAnyAdultChannels = adultChannelsConfig.some(
-        (enabled) => enabled
+
+    // Check if we have account configurations from the new multi-account system
+    if (body.accountConfigurations && body.accountConfigurations.length > 0) {
+      // Use the new account configurations to determine template
+      const hasAnyAdultChannels = body.accountConfigurations.some(
+        (config) => config.adultChannels
       );
       templateId = getTemplateIdByAdultChannels(hasAnyAdultChannels);
+    } else {
+      // Fallback to old logic for backward compatibility
+      if (lineType === 0) {
+        // M3U
+        templateId = getTemplateIdByAdultChannels(adultChannels);
+      } else {
+        // MAG/Enigma2 - check if any device has adult channels
+        const hasAnyAdultChannels = adultChannelsConfig.some(
+          (enabled) => enabled
+        );
+        templateId = getTemplateIdByAdultChannels(hasAnyAdultChannels);
+      }
     }
 
     // Validate MAC addresses for MAG/Enigma2
@@ -115,27 +124,18 @@ export async function POST(request) {
       }
     }
 
-    // Update the validation for credentials match quantity to handle empty array
+    // Update the validation for credentials match quantity to handle multiple accounts
     if (generatedCredentials.length > 0) {
-      if (lineType === 0) {
-        // M3U - should have 1 credential
-        if (generatedCredentials.length !== 1) {
-          return NextResponse.json(
-            { error: "M3U line type requires exactly 1 credential" },
-            { status: 400 }
-          );
-        }
-      } else {
-        // MAG/Enigma2 - should have credentials for each device
-        if (generatedCredentials.length !== quantity) {
-          return NextResponse.json(
-            {
-              error:
-                "MAG/Enigma2 line type requires credentials for each device",
-            },
-            { status: 400 }
-          );
-        }
+      // For both M3U and MAG/Enigma2, we now support multiple accounts
+      // Each account should have its own credentials
+      if (generatedCredentials.length !== quantity) {
+        return NextResponse.json(
+          {
+            error: `Expected ${quantity} credentials for ${quantity} accounts, but received ${generatedCredentials.length}`,
+            details: `Each IPTV account requires its own username and password credentials.`,
+          },
+          { status: 400 }
+        );
       }
     }
 
@@ -287,7 +287,7 @@ export async function POST(request) {
       finalTotal = Math.round((discountedTotal + adultFee) * 100) / 100;
     }
 
-    // Update the orderProducts to use auto-assigned templateId
+    // Update the orderProducts to handle multiple account configurations
     const orderProducts = [
       {
         productId: product._id,
@@ -304,9 +304,12 @@ export async function POST(request) {
         macAddresses: lineType > 0 ? macAddresses : [],
         adultChannelsConfig: lineType > 0 ? adultChannelsConfig : [],
 
-        // Generated credentials (optional)
+        // Generated credentials for multiple accounts
         generatedCredentials:
           generatedCredentials.length > 0 ? generatedCredentials : [],
+
+        // Store account configurations for reference
+        accountConfigurations: body.accountConfigurations || [],
       },
     ];
 

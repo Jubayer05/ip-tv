@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
+import { useState } from "react";
 
 export default function IPTVAccountCreator() {
   const [formData, setFormData] = useState({
@@ -14,9 +14,9 @@ export default function IPTVAccountCreator() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: name === 'val' || name === 'con' ? parseInt(value) : value
+      [name]: name === "val" || name === "con" ? parseInt(value) : value,
     }));
   };
 
@@ -51,7 +51,7 @@ export default function IPTVAccountCreator() {
   return (
     <div className="max-w-md mx-auto p-6 bg-gray-800 rounded-lg">
       <h2 className="text-xl font-bold text-white mb-4">Create IPTV Account</h2>
-      
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-white text-sm font-medium mb-2">
@@ -100,19 +100,19 @@ export default function IPTVAccountCreator() {
           </select>
         </div>
 
-        <Button
-          type="submit"
-          disabled={loading}
-          className="w-full"
-        >
+        <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Creating..." : "Create Account"}
         </Button>
       </form>
 
       {result && (
-        <div className={`mt-4 p-4 rounded ${
-          result.success ? "bg-green-900 text-green-200" : "bg-red-900 text-red-200"
-        }`}>
+        <div
+          className={`mt-4 p-4 rounded ${
+            result.success
+              ? "bg-green-900 text-green-200"
+              : "bg-red-900 text-red-200"
+          }`}
+        >
           {result.success ? (
             <div>
               <h3 className="font-bold">Success!</h3>
@@ -140,5 +140,3 @@ export default function IPTVAccountCreator() {
     </div>
   );
 }
-
-

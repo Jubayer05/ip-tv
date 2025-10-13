@@ -516,7 +516,7 @@ const OrderHistory = () => {
                                       {getLineTypeName(credential.lineType)}
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
                                     <Button
                                       variant="outline"
                                       size="sm"

@@ -184,6 +184,11 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
 
       // Create IPTV accounts after successful payment with val and con parameters
       try {
+        // Get the actual quantity from selection data
+        const actualQuantity = sel.isCustomQuantity
+          ? parseInt(sel.customQuantity) || 1
+          : parseInt(sel.quantity) || 1;
+
         const iptvResponse = await fetch("/api/iptv/create-account", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -191,11 +196,15 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
             orderNumber: data.order.orderNumber,
             val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1),
             con: sel.con || Number(sel.devices || 1),
+            quantity: actualQuantity, // Add quantity parameter
+            accountConfigurations: sel.accountConfigurations || [], // Include account configurations
+            generatedCredentials: sel.generatedCredentials || [], // Include pre-generated credentials
           }),
         });
 
         if (iptvResponse.ok) {
           const iptvData = await iptvResponse.json();
+          console.log("✅ IPTV credentials created:", iptvData);
         } else {
           console.error(
             "Failed to create IPTV accounts:",

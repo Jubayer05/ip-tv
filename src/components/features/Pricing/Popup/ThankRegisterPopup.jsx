@@ -10,15 +10,28 @@ import PaymentConfirmPopup from "./PaymentConfirmPopup";
 // Add to imports at the top
 import DepositPopup from "@/components/features/AffiliateRank/DepositPopup";
 
-export default function ThankRegisterPopup({ isOpen, onClose }) {
+export default function ThankRegisterPopup({
+  isOpen,
+  onClose,
+  // Add all the new props
+  showPaymentConfirm,
+  setShowPaymentConfirm,
+  placing,
+  setPlacing,
+  showGatewaySelect,
+  setShowGatewaySelect,
+  showBalanceCheckout,
+  setShowBalanceCheckout,
+  showDepositPopup,
+  setShowDepositPopup,
+  orderWithCredentials,
+  setOrderWithCredentials,
+  handleBalancePaymentSuccess,
+  handleDepositSuccess,
+  handleDepositFunds,
+}) {
   const { language, translate, isLanguageLoaded } = useLanguage();
   const { user } = useAuth();
-  const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
-  const [placing, setPlacing] = useState(false);
-  const [showGatewaySelect, setShowGatewaySelect] = useState(false);
-  const [showBalanceCheckout, setShowBalanceCheckout] = useState(false);
-  const [showDepositPopup, setShowDepositPopup] = useState(false);
-  const [orderWithCredentials, setOrderWithCredentials] = useState(null);
 
   // Original text constants
   // Update the ORIGINAL_TEXTS object to include depositFunds
@@ -169,6 +182,12 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
       let orderWithCreds = null;
 
       try {
+        // Get the actual quantity from selection data
+        const actualQuantity = sel.isCustomQuantity
+          ? parseInt(sel.customQuantity) || 1
+          : parseInt(sel.quantity) || 1;
+
+        // Create IPTV accounts for each quantity
         const iptvResponse = await fetch("/api/iptv/create-account", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -176,6 +195,9 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
             orderNumber: data.order.orderNumber,
             val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1),
             con: sel.con || Number(sel.devices || 1),
+            quantity: actualQuantity, // Add quantity parameter
+            accountConfigurations: sel.accountConfigurations || [], // Include account configurations
+            generatedCredentials: sel.generatedCredentials || [], // Include pre-generated credentials
           }),
         });
 
@@ -186,7 +208,7 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
           // Update loading message
           Swal.update({
             title: "Creating IPTV Credentials...",
-            text: "Almost done, fetching your account details",
+            text: `Creating ${actualQuantity} IPTV account(s), please wait...`,
           });
 
           // Retry fetching order with credentials (try up to 5 times)
@@ -309,24 +331,6 @@ export default function ThankRegisterPopup({ isOpen, onClose }) {
   const closePaymentConfirm = () => {
     setShowPaymentConfirm(false);
     setOrderWithCredentials(null);
-  };
-
-  const handleBalancePaymentSuccess = () => {
-    setShowPaymentConfirm(true);
-  };
-  // Add this handler function after handleBalancePaymentSuccess
-  const handleDepositSuccess = async () => {
-    setShowDepositPopup(false);
-    // Refresh user data after deposit
-    setTimeout(async () => {
-      if (user?._id) {
-        window.location.reload();
-      }
-    }, 1500);
-  };
-
-  const handleDepositFunds = () => {
-    setShowDepositPopup(true);
   };
 
   if (!isOpen) return null;

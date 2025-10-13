@@ -1,3 +1,4 @@
+"use client";
 import ControlButton from "./ControlButton";
 
 const BottomControls = ({

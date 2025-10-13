@@ -21,6 +21,7 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
       devicesAllowed: "Devices Allowed:",
       adultChannels: "Adult Channels:",
       totalChannels: "Total Paid:",
+      quantity: "Quantity:",
     },
     orderValues: {
       orderNumber: "CS-20250922-U6PBMY",
@@ -35,9 +36,24 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
       backToHome: "Back to Home",
       close: "Close",
     },
+    countdown: {
+      redirecting: "Redirecting to dashboard in",
+      seconds: "seconds",
+    },
     footer: {
       receipt: "A receipt has been sent to your email.",
       contact: "For questions, contact: info@iptvstore.com",
+    },
+    accountDetails: {
+      accountNumber: "Account",
+      devices: "Devices",
+      adultChannels: "Adult Channels",
+      username: "Username",
+      password: "Password",
+      m3uLink: "M3U Link",
+      connectionDetails: "Connection Details",
+      expires: "Expires",
+      deviceType: "Device Type",
     },
   });
 
@@ -51,10 +67,15 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
     devicesAllowed: "",
     adultChannels: "",
     totalPaid: "",
+    quantity: "",
   });
 
   const [showPasswords, setShowPasswords] = useState({});
   const [copiedItems, setCopiedItems] = useState({});
+
+  // Countdown timer states
+  const [countdown, setCountdown] = useState(10);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const getLineTypeName = (lineType) => {
     const names = { 0: "M3U Playlist", 1: "MAG Device", 2: "Enigma2" };
@@ -78,6 +99,20 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
     return "";
   };
 
+  // Helper function to get account configuration from order or credentials
+  const getAccountConfiguration = (credential, index) => {
+    // If order has accountConfigurations, use that
+    if (displayOrder?.accountConfigurations?.[index]) {
+      return displayOrder.accountConfigurations[index];
+    }
+
+    // Fallback to credential data or default
+    return {
+      devices: credential.devices || 1,
+      adultChannels: credential.adultChannels || false,
+    };
+  };
+
   // Dummy data for testing/preview (remove in production or use when order is null)
   const dummyOrder = useMemo(() => {
     if (order || process.env.NODE_ENV !== "development") return null;
@@ -95,8 +130,13 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
           devicesAllowed: 1,
           adultChannels: false,
           lineType: 0,
-          quantity: 1,
+          quantity: 3,
         },
+      ],
+      accountConfigurations: [
+        { devices: 1, adultChannels: false },
+        { devices: 2, adultChannels: true },
+        { devices: 1, adultChannels: false },
       ],
       iptvCredentials: [
         {
@@ -111,11 +151,54 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
           lineType: 0,
           macAddress: "",
           adultChannels: false,
+          devices: 1,
           lineInfo: `Username: fnuqcp4p
 Password: pxhi7av4
 M3U Playlist URL: http://hfast.xyz/get.php?username=fnuqcp4p&password=pxhi7av4&type=m3u_plus&output=ts
 IPTV Url: http://hfast.xyz:8080
 EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
+          isActive: true,
+          createdAt: new Date(),
+        },
+        {
+          lineId: 12346,
+          username: "gmvqcp5q",
+          password: "qxhi8bv5",
+          expire: Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60,
+          packageId: 1,
+          packageName: "Premium IPTV Package",
+          templateId: 1,
+          templateName: "Standard Template",
+          lineType: 0,
+          macAddress: "",
+          adultChannels: true,
+          devices: 2,
+          lineInfo: `Username: gmvqcp5q
+Password: qxhi8bv5
+M3U Playlist URL: http://hfast.xyz/get.php?username=gmvqcp5q&password=qxhi8bv5&type=m3u_plus&output=ts
+IPTV Url: http://hfast.xyz:8080
+EPG URL: http://hfast.xyz/xmltv.php?username=gmvqcp5q&password=qxhi8bv5`,
+          isActive: true,
+          createdAt: new Date(),
+        },
+        {
+          lineId: 12347,
+          username: "hnvqcp6r",
+          password: "rxhi9cv6",
+          expire: Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60,
+          packageId: 1,
+          packageName: "Premium IPTV Package",
+          templateId: 1,
+          templateName: "Standard Template",
+          lineType: 0,
+          macAddress: "",
+          adultChannels: false,
+          devices: 1,
+          lineInfo: `Username: hnvqcp6r
+Password: rxhi9cv6
+M3U Playlist URL: http://hfast.xyz/get.php?username=hnvqcp6r&password=rxhi9cv6&type=m3u_plus&output=ts
+IPTV Url: http://hfast.xyz:8080
+EPG URL: http://hfast.xyz/xmltv.php?username=hnvqcp6r&password=rxhi9cv6`,
           isActive: true,
           createdAt: new Date(),
         },
@@ -162,6 +245,8 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
         devicesAllowed: product?.devicesAllowed || "",
         adultChannels: product?.adultChannels ? "Yes" : "No",
         totalPaid: `$${(displayOrder?.totalAmount || 0).toFixed(2)}`,
+        quantity:
+          product?.quantity || displayOrder?.iptvCredentials?.length || 1,
       });
       return;
     }
@@ -182,10 +267,39 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
           devicesAllowed: product?.devicesAllowed || "1",
           adultChannels: product?.adultChannels ? "Yes" : "No",
           totalPaid: `$${(o?.totalAmount || 0.02).toFixed(2)}`,
+          quantity: product?.quantity || 1,
         });
       }
     } catch {}
   }, [isOpen, order, displayOrder]);
+
+  // Countdown timer for auto-redirect - Fixed to avoid React state update error
+  useEffect(() => {
+    // Don't redirect if order prop is provided (viewing order details)
+    if (!isOpen || order) return;
+
+    setIsRedirecting(true);
+    setCountdown(10);
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          // Redirect without calling onClose to avoid React state update error
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, 0);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+      setIsRedirecting(false);
+    };
+  }, [isOpen, router, order]); // Add order to dependencies
 
   useEffect(() => {
     // Only translate when language is loaded and not English
@@ -201,16 +315,21 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
           ...Object.values(originalTexts.orderDetails),
           ...Object.values(originalTexts.orderValues),
           ...Object.values(originalTexts.buttons),
+          originalTexts.countdown.redirecting,
+          originalTexts.countdown.seconds,
           ...Object.values(originalTexts.footer),
+          ...Object.values(originalTexts.accountDetails),
         ];
 
         const translated = await translate(items);
         if (!isMounted) return;
 
         const [tTitle, tSubtitle, ...tOrderDetails] = translated;
-        const tOrderValues = tOrderDetails.slice(7, 14);
-        const tButtons = tOrderDetails.slice(14, 16);
-        const tFooter = tOrderDetails.slice(16);
+        const tOrderValues = tOrderDetails.slice(7, 15);
+        const tButtons = tOrderDetails.slice(15, 17);
+        const tCountdown = tOrderDetails.slice(17, 19);
+        const tFooter = tOrderDetails.slice(19, 21);
+        const tAccountDetails = tOrderDetails.slice(21);
 
         setTexts({
           title: tTitle,
@@ -223,6 +342,7 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
             devicesAllowed: tOrderDetails[4],
             adultChannels: tOrderDetails[5],
             totalPaid: tOrderDetails[6],
+            quantity: tOrderDetails[7],
           },
           orderValues: {
             orderNumber: originalTexts.orderValues.orderNumber,
@@ -237,9 +357,24 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
             backToHome: tButtons[0],
             close: tButtons[1],
           },
+          countdown: {
+            redirecting: tCountdown[0],
+            seconds: tCountdown[1],
+          },
           footer: {
             receipt: tFooter[0],
             contact: tFooter[1],
+          },
+          accountDetails: {
+            accountNumber: tAccountDetails[0],
+            devices: tAccountDetails[1],
+            adultChannels: tAccountDetails[2],
+            username: tAccountDetails[3],
+            password: tAccountDetails[4],
+            m3uLink: tAccountDetails[5],
+            connectionDetails: tAccountDetails[6],
+            expires: tAccountDetails[7],
+            deviceType: tAccountDetails[8],
           },
         });
       } catch (error) {
@@ -254,7 +389,7 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
 
   const handleBackToHome = () => {
     onClose();
-    router.push("/");
+    router.push("/dashboard");
   };
 
   if (!isOpen) return null;
@@ -340,25 +475,53 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
             </span>
           </div>
 
-          {/* Devices Allowed */}
+          {/* Quantity */}
           <div className="flex justify-between items-center">
             <span className="text-white/75 text-xs sm:text-sm">
-              {texts.orderDetails.devicesAllowed}
+              {texts.orderDetails.quantity}
             </span>
             <span className="text-white text-xs sm:text-sm font-medium">
-              {orderInfo.devicesAllowed}
+              {orderInfo.quantity}
             </span>
           </div>
 
-          {/* Adult Channels */}
-          <div className="flex justify-between items-center">
-            <span className="text-white/75 text-xs sm:text-sm">
-              {texts.orderDetails.adultChannels}
-            </span>
-            <span className="text-white text-xs sm:text-sm font-medium">
-              {orderInfo.adultChannels}
-            </span>
-          </div>
+          {/* Devices Allowed - Show only for single account or when all accounts have same device count */}
+          {displayOrder?.iptvCredentials?.length === 1 ||
+          (displayOrder?.iptvCredentials?.length > 1 &&
+            displayOrder.iptvCredentials.every(
+              (cred) => cred.devices === displayOrder.iptvCredentials[0].devices
+            )) ? (
+            <div className="flex justify-between items-center">
+              <span className="text-white/75 text-xs sm:text-sm">
+                {texts.orderDetails.devicesAllowed}
+              </span>
+              <span className="text-white text-xs sm:text-sm font-medium">
+                {displayOrder?.iptvCredentials?.[0]?.devices ||
+                  orderInfo.devicesAllowed}
+              </span>
+            </div>
+          ) : null}
+
+          {/* Adult Channels - Show only for single account or when all accounts have same adult channel setting */}
+          {displayOrder?.iptvCredentials?.length === 1 ||
+          (displayOrder?.iptvCredentials?.length > 1 &&
+            displayOrder.iptvCredentials.every(
+              (cred) =>
+                cred.adultChannels ===
+                displayOrder.iptvCredentials[0].adultChannels
+            )) ? (
+            <div className="flex justify-between items-center">
+              <span className="text-white/75 text-xs sm:text-sm">
+                {texts.orderDetails.adultChannels}
+              </span>
+              <span className="text-white text-xs sm:text-sm font-medium">
+                {displayOrder?.iptvCredentials?.[0]?.adultChannels ||
+                orderInfo.adultChannels === "Yes"
+                  ? "Yes"
+                  : "No"}
+              </span>
+            </div>
+          ) : null}
 
           {/* Total Paid */}
           <div className="flex justify-between items-center border-b border-[#313131] pb-3 sm:pb-5">
@@ -408,61 +571,76 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
                     {getLineTypeName(displayOrder.products[0].lineType)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-white/75 text-xs sm:text-sm">
-                    Quantity:
-                  </span>
-                  <span className="text-white text-xs sm:text-sm font-medium">
-                    {displayOrder.products[0].quantity ?? 1}
-                  </span>
-                </div>
               </>
-            )}
-            {Array.isArray(displayOrder.iptvCredentials) && (
-              <div className="flex justify-between items-center">
-                <span className="text-white/75 text-xs sm:text-sm">
-                  Accounts:
-                </span>
-                <span className="text-white text-xs sm:text-sm font-medium">
-                  {displayOrder.iptvCredentials.length}
-                </span>
-              </div>
             )}
           </div>
         )}
 
-        {/* IPTV Credentials Section */}
-        {displayOrder &&
+        {/* IPTV Credentials Section - Enhanced for Multiple Accounts */}
+        {(displayOrder &&
           displayOrder.iptvCredentials &&
-          displayOrder.iptvCredentials.length > 0 && (
-            <div className="mt-6 space-y-4">
-              <h3 className="text-white font-semibold text-sm sm:text-base border-b border-[#313131] pb-2">
-                IPTV Credentials
-              </h3>
+          displayOrder.iptvCredentials.length > 0) ||
+        order ? (
+          <div className="mt-6 space-y-4">
+            <h3 className="text-white font-semibold text-sm sm:text-base border-b border-[#313131] pb-2">
+              IPTV Accounts{" "}
+              {displayOrder?.iptvCredentials?.length
+                ? `(${displayOrder.iptvCredentials.length})`
+                : "(Loading...)"}
+            </h3>
 
-              {displayOrder.iptvCredentials.map((credential, index) => {
+            {displayOrder?.iptvCredentials &&
+            displayOrder.iptvCredentials.length > 0 ? (
+              displayOrder.iptvCredentials.map((credential, index) => {
                 const isPasswordVisible = showPasswords[index];
                 const m3uUrl = buildM3uUrl(credential);
+                const accountConfig = getAccountConfiguration(
+                  credential,
+                  index
+                );
 
                 return (
                   <div
                     key={index}
-                    className="bg-gray-900/50 rounded-lg p-3 sm:p-4 border border-gray-700 space-y-3"
+                    className="bg-gradient-to-br from-gray-900/70 to-gray-800/50 rounded-lg p-3 sm:p-4 border border-gray-700 space-y-3"
                   >
-                    {/* Account Header */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-cyan-400 text-xs sm:text-sm font-medium">
-                        Account #{index + 1}
-                      </span>
-                      <span className="text-gray-400 text-xs">
-                        {getLineTypeName(credential.lineType)}
-                      </span>
+                    {/* Account Header with Configuration */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-cyan-400 text-xs sm:text-sm font-medium">
+                          {texts.accountDetails.accountNumber} #{index + 1}
+                        </span>
+                        <span className="text-gray-400 text-xs">
+                          {getLineTypeName(credential.lineType)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Account Configuration Summary */}
+                    <div className="grid grid-cols-2 gap-2 mb-3 p-2 bg-gray-800/50 rounded border border-gray-600">
+                      <div className="text-center">
+                        <div className="text-white/75 text-xs">
+                          {texts.accountDetails.devices}
+                        </div>
+                        <div className="text-white text-sm font-medium">
+                          {accountConfig.devices}{" "}
+                          {accountConfig.devices === 1 ? "Device" : "Devices"}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-white/75 text-xs">
+                          {texts.accountDetails.adultChannels}
+                        </div>
+                        <div className="text-white text-sm font-medium">
+                          {accountConfig.adultChannels ? "Yes" : "No"}
+                        </div>
+                      </div>
                     </div>
 
                     {/* Username */}
                     <div>
                       <label className="text-white/75 text-xs block mb-1">
-                        Username:
+                        {texts.accountDetails.username}:
                       </label>
                       <div className="flex items-center gap-2">
                         <input
@@ -492,7 +670,7 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
                     {/* Password */}
                     <div>
                       <label className="text-white/75 text-xs block mb-1">
-                        Password:
+                        {texts.accountDetails.password}:
                       </label>
                       <div className="flex items-center gap-2">
                         <input
@@ -533,7 +711,7 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
                     {credential.lineType === 0 && m3uUrl && (
                       <div>
                         <label className="text-white/75 text-xs block mb-1">
-                          M3U Link:
+                          {texts.accountDetails.m3uLink}:
                         </label>
                         <div className="flex items-center gap-2">
                           <div className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-xs font-mono overflow-x-auto whitespace-nowrap">
@@ -559,7 +737,7 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
                     {credential.lineInfo && (
                       <div>
                         <label className="text-white/75 text-xs block mb-1">
-                          Connection Details:
+                          {texts.accountDetails.connectionDetails}:
                         </label>
                         <div className="px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-xs font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
                           {credential.lineInfo}
@@ -570,7 +748,9 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
                     {/* Expiry Date - if available */}
                     {credential.expire && (
                       <div className="flex justify-between items-center pt-2 border-t border-gray-700">
-                        <span className="text-white/75 text-xs">Expires:</span>
+                        <span className="text-white/75 text-xs">
+                          {texts.accountDetails.expires}:
+                        </span>
                         <span className="text-white text-xs font-medium">
                           {new Date(
                             credential.expire * 1000
@@ -580,9 +760,16 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
                     )}
                   </div>
                 );
-              })}
-            </div>
-          )}
+              })
+            ) : (
+              <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700 text-center">
+                <p className="text-gray-400 text-sm">
+                  IPTV credentials will be generated after payment confirmation.
+                </p>
+              </div>
+            )}
+          </div>
+        ) : null}
 
         {/* Action Buttons */}
         <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8 mt-2 md:mt-5">
@@ -601,6 +788,28 @@ EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
             {texts.buttons.close}
           </button>
         </div>
+
+        {/* Countdown Timer - Only show when redirecting and not viewing order details */}
+        {isRedirecting && !order && (
+          <div className="mt-4 p-4 bg-cyan-400/10 border border-cyan-400/30 rounded-lg">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
+                <span className="text-cyan-400 text-sm font-medium">
+                  {texts.countdown.redirecting}
+                </span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-cyan-400 text-2xl font-bold">
+                  {countdown}
+                </span>
+                <span className="text-cyan-400 text-sm">
+                  {texts.countdown.seconds}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="text-center space-y-2">
           {/* Only show receipt text when not displaying order history */}

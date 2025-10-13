@@ -1,3 +1,4 @@
+"use client";
 const BulkDiscount = ({ product }) => {
   const bulkDiscounts = product?.bulkDiscounts || [
     { minQuantity: 3, discountPercentage: 5, description: "3+ Orders: 5% OFF" },
