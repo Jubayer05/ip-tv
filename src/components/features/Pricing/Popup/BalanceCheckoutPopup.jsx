@@ -102,7 +102,10 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
 
       // Calculate total amount from the order selection data
       const totalAmount =
-        sel.priceCalculation?.finalTotal || sel.plan?.price || 0;
+        sel.priceCalculation?.finalTotal ||
+        sel.finalPrice ||
+        sel.plan?.price ||
+        0;
 
       // Check if user has sufficient balance
       if (user?.balance < totalAmount) {
@@ -123,22 +126,29 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
         quantity: Number(
           sel.isCustomQuantity ? sel.quantity || 1 : sel.quantity || 1
         ),
-        devicesAllowed: Number(sel.devices || 1),
+        // Keep a single devicesAllowed for backward compatibility; per-account is in accountConfigurations
+        devicesAllowed: Number(sel.selectedDevices || sel.devices || 1),
         adultChannels: !!sel.adultChannels,
         couponCode: sel.coupon?.code || "",
         paymentMethod: "Balance",
         paymentGateway: "Balance",
         paymentStatus: "completed",
-        totalAmount: totalAmount, // Use the discounted amount
+
+        // Trust UI total for complex multi-account pricing
+        totalAmount: totalAmount,
 
         // IPTV Configuration - include all fields from selection
         lineType: sel.lineType || 0,
-        templateId: sel.templateId || 2, // Default to template 2 (Europe) - valid template ID
         macAddresses: sel.macAddresses || [],
         adultChannelsConfig: sel.adultChannelsConfig || [],
+
+        // Multi-account data
+        accountConfigurations: sel.accountConfigurations || [],
         generatedCredentials: sel.generatedCredentials || [],
-        val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1), // Add val parameter
-        con: sel.con || Number(sel.devices || 1), // Add con parameter
+
+        // Package/devices
+        val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1),
+        con: sel.con || Number(sel.selectedDevices || sel.devices || 1),
 
         contactInfo: {
           fullName:
@@ -172,7 +182,7 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
         body: JSON.stringify({
           userId: user._id,
           type: "purchase",
-          amount: totalAmount, // Use the discounted amount
+          amount: totalAmount,
           description: `Purchase: ${sel.plan?.name || "IPTV Service"}`,
         }),
       });
@@ -195,10 +205,7 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
           body: JSON.stringify({
             orderNumber: data.order.orderNumber,
             val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1),
-            con: sel.con || Number(sel.devices || 1),
-            quantity: actualQuantity, // Add quantity parameter
-            accountConfigurations: sel.accountConfigurations || [], // Include account configurations
-            generatedCredentials: sel.generatedCredentials || [], // Include pre-generated credentials
+            con: sel.con || Number(sel.selectedDevices || sel.devices || 1),
           }),
         });
 
@@ -277,7 +284,10 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
 
   // Calculate total amount from the order selection data
   const totalAmount =
-    orderDetails.priceCalculation?.finalTotal || orderDetails.plan?.price || 0;
+    orderDetails.priceCalculation?.finalTotal ||
+    orderDetails.finalPrice ||
+    orderDetails.plan?.price ||
+    0;
   const hasInsufficientBalance = user?.balance < totalAmount;
 
   return (
@@ -330,7 +340,9 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-300">Devices:</span>
-              <span className="text-white">{orderDetails.devices || 1}</span>
+              <span className="text-white">
+                {orderDetails.selectedDevices || orderDetails.devices || 1}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-300">Quantity:</span>

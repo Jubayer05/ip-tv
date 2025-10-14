@@ -62,11 +62,19 @@ export async function POST(request) {
       macAddresses = [],
       adultChannelsConfig = [],
 
-      // Generated credentials from frontend
+      // Generated + per-account configuration from frontend
       generatedCredentials = [],
+      accountConfigurations = [],
     } = body || {};
 
-    if (!productId || !variantId || !quantity || !devicesAllowed) {
+    // Allow either single devicesAllowed OR multi account configurations
+    if (
+      !productId ||
+      !variantId ||
+      !quantity ||
+      (!devicesAllowed &&
+        !(accountConfigurations && accountConfigurations.length > 0))
+    ) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -84,20 +92,17 @@ export async function POST(request) {
     // Auto-assign templateId based on adult channels for multiple accounts
     let templateId;
 
-    // Check if we have account configurations from the new multi-account system
-    if (body.accountConfigurations && body.accountConfigurations.length > 0) {
-      // Use the new account configurations to determine template
-      const hasAnyAdultChannels = body.accountConfigurations.some(
+    if (accountConfigurations && accountConfigurations.length > 0) {
+      // Any adult among accounts toggles the default template to Adult; per-account template will be chosen during creation
+      const hasAnyAdultChannels = accountConfigurations.some(
         (config) => config.adultChannels
       );
       templateId = getTemplateIdByAdultChannels(hasAnyAdultChannels);
     } else {
       // Fallback to old logic for backward compatibility
       if (lineType === 0) {
-        // M3U
         templateId = getTemplateIdByAdultChannels(adultChannels);
       } else {
-        // MAG/Enigma2 - check if any device has adult channels
         const hasAnyAdultChannels = adultChannelsConfig.some(
           (enabled) => enabled
         );
@@ -295,21 +300,23 @@ export async function POST(request) {
         quantity: Number(quantity),
         price: Number(variant.price || 0),
         duration: Number(variant.durationMonths || 0),
-        devicesAllowed: Number(devicesAllowed),
+        devicesAllowed: Number(
+          devicesAllowed || accountConfigurations?.[0]?.devices || 1
+        ),
         adultChannels: lineType === 0 ? Boolean(adultChannels) : false,
 
         // IPTV Configuration
         lineType: Number(lineType),
-        templateId: Number(templateId), // Use auto-assigned templateId
+        templateId: Number(templateId), // Default template; per-account override happens when creating
         macAddresses: lineType > 0 ? macAddresses : [],
         adultChannelsConfig: lineType > 0 ? adultChannelsConfig : [],
 
         // Generated credentials for multiple accounts
         generatedCredentials:
-          generatedCredentials.length > 0 ? generatedCredentials : [],
+          generatedCredentials?.length > 0 ? generatedCredentials : [],
 
         // Store account configurations for reference
-        accountConfigurations: body.accountConfigurations || [],
+        accountConfigurations: accountConfigurations || [],
       },
     ];
 
@@ -355,6 +362,7 @@ export async function POST(request) {
       status: "completed",
       referredBy,
       isFirstOrder,
+      accountConfigurations: accountConfigurations || [], // mirror at root
     });
 
     await orderDoc.save();

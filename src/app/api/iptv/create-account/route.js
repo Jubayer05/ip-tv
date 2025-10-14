@@ -1,4 +1,5 @@
 import { connectToDatabase } from "@/lib/db";
+import { getTemplateIdByAdultChannels } from "@/lib/iptvUtils";
 import { getServerIptvApiKey } from "@/lib/serverApiKeys";
 import Order from "@/models/Order";
 import { NextResponse } from "next/server";
@@ -219,31 +220,49 @@ export async function POST(request) {
     try {
       // Use the generated credentials from the order if available, otherwise generate new ones
       const generatedCredentials = product.generatedCredentials || [];
+      const configs = product.accountConfigurations || [];
+      const qty = product.quantity || configs.length || 1;
 
-      // Create credentials based on line type and quantity
-      if (product.lineType === 0) {
-        // M3U
+      // M3U and MAG/Enigma2 now both support N accounts (qty)
+      for (let i = 0; i < qty; i++) {
+        // pick username/password
         let username, password;
-
-        if (generatedCredentials.length > 0) {
-          const cred = generatedCredentials[0];
+        if (generatedCredentials.length > i) {
+          const cred = generatedCredentials[i];
           username = cred.username;
           password = cred.password;
         } else {
-          const cred = generateCredentials(order.orderNumber);
+          const cred = generateCredentials(order.orderNumber, i);
           username = cred.username;
           password = cred.password;
         }
 
+        // per-account config
+        const cfg = configs[i] || {};
+        const devices = Number(cfg.devices || product.devicesAllowed || 1);
+        const adult = Boolean(
+          cfg.adultChannels ??
+            (product.lineType > 0
+              ? product.adultChannelsConfig?.[i]
+              : product.adultChannels)
+        );
+
+        // device-specific extras for MAG/Enigma2
+        const macAddress =
+          product.lineType > 0 ? product.macAddresses?.[i] || "" : null;
+
+        // choose template per account
+        const templateIdForAccount = getTemplateIdByAdultChannels(adult);
+
         const iptvData = await createIPTVAccount({
           username,
           password,
-          templateId: product.templateId,
+          templateId: templateIdForAccount,
           lineType: product.lineType,
-          macAddress: null,
+          macAddress,
           durationMonths: product.duration,
-          val,
-          con,
+          val, // package id (optional; helper derives from duration if missing)
+          con: devices, // per-account devices
         });
 
         credentials.push({
@@ -253,59 +272,15 @@ export async function POST(request) {
           expire: iptvData.expire,
           packageId: iptvData.package,
           packageName: iptvData.packageName,
-          templateId: product.templateId,
+          templateId: templateIdForAccount,
           templateName: iptvData.templateName,
           lineType: product.lineType,
-          macAddress: "",
-          adultChannels: product.adultChannels,
+          macAddress: macAddress || "",
+          adultChannels: adult,
+          devices, // NEW: persist devices for this account
           lineInfo: iptvData.lineInfo,
           isActive: true,
         });
-      } else {
-        // MAG or Enigma2
-        for (let i = 0; i < product.quantity; i++) {
-          let username, password;
-
-          if (generatedCredentials.length > i) {
-            const cred = generatedCredentials[i];
-            username = cred.username;
-            password = cred.password;
-          } else {
-            const cred = generateCredentials(order.orderNumber, i);
-            username = cred.username;
-            password = cred.password;
-          }
-
-          const macAddress = product.macAddresses[i] || "";
-          const adultChannels = product.adultChannelsConfig[i] || false;
-
-          const iptvData = await createIPTVAccount({
-            username,
-            password,
-            templateId: product.templateId,
-            lineType: product.lineType,
-            macAddress,
-            durationMonths: product.duration,
-            val,
-            con,
-          });
-
-          credentials.push({
-            lineId: iptvData.lineId,
-            username: iptvData.username,
-            password: iptvData.password,
-            expire: iptvData.expire,
-            packageId: iptvData.package,
-            packageName: iptvData.packageName,
-            templateId: product.templateId,
-            templateName: iptvData.templateName,
-            lineType: product.lineType,
-            macAddress,
-            adultChannels,
-            lineInfo: iptvData.lineInfo,
-            isActive: true,
-          });
-        }
       }
 
       // Update order with credentials
@@ -321,6 +296,7 @@ export async function POST(request) {
           lineType: cred.lineType,
           macAddress: cred.macAddress,
           adultChannels: cred.adultChannels,
+          devices: cred.devices,
           expire: new Date(cred.expire * 1000).toISOString(),
         })),
       });

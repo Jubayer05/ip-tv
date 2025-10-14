@@ -119,21 +119,29 @@ export default function ThankRegisterPopup({
         quantity: Number(
           sel.isCustomQuantity ? sel.quantity || 1 : sel.quantity || 1
         ),
-        devicesAllowed: Number(sel.devices || 1),
+        // Keep a single devicesAllowed for backward compatibility; per-account is in accountConfigurations
+        devicesAllowed: Number(sel.selectedDevices || sel.devices || 1),
         adultChannels: !!sel.adultChannels,
         couponCode: "",
         paymentMethod: "Manual",
         paymentGateway: "None",
         paymentStatus: "completed",
 
+        // Trust UI total for complex multi-account pricing
+        totalAmount: Number(sel.finalPrice || 0),
+
         // IPTV Configuration
         lineType: sel.lineType || 0,
-        templateId: sel.templateId || 2,
         macAddresses: sel.macAddresses || [],
         adultChannelsConfig: sel.adultChannelsConfig || [],
+
+        // Multi-account data
+        accountConfigurations: sel.accountConfigurations || [],
         generatedCredentials: sel.generatedCredentials || [],
+
+        // Package/devices
         val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1),
-        con: sel.con || Number(sel.devices || 1),
+        con: sel.con || Number(sel.selectedDevices || sel.devices || 1),
 
         contactInfo: {
           fullName:
@@ -194,10 +202,7 @@ export default function ThankRegisterPopup({
           body: JSON.stringify({
             orderNumber: data.order.orderNumber,
             val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1),
-            con: sel.con || Number(sel.devices || 1),
-            quantity: actualQuantity, // Add quantity parameter
-            accountConfigurations: sel.accountConfigurations || [], // Include account configurations
-            generatedCredentials: sel.generatedCredentials || [], // Include pre-generated credentials
+            con: sel.con || Number(sel.selectedDevices || sel.devices || 1),
           }),
         });
 

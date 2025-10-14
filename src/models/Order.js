@@ -19,6 +19,24 @@ const OrderProductSchema = new mongoose.Schema(
     templateId: { type: Number, default: 1271 }, // Default to NoAdult template
     macAddresses: [{ type: String, default: "" }], // For MAG/Enigma2
     adultChannelsConfig: [{ type: Boolean, default: false }], // Per-device adult config
+
+    // NEW: per-account configuration (ui-driven)
+    accountConfigurations: [
+      {
+        devices: { type: Number, default: 1, min: 1 },
+        adultChannels: { type: Boolean, default: false },
+      },
+    ],
+
+    // NEW: per-account credentials (ui-pre-generated)
+    generatedCredentials: [
+      {
+        username: { type: String, default: "" },
+        password: { type: String, default: "" },
+        devices: { type: Number, default: 1, min: 1 },
+        adultChannels: { type: Boolean, default: false },
+      },
+    ],
   },
   { _id: false }
 );
@@ -37,6 +55,7 @@ const IPTVCredentialSchema = new mongoose.Schema(
     lineType: { type: Number, default: 0 }, // 0: M3U, 1: MAG, 2: Enigma2
     macAddress: { type: String, default: "" }, // For MAG/Enigma2
     adultChannels: { type: Boolean, default: false },
+    devices: { type: Number, default: 1 }, // NEW: devices for this account
     lineInfo: { type: String, default: "" }, // Raw line info from API
     isActive: { type: Boolean, default: true },
     createdAt: { type: Date, default: Date.now },
@@ -353,17 +372,28 @@ const OrderSchema = new mongoose.Schema(
       default: false,
     },
 
-    // IPTV Configuration
+    // IPTV Configuration (legacy top-level for backward compatibility)
     lineType: { type: Number, default: 0 },
     templateId: { type: Number, default: 1271 }, // Default to NoAdult template
     macAddresses: [{ type: String }],
     adultChannelsConfig: [{ type: Boolean }],
+
+    // UI pre-generated credentials (legacy)
     generatedCredentials: [
       {
         username: String,
         password: String,
       },
     ],
+
+    // NEW: keep a copy of per-account configuration at root for easy display
+    accountConfigurations: [
+      {
+        devices: { type: Number, default: 1, min: 1 },
+        adultChannels: { type: Boolean, default: false },
+      },
+    ],
+
     val: { type: Number }, // Package ID parameter
     con: { type: Number }, // Device count parameter
   },

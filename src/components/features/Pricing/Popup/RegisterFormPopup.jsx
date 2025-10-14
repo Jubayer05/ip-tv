@@ -161,7 +161,8 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
         quantity: Number(
           sel.isCustomQuantity ? sel.quantity || 1 : sel.quantity || 1
         ),
-        devicesAllowed: Number(sel.devices || 1),
+        // Keep a single devicesAllowed for backward compatibility; per-account is in accountConfigurations
+        devicesAllowed: Number(sel.selectedDevices || 1),
         adultChannels: !!sel.adultChannels,
         guestEmail: email,
         contactInfo: { fullName, email, phone: "" },
@@ -169,14 +170,21 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
         paymentGateway: "Selected", // Will be updated by gateway selection
         paymentStatus: "completed", // Ensure completion after successful payment
 
-        // IPTV Configuration - include val and con parameters
+        // Trust UI total for complex multi-account pricing
+        totalAmount: Number(sel.finalPrice || 0),
+
+        // IPTV Configuration
         lineType: sel.lineType || 0,
-        templateId: sel.templateId || 2,
         macAddresses: sel.macAddresses || [],
         adultChannelsConfig: sel.adultChannelsConfig || [],
+
+        // Multi-account data
+        accountConfigurations: sel.accountConfigurations || [],
         generatedCredentials: sel.generatedCredentials || [],
+
+        // Package/devices (server will override con per-account using accountConfigurations)
         val: sel.val || getPackageIdFromDuration(sel.plan?.duration || 1),
-        con: sel.con || Number(sel.devices || 1),
+        con: Number(sel.selectedDevices || 1),
       };
 
       const res = await fetch("/api/orders", {
