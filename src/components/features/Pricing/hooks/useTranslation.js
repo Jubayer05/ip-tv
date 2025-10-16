@@ -17,7 +17,7 @@ const ORIGINAL_TEXTS = {
       title: "Configure Each Account",
     },
     deviceType: {
-      title: "Device Type",
+      title: "Choose Your Device Type",
     },
     adultChannels: {
       title: "Adult Channels:",

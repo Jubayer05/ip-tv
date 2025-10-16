@@ -305,9 +305,7 @@ export async function sendIPTVCredentialsEmail({ toEmail, fullName, order }) {
       const deviceInfo =
         cred.lineType > 0
           ? `<br><small style="color: #666;">MAC: ${cred.macAddress}</small>`
-          : `<br><small style="color: #666;">Devices: ${
-              productLine.devicesAllowed || 1
-            }</small>`;
+          : ``;
 
       const adultStatus = cred.adultChannels
         ? '<span style="color: #ff6b35; font-weight: bold;">Adult Enabled</span>'

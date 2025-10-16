@@ -23,6 +23,7 @@ import RankDiscountInfo from "./components/RankDiscountInfo";
 import SubscriptionPlans from "./components/SubscriptionPlans";
 
 // Import utilities
+import { useState } from "react";
 import { createMultiAccountSelectionData } from "./utils/pricingUtils";
 
 const PricingPlan = () => {
@@ -33,6 +34,17 @@ const PricingPlan = () => {
   // Use custom hooks
   const pricingPlan = usePricingPlan();
   const popupStates = usePopupStates();
+
+  // Add device info state
+  const [deviceInfo, setDeviceInfo] = useState({
+    macAddress: "",
+    enigma2Info: "",
+  });
+
+  // Device info change handler
+  const handleDeviceInfoChange = (newDeviceInfo) => {
+    setDeviceInfo(newDeviceInfo);
+  };
 
   // Update price calculation to handle multiple accounts
   const { priceCalculation } = usePricingCalculation(
@@ -77,7 +89,8 @@ const PricingPlan = () => {
       coupon.appliedCoupon,
       coupon.displayTotals,
       finalPrice,
-      pricingPlan.selectedDeviceType // Pass device type
+      pricingPlan.selectedDeviceType,
+      deviceInfo // Pass device info
     );
 
     try {
@@ -135,6 +148,8 @@ const PricingPlan = () => {
           updateAccountConfiguration={pricingPlan.updateAccountConfiguration}
           getActualQuantity={pricingPlan.getActualQuantity}
           texts={translation.texts}
+          deviceInfo={deviceInfo}
+          onDeviceInfoChange={handleDeviceInfoChange}
         />
 
         {/* Bulk Discount Offers */}

@@ -183,7 +183,7 @@ export async function POST(request) {
     await connectToDatabase();
 
     const body = await request.json();
-    const { orderNumber, val, con } = body;
+    const { orderNumber, val, con, lineType, deviceInfo } = body; // Add lineType and deviceInfo
 
     if (!orderNumber) {
       return NextResponse.json(
@@ -214,7 +214,7 @@ export async function POST(request) {
       );
     }
 
-    const product = order.products[0]; // Assuming single product per order
+    const product = order.products[0];
     const credentials = [];
 
     try {
@@ -223,7 +223,12 @@ export async function POST(request) {
       const configs = product.accountConfigurations || [];
       const qty = product.quantity || configs.length || 1;
 
-      // M3U and MAG/Enigma2 now both support N accounts (qty)
+      // Get line type from order or request body
+      const orderLineType = product.lineType || lineType || 0;
+
+      // Get device info from order or request body
+      const orderDeviceInfo = product.deviceInfo || deviceInfo || {};
+
       for (let i = 0; i < qty; i++) {
         // pick username/password
         let username, password;
@@ -248,8 +253,12 @@ export async function POST(request) {
         );
 
         // device-specific extras for MAG/Enigma2
-        const macAddress =
-          product.lineType > 0 ? product.macAddresses?.[i] || "" : null;
+        let macAddress = null;
+        if (orderLineType > 0) {
+          // For MAG (1) and Enigma2 (2), use MAC address from device info
+          macAddress =
+            orderDeviceInfo.macAddress || product.macAddresses?.[i] || "";
+        }
 
         // choose template per account
         const templateIdForAccount = getTemplateIdByAdultChannels(adult);
@@ -258,7 +267,7 @@ export async function POST(request) {
           username,
           password,
           templateId: templateIdForAccount,
-          lineType: product.lineType,
+          lineType: orderLineType, // Use the line type from order/request
           macAddress,
           durationMonths: product.duration,
           val, // package id (optional; helper derives from duration if missing)
@@ -274,10 +283,10 @@ export async function POST(request) {
           packageName: iptvData.packageName,
           templateId: templateIdForAccount,
           templateName: iptvData.templateName,
-          lineType: product.lineType,
+          lineType: orderLineType, // Store the line type
           macAddress: macAddress || "",
           adultChannels: adult,
-          devices, // NEW: persist devices for this account
+          devices, // persist devices for this account
           lineInfo: iptvData.lineInfo,
           isActive: true,
         });
@@ -290,6 +299,7 @@ export async function POST(request) {
       return NextResponse.json({
         success: true,
         message: "IPTV credentials created successfully",
+        order: order, // Return the complete order with credentials
         credentials: credentials.map((cred) => ({
           username: cred.username,
           password: cred.password,

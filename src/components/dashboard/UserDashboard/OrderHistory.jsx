@@ -3,17 +3,7 @@ import PaymentConfirmPopup from "@/components/features/Pricing/Popup/PaymentConf
 import Button from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import {
-  BookOpen,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Copy,
-  Eye,
-  EyeOff,
-  Mail,
-  X,
-} from "lucide-react";
+import { BookOpen, Mail, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -486,7 +476,7 @@ const OrderHistory = () => {
                   </div>
 
                   {/* IPTV Credentials Display */}
-                  {order.iptvCredentials &&
+                  {/* {order.iptvCredentials &&
                     order.iptvCredentials.length > 0 && (
                       <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700">
                         <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
@@ -506,7 +496,6 @@ const OrderHistory = () => {
                                 key={index}
                                 className="bg-black/30 rounded-lg p-3 space-y-3"
                               >
-                                {/* Header with Account # and Toggle */}
                                 <div className="flex items-center justify-between flex-wrap gap-2">
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs text-gray-400">
@@ -565,7 +554,6 @@ const OrderHistory = () => {
                                   </div>
                                 </div>
 
-                                {/* Basic Credentials (Always Visible) */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   <div>
                                     <label className="text-xs text-gray-400 block mb-1">
@@ -641,10 +629,8 @@ const OrderHistory = () => {
                                   </div>
                                 </div>
 
-                                {/* Extended Details (Collapsible) */}
                                 {isExpanded && (
                                   <div className="space-y-3 pt-3 border-t border-gray-700">
-                                    {/* M3U Link - Only for M3U Playlist type */}
                                     {credential.lineType === 0 && m3uUrl && (
                                       <div>
                                         <label className="text-xs text-gray-400 block mb-1">
@@ -677,7 +663,6 @@ const OrderHistory = () => {
                                       </div>
                                     )}
 
-                                    {/* Line Info */}
                                     {credential.lineInfo && (
                                       <div>
                                         <label className="text-xs text-gray-400 block mb-1">
@@ -689,7 +674,6 @@ const OrderHistory = () => {
                                       </div>
                                     )}
 
-                                    {/* Expiry Date */}
                                     {credential.expire && (
                                       <div className="flex justify-between items-center pt-2 border-t border-gray-700">
                                         <span className="text-xs text-gray-400">
@@ -709,7 +693,7 @@ const OrderHistory = () => {
                           })}
                         </div>
                       </div>
-                    )}
+                    )} */}
                 </div>
               )}
 

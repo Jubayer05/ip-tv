@@ -65,6 +65,9 @@ export async function POST(request) {
       // Generated + per-account configuration from frontend
       generatedCredentials = [],
       accountConfigurations = [],
+
+      // Add device info from frontend
+      deviceInfo = {},
     } = body || {};
 
     // Allow either single devicesAllowed OR multi account configurations
@@ -110,21 +113,47 @@ export async function POST(request) {
       }
     }
 
-    // Validate MAC addresses for MAG/Enigma2
+    // Updated MAC address validation for new device type structure
     if (lineType > 0) {
-      if (macAddresses.length !== quantity) {
-        return NextResponse.json(
-          { error: "MAC addresses required for all MAG/Enigma2 devices" },
-          { status: 400 }
-        );
-      }
-
-      for (let i = 0; i < quantity; i++) {
-        if (!macAddresses[i] || macAddresses[i].trim() === "") {
+      // Check if we have account configurations with device info
+      if (accountConfigurations && accountConfigurations.length > 0) {
+        // Validate each account configuration for MAC address
+        for (let i = 0; i < accountConfigurations.length; i++) {
+          const config = accountConfigurations[i];
+          if (config.deviceType === 1 || config.deviceType === 2) {
+            // MAG or Enigma2
+            if (
+              !config.deviceInfo ||
+              !config.deviceInfo.macAddress ||
+              config.deviceInfo.macAddress.trim() === ""
+            ) {
+              return NextResponse.json(
+                {
+                  error: `MAC address required for account #${i + 1} (${
+                    config.deviceType === 1 ? "MAG" : "Enigma2"
+                  } device)`,
+                },
+                { status: 400 }
+              );
+            }
+          }
+        }
+      } else {
+        // Fallback to old validation for backward compatibility
+        if (macAddresses.length !== quantity) {
           return NextResponse.json(
-            { error: `MAC address required for device #${i + 1}` },
+            { error: "MAC addresses required for all MAG/Enigma2 devices" },
             { status: 400 }
           );
+        }
+
+        for (let i = 0; i < quantity; i++) {
+          if (!macAddresses[i] || macAddresses[i].trim() === "") {
+            return NextResponse.json(
+              { error: `MAC address required for device #${i + 1}` },
+              { status: 400 }
+            );
+          }
         }
       }
     }
@@ -317,6 +346,9 @@ export async function POST(request) {
 
         // Store account configurations for reference
         accountConfigurations: accountConfigurations || [],
+
+        // Store device info for each account
+        deviceInfo: deviceInfo || {},
       },
     ];
 

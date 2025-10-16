@@ -4,6 +4,7 @@ import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import { AuthContextProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { PaymentProvider } from "@/contexts/PaymentContext";
 import { UserSpendingContextProvider } from "@/contexts/UserSpendingContext";
 import { connectToDatabase } from "@/lib/db";
 import Settings from "@/models/Settings";
@@ -139,19 +140,21 @@ export default function RootLayout({ children }) {
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
       </head>
       <body className="antialiased font-primary">
-        <QueryProvider>
-          <AuthContextProvider>
-            <LanguageProvider>
-              <UserSpendingContextProvider>
-                <TawkTo />
-                <Navbar />
-                <ScrollToTop />
-                <main className="min-h-screen">{children}</main>
-                <Footer />
-              </UserSpendingContextProvider>
-            </LanguageProvider>
-          </AuthContextProvider>
-        </QueryProvider>
+        <PaymentProvider>
+          <QueryProvider>
+            <AuthContextProvider>
+              <LanguageProvider>
+                <UserSpendingContextProvider>
+                  <TawkTo />
+                  <Navbar />
+                  <ScrollToTop />
+                  <main className="min-h-screen">{children}</main>
+                  <Footer />
+                </UserSpendingContextProvider>
+              </LanguageProvider>
+            </AuthContextProvider>
+          </QueryProvider>
+        </PaymentProvider>
       </body>
     </html>
   );

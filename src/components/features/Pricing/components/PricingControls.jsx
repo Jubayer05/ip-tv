@@ -19,19 +19,22 @@ const PricingControls = ({
   updateAccountConfiguration,
   getActualQuantity,
   texts,
+  deviceInfo, // New prop for device info
+  onDeviceInfoChange, // New prop for device info callback
 }) => {
   const actualQuantity = getActualQuantity();
 
   return (
     <div className="font-secondary max-w-3xl mt-6 mx-auto p-4 sm:p-6 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#00b877]/30 rounded-xl">
-      
       {/* Device Type Selector */}
       <DeviceTypeSelector
         selectedDeviceType={selectedDeviceType}
         setSelectedDeviceType={setSelectedDeviceType}
         texts={texts}
+        deviceInfo={deviceInfo}
+        onDeviceInfoChange={onDeviceInfoChange}
       />
-      
+
       {/* Quantity Selector */}
       <QuantitySelector
         selectedQuantity={selectedQuantity}
@@ -52,15 +55,17 @@ const PricingControls = ({
             {texts.controls.accountConfiguration.title}
           </h3>
           <div className="space-y-4">
-            {accountConfigurations.slice(0, actualQuantity).map((config, index) => (
-              <AccountConfigurationBox
-                key={index}
-                index={index}
-                configuration={config}
-                onUpdateConfiguration={updateAccountConfiguration}
-                texts={texts}
-              />
-            ))}
+            {accountConfigurations
+              .slice(0, actualQuantity)
+              .map((config, index) => (
+                <AccountConfigurationBox
+                  key={index}
+                  index={index}
+                  configuration={config}
+                  onUpdateConfiguration={updateAccountConfiguration}
+                  texts={texts}
+                />
+              ))}
           </div>
         </div>
       )}

@@ -375,6 +375,7 @@ export default function RegisterFormPopup({ isOpen, onClose }) {
       <PaymentConfirmPopup
         isOpen={showPaymentConfirm}
         onClose={closePaymentConfirm}
+        order={orderDetails}
       />
 
       {/* Gateway Selection Popup */}

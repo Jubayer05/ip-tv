@@ -1,6 +1,7 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePayment } from "@/contexts/PaymentContext";
 import { ArrowRight, Wallet, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
@@ -8,6 +9,7 @@ import Swal from "sweetalert2";
 export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
   const { language, translate, isLanguageLoaded } = useLanguage();
   const { user } = useAuth();
+  const { setOrderAndShowPopup } = usePayment();
   const [placing, setPlacing] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
 
@@ -192,7 +194,7 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
         throw new Error(balanceErr?.error || "Failed to deduct balance");
       }
 
-      // Create IPTV accounts after successful payment with val and con parameters
+      // Create IPTV accounts after successful payment
       try {
         // Get the actual quantity from selection data
         const actualQuantity = sel.isCustomQuantity
@@ -212,6 +214,9 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
         if (iptvResponse.ok) {
           const iptvData = await iptvResponse.json();
           console.log("✅ IPTV credentials created:", iptvData);
+
+          // Set the order with credentials and show the popup
+          setOrderAndShowPopup(iptvData.order);
         } else {
           console.error(
             "Failed to create IPTV accounts:",
@@ -238,7 +243,7 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
         // Don't fail the entire process if email fails
       }
 
-      // Store the order with the correct total amount for PaymentConfirmPopup
+      // Store the order with the correct total amount for
       try {
         const orderWithCorrectAmount = {
           ...data.order,

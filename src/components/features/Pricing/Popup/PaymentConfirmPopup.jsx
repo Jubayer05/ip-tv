@@ -1,11 +1,24 @@
+"use client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePayment } from "@/contexts/PaymentContext";
 import { Check, Copy, Eye, EyeOff, Home, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
   const { language, translate, isLanguageLoaded } = useLanguage();
+  const { orderWithCredentials, closePaymentConfirm } = usePayment();
   const router = useRouter();
+
+  // Use orderWithCredentials from context if available, otherwise fall back to order prop
+  const displayOrder = orderWithCredentials || order;
+
+  console.log("PaymentConfirmPopup order:", order);
+  console.log(
+    "PaymentConfirmPopup orderWithCredentials:",
+    orderWithCredentials
+  );
+  console.log("PaymentConfirmPopup displayOrder:", displayOrder);
 
   // Dynamic text based on order prop
   const getOriginalTexts = () => ({
@@ -73,10 +86,6 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
   const [showPasswords, setShowPasswords] = useState({});
   const [copiedItems, setCopiedItems] = useState({});
 
-  // Countdown timer states
-  const [countdown, setCountdown] = useState(10);
-  const [isRedirecting, setIsRedirecting] = useState(false);
-
   const getLineTypeName = (lineType) => {
     const names = { 0: "M3U Playlist", 1: "MAG Device", 2: "Enigma2" };
     return names[lineType] || "M3U Playlist";
@@ -113,102 +122,6 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
     };
   };
 
-  // Dummy data for testing/preview (remove in production or use when order is null)
-  const dummyOrder = useMemo(() => {
-    if (order || process.env.NODE_ENV !== "development") return null;
-
-    return {
-      _id: "dummy123456789",
-      orderNumber: "CS-20250922-U6PBMY",
-      createdAt: new Date(),
-      totalAmount: 29.99,
-      paymentMethod: "Stripe",
-      paymentStatus: "completed",
-      products: [
-        {
-          duration: 3,
-          devicesAllowed: 1,
-          adultChannels: false,
-          lineType: 0,
-          quantity: 3,
-        },
-      ],
-      accountConfigurations: [
-        { devices: 1, adultChannels: false },
-        { devices: 2, adultChannels: true },
-        { devices: 1, adultChannels: false },
-      ],
-      iptvCredentials: [
-        {
-          lineId: 12345,
-          username: "fnuqcp4p",
-          password: "pxhi7av4",
-          expire: Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60,
-          packageId: 1,
-          packageName: "Premium IPTV Package",
-          templateId: 1,
-          templateName: "Standard Template",
-          lineType: 0,
-          macAddress: "",
-          adultChannels: false,
-          devices: 1,
-          lineInfo: `Username: fnuqcp4p
-Password: pxhi7av4
-M3U Playlist URL: http://hfast.xyz/get.php?username=fnuqcp4p&password=pxhi7av4&type=m3u_plus&output=ts
-IPTV Url: http://hfast.xyz:8080
-EPG URL: http://hfast.xyz/xmltv.php?username=fnuqcp4p&password=pxhi7av4`,
-          isActive: true,
-          createdAt: new Date(),
-        },
-        {
-          lineId: 12346,
-          username: "gmvqcp5q",
-          password: "qxhi8bv5",
-          expire: Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60,
-          packageId: 1,
-          packageName: "Premium IPTV Package",
-          templateId: 1,
-          templateName: "Standard Template",
-          lineType: 0,
-          macAddress: "",
-          adultChannels: true,
-          devices: 2,
-          lineInfo: `Username: gmvqcp5q
-Password: qxhi8bv5
-M3U Playlist URL: http://hfast.xyz/get.php?username=gmvqcp5q&password=qxhi8bv5&type=m3u_plus&output=ts
-IPTV Url: http://hfast.xyz:8080
-EPG URL: http://hfast.xyz/xmltv.php?username=gmvqcp5q&password=qxhi8bv5`,
-          isActive: true,
-          createdAt: new Date(),
-        },
-        {
-          lineId: 12347,
-          username: "hnvqcp6r",
-          password: "rxhi9cv6",
-          expire: Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60,
-          packageId: 1,
-          packageName: "Premium IPTV Package",
-          templateId: 1,
-          templateName: "Standard Template",
-          lineType: 0,
-          macAddress: "",
-          adultChannels: false,
-          devices: 1,
-          lineInfo: `Username: hnvqcp6r
-Password: rxhi9cv6
-M3U Playlist URL: http://hfast.xyz/get.php?username=hnvqcp6r&password=rxhi9cv6&type=m3u_plus&output=ts
-IPTV Url: http://hfast.xyz:8080
-EPG URL: http://hfast.xyz/xmltv.php?username=hnvqcp6r&password=rxhi9cv6`,
-          isActive: true,
-          createdAt: new Date(),
-        },
-      ],
-    };
-  }, [order]);
-
-  // Use dummy order if no real order is provided (for testing)
-  const displayOrder = order || dummyOrder;
-
   const togglePasswordVisibility = (index) => {
     setShowPasswords((prev) => ({
       ...prev,
@@ -232,7 +145,7 @@ EPG URL: http://hfast.xyz/xmltv.php?username=hnvqcp6r&password=rxhi9cv6`,
   useEffect(() => {
     if (!isOpen) return;
 
-    // If order prop is provided, derive values from it
+    // If we have a display order, use it
     if (displayOrder) {
       const product = displayOrder?.products?.[0] || {};
       setOrderInfo({
@@ -271,35 +184,7 @@ EPG URL: http://hfast.xyz/xmltv.php?username=hnvqcp6r&password=rxhi9cv6`,
         });
       }
     } catch {}
-  }, [isOpen, order, displayOrder]);
-
-  // Countdown timer for auto-redirect - Fixed to avoid React state update error
-  useEffect(() => {
-    // Don't redirect if order prop is provided (viewing order details)
-    if (!isOpen || order) return;
-
-    setIsRedirecting(true);
-    setCountdown(10);
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          // Redirect without calling onClose to avoid React state update error
-          setTimeout(() => {
-            router.push("/dashboard");
-          }, 0);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      clearInterval(timer);
-      setIsRedirecting(false);
-    };
-  }, [isOpen, router, order]); // Add order to dependencies
+  }, [isOpen, displayOrder]);
 
   useEffect(() => {
     // Only translate when language is loaded and not English
@@ -386,6 +271,13 @@ EPG URL: http://hfast.xyz/xmltv.php?username=hnvqcp6r&password=rxhi9cv6`,
       isMounted = false;
     };
   }, [language.code, isLanguageLoaded, translate, order]);
+
+  useEffect(() => {
+    if (orderWithCredentials && orderWithCredentials.iptvCredentials) {
+      console.log("Order with credentials received:", orderWithCredentials);
+      // The popup will automatically display the credentials
+    }
+  }, [orderWithCredentials]);
 
   const handleBackToHome = () => {
     onClose();
@@ -788,28 +680,6 @@ EPG URL: http://hfast.xyz/xmltv.php?username=hnvqcp6r&password=rxhi9cv6`,
             {texts.buttons.close}
           </button>
         </div>
-
-        {/* Countdown Timer - Only show when redirecting and not viewing order details */}
-        {isRedirecting && !order && (
-          <div className="mt-4 p-4 bg-cyan-400/10 border border-cyan-400/30 rounded-lg">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
-                <span className="text-cyan-400 text-sm font-medium">
-                  {texts.countdown.redirecting}
-                </span>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-cyan-400 text-2xl font-bold">
-                  {countdown}
-                </span>
-                <span className="text-cyan-400 text-sm">
-                  {texts.countdown.seconds}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="text-center space-y-2">
           {/* Only show receipt text when not displaying order history */}

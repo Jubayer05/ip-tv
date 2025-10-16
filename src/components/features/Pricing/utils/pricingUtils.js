@@ -83,7 +83,8 @@ export const createMultiAccountSelectionData = (
   appliedCoupon,
   displayTotals,
   finalPrice,
-  selectedDeviceType // Add device type parameter
+  selectedDeviceType,
+  deviceInfo // Add device info parameter
 ) => {
   // Generate random credentials for each account
   const generatedCredentials = [];
@@ -113,8 +114,9 @@ export const createMultiAccountSelectionData = (
     variantId: selectedPlanData?.id || selectedPlanData?._id,
     quantity: accountConfigurations.length,
 
-    // Include device type
+    // Include device type and device info
     lineType: selectedDeviceType, // 0: M3U, 1: MAG, 2: Enigma2
+    deviceInfo: deviceInfo, // MAC address and Enigma2 info
 
     // Include account configurations for the API
     accountConfigurations: accountConfigurations,
