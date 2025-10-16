@@ -112,3 +112,28 @@ export async function PATCH(request, { params }) {
     );
   }
 }
+
+export async function GET(request, { params }) {
+  try {
+    await connectToDatabase();
+
+    const { id } = params; // Changed from orderNumber to id
+
+    const order = await Order.findOne({ orderNumber: id }); // Still search by orderNumber field
+
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      order: order,
+    });
+  } catch (error) {
+    console.error("Error fetching order:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch order" },
+      { status: 500 }
+    );
+  }
+}
