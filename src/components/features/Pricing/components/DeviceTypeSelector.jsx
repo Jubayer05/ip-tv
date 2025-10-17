@@ -72,37 +72,40 @@ const DeviceTypeSelector = ({
   };
 
   return (
-    <div className="mb-6">
-      <h3 className="text-white font-semibold text-lg mb-4 text-center">
+    <div className="mb-4 sm:mb-6">
+      <h3 className="text-white font-semibold text-sm sm:text-base md:text-lg mb-3 sm:mb-4 text-center">
         {texts.controls.deviceType.title}
       </h3>
-      <div className="flex flex-wrap justify-center gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4 justify-items-center">
         {deviceTypes.map((type) => {
           const isSelected = selectedDeviceType === type.value;
 
           return (
-            <div key={type.value} className="w-48">
+            <div
+              key={type.value}
+              className="w-full max-w-[200px] sm:max-w-[220px]"
+            >
               <button
                 onClick={() => setSelectedDeviceType(type.value)}
-                className={`relative w-full p-6 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                className={`relative w-full p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
                   isSelected
                     ? `${type.borderColor} ${type.bgColor} shadow-lg shadow-current/20`
                     : "border-[#FFFFFF26] bg-[#0e0e11] hover:border-white/40 hover:bg-[#1a1a1a]"
                 }`}
               >
                 {/* Icon Container */}
-                <div className="flex justify-center mb-4">
+                <div className="flex justify-center mb-2 sm:mb-3 md:mb-4">
                   <div
-                    className={`p-3 rounded-full ${
+                    className={`p-2 sm:p-3 rounded-full ${
                       isSelected ? `${type.bgColor}` : "bg-gray-700/50"
                     }`}
                   >
                     <Image
                       src={type.icon}
                       alt={type.name}
-                      width={32}
-                      height={32}
-                      className={`${
+                      width={20}
+                      height={20}
+                      className={`sm:w-6 sm:h-6 md:w-8 md:h-8 ${
                         isSelected ? "filter brightness-110" : "opacity-60"
                       }`}
                       unoptimized
@@ -113,39 +116,39 @@ const DeviceTypeSelector = ({
                 {/* Text Content */}
                 <div className="text-center">
                   <div
-                    className={`font-semibold text-base mb-2 ${
+                    className={`font-semibold text-xs sm:text-sm md:text-base mb-1 sm:mb-2 ${
                       isSelected ? type.iconColor : "text-white"
                     }`}
                   >
                     {type.name}
                   </div>
-                  <div className="text-sm opacity-75 leading-relaxed">
+                  <div className="text-xs sm:text-sm opacity-75 leading-relaxed">
                     {type.description}
                   </div>
                 </div>
 
                 {/* Selection Indicator */}
                 {isSelected && (
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-current rounded-full flex items-center justify-center">
-                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 bg-current rounded-full flex items-center justify-center">
+                    <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 md:w-2 md:h-2 bg-white rounded-full"></div>
                   </div>
                 )}
               </button>
 
               {/* Input Field for Selected Device */}
               {isSelected && type.requiresInput && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                <div className="mt-3 sm:mt-4">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                     {type.inputLabel}
                   </label>
                   <input
                     type="text"
-                    value={deviceInfo[type.inputType] || ""} // Ensure controlled value
+                    value={deviceInfo[type.inputType] || ""}
                     onChange={(e) =>
                       handleInputChange(e.target.value, type.inputType)
                     }
                     placeholder={type.inputPlaceholder}
-                    className={`w-full px-3 py-2 rounded-lg border transition-colors ${
+                    className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border transition-colors text-xs sm:text-sm ${
                       type.inputType === "mac" &&
                       deviceInfo.macAddress &&
                       !validateMacAddress(deviceInfo.macAddress)

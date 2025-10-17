@@ -7,6 +7,7 @@ import ManageFreeTrial from "@/components/dashboard/AdminDashboard/SystemsSettin
 import ManageLogo from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageLogo";
 import ManageSocialMediaContact from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageSocialMedia";
 import MetaManagement from "@/components/dashboard/AdminDashboard/SystemsSettings/MetaManagement";
+import SiteStatusManagement from "@/components/dashboard/AdminDashboard/SystemsSettings/SiteStatusManagement";
 import { useState } from "react";
 
 export default function AdminSettingsPage() {
@@ -53,13 +54,18 @@ export default function AdminSettingsPage() {
       label: "Logo Management",
       component: <ManageLogo />,
     },
+    {
+      id: "site-status",
+      label: "Site Status",
+      component: <SiteStatusManagement />,
+    },
   ];
 
   return (
     <div className="space-y-4 sm:space-y-6 font-secondary sm:px-6 lg:px-8">
       {/* Tab Navigation */}
       <div className="border-b border-[#212121]">
-        <nav className="flex flex-wrap gap-2 sm:gap-4  overflow-x-auto">
+        <nav className="flex flex-wrap gap-2 sm:gap-4 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}

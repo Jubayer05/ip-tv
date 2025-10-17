@@ -26,6 +26,11 @@ const UniqueNameHandle = () => {
     name: "",
     reviewUsed: false,
   });
+  const [totalStats, setTotalStats] = useState({
+    totalNames: 0,
+    usedNames: 0,
+    availableNames: 0,
+  });
 
   const namesPerPage = 10;
 
@@ -54,6 +59,8 @@ const UniqueNameHandle = () => {
       if (data.success) {
         setNames(data.data);
         setTotalPages(data.pagination.totalPages);
+
+        await fetchTotalStats();
       } else {
         console.error("Failed to fetch names:", data.error);
         Swal.fire({
@@ -71,6 +78,30 @@ const UniqueNameHandle = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTotalStats = async () => {
+    try {
+      // Fetch all names to get total counts
+      const response = await fetch("/api/unique-names?limit=100000");
+      const data = await response.json();
+
+      if (data.success) {
+        const totalNames = data.data.length;
+        const usedNames = data.data.filter((name) => name.reviewUsed).length;
+        const availableNames = data.data.filter(
+          (name) => !name.reviewUsed
+        ).length;
+
+        setTotalStats({
+          totalNames,
+          usedNames,
+          availableNames,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching total stats:", error);
     }
   };
 
@@ -94,15 +125,6 @@ const UniqueNameHandle = () => {
         icon: "warning",
         title: "No Valid Names",
         text: "Please enter valid names (one per line).",
-      });
-      return;
-    }
-
-    if (nameLines.length > 1000) {
-      Swal.fire({
-        icon: "warning",
-        title: "Too Many Names",
-        text: "Maximum 1000 names allowed per upload.",
       });
       return;
     }
@@ -437,7 +459,7 @@ const UniqueNameHandle = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-2">
-                Enter names (one per line, max 1000):
+                Enter names (one per line):
               </label>
               <textarea
                 value={bulkText}
@@ -636,21 +658,24 @@ const UniqueNameHandle = () => {
         {renderPagination()}
 
         {/* Statistics */}
+        {/* Statistics */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-[#0c171c] rounded-lg border border-[#212121] p-4">
             <h3 className="text-white font-medium mb-2">Total Names</h3>
-            <p className="text-2xl font-bold text-blue-400">{names.length}</p>
+            <p className="text-2xl font-bold text-blue-400">
+              {totalStats.totalNames}
+            </p>
           </div>
           <div className="bg-[#0c171c] rounded-lg border border-[#212121] p-4">
             <h3 className="text-white font-medium mb-2">Used Names</h3>
             <p className="text-2xl font-bold text-green-400">
-              {names.filter((n) => n.reviewUsed).length}
+              {totalStats.usedNames}
             </p>
           </div>
           <div className="bg-[#0c171c] rounded-lg border border-[#212121] p-4">
             <h3 className="text-white font-medium mb-2">Available Names</h3>
             <p className="text-2xl font-bold text-yellow-400">
-              {names.filter((n) => !n.reviewUsed).length}
+              {totalStats.availableNames}
             </p>
           </div>
         </div>
@@ -664,7 +689,6 @@ const UniqueNameHandle = () => {
               <ul className="space-y-1">
                 <li>• One name per line</li>
                 <li>• Maximum 100 characters per name</li>
-                <li>• Maximum 1000 names per upload</li>
                 <li>• Duplicate names will be skipped</li>
               </ul>
             </div>

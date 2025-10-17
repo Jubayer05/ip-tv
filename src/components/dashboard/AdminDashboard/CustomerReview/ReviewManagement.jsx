@@ -20,6 +20,7 @@ const ReviewManagement = () => {
     comment: "",
     isApproved: true,
     createdAt: new Date().toISOString().split("T")[0], // YYYY-MM-DD format
+    uniqueName: "",
   });
   const [addForm, setAddForm] = useState({
     rating: 5,
@@ -28,6 +29,7 @@ const ReviewManagement = () => {
     createdAt: new Date().toISOString().split("T")[0],
     userId: "", // For selecting existing user or creating new one
     reviewerName: "", // For display name
+    uniqueName: "",
   });
 
   // Original static texts
@@ -43,6 +45,8 @@ const ReviewManagement = () => {
     addNewReview: "Add New Review",
     reviewerName: "Reviewer Name",
     enterReviewerName: "Enter reviewer name",
+    uniqueName: "Reviewer Name",
+    enterUniqueName: "Enter unique name",
     rating: "Rating",
     createdDate: "Created Date",
     status: "Status",
@@ -165,6 +169,7 @@ const ReviewManagement = () => {
           createdAt: new Date().toISOString().split("T")[0],
           userId: "",
           reviewerName: "",
+          uniqueName: "",
         });
         fetchReviews();
       } else {
@@ -231,6 +236,7 @@ const ReviewManagement = () => {
       comment: review.comment,
       isApproved: review.isApproved,
       createdAt: new Date(review.createdAt).toISOString().split("T")[0],
+      uniqueName: review.uniqueName || "",
     });
   };
 
@@ -389,6 +395,20 @@ const ReviewManagement = () => {
                   }
                   className="w-full px-2 sm:px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
                   placeholder={texts.enterReviewerName}
+                />
+              </div>
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
+                  {texts.uniqueName}
+                </label>
+                <input
+                  type="text"
+                  value={addForm.uniqueName}
+                  onChange={(e) =>
+                    setAddForm({ ...addForm, uniqueName: e.target.value })
+                  }
+                  className="w-full px-2 sm:px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
+                  placeholder={texts.enterUniqueName}
                 />
               </div>
               <div>
@@ -594,6 +614,23 @@ const ReviewManagement = () => {
                           <option value="true">{texts.approved}</option>
                           <option value="false">{texts.pendingApproval}</option>
                         </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
+                          {texts.uniqueName}
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.uniqueName}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              uniqueName: e.target.value,
+                            })
+                          }
+                          className="w-full px-2 sm:px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
+                          placeholder={texts.enterUniqueName}
+                        />
                       </div>
                     </div>
                     <div>

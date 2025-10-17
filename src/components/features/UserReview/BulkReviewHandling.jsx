@@ -160,15 +160,6 @@ const BulkReviewHandling = () => {
       return;
     }
 
-    if (reviewLines.length > 50) {
-      Swal.fire({
-        icon: "warning",
-        title: "Too Many Reviews",
-        text: "Maximum 50 reviews allowed per upload.",
-      });
-      return;
-    }
-
     setUploading(true);
 
     try {
@@ -378,7 +369,7 @@ const BulkReviewHandling = () => {
           <div className="space-y-3 sm:space-y-4">
             <div>
               <label className="block text-gray-300 text-xs sm:text-sm font-medium mb-2">
-                Enter reviews (one per line, max 50):
+                Enter reviews (one per line):
               </label>
               <textarea
                 value={bulkText}

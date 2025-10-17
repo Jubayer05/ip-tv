@@ -34,7 +34,7 @@ export async function PUT(request, { params }) {
   try {
     await connectToDatabase();
     const { id } = await params;
-    const { rating, comment, isApproved, isActive, adminId } =
+    const { rating, comment, isApproved, isActive, adminId, uniqueName } =
       await request.json();
 
     const review = await Review.findById(id);
@@ -46,6 +46,7 @@ export async function PUT(request, { params }) {
     if (rating !== undefined) review.rating = rating;
     if (comment !== undefined) review.comment = comment;
     if (isActive !== undefined) review.isActive = isActive;
+    if (uniqueName !== undefined) review.uniqueName = uniqueName;
 
     // Handle approval
     if (isApproved !== undefined) {

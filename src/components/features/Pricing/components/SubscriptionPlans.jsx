@@ -21,7 +21,7 @@ const SubscriptionPlans = ({
           onClick={() => setSelectedPlan(index)}
         >
           {/* Selected Check Icon */}
-          {selectedPlan === index && (
+          {selectedPlan === index && !variant.recommended && (
             <div className="absolute -top-2 -right-2 w-6 h-6 bg-cyan-400 rounded-full flex items-center justify-center shadow-lg">
               <Check
                 size={14}
@@ -36,16 +36,15 @@ const SubscriptionPlans = ({
               <span>
                 <Flame />
               </span>
-              <span className="hidden sm:inline">
+              <span className="inline">
                 {texts.controls.devices.recommended}
               </span>
-              <span className="sm:hidden">Rec.</span>
             </div>
           )}
 
           <div className="text-left font-secondary">
             <h3
-              className={`font-bold text-lg sm:text-xl md:text-2xl mb-1 font-primary ${
+              className={`font-bold text-lg sm:text-xl md:text-2xl mb-1 mt-2 font-primary ${
                 selectedPlan === index ? "text-cyan-400" : "text-white"
               }`}
             >

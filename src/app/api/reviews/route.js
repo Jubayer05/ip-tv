@@ -60,12 +60,20 @@ export async function POST(request) {
   try {
     await connectToDatabase();
 
-    const { userId, rating, comment } = await request.json();
+    const {
+      userId,
+      rating,
+      comment,
+      uniqueName,
+      reviewerName,
+      isApproved,
+      createdAt,
+    } = await request.json();
 
     // Validation
-    if (!userId || !rating || !comment) {
+    if (!rating || !comment) {
       return NextResponse.json(
-        { error: "All fields are required" },
+        { error: "Rating and comment are required" },
         { status: 400 }
       );
     }
@@ -77,29 +85,34 @@ export async function POST(request) {
       );
     }
 
-    // Check if user exists
-    const user = await User.findById(userId);
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
+    // Check if user exists (only if userId is provided)
+    if (userId) {
+      const user = await User.findById(userId);
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
 
-    // Check if user already reviewed
-    const existingReview = await Review.findOne({
-      userId,
-    });
+      // Check if user already reviewed
+      const existingReview = await Review.findOne({
+        userId,
+      });
 
-    if (existingReview) {
-      return NextResponse.json(
-        { error: "You have already submitted a review" },
-        { status: 409 }
-      );
+      if (existingReview) {
+        return NextResponse.json(
+          { error: "You have already submitted a review" },
+          { status: 409 }
+        );
+      }
     }
 
     // Create review
     const review = new Review({
-      userId,
+      userId: userId || null,
       rating,
       comment,
+      uniqueName: uniqueName || null,
+      isApproved: isApproved || false,
+      createdAt: createdAt ? new Date(createdAt) : new Date(),
     });
 
     await review.save();

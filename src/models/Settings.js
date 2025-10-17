@@ -7,6 +7,17 @@ const settingsSchema = new mongoose.Schema(
     key: { type: String, unique: true, default: "global" },
     affiliateCommissionPct: { type: Number, default: 10, min: 0, max: 100 },
 
+    // Add this to the settingsSchema object, around line 8 after affiliateCommissionPct
+    siteStatus: {
+      isActive: { type: Boolean, default: true },
+      maintenanceMessage: {
+        type: String,
+        default:
+          "We're currently performing maintenance. Please check back later.",
+      },
+      lastUpdated: { type: Date, default: Date.now },
+    },
+
     // Social media links
     socialMedia: {
       x: { type: String, default: "" },
