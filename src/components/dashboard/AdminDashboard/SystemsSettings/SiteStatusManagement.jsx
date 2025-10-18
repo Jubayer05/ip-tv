@@ -42,6 +42,16 @@ const SiteStatusManagement = () => {
     }
   };
 
+  const refreshMaintenanceStatus = async () => {
+    try {
+      await fetch(`/maintenance-status.json?ts=${Date.now()}`, {
+        cache: "no-store",
+      });
+    } catch {
+      // ignore
+    }
+  };
+
   const handleStatusToggle = async () => {
     setSaving(true);
     try {
@@ -62,7 +72,6 @@ const SiteStatusManagement = () => {
       if (data.success) {
         setSiteStatus({ ...siteStatus, isActive: newStatus });
 
-        // Show success message
         Swal.fire({
           icon: "success",
           title: "Status Updated!",
@@ -75,12 +84,7 @@ const SiteStatusManagement = () => {
           showConfirmButton: false,
         });
 
-        // Force refresh the maintenance status file
-        try {
-          await fetch("/maintenance-status.json", { cache: "no-store" });
-        } catch (error) {
-          console.log("Maintenance status file refresh completed");
-        }
+        await refreshMaintenanceStatus();
       } else {
         Swal.fire({
           icon: "error",
@@ -126,12 +130,7 @@ const SiteStatusManagement = () => {
           showConfirmButton: false,
         });
 
-        // Force refresh the maintenance status file
-        try {
-          await fetch("/maintenance-status.json", { cache: "no-store" });
-        } catch (error) {
-          console.log("Maintenance status file refresh completed");
-        }
+        await refreshMaintenanceStatus();
       } else {
         Swal.fire({
           icon: "error",
