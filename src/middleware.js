@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  console.log("Middleware running for:", pathname);
 
   // Skip maintenance check for:
   // - API routes
@@ -20,11 +21,20 @@ export async function middleware(request) {
     pathname === "/sitemap.xml" ||
     pathname === "/maintenance-status.json"
   ) {
+    console.log("Skipping maintenance check for:", pathname);
     return NextResponse.next();
   }
 
   try {
-    // Always check maintenance status for all other public routes
+    console.log("Checking maintenance status...");
+
+    // Create a timeout for the fetch to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log("Maintenance check timeout");
+      controller.abort();
+    }, 5000); // 5 second timeout
+
     const maintenanceStatusUrl = new URL(
       "/maintenance-status.json",
       request.url
@@ -35,12 +45,18 @@ export async function middleware(request) {
       headers: {
         "cache-control": "no-store",
       },
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
+    console.log("Maintenance response status:", response.status);
 
     if (response.ok) {
       const data = await response.json();
+      console.log("Maintenance data:", data);
 
       if (data.isMaintenanceMode) {
+        console.log("Returning maintenance page for:", pathname);
         return new NextResponse(
           `
             <!DOCTYPE html>
@@ -140,12 +156,23 @@ export async function middleware(request) {
             },
           }
         );
+      } else {
+        console.log("Site is active, allowing request to proceed");
       }
+    } else {
+      console.error(
+        "Failed to fetch maintenance status:",
+        response.status,
+        response.statusText
+      );
     }
   } catch (error) {
     console.error("Error checking maintenance mode:", error);
+    // If we can't check maintenance status, allow the request to proceed
+    // This prevents the site from being completely down if there's a database issue
   }
 
+  console.log("Allowing request to proceed for:", pathname);
   return NextResponse.next();
 }
 
