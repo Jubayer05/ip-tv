@@ -1,3 +1,4 @@
+import MaintenanceWrapper from "@/components/common/MaintenanceWrapper";
 import ScrollToTop from "@/components/common/ScrollToTop";
 import TawkTo from "@/components/common/TawkTo";
 import Footer from "@/components/layout/Footer";
@@ -145,11 +146,13 @@ export default function RootLayout({ children }) {
             <AuthContextProvider>
               <LanguageProvider>
                 <UserSpendingContextProvider>
-                  <TawkTo />
-                  <Navbar />
-                  <ScrollToTop />
-                  <main className="min-h-screen">{children}</main>
-                  <Footer />
+                  <MaintenanceWrapper>
+                    <TawkTo />
+                    <Navbar />
+                    <ScrollToTop />
+                    <main className="min-h-screen">{children}</main>
+                    <Footer />
+                  </MaintenanceWrapper>
                 </UserSpendingContextProvider>
               </LanguageProvider>
             </AuthContextProvider>
