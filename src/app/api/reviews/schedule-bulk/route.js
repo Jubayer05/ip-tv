@@ -20,16 +20,6 @@ export async function POST(request) {
       );
     }
 
-    if (reviews.length > 50) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Maximum 50 reviews allowed per upload",
-        },
-        { status: 400 }
-      );
-    }
-
     if (!timerRange || !timerRange.min || !timerRange.max) {
       return NextResponse.json(
         {
