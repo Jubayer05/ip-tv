@@ -71,8 +71,6 @@ export default function Sidebar() {
         const response = await fetch("/api/settings/card-payment");
         const data = await response.json();
 
-        console.log(data?.data?.isEnabled);
-
         if (data.success && data.data?.isEnabled) {
           // Payment enabled - insert Payment Methods item at position 3 (after devices, before support)
           setUserDashMenu((prev) => [

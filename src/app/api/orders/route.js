@@ -448,6 +448,19 @@ export async function POST(request) {
       }
     }
 
+    // Send order confirmation email
+    try {
+      const { sendOrderKeysEmail } = await import("@/lib/email");
+      await sendOrderKeysEmail({
+        toEmail: contactInfo.email,
+        fullName: contactInfo.fullName,
+        order: orderDoc,
+      });
+    } catch (emailError) {
+      console.error("Failed to send order confirmation email:", emailError);
+      // Don't fail the order if email fails
+    }
+
     return NextResponse.json({
       success: true,
       order: orderDoc,

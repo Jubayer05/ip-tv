@@ -50,7 +50,7 @@ export const usePopupStates = () => {
     showRegisterForm,
     setShowRegisterForm,
     showPaymentConfirm,
-    setShowPaymentConfirm, // ← ADD THIS LINE
+    setShowPaymentConfirm,
     placing,
     setPlacing,
     showGatewaySelect,

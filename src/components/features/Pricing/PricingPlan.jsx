@@ -23,7 +23,9 @@ import RankDiscountInfo from "./components/RankDiscountInfo";
 import SubscriptionPlans from "./components/SubscriptionPlans";
 
 // Import utilities
+import { ShoppingCart } from "lucide-react";
 import { useState } from "react";
+import Swal from "sweetalert2";
 import { createMultiAccountSelectionData } from "./utils/pricingUtils";
 
 const PricingPlan = () => {
@@ -36,27 +38,151 @@ const PricingPlan = () => {
   const popupStates = usePopupStates();
 
   // Add device info state
-  const [deviceInfo, setDeviceInfo] = useState({
-    macAddress: "",
-    enigma2Info: "",
-  });
+  const [deviceInfo, setDeviceInfo] = useState({});
 
   // Device info change handler
-  const handleDeviceInfoChange = (newDeviceInfo) => {
-    setDeviceInfo(newDeviceInfo);
+  const handleDeviceInfoChange = (accountIndex, newDeviceInfo) => {
+    setDeviceInfo((prev) => ({
+      ...prev,
+      [accountIndex]: newDeviceInfo,
+    }));
+  };
+
+  // Add to cart handler
+  const handleAddToCart = () => {
+    const selectedPlanData =
+      pricingPlan.product?.variants[pricingPlan.selectedPlan];
+    const actualQuantity = pricingPlan.getActualQuantity();
+
+    // Calculate final price with coupon discount
+    const finalPrice =
+      coupon.appliedCoupon && coupon.couponResult
+        ? coupon.displayTotals.finalTotalWithCoupon
+        : priceCalculation.finalTotal;
+
+    // Create comprehensive cart item data similar to order selection
+    const cartItem = {
+      // Main product info (similar to order selection)
+      product: {
+        _id: pricingPlan.product._id,
+        name: pricingPlan.product.name,
+        variants: pricingPlan.product.variants,
+      },
+      productId: pricingPlan.product._id,
+      variantId: selectedPlanData._id, // Use the actual variant _id
+      selectedPlan: pricingPlan.selectedPlan,
+      selectedQuantity: actualQuantity,
+
+      // Plan info
+      plan: {
+        name: selectedPlanData.name,
+        duration: selectedPlanData.duration,
+        price: selectedPlanData.price,
+      },
+
+      // Legacy fields for compatibility
+      quantity: actualQuantity,
+      selectedDevices: pricingPlan.accountConfigurations.reduce(
+        (acc, config) => acc + config.devices,
+        0
+      ),
+      devices: pricingPlan.accountConfigurations.reduce(
+        (acc, config) => acc + config.devices,
+        0
+      ),
+      adultChannels: pricingPlan.accountConfigurations.some(
+        (config) => config.adultChannels
+      ),
+
+      // Account configurations
+      accountConfigurations: pricingPlan.accountConfigurations.slice(
+        0,
+        actualQuantity
+      ),
+
+      // Pricing info
+      priceCalculation: {
+        finalTotal: finalPrice,
+        originalTotal: priceCalculation.finalTotal,
+        discount: priceCalculation.finalTotal - finalPrice,
+      },
+      finalPrice: finalPrice,
+
+      // Device info
+      deviceInfo: deviceInfo,
+
+      // Coupon info
+      appliedCoupon: coupon.appliedCoupon,
+      couponResult: coupon.couponResult,
+      coupon: coupon.appliedCoupon
+        ? {
+            code: coupon.appliedCoupon.code,
+            discount: coupon.displayTotals.couponDiscount,
+          }
+        : null,
+
+      // Cart specific info
+      id: `${pricingPlan.product._id}_${
+        pricingPlan.selectedPlan
+      }_${Date.now()}`,
+      productName: pricingPlan.product.name,
+      planName: selectedPlanData.name,
+      planDuration: selectedPlanData.duration,
+      planPrice: selectedPlanData.price,
+      accounts: pricingPlan.accountConfigurations
+        .slice(0, actualQuantity)
+        .map((config, index) => ({
+          ...config,
+          deviceInfo: deviceInfo[index] || { macAddress: "", enigma2Info: "" },
+        })),
+      originalPrice: priceCalculation.finalTotal,
+      discount: priceCalculation.finalTotal - finalPrice,
+      addedAt: new Date().toISOString(),
+
+      // Metadata
+      type: "cart_item",
+      timestamp: new Date().toISOString(),
+    };
+
+    // Get existing cart items
+    const existingCart = localStorage.getItem("cs_cart");
+    const cartItems = existingCart ? JSON.parse(existingCart) : [];
+
+    // Add new item to cart
+    const newCartItems = [...cartItems, cartItem];
+    localStorage.setItem("cs_cart", JSON.stringify(newCartItems));
+
+    // Dispatch custom event to update navbar immediately
+    window.dispatchEvent(new CustomEvent("cartUpdated"));
+
+    // Show success message with SweetAlert2
+    Swal.fire({
+      icon: "success",
+      title: "Added to Cart!",
+      text: `${selectedPlanData.name} has been added to your cart`,
+      timer: 2000,
+      showConfirmButton: false,
+      toast: true,
+      position: "top-end",
+      background: "#1a1a1a",
+      color: "#ffffff",
+      customClass: {
+        popup: "swal2-popup-dark",
+      },
+    });
   };
 
   // Update price calculation to handle multiple accounts
   const { priceCalculation } = usePricingCalculation(
     pricingPlan.selectedPlan,
-    pricingPlan.accountConfigurations, // Pass array of configurations
+    pricingPlan.accountConfigurations,
     pricingPlan.product,
     currentRank
   );
 
   const coupon = useCoupon(
     priceCalculation,
-    pricingPlan.accountConfigurations, // Pass array of configurations
+    pricingPlan.accountConfigurations,
     pricingPlan.product
   );
 
@@ -68,7 +194,6 @@ const PricingPlan = () => {
   );
 
   // Handler functions
-  // Update the handleProceedToCheckout function in PricingPlan.jsx
   const handleProceedToCheckout = () => {
     const selectedPlanData =
       pricingPlan.product?.variants[pricingPlan.selectedPlan];
@@ -90,7 +215,7 @@ const PricingPlan = () => {
       coupon.displayTotals,
       finalPrice,
       pricingPlan.selectedDeviceType,
-      deviceInfo // Pass device info
+      deviceInfo
     );
 
     try {
@@ -179,8 +304,20 @@ const PricingPlan = () => {
           texts={translation.texts}
         />
 
-        {/* Proceed Button */}
-        <div className="mt-6 sm:mt-8 flex justify-center px-4">
+        {/* Action Buttons */}
+        <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-4 justify-center px-4">
+          {/* Add to Cart Button */}
+          <Button
+            variant="primary"
+            className="font-secondary w-full sm:w-[250px] md:w-[300px] lg:w-[350px] font-bold 
+            flex items-center justify-center"
+            onClick={handleAddToCart}
+          >
+            <ShoppingCart size={20} className="mr-2" />
+            Add to Cart
+          </Button>
+
+          {/* Proceed to Checkout Button */}
           <Button
             className="font-secondary w-full sm:w-[350px] md:w-[420px] lg:w-[526px] font-bold text-base"
             onClick={handleProceedToCheckout}

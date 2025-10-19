@@ -213,7 +213,6 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
 
         if (iptvResponse.ok) {
           const iptvData = await iptvResponse.json();
-          console.log("✅ IPTV credentials created:", iptvData);
 
           // Set the order with credentials and show the popup
           setOrderAndShowPopup(iptvData.order);

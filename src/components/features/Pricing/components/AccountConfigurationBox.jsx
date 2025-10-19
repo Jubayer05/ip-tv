@@ -1,18 +1,46 @@
 "use client";
 
+import DeviceTypeSelector from "./DeviceTypeSelector";
+
 const AccountConfigurationBox = ({
   index,
   configuration,
   onUpdateConfiguration,
   texts,
+  deviceInfo,
+  onDeviceInfoChange,
 }) => {
+  // Use the device type from this specific account's configuration
+  const selectedDeviceType = configuration.deviceType || 0;
+
+  const handleDeviceTypeChange = (deviceType) => {
+    onUpdateConfiguration(index, "deviceType", deviceType);
+  };
+
+  const handleDeviceInfoChange = (info) => {
+    onDeviceInfoChange?.(index, info);
+  };
+
   return (
     <div className="bg-gradient-to-br from-[#2a2a2a] to-[#1a1a1a] border border-[#00b877]/20 rounded-lg p-4 mb-4">
       <h4 className="text-white font-semibold text-lg mb-4 text-center">
         {texts.controls.accountBox.title} #{index + 1}
       </h4>
 
-      {/* Device Selector for this account */}
+      {/* Device Type Selector for this account */}
+      <div className="mb-4">
+        <DeviceTypeSelector
+          selectedDeviceType={selectedDeviceType}
+          setSelectedDeviceType={handleDeviceTypeChange}
+          texts={texts}
+          deviceInfo={
+            deviceInfo?.[index] || { macAddress: "", enigma2Info: "" }
+          }
+          onDeviceInfoChange={handleDeviceInfoChange}
+        />
+      </div>
+
+      {/* Device Count Selector for this account */}
       <div className="mb-4">
         <h5 className="text-white font-medium text-sm mb-2 text-center">
           {texts.controls.devices.title}

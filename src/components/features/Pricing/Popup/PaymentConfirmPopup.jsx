@@ -13,13 +13,6 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
   // Use orderWithCredentials from context if available, otherwise fall back to order prop
   const displayOrder = orderWithCredentials || order;
 
-  console.log("PaymentConfirmPopup order:", order);
-  console.log(
-    "PaymentConfirmPopup orderWithCredentials:",
-    orderWithCredentials
-  );
-  console.log("PaymentConfirmPopup displayOrder:", displayOrder);
-
   // Dynamic text based on order prop
   const getOriginalTexts = () => ({
     title: order ? "ORDER DETAILS" : "PAYMENT CONFIRMED",
@@ -138,16 +131,38 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
   };
 
   useEffect(() => {
-    // Update texts when order prop changes
-    setTexts(getOriginalTexts());
-  }, [order]);
-
-  useEffect(() => {
     if (!isOpen) return;
 
     // If we have a display order, use it
     if (displayOrder) {
       const product = displayOrder?.products?.[0] || {};
+
+      // Handle cart checkout orders
+      if (displayOrder.isCartCheckout) {
+        setOrderInfo({
+          orderNumber:
+            displayOrder?.orderNumbers?.[0] || displayOrder?.orderNumber || "",
+          orderDate: new Date(
+            displayOrder?.createdAt || Date.now()
+          ).toLocaleDateString(),
+          service: "IPTV Subscription (Cart Checkout)",
+          duration:
+            displayOrder.cartItems?.length > 1
+              ? `${displayOrder.cartItems.length} different plans`
+              : `${product?.duration || 1} month(s)`,
+          devicesAllowed: displayOrder.iptvCredentials?.length || 1,
+          adultChannels: displayOrder.iptvCredentials?.some(
+            (cred) => cred.adultChannels
+          )
+            ? "Yes"
+            : "No",
+          totalPaid: `$${(displayOrder?.totalAmount || 0).toFixed(2)}`,
+          quantity: displayOrder.iptvCredentials?.length || 1,
+        });
+        return;
+      }
+
+      // Regular single order handling
       setOrderInfo({
         orderNumber: displayOrder?.orderNumber || "",
         orderDate: new Date(
@@ -274,7 +289,6 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
 
   useEffect(() => {
     if (orderWithCredentials && orderWithCredentials.iptvCredentials) {
-      console.log("Order with credentials received:", orderWithCredentials);
       // The popup will automatically display the credentials
     }
   }, [orderWithCredentials]);

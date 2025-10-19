@@ -2,7 +2,7 @@
 import NotificationBell from "@/components/ui/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ChevronDown, Menu, User, Wallet, X } from "lucide-react";
+import { ChevronDown, Menu, ShoppingCart, User, Wallet, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -43,9 +43,37 @@ const Navbar = () => {
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [userMenuItems, setUserMenuItems] = useState(initialUserMenuItems);
+  const [cartItemsCount, setCartItemsCount] = useState(0);
 
   const { user, logout, refreshUserData } = useAuth();
   const { language, setLanguage, languages, translate } = useLanguage();
+
+  // Load cart items count from localStorage
+  useEffect(() => {
+    const loadCartCount = () => {
+      const savedCart = localStorage.getItem("cs_cart");
+      if (savedCart) {
+        const cartItems = JSON.parse(savedCart);
+        setCartItemsCount(cartItems.length);
+      } else {
+        setCartItemsCount(0);
+      }
+    };
+
+    // Load initial count
+    loadCartCount();
+
+    // Listen for storage changes (when cart is updated from other tabs)
+    window.addEventListener("storage", loadCartCount);
+
+    // Listen for custom cart update events (same tab)
+    window.addEventListener("cartUpdated", loadCartCount);
+
+    return () => {
+      window.removeEventListener("storage", loadCartCount);
+      window.removeEventListener("cartUpdated", loadCartCount);
+    };
+  }, []);
 
   const ORIGINAL_USER_MENU_LABELS = [
     "Dashboard",
@@ -354,6 +382,19 @@ const Navbar = () => {
 
           {/* Right Section - Language Dropdown, Sign In, and User Menu */}
           <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Cart Icon - Always visible */}
+            <Link
+              href="/cart"
+              className="relative text-white hover:text-gray-300 transition-colors"
+            >
+              <ShoppingCart size={20} />
+              {cartItemsCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                  {cartItemsCount}
+                </span>
+              )}
+            </Link>
+
             {/* Guest Login Icon - Only show when user is not logged in */}
             {!user && (
               <Link
@@ -543,6 +584,16 @@ const Navbar = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4">
+              {/* Mobile Cart Link */}
+              <Link
+                href="/cart"
+                onClick={toggleMobileMenu}
+                className="flex items-center text-white hover:text-primary transition-colors font-secondary text-sm py-2"
+              >
+                <ShoppingCart size={18} className="mr-3" />
+                Cart ({cartItemsCount})
+              </Link>
+
               {navigationLinks.map((link, i) => (
                 <div key={link.href}>
                   {link.hasDropdown ? (

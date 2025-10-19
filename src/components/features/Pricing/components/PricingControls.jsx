@@ -1,7 +1,6 @@
 "use client";
 
 import AccountConfigurationBox from "./AccountConfigurationBox";
-import DeviceTypeSelector from "./DeviceTypeSelector";
 import QuantitySelector from "./QuantitySelector";
 
 const PricingControls = ({
@@ -13,28 +12,17 @@ const PricingControls = ({
   setShowCustomInput,
   handleQuantityChange,
   handleCustomQuantityChange,
-  selectedDeviceType,
-  setSelectedDeviceType,
   accountConfigurations,
   updateAccountConfiguration,
   getActualQuantity,
   texts,
-  deviceInfo, // New prop for device info
-  onDeviceInfoChange, // New prop for device info callback
+  deviceInfo, // Device info per account
+  onDeviceInfoChange, // Device info callback per account
 }) => {
   const actualQuantity = getActualQuantity();
 
   return (
     <div className="font-secondary max-w-3xl mt-6 mx-auto p-4 sm:p-6 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#00b877]/30 rounded-xl">
-      {/* Device Type Selector */}
-      <DeviceTypeSelector
-        selectedDeviceType={selectedDeviceType}
-        setSelectedDeviceType={setSelectedDeviceType}
-        texts={texts}
-        deviceInfo={deviceInfo}
-        onDeviceInfoChange={onDeviceInfoChange}
-      />
-
       {/* Quantity Selector */}
       <QuantitySelector
         selectedQuantity={selectedQuantity}
@@ -64,6 +52,8 @@ const PricingControls = ({
                   configuration={config}
                   onUpdateConfiguration={updateAccountConfiguration}
                   texts={texts}
+                  deviceInfo={deviceInfo}
+                  onDeviceInfoChange={onDeviceInfoChange}
                 />
               ))}
           </div>

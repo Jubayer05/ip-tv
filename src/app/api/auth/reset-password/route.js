@@ -71,8 +71,6 @@ export async function POST(request) {
       await admin.auth().updateUser(firebaseUser.uid, {
         password: password,
       });
-
-      console.log(`Password updated for user: ${email}`);
     } catch (firebaseError) {
       console.error("Firebase password update error:", firebaseError);
       return NextResponse.json(

@@ -207,10 +207,6 @@ export default function ThankRegisterPopup({
         });
 
         if (iptvResponse.ok) {
-          const iptvData = await iptvResponse.json();
-          console.log("✅ IPTV credentials created:", iptvData);
-
-          // Update loading message
           Swal.update({
             title: "Creating IPTV Credentials...",
             text: `Creating ${actualQuantity} IPTV account(s), please wait...`,
@@ -224,10 +220,6 @@ export default function ThankRegisterPopup({
             // Wait progressively longer: 1s, 1.5s, 2s, 2.5s, 3s
             await new Promise((resolve) =>
               setTimeout(resolve, attempt * 500 + 500)
-            );
-
-            console.log(
-              `🔄 Fetching order (attempt ${attempt}/${maxRetries})...`
             );
 
             const updatedOrderResponse = await fetch(
@@ -244,7 +236,6 @@ export default function ThankRegisterPopup({
                 updatedData.order.iptvCredentials[0].username &&
                 updatedData.order.iptvCredentials[0].password
               ) {
-                console.log("✅ Order with credentials fetched successfully!");
                 orderWithCreds = updatedData.order;
                 localStorage.setItem(
                   "cs_last_order",
@@ -252,11 +243,7 @@ export default function ThankRegisterPopup({
                 );
                 credentialsFound = true;
                 break; // Success! Exit retry loop
-              } else {
-                console.log(
-                  `⚠️ Credentials not ready yet (attempt ${attempt}/${maxRetries})`
-                );
-              }
+              } 
             } else {
               console.error(
                 `❌ Failed to fetch order (attempt ${attempt}):`,

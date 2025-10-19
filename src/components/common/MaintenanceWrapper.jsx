@@ -24,18 +24,18 @@ const MaintenanceWrapper = ({ children }) => {
   });
   const pathname = usePathname();
 
-  // Skip maintenance check for admin routes
+  // Skip maintenance check for admin routes and login page
   const isAdminRoute = pathname?.startsWith("/admin");
+  const isLoginRoute = pathname?.startsWith("/login");
 
   useEffect(() => {
-    if (isAdminRoute) {
+    if (isAdminRoute || isLoginRoute) {
       setIsChecking(false);
       return;
     }
 
     const checkMaintenance = async () => {
       try {
-        console.log("Checking maintenance status...");
         const response = await fetch(
           `/maintenance-status.json?t=${Date.now()}`,
           {
@@ -47,11 +47,8 @@ const MaintenanceWrapper = ({ children }) => {
           }
         );
 
-        console.log("Maintenance response status:", response.status);
-
         if (response.ok) {
           const data = await response.json();
-          console.log("Maintenance data:", data);
           setIsMaintenance(data.isMaintenanceMode);
           setMaintenanceMessage(
             data.maintenanceMessage ||
@@ -68,7 +65,7 @@ const MaintenanceWrapper = ({ children }) => {
     };
 
     checkMaintenance();
-  }, [isAdminRoute]);
+  }, [isAdminRoute, isLoginRoute]);
 
   // Fetch settings for contact info, social media, and logos
   useEffect(() => {
