@@ -27,9 +27,10 @@ const MaintenanceWrapper = ({ children }) => {
   // Skip maintenance check for admin routes and login page
   const isAdminRoute = pathname?.startsWith("/admin");
   const isLoginRoute = pathname?.startsWith("/login");
+  const isDashboardRoute = pathname?.startsWith("/dashboard");
 
   useEffect(() => {
-    if (isAdminRoute || isLoginRoute) {
+    if (isAdminRoute || isLoginRoute || isDashboardRoute) {
       setIsChecking(false);
       return;
     }
@@ -65,7 +66,7 @@ const MaintenanceWrapper = ({ children }) => {
     };
 
     checkMaintenance();
-  }, [isAdminRoute, isLoginRoute]);
+  }, [isAdminRoute, isLoginRoute, isDashboardRoute]);
 
   // Fetch settings for contact info, social media, and logos
   useEffect(() => {
