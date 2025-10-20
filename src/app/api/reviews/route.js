@@ -11,30 +11,66 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page")) || 1;
     const limit = parseInt(searchParams.get("limit")) || 10;
-    const approved = searchParams.get("approved");
+
+    const approvedParam = searchParams.get("approved"); // "true" | "false" | null
     const userId = searchParams.get("userId");
+    const isBulkGeneratedParam = searchParams.get("isBulkGenerated"); // "true" | "false" | null
+    const scheduledFor = searchParams.get("scheduledFor"); // "current" | "future" | null
+
+    // Sort defaults: if scheduled filter present, default by scheduledFor asc; else createdAt desc
+    let sortBy = searchParams.get("sortBy");
+    let sortOrder = searchParams.get("sortOrder");
+    if (!sortBy) sortBy = scheduledFor ? "scheduledFor" : "createdAt";
+    if (!sortOrder) sortOrder = scheduledFor ? "asc" : "desc";
 
     const skip = (page - 1) * limit;
+    const now = new Date();
 
-    // Build query
-    let query = { isActive: true };
-
-    if (approved !== null && approved !== undefined) {
-      query.isApproved = approved === "true";
-    }
+    // Build query using AND conditions so combinations compose cleanly
+    const andConditions = [{ isActive: true }];
 
     if (userId) {
-      query.userId = userId;
+      andConditions.push({ userId });
     }
 
-    const reviews = await Review.find(query)
+    if (isBulkGeneratedParam !== null && isBulkGeneratedParam !== undefined) {
+      andConditions.push({ isBulkGenerated: isBulkGeneratedParam === "true" });
+    }
+
+    // Scheduled filtering has priority and should NOT be mixed with the plain approved filter
+    if (scheduledFor === "current") {
+      // Approved and scheduled in the past
+      andConditions.push({ isApproved: true });
+      andConditions.push({ scheduledFor: { $lt: now } });
+    } else if (scheduledFor === "future") {
+      // Pending: either not approved OR scheduled for future (and has scheduledFor)
+      andConditions.push({
+        $or: [
+          { isApproved: false },
+          { scheduledFor: { $exists: true, $gt: now } },
+        ],
+      });
+    } else {
+      // No scheduled filter; allow plain approved filter
+      if (approvedParam !== null && approvedParam !== undefined) {
+        andConditions.push({ isApproved: approvedParam === "true" });
+      }
+    }
+
+    const finalQuery = { $and: andConditions };
+
+    // Build sort object
+    const sortObj = {};
+    sortObj[sortBy] = sortOrder === "asc" ? 1 : -1;
+
+    const reviews = await Review.find(finalQuery)
       .populate("userId", "profile.firstName profile.lastName profile.avatar")
       .populate("approvedBy", "profile.firstName profile.lastName")
-      .sort({ createdAt: -1 })
+      .sort(sortObj)
       .skip(skip)
       .limit(limit);
 
-    const total = await Review.countDocuments(query);
+    const total = await Review.countDocuments(finalQuery);
 
     return NextResponse.json({
       success: true,
@@ -112,6 +148,7 @@ export async function POST(request) {
       comment,
       uniqueName: uniqueName || null,
       isApproved: isApproved || false,
+      isBulkGenerated: !userId, // Mark as bulk generated if no userId
       createdAt: createdAt ? new Date(createdAt) : new Date(),
     });
 

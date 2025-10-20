@@ -12,7 +12,7 @@ const ReviewManagement = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [filter, setFilter] = useState("all"); // all, pending, approved
+  const [filter, setFilter] = useState("all"); // all, bulk, user, approved, pending
   const [editingReview, setEditingReview] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -28,7 +28,6 @@ const ReviewManagement = () => {
     isApproved: true,
     createdAt: new Date().toISOString().split("T")[0],
     userId: "", // For selecting existing user or creating new one
-    reviewerName: "", // For display name
     uniqueName: "",
   });
 
@@ -42,9 +41,9 @@ const ReviewManagement = () => {
     allReviews: "All Reviews",
     pendingApproval: "Pending Approval",
     approved: "Approved",
+    bulkGenerated: "Bulk Generated",
+    userReviews: "User Reviews",
     addNewReview: "Add New Review",
-    reviewerName: "Reviewer Name",
-    enterReviewerName: "Enter reviewer name",
     uniqueName: "Reviewer Name",
     enterUniqueName: "Enter unique name",
     rating: "Rating",
@@ -114,19 +113,34 @@ const ReviewManagement = () => {
   const fetchReviews = async () => {
     setLoading(true);
     try {
-      let url = `/api/reviews?page=${currentPage}&limit=10`;
+      let url = `/api/reviews?page=${currentPage}&limit=10&sortBy=scheduledFor&sortOrder=asc`;
 
-      if (filter === "pending") {
-        url += "&approved=false";
+      // Apply filters based on the selected option
+      if (filter === "bulk") {
+        url += "&isBulkGenerated=true";
+      } else if (filter === "user") {
+        url += "&isBulkGenerated=false";
       } else if (filter === "approved") {
-        url += "&approved=true";
+        url += "&approved=true&scheduledFor=current";
+      } else if (filter === "pending") {
+        url += "&scheduledFor=future"; // fixed: added missing "&"
       }
 
       const response = await fetch(url);
       const data = await response.json();
 
       if (data.success) {
-        setReviews(data.data);
+        const items = data.data;
+        const now = new Date();
+        const pendingOnly =
+          filter === "pending"
+            ? items.filter(
+                (r) =>
+                  !r.isApproved ||
+                  (r.scheduledFor && new Date(r.scheduledFor) > now)
+              )
+            : items;
+        setReviews(pendingOnly);
         setTotalPages(data.pagination.pages);
       } else {
         console.error("Failed to fetch reviews:", data.error);
@@ -168,7 +182,6 @@ const ReviewManagement = () => {
           isApproved: true,
           createdAt: new Date().toISOString().split("T")[0],
           userId: "",
-          reviewerName: "",
           uniqueName: "",
         });
         fetchReviews();
@@ -370,8 +383,10 @@ const ReviewManagement = () => {
               className="px-3 sm:px-4 py-2 bg-[#0c171c] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition-colors text-xs sm:text-sm"
             >
               <option value="all">{texts.allReviews}</option>
-              <option value="pending">{texts.pendingApproval}</option>
+              <option value="bulk">{texts.bulkGenerated}</option>
+              <option value="user">{texts.userReviews}</option>
               <option value="approved">{texts.approved}</option>
+              <option value="pending">{texts.pendingApproval}</option>
             </select>
           </div>
         </div>
@@ -383,20 +398,6 @@ const ReviewManagement = () => {
               {texts.addNewReview}
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
-                  {texts.reviewerName}
-                </label>
-                <input
-                  type="text"
-                  value={addForm.reviewerName}
-                  onChange={(e) =>
-                    setAddForm({ ...addForm, reviewerName: e.target.value })
-                  }
-                  className="w-full px-2 sm:px-3 py-2 bg-[#1a1a1a] border border-white/15 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs sm:text-sm"
-                  placeholder={texts.enterReviewerName}
-                />
-              </div>
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                   {texts.uniqueName}
@@ -538,12 +539,23 @@ const ReviewManagement = () => {
                   <div className="flex items-center justify-end sm:justify-start">
                     <span
                       className={`px-2 py-1 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap ${
-                        review.isApproved
+                        // Check if it's a scheduled review that hasn't been posted yet
+                        review.isBulkGenerated &&
+                        review.scheduledFor &&
+                        new Date() < new Date(review.scheduledFor) &&
+                        !review.postedAt
+                          ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                          : review.isApproved
                           ? "bg-green-500/20 text-green-400 border border-green-500/30"
                           : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
                       }`}
                     >
-                      {review.isApproved
+                      {review.isBulkGenerated &&
+                      review.scheduledFor &&
+                      new Date() < new Date(review.scheduledFor) &&
+                      !review.postedAt
+                        ? texts.pendingApproval
+                        : review.isApproved
                         ? texts.approved
                         : texts.pendingApproval}
                     </span>
@@ -680,25 +692,39 @@ const ReviewManagement = () => {
 
                     <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-2 lg:space-y-0">
                       <div className="flex flex-wrap gap-1 sm:gap-2">
-                        {!review.isApproved && (
-                          <button
-                            onClick={() => handleApprove(review._id, true)}
-                            className="flex items-center px-2 sm:px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-[10px] sm:text-xs font-medium transition-colors"
-                          >
-                            <Check className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
-                            {texts.approve}
-                          </button>
-                        )}
+                        {/* Only show approve button if it's not a scheduled review waiting to be posted */}
+                        {!review.isApproved &&
+                          !(
+                            review.isBulkGenerated &&
+                            review.scheduledFor &&
+                            new Date() < new Date(review.scheduledFor) &&
+                            !review.postedAt
+                          ) && (
+                            <button
+                              onClick={() => handleApprove(review._id, true)}
+                              className="flex items-center px-2 sm:px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-[10px] sm:text-xs font-medium transition-colors"
+                            >
+                              <Check className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
+                              {texts.approve}
+                            </button>
+                          )}
 
-                        {review.isApproved && (
-                          <button
-                            onClick={() => handleApprove(review._id, false)}
-                            className="flex items-center px-2 sm:px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-[10px] sm:text-xs font-medium transition-colors"
-                          >
-                            <X className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
-                            {texts.reject}
-                          </button>
-                        )}
+                        {/* Only show reject button if it's approved and not a scheduled review waiting to be posted */}
+                        {review.isApproved &&
+                          !(
+                            review.isBulkGenerated &&
+                            review.scheduledFor &&
+                            new Date() < new Date(review.scheduledFor) &&
+                            !review.postedAt
+                          ) && (
+                            <button
+                              onClick={() => handleApprove(review._id, false)}
+                              className="flex items-center px-2 sm:px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-[10px] sm:text-xs font-medium transition-colors"
+                            >
+                              <X className="mr-1 w-2 h-2 sm:w-3 sm:h-3" />{" "}
+                              {texts.reject}
+                            </button>
+                          )}
 
                         <button
                           onClick={() => handleEdit(review)}
