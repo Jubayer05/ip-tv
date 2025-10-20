@@ -48,7 +48,7 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
     },
     footer: {
       receipt: "A receipt has been sent to your email.",
-      contact: "For questions, contact: info@iptvstore.com",
+      contact: "For questions, contact: help@cheapstream.com",
     },
     accountDetails: {
       accountNumber: "Account",

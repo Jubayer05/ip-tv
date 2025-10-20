@@ -48,7 +48,7 @@ export default function ThankRegisterPopup({
     },
     footer: {
       receipt: "A receipt has been sent to your email.",
-      contact: "For questions, contact: info@iptvstore.com",
+      contact: "For questions, contact: help@cheapstream.com",
     },
   };
 
@@ -243,7 +243,7 @@ export default function ThankRegisterPopup({
                 );
                 credentialsFound = true;
                 break; // Success! Exit retry loop
-              } 
+              }
             } else {
               console.error(
                 `❌ Failed to fetch order (attempt ${attempt}):`,

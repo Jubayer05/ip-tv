@@ -461,7 +461,7 @@ export default function PaymentStatusPage() {
         <div className="text-center mt-6 text-gray-400 text-sm">
           <p>
             Need help? Contact us at{" "}
-            <span className="text-yellow-500">info@iptvstore.com</span>
+            <span className="text-yellow-500">help@cheapstream.com</span>
           </p>
         </div>
       </div>
