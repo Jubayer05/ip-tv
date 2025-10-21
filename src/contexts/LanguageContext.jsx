@@ -6,51 +6,103 @@ const LanguageContext = createContext(null);
 
 const LANG_STORAGE_KEY = "app_lang";
 
-const AVAILABLE_LANGUAGES = [
-  { code: "en", name: "English", flag: "🇬🇧" },
-  { code: "sv", name: "Swedish", flag: "🇸🇪" },
-  { code: "no", name: "Norwegian", flag: "🇳🇴" },
-  { code: "da", name: "Danish", flag: "🇩🇰" },
-  { code: "fi", name: "Finnish", flag: "🇫🇮" },
-  { code: "fr", name: "French", flag: "🇫🇷" },
-  { code: "de", name: "German", flag: "🇩🇪" },
-  { code: "es", name: "Spanish", flag: "🇪🇸" },
-  { code: "it", name: "Italian", flag: "🇮🇹" },
-  { code: "ru", name: "Russian", flag: "🇷🇺" },
-  { code: "tr", name: "Turkish", flag: "🇹🇷" },
-  { code: "ar", name: "Arabic", flag: "🇸🇦" },
-  { code: "hi", name: "Hindi", flag: "🇮🇳" },
-  { code: "zh", name: "Chinese", flag: "🇨🇳" },
-];
+// Replace the hardcoded AVAILABLE_LANGUAGES with a function that fetches from backend
+const fetchAvailableLanguages = async () => {
+  try {
+    const response = await fetch("/api/settings/languages");
+    const data = await response.json();
 
+    if (data.success && data.data.availableLanguages) {
+      return data.data.availableLanguages.filter((lang) => lang.isActive);
+    }
+
+    // Fallback to hardcoded languages if API fails
+    return [
+      { code: "en", name: "English", flag: "🇬🇧" },
+      { code: "sv", name: "Swedish", flag: "🇸🇪" },
+      { code: "no", name: "Norwegian", flag: "🇳🇴" },
+      { code: "da", name: "Danish", flag: "🇩🇰" },
+      { code: "fi", name: "Finnish", flag: "🇫🇮" },
+      { code: "fr", name: "French", flag: "🇫🇷" },
+      { code: "de", name: "German", flag: "🇩🇪" },
+      { code: "es", name: "Spanish", flag: "🇪🇸" },
+      { code: "it", name: "Italian", flag: "🇮🇹" },
+      { code: "ru", name: "Russian", flag: "🇷🇺" },
+      { code: "tr", name: "Turkish", flag: "🇹🇷" },
+      { code: "ar", name: "Arabic", flag: "🇸🇦" },
+      { code: "hi", name: "Hindi", flag: "🇮🇳" },
+      { code: "zh", name: "Chinese", flag: "🇨🇳" },
+    ];
+  } catch (error) {
+    console.error("Error fetching languages from backend:", error);
+    // Return fallback languages
+    return [
+      { code: "en", name: "English", flag: "🇬🇧" },
+      { code: "sv", name: "Swedish", flag: "🇸🇪" },
+      { code: "no", name: "Norwegian", flag: "🇳🇴" },
+      { code: "da", name: "Danish", flag: "🇩🇰" },
+      { code: "fi", name: "Finnish", flag: "🇫🇮" },
+      { code: "fr", name: "French", flag: "🇫🇷" },
+      { code: "de", name: "German", flag: "🇩🇪" },
+      { code: "es", name: "Spanish", flag: "🇪🇸" },
+      { code: "it", name: "Italian", flag: "🇮🇹" },
+      { code: "ru", name: "Russian", flag: "🇷🇺" },
+      { code: "tr", name: "Turkish", flag: "🇹🇷" },
+      { code: "ar", name: "Arabic", flag: "🇸🇦" },
+      { code: "hi", name: "Hindi", flag: "🇮🇳" },
+      { code: "zh", name: "Chinese", flag: "🇨🇳" },
+    ];
+  }
+};
+
+// Update the LanguageProvider component
 export function LanguageProvider({ children }) {
-  // Start with null to indicate language hasn't been loaded yet
   const [language, setLanguage] = useState(null);
   const [isLanguageLoaded, setIsLanguageLoaded] = useState(false);
+  const [availableLanguages, setAvailableLanguages] = useState([]);
 
-  // Load saved language on mount
+  // Load available languages and saved language on mount
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(LANG_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed?.code && parsed?.name) {
-          setLanguage(parsed);
+    const loadLanguages = async () => {
+      try {
+        const languages = await fetchAvailableLanguages();
+        setAvailableLanguages(languages);
+
+        const saved = localStorage.getItem(LANG_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed?.code && parsed?.name) {
+            // Check if saved language is still available
+            const isAvailable = languages.some(
+              (lang) => lang.code === parsed.code
+            );
+            if (isAvailable) {
+              setLanguage(parsed);
+            } else {
+              // If saved language is not available, set to first available language
+              setLanguage(
+                languages[0] || { code: "en", name: "English", flag: "🇬🇧" }
+              );
+            }
+          } else {
+            setLanguage(
+              languages[0] || { code: "en", name: "English", flag: "🇬🇧" }
+            );
+          }
         } else {
-          // If saved language is invalid, set to English
-          setLanguage({ code: "en", name: "English", flag: "🇬🇧" });
+          setLanguage(
+            languages[0] || { code: "en", name: "English", flag: "🇬🇧" }
+          );
         }
-      } else {
-        // If no saved language, set to English
+        setIsLanguageLoaded(true);
+      } catch (error) {
+        console.error("Error loading languages:", error);
         setLanguage({ code: "en", name: "English", flag: "🇬🇧" });
+        setIsLanguageLoaded(true);
       }
-      setIsLanguageLoaded(true);
-    } catch (error) {
-      // If there's an error, fallback to English
-      console.error("Error loading language from localStorage:", error);
-      setLanguage({ code: "en", name: "English", flag: "🇬🇧" });
-      setIsLanguageLoaded(true);
-    }
+    };
+
+    loadLanguages();
   }, []);
 
   // Persist and set direction only after language is set
@@ -121,13 +173,13 @@ export function LanguageProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      language: language || { code: "en", name: "English", flag: "🇬🇧" }, // Provide fallback for components
+      language: language || { code: "en", name: "English", flag: "🇬🇧" },
       setLanguage,
-      languages: AVAILABLE_LANGUAGES,
+      languages: availableLanguages,
       translate,
       isLanguageLoaded,
     }),
-    [language, isLanguageLoaded]
+    [language, availableLanguages, isLanguageLoaded]
   );
 
   // Don't render children until language is loaded to prevent flash

@@ -1,5 +1,6 @@
 "use client";
 import EmailManagement from "@/components/dashboard/AdminDashboard/SystemsSettings/EmailManagement";
+import LanguageManagement from "@/components/dashboard/AdminDashboard/SystemsSettings/LanguageManagement";
 import ManageAddons from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageAddons";
 import ManageBanner from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageBanner";
 import ManageContact from "@/components/dashboard/AdminDashboard/SystemsSettings/ManageContact";
@@ -58,6 +59,11 @@ export default function AdminSettingsPage() {
       id: "site-status",
       label: "Site Status",
       component: <SiteStatusManagement />,
+    },
+    {
+      id: "languages",
+      label: "Language Management",
+      component: <LanguageManagement />,
     },
   ];
 

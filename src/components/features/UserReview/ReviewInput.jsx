@@ -44,6 +44,24 @@ const ReviewInput = () => {
     }
   };
 
+  const handleSliderChange = (e) => {
+    const value = parseFloat(e.target.value);
+    setRating(value);
+  };
+
+  const handleStarClick = (starIndex) => {
+    const starValue = starIndex + 1;
+    setRating(starValue);
+  };
+
+  const handleStarHover = (starIndex) => {
+    setHover(starIndex + 1);
+  };
+
+  const handleStarLeave = () => {
+    setHover(0);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -182,34 +200,85 @@ const ReviewInput = () => {
           <label className="block text-[#ffffff] text-xs sm:text-sm font-medium mb-2">
             Rating
           </label>
-          <div className="flex items-center space-x-1">
-            {[...Array(5)].map((star, index) => {
-              const ratingValue = index + 1;
+
+          {/* Interactive Stars */}
+          <div
+            className="flex items-center space-x-1 mb-3"
+            onMouseLeave={() => setHover(0)}
+          >
+            {[...Array(5)].map((_, index) => {
+              const displayRating = hover > 0 ? hover : rating; // slider drives when not hovering
+              const fullStars = Math.floor(displayRating);
+              const fraction = displayRating - fullStars;
+              const fillWidth =
+                index < fullStars
+                  ? "100%"
+                  : index === fullStars && fraction > 0
+                  ? `${fraction * 100}%`
+                  : "0%";
+
               return (
-                <label key={index}>
-                  <input
-                    type="radio"
-                    name="rating"
-                    value={ratingValue}
-                    onClick={() => setRating(ratingValue)}
-                    className="hidden"
-                  />
+                <div
+                  key={index}
+                  className="relative cursor-pointer"
+                  onClick={() => handleStarClick(index)}
+                  onMouseEnter={() => handleStarHover(index)}
+                >
                   <Star
-                    className="cursor-pointer transition-colors duration-200"
-                    color={
-                      ratingValue <= (hover || rating) ? "#00b877" : "#ffffff40"
-                    }
+                    className="transition-colors duration-200"
+                    color="#ffffff40"
                     size={24}
-                    fill={ratingValue <= (hover || rating) ? "#00b877" : "transparent"}
-                    onMouseEnter={() => setHover(ratingValue)}
-                    onMouseLeave={() => setHover(0)}
+                    fill="transparent"
                   />
-                </label>
+                  <div
+                    className="absolute top-0 left-0 overflow-hidden transition-all duration-200 z-10"
+                    style={{ width: fillWidth }}
+                  >
+                    <Star
+                      className="top-0 left-0"
+                      color="#00b877"
+                      size={24}
+                      fill="#00b877"
+                    />
+                  </div>
+                </div>
               );
             })}
-            <span className="ml-2 text-[#00b877] text-xs sm:text-sm font-medium">
-              {rating > 0 && `${rating} star${rating > 1 ? "s" : ""}`}
-            </span>
+          </div>
+
+          {/* Rating Slider */}
+          <div className="space-y-2">
+            <input
+              type="range"
+              min="0"
+              max="5"
+              step="0.1"
+              value={rating}
+              onChange={handleSliderChange}
+              className="w-full h-2 bg-[#ffffff]/20 rounded-lg appearance-none cursor-pointer slider"
+              style={{
+                background: `linear-gradient(to right, #00b877 0%, #00b877 ${
+                  (rating / 5) * 100
+                }%, #ffffff20 ${(rating / 5) * 100}%, #ffffff20 100%)`,
+              }}
+            />
+
+            {/* Rating Display */}
+            <div className="flex justify-between items-center">
+              <span className="text-[#00b877] text-xs sm:text-sm font-medium">
+                {rating > 0
+                  ? `${rating.toFixed(1)} star${rating !== 1 ? "s" : ""}`
+                  : "Select rating"}
+              </span>
+              <div className="flex space-x-1 text-[#ffffff]/40 text-xs">
+                <span>0</span>
+                <span>1</span>
+                <span>2</span>
+                <span>3</span>
+                <span>4</span>
+                <span>5</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -254,6 +323,29 @@ const ReviewInput = () => {
           {submitting ? "Submitting..." : "Submit Review"}
         </button>
       </form>
+
+      <style jsx>{`
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #00b877;
+          cursor: pointer;
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .slider::-moz-range-thumb {
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #00b877;
+          cursor: pointer;
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+      `}</style>
     </div>
   );
 };

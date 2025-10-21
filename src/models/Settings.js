@@ -8,6 +8,20 @@ const settingsSchema = new mongoose.Schema(
     affiliateCommissionPct: { type: Number, default: 10, min: 0, max: 100 },
 
     // Add this to the settingsSchema object, around line 8 after affiliateCommissionPct
+    languageSettings: {
+      availableLanguages: [
+        {
+          code: { type: String, required: true },
+          name: { type: String, required: true },
+          flag: { type: String, required: true },
+          isActive: { type: Boolean, default: true },
+        },
+      ],
+      defaultLanguage: { type: String, default: "en" },
+      lastUpdated: { type: Date, default: Date.now },
+    },
+
+    // Add this to the settingsSchema object, around line 8 after affiliateCommissionPct
     siteStatus: {
       isActive: { type: Boolean, default: true },
       maintenanceMessage: {
@@ -1389,6 +1403,61 @@ settingsSchema.statics.getSettings = async function () {
       description: "Pay securely with your credit or debit card",
     };
     modified = true;
+  }
+
+  // Add language settings defaults
+  if (!doc.languageSettings) {
+    doc.languageSettings = {
+      availableLanguages: [
+        { code: "en", name: "English", flag: "🇬🇧", isActive: true },
+        { code: "sv", name: "Swedish", flag: "🇸🇪", isActive: true },
+        { code: "no", name: "Norwegian", flag: "🇳🇴", isActive: true },
+        { code: "da", name: "Danish", flag: "🇩🇰", isActive: true },
+        { code: "fi", name: "Finnish", flag: "🇫🇮", isActive: true },
+        { code: "fr", name: "French", flag: "🇫🇷", isActive: true },
+        { code: "de", name: "German", flag: "🇩🇪", isActive: true },
+        { code: "es", name: "Spanish", flag: "🇪🇸", isActive: true },
+        { code: "it", name: "Italian", flag: "🇮🇹", isActive: true },
+        { code: "ru", name: "Russian", flag: "🇷🇺", isActive: true },
+        { code: "tr", name: "Turkish", flag: "🇹🇷", isActive: true },
+        { code: "ar", name: "Arabic", flag: "🇸🇦", isActive: true },
+        { code: "hi", name: "Hindi", flag: "🇮🇳", isActive: true },
+        { code: "zh", name: "Chinese", flag: "🇨🇳", isActive: true },
+      ],
+      defaultLanguage: "en",
+      lastUpdated: new Date(),
+    };
+    modified = true;
+  } else {
+    // Check if availableLanguages is empty or missing
+    if (
+      !doc.languageSettings.availableLanguages ||
+      doc.languageSettings.availableLanguages.length === 0
+    ) {
+      doc.languageSettings.availableLanguages = [
+        { code: "en", name: "English", flag: "🇬🇧", isActive: true },
+        { code: "sv", name: "Swedish", flag: "🇸🇪", isActive: true },
+        { code: "no", name: "Norwegian", flag: "🇳🇴", isActive: true },
+        { code: "da", name: "Danish", flag: "🇩🇰", isActive: true },
+        { code: "fi", name: "Finnish", flag: "🇫🇮", isActive: true },
+        { code: "fr", name: "French", flag: "🇫🇷", isActive: true },
+        { code: "de", name: "German", flag: "🇩🇪", isActive: true },
+        { code: "es", name: "Spanish", flag: "🇪🇸", isActive: true },
+        { code: "it", name: "Italian", flag: "🇮🇹", isActive: true },
+        { code: "ru", name: "Russian", flag: "🇷🇺", isActive: true },
+        { code: "tr", name: "Turkish", flag: "🇹🇷", isActive: true },
+        { code: "ar", name: "Arabic", flag: "🇸🇦", isActive: true },
+        { code: "hi", name: "Hindi", flag: "🇮🇳", isActive: true },
+        { code: "zh", name: "Chinese", flag: "🇨🇳", isActive: true },
+      ];
+      modified = true;
+    }
+
+    // Ensure defaultLanguage is set
+    if (!doc.languageSettings.defaultLanguage) {
+      doc.languageSettings.defaultLanguage = "en";
+      modified = true;
+    }
   }
 
   if (modified) await doc.save();

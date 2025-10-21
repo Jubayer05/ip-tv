@@ -34,8 +34,15 @@ export async function PUT(request, { params }) {
   try {
     await connectToDatabase();
     const { id } = await params;
-    const { rating, comment, isApproved, isActive, adminId, uniqueName } =
-      await request.json();
+    const {
+      rating,
+      comment,
+      isApproved,
+      isActive,
+      adminId,
+      uniqueName,
+      createdAt,
+    } = await request.json();
 
     const review = await Review.findById(id);
     if (!review) {
@@ -47,6 +54,15 @@ export async function PUT(request, { params }) {
     if (comment !== undefined) review.comment = comment;
     if (isActive !== undefined) review.isActive = isActive;
     if (uniqueName !== undefined) review.uniqueName = uniqueName;
+
+    // Optionally update createdAt (admin edit). Needs immutable override.
+    if (createdAt !== undefined) {
+      const newDate = new Date(createdAt);
+      if (!isNaN(newDate.getTime())) {
+        // override immutable createdAt added by timestamps
+        review.set("createdAt", newDate, { overwriteImmutable: true });
+      }
+    }
 
     // Handle approval
     if (isApproved !== undefined) {

@@ -151,13 +151,15 @@ const ReviewShowHome = () => {
       );
   };
 
-  const CustomArrow = ({ className, style, onClick, direction }) => (
+  const CustomArrow = ({ style, onClick, direction }) => (
     <button
       onClick={onClick}
-      className={`absolute top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-black/50 hover:bg-black/70 text-white 
+      className={`absolute top-1/2 -translate-y-1/2 z-10 w-8 md:w-12 h-8 md:h-12 bg-black/50 hover:bg-black/70 text-white 
         rounded-full flex items-center justify-center transition-all duration-300
          transform hover:scale-110 border border-[rgba(255,255,255,0.49)] ${
-           direction === "next" ? "right-4" : "left-4"
+           direction === "next"
+             ? "-right-8 md:-right-14"
+             : "-left-8 md:-left-14"
          }`}
       style={{ ...style, display: "flex" }}
     >
@@ -252,7 +254,7 @@ const ReviewShowHome = () => {
 
   return (
     <div className=" bg-black pt-12 text-white overflow-hidden">
-      <div className="container py-8 px-4 md:px-8 lg:px-12">
+      <div className="container py-8 px-8 md:px-8 lg:px-12">
         {/* Header Section */}
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-bold tracking-wider uppercase mb-4">
