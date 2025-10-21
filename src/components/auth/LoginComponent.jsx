@@ -35,7 +35,7 @@ export default function LoginComponent() {
     welcomeBack: "Welcome Back",
     signInMessage: "Sign in to your account to continue",
     emailAddress: "Email Address",
-    enterEmailPlaceholder: "Enter your email",
+    enterEmailPlaceholder: "Enter your email address",
     password: "Password",
     enterPasswordPlaceholder: "Enter your password",
     forgotPassword: "Forgot your password?",
