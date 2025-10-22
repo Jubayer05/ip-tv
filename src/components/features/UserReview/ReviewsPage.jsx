@@ -53,7 +53,7 @@ const ReviewsPage = () => {
           return new Date(review.scheduledFor) <= currentTime;
         });
 
-        // Sort by createdAt descending (newest first) - additional client-side sorting
+        // Sort by createdAt descending (newest first)
         const sortedReviews = filteredReviews.sort((a, b) => {
           const dateA = new Date(a.createdAt);
           const dateB = new Date(b.createdAt);
@@ -68,16 +68,6 @@ const ReviewsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Fisher-Yates shuffle algorithm
-  const shuffleArray = (array) => {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
   };
 
   const fetchStats = async () => {
@@ -272,12 +262,12 @@ const ReviewsPage = () => {
           </p>
         </div>
 
-        {/* Reviews Grid - Changed from masonry to flex */}
-        <div className="flex flex-wrap gap-6 mb-8">
+        {/* Masonry-style Reviews Grid */}
+        <div className="masonry-grid mb-8">
           {reviews.map((review) => (
             <div
               key={review._id}
-              className="flex-shrink-0 w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] xl:w-[calc(25%-1.125rem)] bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-[#00b877] transition-all duration-300 mb-6"
+              className="masonry-item bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-[#00b877] transition-all duration-300 break-inside-avoid mb-6"
             >
               <div className="flex items-center mb-4">
                 <Quote className="text-[#00b877] text-2xl mr-3" />
@@ -333,6 +323,40 @@ const ReviewsPage = () => {
             </div>
           </Button>
         </div>
+
+        {/* Masonry Grid Styles */}
+        <style jsx>{`
+          .masonry-grid {
+            column-count: 1;
+            column-gap: 1.5rem;
+            column-fill: balance;
+          }
+
+          @media (min-width: 768px) {
+            .masonry-grid {
+              column-count: 2;
+            }
+          }
+
+          @media (min-width: 1024px) {
+            .masonry-grid {
+              column-count: 3;
+            }
+          }
+
+          @media (min-width: 1280px) {
+            .masonry-grid {
+              column-count: 4;
+            }
+          }
+
+          .masonry-item {
+            display: inline-block;
+            width: 100%;
+            break-inside: avoid;
+            margin-bottom: 1.5rem;
+          }
+        `}</style>
       </div>
     </div>
   );
