@@ -30,7 +30,7 @@ const ReviewsPage = () => {
         approved: "true",
         page: currentPage.toString(),
         limit: reviewsPerPage.toString(),
-        sort: filters.sort,
+        sort: "-createdAt", // Sort by createdAt descending (newest first)
         populate: "userId",
       });
 
@@ -53,9 +53,14 @@ const ReviewsPage = () => {
           return new Date(review.scheduledFor) <= currentTime;
         });
 
-        // Shuffle the filtered reviews
-        const shuffledReviews = shuffleArray([...filteredReviews]);
-        setReviews(shuffledReviews);
+        // Sort by createdAt descending (newest first) - additional client-side sorting
+        const sortedReviews = filteredReviews.sort((a, b) => {
+          const dateA = new Date(a.createdAt);
+          const dateB = new Date(b.createdAt);
+          return dateB - dateA;
+        });
+
+        setReviews(sortedReviews);
         setTotalPages(data.pagination?.pages || 1);
       }
     } catch (error) {
@@ -267,49 +272,12 @@ const ReviewsPage = () => {
           </p>
         </div>
 
-        {/* Filters */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
-            <div className="flex items-center space-x-4">
-              <label className="text-gray-300 font-medium">
-                Filter by Rating:
-              </label>
-              <select
-                value={filters.rating}
-                onChange={(e) => handleFilterChange("rating", e.target.value)}
-                className="bg-gray-800 border border-gray-600 text-white px-3 py-2 rounded-lg focus:outline-none focus:border-[#00b877]"
-              >
-                <option value="all">All Ratings</option>
-                <option value="5">5 Stars</option>
-                <option value="4">4 Stars</option>
-                <option value="3">3 Stars</option>
-                <option value="2">2 Stars</option>
-                <option value="1">1 Star</option>
-              </select>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <label className="text-gray-300 font-medium">Sort by:</label>
-              <select
-                value={filters.sort}
-                onChange={(e) => handleFilterChange("sort", e.target.value)}
-                className="bg-gray-800 border border-gray-600 text-white px-3 py-2 rounded-lg focus:outline-none focus:border-[#00b877]"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="rating-high">Highest Rating</option>
-                <option value="rating-low">Lowest Rating</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Masonry-style Reviews Grid */}
-        <div className="masonry-grid mb-8">
+        {/* Reviews Grid - Changed from masonry to flex */}
+        <div className="flex flex-wrap gap-6 mb-8">
           {reviews.map((review) => (
             <div
               key={review._id}
-              className="masonry-item bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-[#00b877] transition-all duration-300 break-inside-avoid mb-6"
+              className="flex-shrink-0 w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] xl:w-[calc(25%-1.125rem)] bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-[#00b877] transition-all duration-300 mb-6"
             >
               <div className="flex items-center mb-4">
                 <Quote className="text-[#00b877] text-2xl mr-3" />
@@ -365,49 +333,6 @@ const ReviewsPage = () => {
             </div>
           </Button>
         </div>
-
-        {/* Masonry Grid Styles */}
-        <style jsx>{`
-          .masonry-grid {
-            column-count: 1;
-            column-gap: 1.5rem;
-            column-fill: balance;
-          }
-
-          @media (min-width: 768px) {
-            .masonry-grid {
-              column-count: 2;
-            }
-          }
-
-          @media (min-width: 1024px) {
-            .masonry-grid {
-              column-count: 3;
-            }
-          }
-
-          @media (min-width: 1280px) {
-            .masonry-grid {
-              column-count: 4;
-            }
-          }
-
-          .masonry-item {
-            display: inline-block;
-            width: 100%;
-            break-inside: avoid;
-            margin-bottom: 1.5rem;
-          }
-
-          /* Alternative CSS Grid approach */
-          .masonry-grid-alt {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            grid-auto-rows: min-content;
-            gap: 1.5rem;
-            grid-auto-flow: row dense;
-          }
-        `}</style>
       </div>
     </div>
   );
