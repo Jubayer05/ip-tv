@@ -4,7 +4,6 @@ import { MessageSquare, Quote, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
-import Masonry from 'react-masonry-css';
 
 const ReviewsPage = () => {
   const [reviews, setReviews] = useState([]);
@@ -18,14 +17,6 @@ const ReviewsPage = () => {
   });
 
   const reviewsPerPage = 12;
-
-  // Breakpoint configuration for responsive masonry
-  const breakpointColumnsObj = {
-    default: 4,
-    1280: 3,
-    1024: 2,
-    768: 1
-  };
 
   useEffect(() => {
     fetchReviews();
@@ -271,16 +262,12 @@ const ReviewsPage = () => {
           </p>
         </div>
 
-        {/* Horizontal Masonry Grid */}
-        <Masonry
-          breakpointCols={breakpointColumnsObj}
-          className="masonry-grid"
-          columnClassName="masonry-grid_column"
-        >
+        {/* Horizontal Masonry Grid using CSS Grid */}
+        <div className="masonry-grid">
           {reviews.map((review) => (
             <div
               key={review._id}
-              className="masonry-item bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-[#00b877] transition-all duration-300 break-inside-avoid mb-6"
+              className="masonry-item bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-[#00b877] transition-all duration-300"
             >
               <div className="flex items-center mb-4">
                 <Quote className="text-[#00b877] text-2xl mr-3" />
@@ -311,7 +298,7 @@ const ReviewsPage = () => {
               </div>
             </div>
           ))}
-        </Masonry>
+        </div>
 
         {/* Loading indicator for pagination */}
         {loading && (
@@ -337,21 +324,35 @@ const ReviewsPage = () => {
           </Button>
         </div>
 
-        {/* Updated Masonry Grid Styles */}
+        {/* Horizontal Grid Styles */}
         <style jsx>{`
           .masonry-grid {
-            display: flex;
-            margin-left: -1.5rem;
-            width: auto;
+            display: grid;
+            gap: 1.5rem;
+            grid-auto-rows: max-content;
+            grid-template-columns: repeat(1, minmax(0, 1fr));
           }
 
-          .masonry-grid_column {
-            padding-left: 1.5rem;
-            background-clip: padding-box;
+          @media (min-width: 768px) {
+            .masonry-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+          }
+
+          @media (min-width: 1024px) {
+            .masonry-grid {
+              grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+          }
+
+          @media (min-width: 1280px) {
+            .masonry-grid {
+              grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
           }
 
           .masonry-item {
-            margin-bottom: 1.5rem;
+            height: fit-content;
           }
         `}</style>
       </div>
