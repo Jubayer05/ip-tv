@@ -4,6 +4,7 @@ import { MessageSquare, Quote, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
+import Masonry from 'react-masonry-css';
 
 const ReviewsPage = () => {
   const [reviews, setReviews] = useState([]);
@@ -17,6 +18,14 @@ const ReviewsPage = () => {
   });
 
   const reviewsPerPage = 12;
+
+  // Breakpoint configuration for responsive masonry
+  const breakpointColumnsObj = {
+    default: 4,
+    1280: 3,
+    1024: 2,
+    768: 1
+  };
 
   useEffect(() => {
     fetchReviews();
@@ -262,8 +271,12 @@ const ReviewsPage = () => {
           </p>
         </div>
 
-        {/* Masonry-style Reviews Grid */}
-        <div className="masonry-grid mb-8">
+        {/* Horizontal Masonry Grid */}
+        <Masonry
+          breakpointCols={breakpointColumnsObj}
+          className="masonry-grid"
+          columnClassName="masonry-grid_column"
+        >
           {reviews.map((review) => (
             <div
               key={review._id}
@@ -298,7 +311,7 @@ const ReviewsPage = () => {
               </div>
             </div>
           ))}
-        </div>
+        </Masonry>
 
         {/* Loading indicator for pagination */}
         {loading && (
@@ -324,36 +337,20 @@ const ReviewsPage = () => {
           </Button>
         </div>
 
-        {/* Masonry Grid Styles */}
+        {/* Updated Masonry Grid Styles */}
         <style jsx>{`
           .masonry-grid {
-            column-count: 1;
-            column-gap: 1.5rem;
-            column-fill: balance;
+            display: flex;
+            margin-left: -1.5rem;
+            width: auto;
           }
 
-          @media (min-width: 768px) {
-            .masonry-grid {
-              column-count: 2;
-            }
-          }
-
-          @media (min-width: 1024px) {
-            .masonry-grid {
-              column-count: 3;
-            }
-          }
-
-          @media (min-width: 1280px) {
-            .masonry-grid {
-              column-count: 4;
-            }
+          .masonry-grid_column {
+            padding-left: 1.5rem;
+            background-clip: padding-box;
           }
 
           .masonry-item {
-            display: inline-block;
-            width: 100%;
-            break-inside: avoid;
             margin-bottom: 1.5rem;
           }
         `}</style>
