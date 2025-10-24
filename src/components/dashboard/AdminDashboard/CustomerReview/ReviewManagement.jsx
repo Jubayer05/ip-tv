@@ -113,7 +113,7 @@ const ReviewManagement = () => {
   const fetchReviews = async () => {
     setLoading(true);
     try {
-      let url = `/api/reviews?page=${currentPage}&limit=10&sortBy=scheduledFor&sortOrder=asc`;
+      let url = `/api/reviews?page=${currentPage}&limit=10&sortBy=createdAt&sortOrder=desc`;
 
       // Apply filters based on the selected option
       if (filter === "bulk") {
@@ -123,7 +123,7 @@ const ReviewManagement = () => {
       } else if (filter === "approved") {
         url += "&approved=true&scheduledFor=current";
       } else if (filter === "pending") {
-        url += "&scheduledFor=future"; // fixed: added missing "&"
+        url += "&scheduledFor=future";
       }
 
       const response = await fetch(url);
@@ -131,22 +131,23 @@ const ReviewManagement = () => {
 
       if (data.success) {
         const items = data.data;
-        const now = new Date();
-        const pendingOnly =
-          filter === "pending"
-            ? items.filter(
-                (r) =>
-                  !r.isApproved ||
-                  (r.scheduledFor && new Date(r.scheduledFor) > now)
-              )
-            : items;
-        setReviews(pendingOnly);
+        setReviews(items);
         setTotalPages(data.pagination.pages);
       } else {
         console.error("Failed to fetch reviews:", data.error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Failed to load reviews",
+        });
       }
     } catch (error) {
       console.error("Error fetching reviews:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Network Error",
+        text: "Please try again later.",
+      });
     } finally {
       setLoading(false);
     }
