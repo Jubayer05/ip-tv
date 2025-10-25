@@ -13,7 +13,8 @@ import {
   getFirebaseErrorMessage,
   isFirebaseError,
 } from "@/lib/firebaseErrorHandler";
-import { Chrome, Facebook, Twitter } from "lucide-react";
+import { Facebook, Twitter } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 export default function SocialLogin({ onSuccess, onError, loading = false }) {
@@ -168,7 +169,12 @@ export default function SocialLogin({ onSuccess, onError, loading = false }) {
             disabled={loading || socialLoading.google}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-700 rounded-lg text-white hover:bg-gray-800/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Chrome size={20} />
+            <Image
+              src="/logos/google.png"
+              alt="Google"
+              width={20}
+              height={20}
+            />
             <span className="font-medium">
               {socialLoading.google
                 ? texts.signingIn

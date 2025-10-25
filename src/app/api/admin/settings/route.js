@@ -32,7 +32,23 @@ export async function PUT(request) {
     await connectToDatabase();
 
     const body = await request.json();
-    const { addons, apiKeys, smtp, otherApiKeys, metaManagement } = body;
+    const {
+      addons,
+      apiKeys,
+      smtp,
+      otherApiKeys,
+      metaManagement,
+      loginOptions,
+    } = body;
+
+    // Handle login options
+    if (loginOptions) {
+      await Settings.findOneAndUpdate(
+        {},
+        { $set: { loginOptions } },
+        { upsert: true, new: true }
+      );
+    }
 
     // Validate API keys structure
     if (apiKeys) {
