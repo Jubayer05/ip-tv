@@ -70,8 +70,8 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-4 sm:space-y-6 font-secondary sm:px-6 lg:px-8">
       {/* Tab Navigation */}
-      <div className="border-b border-[#212121]">
-        <nav className="flex flex-wrap gap-2 sm:gap-4 overflow-x-auto">
+      <div className="">
+        <nav className="flex flex-wrap gap-2 sm:gap-4 ">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -89,7 +89,7 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Tab Content */}
-      <div className="min-h-[400px] sm:min-h-[500px]">
+      <div className="min-h-[400px] sm:min-h-[500px] pt-20">
         {tabs.find((tab) => tab.id === activeTab)?.component}
       </div>
     </div>

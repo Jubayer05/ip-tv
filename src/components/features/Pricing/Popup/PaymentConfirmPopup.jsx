@@ -1,9 +1,9 @@
 "use client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePayment } from "@/contexts/PaymentContext";
-import { Check, Copy, Eye, EyeOff, Home, X } from "lucide-react";
+import { Check, ChevronDown, Copy, Eye, EyeOff, Home, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
   const { language, translate, isLanguageLoaded } = useLanguage();
@@ -57,6 +57,7 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
       username: "Username",
       password: "Password",
       m3uLink: "M3U Link",
+      portalLink: "Portal Link",
       connectionDetails: "Connection Details",
       expires: "Expires",
       deviceType: "Device Type",
@@ -78,6 +79,9 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
 
   const [showPasswords, setShowPasswords] = useState({});
   const [copiedItems, setCopiedItems] = useState({});
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const scrollContainerRef = useRef(null);
 
   const getLineTypeName = (lineType) => {
     const names = { 0: "M3U Playlist", 1: "MAG Device", 2: "Enigma2" };
@@ -93,11 +97,43 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
       if (m3uLine) return m3uLine;
     }
 
-    // Otherwise construct it (use hfast.xyz as per your requirement)
-    if (credential.username && credential.password) {
-      return `http://hfast.xyz/get.php?username=${credential.username}&password=${credential.password}&type=m3u_plus&output=ts`;
-    }
+    // Otherwise use provider response only (no constructed fallback)
+    try {
+      const info =
+        typeof credential.lineInfo === "string"
+          ? JSON.parse(credential.lineInfo)
+          : credential.lineInfo;
 
+      if (info && typeof info === "object") {
+        if (credential.lineType === 0) {
+          return info.dns_link || "";
+        }
+        return (
+          info.portal_link ||
+          info.dns_link ||
+          info.dns_link_for_samsung_lg ||
+          ""
+        );
+      }
+    } catch {}
+    return "";
+
+    return "";
+  };
+
+  // Helper function to build Portal Link for MAG/Enigma devices
+  const buildPortalLink = (credential) => {
+    // Try to extract from lineInfo
+    try {
+      const info =
+        typeof credential.lineInfo === "string"
+          ? JSON.parse(credential.lineInfo)
+          : credential.lineInfo;
+
+      if (info && typeof info === "object") {
+        return info.portal_link || "";
+      }
+    } catch {}
     return "";
   };
 
@@ -272,9 +308,10 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
             username: tAccountDetails[3],
             password: tAccountDetails[4],
             m3uLink: tAccountDetails[5],
-            connectionDetails: tAccountDetails[6],
-            expires: tAccountDetails[7],
-            deviceType: tAccountDetails[8],
+            portalLink: tAccountDetails[6],
+            connectionDetails: tAccountDetails[7],
+            expires: tAccountDetails[8],
+            deviceType: tAccountDetails[9],
           },
         });
       } catch (error) {
@@ -293,6 +330,48 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
     }
   }, [orderWithCredentials]);
 
+  // Scroll detection for showing scroll indicator
+  useEffect(() => {
+    if (!isOpen || !scrollContainerRef.current) return;
+
+    const container = scrollContainerRef.current;
+
+    const checkScrollability = () => {
+      const hasScroll = container.scrollHeight > container.clientHeight;
+      const isAtTop = container.scrollTop < 10;
+      const isAtBottom =
+        container.scrollHeight - container.scrollTop <=
+        container.clientHeight + 10;
+
+      // Show indicator only if scrollable, at top, and not at bottom
+      setShowScrollIndicator(hasScroll && isAtTop && !isAtBottom);
+      setIsScrolled(container.scrollTop > 10);
+    };
+
+    const handleScroll = () => {
+      const isAtTop = container.scrollTop < 10;
+      const isAtBottom =
+        container.scrollHeight - container.scrollTop <=
+        container.clientHeight + 10;
+
+      setIsScrolled(container.scrollTop > 10);
+      setShowScrollIndicator(isAtTop && !isAtBottom);
+    };
+
+    // Initial check with small delay to ensure DOM is ready
+    const timer = setTimeout(checkScrollability, 100);
+
+    // Check on resize
+    window.addEventListener("resize", checkScrollability);
+    container.addEventListener("scroll", handleScroll);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", checkScrollability);
+      container.removeEventListener("scroll", handleScroll);
+    };
+  }, [isOpen]);
+
   const handleBackToHome = () => {
     onClose();
     router.push("/dashboard");
@@ -303,6 +382,7 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-[70] font-secondary">
       <div
+        ref={scrollContainerRef}
         className="bg-black rounded-2xl sm:rounded-3xl p-4 sm:pm-6 md:p-8 w-full max-w-sm sm:max-w-md md:max-w-lg mx-auto relative border border-[#FFFFFF26] max-h-[90vh] overflow-y-auto"
         style={{
           scrollbarWidth: "none",
@@ -318,6 +398,7 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
         <button
           onClick={onClose}
           className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-6 md:right-6 text-white hover:text-gray-300 transition-colors z-10"
+          aria-label="Close payment confirmation popup"
         >
           <X size={20} className="sm:w-6 sm:h-6" />
         </button>
@@ -500,10 +581,62 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
               displayOrder.iptvCredentials.map((credential, index) => {
                 const isPasswordVisible = showPasswords[index];
                 const m3uUrl = buildM3uUrl(credential);
+                const portalLink = buildPortalLink(credential);
                 const accountConfig = getAccountConfiguration(
                   credential,
                   index
                 );
+
+                // Determine if we should show raw lineInfo
+                const shouldShowLineInfo = (() => {
+                  if (!credential.lineInfo) return false;
+
+                  const hasDisplayedLink =
+                    (credential.lineType === 0 && m3uUrl) ||
+                    ((credential.lineType === 1 || credential.lineType === 2) &&
+                      portalLink);
+
+                  // If we have a displayed link, check if lineInfo is just the API response
+                  if (hasDisplayedLink) {
+                    try {
+                      const info =
+                        typeof credential.lineInfo === "string"
+                          ? JSON.parse(credential.lineInfo)
+                          : credential.lineInfo;
+
+                      // Check if it's the standard API response structure
+                      if (
+                        info &&
+                        typeof info === "object" &&
+                        !Array.isArray(info)
+                      ) {
+                        // Check for API response structure (has type, id, username, password, package, template, etc.)
+                        const isApiResponse =
+                          (info.type === "M3U" ||
+                            info.type === "MAG" ||
+                            info.type === "ENIGMA2") &&
+                          typeof info.id === "number" &&
+                          typeof info.username === "string" &&
+                          typeof info.password === "string" &&
+                          (info.package ||
+                            info.template ||
+                            info.dns_link ||
+                            info.portal_link);
+
+                        // If it's the API response and we have the link displayed, hide it
+                        if (isApiResponse) {
+                          return false;
+                        }
+                      }
+                    } catch {
+                      // If parsing fails, it might be text format - show it
+                      return true;
+                    }
+                  }
+
+                  // Show lineInfo if no link is displayed, or if it's not the standard API response
+                  return !hasDisplayedLink;
+                })();
 
                 return (
                   <div
@@ -563,6 +696,7 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
                             )
                           }
                           className="p-2 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors"
+                          aria-label="Copy username to clipboard"
                         >
                           {copiedItems[`username-${index}`] ? (
                             <Check size={16} className="text-green-400" />
@@ -588,6 +722,11 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
                         <button
                           onClick={() => togglePasswordVisibility(index)}
                           className="p-2 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors"
+                          aria-label={
+                            isPasswordVisible
+                              ? "Hide password"
+                              : "Show password"
+                          }
                         >
                           {isPasswordVisible ? (
                             <EyeOff size={16} className="text-white" />
@@ -603,6 +742,7 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
                             )
                           }
                           className="p-2 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors"
+                          aria-label="Copy password to clipboard"
                         >
                           {copiedItems[`password-${index}`] ? (
                             <Check size={16} className="text-green-400" />
@@ -628,6 +768,7 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
                               copyToClipboard(m3uUrl, `m3u-${index}`)
                             }
                             className="p-2 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors"
+                            aria-label="Copy M3U link to clipboard"
                           >
                             {copiedItems[`m3u-${index}`] ? (
                               <Check size={16} className="text-green-400" />
@@ -639,8 +780,36 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
                       </div>
                     )}
 
-                    {/* Line Info - if available */}
-                    {credential.lineInfo && (
+                    {/* Portal Link - Only show for MAG/Enigma devices (lineType === 1 or 2) */}
+                    {(credential.lineType === 1 || credential.lineType === 2) &&
+                      portalLink && (
+                        <div>
+                          <label className="text-white/75 text-xs block mb-1">
+                            {texts.accountDetails.portalLink}:
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-xs font-mono overflow-x-auto whitespace-nowrap">
+                              {portalLink}
+                            </div>
+                            <button
+                              onClick={() =>
+                                copyToClipboard(portalLink, `portal-${index}`)
+                              }
+                              className="p-2 bg-gray-800 border border-gray-600 rounded hover:bg-gray-700 transition-colors"
+                              aria-label="Copy portal link to clipboard"
+                            >
+                              {copiedItems[`portal-${index}`] ? (
+                                <Check size={16} className="text-green-400" />
+                              ) : (
+                                <Copy size={16} className="text-white" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Line Info - Only show if it's not already displayed as M3U/Portal link or if it contains additional info */}
+                    {shouldShowLineInfo && (
                       <div>
                         <label className="text-white/75 text-xs block mb-1">
                           {texts.accountDetails.connectionDetails}:
@@ -702,6 +871,26 @@ export default function PaymentConfirmPopup({ isOpen, onClose, order }) {
           )}
           <p className="text-white/75 text-xs">{texts.footer.contact}</p>
         </div>
+
+        {/* Scroll Indicator - Gradient Fade */}
+        {showScrollIndicator && (
+          <div className="sticky bottom-0 left-0 right-0 pointer-events-none z-10">
+            {/* Gradient fade */}
+            <div className="absolute -bottom-2 left-0 right-0 h-[100px] bg-gradient-to-t from-black via-black/80 to-transparent" />
+
+            {/* Pulsing scroll indicator */}
+            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 pointer-events-auto">
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="animate-bounce">
+                  <ChevronDown className="w-6 h-6 text-cyan-400 drop-shadow-lg" />
+                </div>
+                <span className="text-cyan-400 text-xs font-medium animate-pulse">
+                  Scroll for more
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

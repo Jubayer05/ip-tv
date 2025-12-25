@@ -39,8 +39,6 @@ uniqueNameSchema.pre("save", function (next) {
   next();
 });
 
-
-
 // Static method to find unused names
 uniqueNameSchema.statics.findUnusedNames = function () {
   return this.find({ reviewUsed: false });
@@ -64,11 +62,6 @@ uniqueNameSchema.methods.markAsUnused = function () {
   this.updatedAt = new Date();
   return this.save();
 };
-
-// Clear the model from cache to ensure new methods are available
-if (mongoose.models.UniqueName) {
-  delete mongoose.models.UniqueName;
-}
 
 const UniqueName = mongoose.model("UniqueName", uniqueNameSchema);
 

@@ -1,0 +1,127 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: iptv-production
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # CRITICAL: Set Node.js heap size to prevent OOM crashes
+      - NODE_OPTIONS=--max-old-space-size=3072
+      # Database
+      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_DB=${MONGODB_DB}
+      # Auth
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-${JWT_SECRET}}
+      - SUPER_ADMIN_EMAILS=${SUPER_ADMIN_EMAILS}
+      # Firebase
+      - NEXT_PUBLIC_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}
+      - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
+      - NEXT_PUBLIC_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
+      - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}
+      - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}
+      - NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      # App URL
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://cheapstreamtv.com}
+      # SMTP (optional)
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      # API Keys
+      - VPNAPI_KEY=${VPNAPI_KEY:-}
+      - MEGAOTT_KEY=${MEGAOTT_KEY:-}
+      - GOOGLE_TRANSLATE_API_KEY=${GOOGLE_TRANSLATE_API_KEY:-}
+      # Payment gateways (optional)
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - PAYPAL_MODE=${PAYPAL_MODE:-live}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID:-}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET:-}
+      - NOWPAYMENTS_API_KEY=${NOWPAYMENTS_API_KEY:-}
+      - CRYPTOMUS_API_KEY=${CRYPTOMUS_API_KEY:-}
+      - PLISIO_API_KEY=${PLISIO_API_KEY:-}
+      - VOLET_API_KEY=${VOLET_API_KEY:-}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+    volumes:
+      - ./public/uploads:/app/public/uploads
+      - production-logs:/app/logs
+    networks:
+      - iptv-production-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+        reservations:
+          cpus: "1"
+          memory: 2G
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+        order: stop-first
+    healthcheck:
+      test:
+        ["CMD", "wget", "-q", "--spider", "--timeout=15", "http://localhost:3000/api/health"]
+      interval: 60s
+      timeout: 20s
+      retries: 5
+      start_period: 120s
+    labels:
+      - "com.cheapstream.environment=production"
+      - "com.cheapstream.version=${CI_COMMIT_TAG:-latest}"
+      - "traefik.enable=true"
+      - "traefik.http.routers.cheapstream.rule=Host(`cheapstream.com`)"
+      - "traefik.http.routers.cheapstream.entrypoints=websecure"
+      - "traefik.http.routers.cheapstream.tls.certresolver=letsencrypt"
+      - "traefik.http.services.cheapstream.loadbalancer.server.port=3000"
+
+  # Optional: Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: iptv-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx-cache:/var/cache/nginx
+    depends_on:
+      - app
+    networks:
+      - iptv-production-network
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  production-logs:
+    driver: local
+  nginx-cache:
+    driver: local
+
+networks:
+  iptv-production-network:
+    driver: bridge

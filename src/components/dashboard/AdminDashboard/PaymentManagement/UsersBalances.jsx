@@ -216,7 +216,9 @@ const UsersBalances = () => {
   return (
     <div className="p-4 sm:p-6 px-4 sm:px-6 lg:px-8">
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">{texts.heading}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
+          {texts.heading}
+        </h1>
 
         {/* Search */}
         <div className="mb-3 sm:mb-4">
@@ -401,7 +403,9 @@ const UsersBalances = () => {
                           )}
                         </div>
                         <div className="text-left sm:text-right">
-                          <p className={`text-sm sm:text-lg font-semibold ${colorClass}`}>
+                          <p
+                            className={`text-sm sm:text-lg font-semibold ${colorClass}`}
+                          >
                             {sign}${Math.abs(amount).toFixed(2)}
                           </p>
                           <p className="text-xs sm:text-sm text-gray-300">

@@ -1,120 +1,156 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { parseCookies } from "nookies";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 const LanguageContext = createContext(null);
 
-const LANG_STORAGE_KEY = "app_lang";
+const COOKIE_NAME = "googtrans";
 
-// Replace the hardcoded AVAILABLE_LANGUAGES with a function that fetches from backend
-const fetchAvailableLanguages = async () => {
-  try {
-    const response = await fetch("/api/settings/languages");
-    const data = await response.json();
+const FALLBACK_LANGUAGES = [
+  { code: "en", title: "English" },
+  { code: "sv", title: "Swedish" },
+  { code: "no", title: "Norwegian" },
+  { code: "da", title: "Danish" },
+  { code: "fi", title: "Finnish" },
+  { code: "fr", title: "French" },
+  { code: "de", title: "German" },
+  { code: "es", title: "Spanish" },
+  { code: "it", title: "Italian" },
+  { code: "ru", title: "Russian" },
+  { code: "tr", title: "Turkish" },
+  { code: "ar", title: "Arabic" },
+  { code: "hi", title: "Hindi" },
+  { code: "zh", title: "Chinese" },
+];
 
-    if (data.success && data.data.availableLanguages) {
-      return data.data.availableLanguages.filter((lang) => lang.isActive);
-    }
-
-    // Fallback to hardcoded languages if API fails
-    return [
-      { code: "en", name: "English", flag: "🇬🇧" },
-      { code: "sv", name: "Swedish", flag: "🇸🇪" },
-      { code: "no", name: "Norwegian", flag: "🇳🇴" },
-      { code: "da", name: "Danish", flag: "🇩🇰" },
-      { code: "fi", name: "Finnish", flag: "🇫🇮" },
-      { code: "fr", name: "French", flag: "🇫🇷" },
-      { code: "de", name: "German", flag: "🇩🇪" },
-      { code: "es", name: "Spanish", flag: "🇪🇸" },
-      { code: "it", name: "Italian", flag: "🇮🇹" },
-      { code: "ru", name: "Russian", flag: "🇷🇺" },
-      { code: "tr", name: "Turkish", flag: "🇹🇷" },
-      { code: "ar", name: "Arabic", flag: "🇸🇦" },
-      { code: "hi", name: "Hindi", flag: "🇮🇳" },
-      { code: "zh", name: "Chinese", flag: "🇨🇳" },
-    ];
-  } catch (error) {
-    console.error("Error fetching languages from backend:", error);
-    // Return fallback languages
-    return [
-      { code: "en", name: "English", flag: "🇬🇧" },
-      { code: "sv", name: "Swedish", flag: "🇸🇪" },
-      { code: "no", name: "Norwegian", flag: "🇳🇴" },
-      { code: "da", name: "Danish", flag: "🇩🇰" },
-      { code: "fi", name: "Finnish", flag: "🇫🇮" },
-      { code: "fr", name: "French", flag: "🇫🇷" },
-      { code: "de", name: "German", flag: "🇩🇪" },
-      { code: "es", name: "Spanish", flag: "🇪🇸" },
-      { code: "it", name: "Italian", flag: "🇮🇹" },
-      { code: "ru", name: "Russian", flag: "🇷🇺" },
-      { code: "tr", name: "Turkish", flag: "🇹🇷" },
-      { code: "ar", name: "Arabic", flag: "🇸🇦" },
-      { code: "hi", name: "Hindi", flag: "🇮🇳" },
-      { code: "zh", name: "Chinese", flag: "🇨🇳" },
-    ];
-  }
+const normalizeDescriptor = (descriptor = {}) => {
+  const code = descriptor.code ?? descriptor.name ?? "en";
+  const title =
+    descriptor.title ?? descriptor.name ?? descriptor.code ?? "English";
+  return { code, name: title, title };
 };
 
-// Update the LanguageProvider component
+const getTranslationConfig = () =>
+  typeof window !== "undefined"
+    ? window.__GOOGLE_TRANSLATION_CONFIG__
+    : undefined;
+
+const isIpAddress = (host) => /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
+
+const getDomainCandidates = () => {
+  if (typeof window === "undefined") return [undefined];
+  const host = window.location.hostname;
+  if (!host || host === "localhost" || isIpAddress(host)) {
+    return [undefined];
+  }
+  const parts = host.split(".");
+  const domains = new Set([undefined, host]);
+  for (let i = 1; i < parts.length; i += 1) {
+    domains.add("." + parts.slice(i).join("."));
+  }
+  return Array.from(domains);
+};
+
+const clearTranslationCookie = () => {
+  if (typeof document === "undefined") return;
+  const expires = "Thu, 01 Jan 1970 00:00:00 GMT";
+  getDomainCandidates().forEach((domain) => {
+    const domainSegment = domain ? `;domain=${domain}` : "";
+    document.cookie = `${COOKIE_NAME}=;path=/;expires=${expires}${domainSegment}`;
+  });
+};
+
+const writeTranslationCookie = (value) => {
+  if (typeof document === "undefined") return;
+  const expires = new Date(
+    Date.now() + 365 * 24 * 60 * 60 * 1000
+  ).toUTCString();
+  getDomainCandidates().forEach((domain) => {
+    const domainSegment = domain ? `;domain=${domain}` : "";
+    document.cookie = `${COOKIE_NAME}=${value};path=/;expires=${expires}${domainSegment}`;
+  });
+};
+
+const readLanguageFromCookie = () => {
+  const cookies = parseCookies();
+  const existing = cookies[COOKIE_NAME];
+  if (!existing) return undefined;
+  const split = existing.split("/");
+  return split.length > 2 ? split[2] : undefined;
+};
+
 export function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState(null);
+  const [language, setLanguageState] = useState(null);
   const [isLanguageLoaded, setIsLanguageLoaded] = useState(false);
   const [availableLanguages, setAvailableLanguages] = useState([]);
+  const [defaultLanguage, setDefaultLanguage] = useState("en");
 
-  // Load available languages and saved language on mount
   useEffect(() => {
-    const loadLanguages = async () => {
+    const initializeLanguages = async () => {
+      // Try to get languages from database settings first
+      let dbLanguages = null;
       try {
-        const languages = await fetchAvailableLanguages();
-        setAvailableLanguages(languages);
-
-        const saved = localStorage.getItem(LANG_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed?.code && parsed?.name) {
-            // Check if saved language is still available
-            const isAvailable = languages.some(
-              (lang) => lang.code === parsed.code
-            );
-            if (isAvailable) {
-              setLanguage(parsed);
-            } else {
-              // If saved language is not available, set to first available language
-              setLanguage(
-                languages[0] || { code: "en", name: "English", flag: "🇬🇧" }
-              );
+        const response = await fetch("/api/settings/languages");
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data?.availableLanguages) {
+            // Filter only active languages
+            dbLanguages = result.data.availableLanguages
+              .filter((lang) => lang.isActive)
+              .map((lang) => normalizeDescriptor({ code: lang.code, title: lang.name }));
+            if (result.data.defaultLanguage) {
+              setDefaultLanguage(result.data.defaultLanguage);
             }
-          } else {
-            setLanguage(
-              languages[0] || { code: "en", name: "English", flag: "🇬🇧" }
-            );
           }
-        } else {
-          setLanguage(
-            languages[0] || { code: "en", name: "English", flag: "🇬🇧" }
-          );
         }
-        setIsLanguageLoaded(true);
       } catch (error) {
-        console.error("Error loading languages:", error);
-        setLanguage({ code: "en", name: "English", flag: "🇬🇧" });
-        setIsLanguageLoaded(true);
+        console.error("Failed to fetch language settings:", error);
       }
+
+      // Fall back to config or hardcoded languages
+      const config = getTranslationConfig();
+      const normalizedLanguages = dbLanguages && dbLanguages.length > 0
+        ? dbLanguages
+        : config
+          ? config.languages.map((item) =>
+              normalizeDescriptor({ code: item.name, title: item.title })
+            )
+          : FALLBACK_LANGUAGES.map((item) => normalizeDescriptor(item));
+
+      setAvailableLanguages(normalizedLanguages);
+
+      if (!dbLanguages && config?.defaultLanguage) {
+        setDefaultLanguage(config.defaultLanguage);
+      }
+
+      const cookieLang = readLanguageFromCookie();
+      const startingCode =
+        cookieLang ||
+        config?.defaultLanguage ||
+        normalizedLanguages[0]?.code ||
+        "en";
+
+      const selected =
+        normalizedLanguages.find((lang) => lang.code === startingCode) ||
+        normalizeDescriptor({ code: startingCode });
+
+      setLanguageState(selected);
+      setIsLanguageLoaded(true);
     };
 
-    loadLanguages();
+    initializeLanguages();
   }, []);
 
-  // Persist and set direction only after language is set
   useEffect(() => {
-    if (!language) return; // Don't run until language is set
-
-    try {
-      localStorage.setItem(LANG_STORAGE_KEY, JSON.stringify(language));
-    } catch (error) {
-      console.error("Error saving language to localStorage:", error);
-    }
-
+    if (!language) return;
     if (typeof document !== "undefined") {
       const dir = language.code === "ar" ? "rtl" : "ltr";
       document.documentElement.setAttribute("dir", dir);
@@ -122,74 +158,64 @@ export function LanguageProvider({ children }) {
     }
   }, [language]);
 
-  const translate = async (input) => {
-    // Don't translate until language is loaded
-    if (!isLanguageLoaded || !language) {
-      return input;
-    }
+  const setLanguage = useCallback(
+    (langInput) => {
+      const code =
+        typeof langInput === "string"
+          ? langInput
+          : langInput?.code ?? langInput?.name;
+      if (!code) return;
 
+      const languagesList =
+        availableLanguages.length > 0
+          ? availableLanguages
+          : FALLBACK_LANGUAGES.map((item) => normalizeDescriptor(item));
+
+      const selected =
+        languagesList.find((lang) => lang.code === code) ||
+        normalizeDescriptor({ code });
+
+      setLanguageState(selected);
+      clearTranslationCookie();
+      writeTranslationCookie(`/auto/${selected.code}`);
+
+      if (typeof window !== "undefined") {
+        window.location.reload();
+      }
+    },
+    [availableLanguages]
+  );
+
+  const translate = useCallback((input) => {
     if (!input || (Array.isArray(input) && input.length === 0)) return input;
+
     const isArray = Array.isArray(input);
     const items = isArray ? input : [input];
-
-    // Shortcut: no translation needed for English
-    if (language.code === "en") {
-      return isArray ? items : items[0];
-    }
-
-    try {
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          q: items,
-          source: "auto",
-          target: language.code,
-          format: "text",
-          alternatives: 3,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Translation API error: ${res.status}`);
-      }
-
-      const data = await res.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      const out =
-        data?.translations ?? (data?.translation ? [data.translation] : items);
-
-      return isArray ? out : out[0];
-    } catch (error) {
-      console.error("Translation error:", error);
-      // Fallback to original text on error
-      return isArray ? items : items[0];
-    }
-  };
+    return isArray ? items : items[0];
+  }, []);
 
   const value = useMemo(
     () => ({
-      language: language || { code: "en", name: "English", flag: "🇬🇧" },
+      language:
+        language ||
+        normalizeDescriptor({
+          code: defaultLanguage,
+        }),
       setLanguage,
       languages: availableLanguages,
       translate,
       isLanguageLoaded,
+      defaultLanguage,
     }),
-    [language, availableLanguages, isLanguageLoaded]
+    [
+      language,
+      setLanguage,
+      availableLanguages,
+      translate,
+      isLanguageLoaded,
+      defaultLanguage,
+    ]
   );
-
-  // Don't render children until language is loaded to prevent flash
-  if (!isLanguageLoaded || !language) {
-    return (
-      <LanguageContext.Provider value={value}>
-        {children}
-      </LanguageContext.Provider>
-    );
-  }
 
   return (
     <LanguageContext.Provider value={value}>

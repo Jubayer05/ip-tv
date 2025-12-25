@@ -8,9 +8,10 @@ const KnowledgeBaseBanner = () => {
 
   // Original static texts
   const ORIGINAL_TEXTS = {
-    heading1: "Everything You Need to Know—",
+    heading1: "Everything You Need to Know",
     heading2: "All in One Place",
-    paragraph: "Welcome to the Knowledge Base, your go-to resource hub for all things IPTV. Whether you're a first-time user, reseller, or long-time subscriber, this section is packed with helpful guides, FAQs, tutorials, and troubleshooting tips to make your experience smooth and seamless."
+    paragraph:
+      "Welcome to the Knowledge Base, your go-to resource hub for all things IPTV. Whether you're a first-time user, reseller, or long-time subscriber, this section is packed with helpful guides, FAQs, tutorials, and troubleshooting tips to make your experience smooth and seamless.",
   };
 
   const [heading1, setHeading1] = useState(ORIGINAL_TEXTS.heading1);
@@ -31,7 +32,7 @@ const KnowledgeBaseBanner = () => {
           const content = {
             heading1: knowledgeBanner.heading1 || ORIGINAL_TEXTS.heading1,
             heading2: knowledgeBanner.heading2 || ORIGINAL_TEXTS.heading2,
-            paragraph: knowledgeBanner.paragraph || ORIGINAL_TEXTS.paragraph
+            paragraph: knowledgeBanner.paragraph || ORIGINAL_TEXTS.paragraph,
           };
           setOriginalContent(content);
         } else {
@@ -65,14 +66,14 @@ const KnowledgeBaseBanner = () => {
         const textsToTranslate = [
           originalContent.heading1,
           originalContent.heading2,
-          originalContent.paragraph
+          originalContent.paragraph,
         ];
 
         const translated = await translate(textsToTranslate);
         if (!isMounted) return;
 
         const [tHeading1, tHeading2, tParagraph] = translated;
-        
+
         setHeading1(tHeading1);
         setHeading2(tHeading2);
         setParagraph(tParagraph);

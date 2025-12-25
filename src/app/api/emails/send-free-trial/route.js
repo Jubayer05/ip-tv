@@ -11,10 +11,32 @@ export async function POST(request) {
       );
     }
 
+    const normalizedTrial = {
+      type: trialData.type,
+      id: trialData.id,
+      username: trialData.username,
+      password: trialData.password,
+      macAddress: trialData.mac_address,
+      packageName: trialData.package?.name ?? "—",
+      templateName: trialData.template?.name ?? "—",
+      maxConnections: trialData.max_connections ?? "—",
+      forcedCountry: trialData.forced_country ?? "—",
+      adult: trialData.adult ? "Yes" : "No",
+      note: trialData.note ?? "",
+      paid: trialData.paid ? "Yes" : "No",
+      expiringAt:
+        trialData.expiring_at && !Number.isNaN(new Date(trialData.expiring_at))
+          ? trialData.expiring_at
+          : new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+      dnsLink: trialData.dns_link ?? "",
+      samsungLgDns: trialData.dns_link_for_samsung_lg ?? "",
+      portalLink: trialData.portal_link ?? "",
+    };
+
     const emailSent = await sendFreeTrialCredentialsEmail({
       toEmail,
       fullName,
-      trialData,
+      trialData: normalizedTrial,
     });
 
     if (emailSent) {

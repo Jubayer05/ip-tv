@@ -26,6 +26,10 @@ const PaymentMethodsManagement = () => {
     apiKey: "",
     apiSecret: "",
     merchantId: "",
+    businessId: "",
+    webhookSecret: "",
+    ipnSecret: "",
+    allowedIps: [],
     minAmount: 1,
     bonusSettings: [],
     feeSettings: {
@@ -43,6 +47,8 @@ const PaymentMethodsManagement = () => {
   // Add state for showing/hiding passwords - renamed to avoid conflict
   const [showApiKeyPassword, setShowApiKeyPassword] = useState(false);
   const [showApiSecretPassword, setShowApiSecretPassword] = useState(false);
+  const [showWebhookSecret, setShowWebhookSecret] = useState(false);
+  const [showIpnSecret, setShowIpnSecret] = useState(false);
 
   // Original static texts
   const ORIGINAL_TEXTS = {
@@ -68,6 +74,13 @@ const PaymentMethodsManagement = () => {
     apiSecret: "API Secret",
     businessId: "Business ID",
     merchantId: "Polygon Wallet Address",
+    webhookSecret: "Webhook Secret",
+    ipnSecret: "IPN Secret",
+    allowedIps: "Allowed IPs (Optional)",
+    allowedIpsPlaceholder: "Enter one IP address per line (e.g., 192.168.1.1)",
+    webhookSecretHelp: "Required for secure webhook verification (HMAC-SHA256)",
+    ipnSecretHelp: "Required for NOWPayments IPN verification (HMAC-SHA512)",
+    allowedIpsHelp: "Restrict webhook callbacks to specific IP addresses for additional security",
     minAmountLabel: "Min Amount",
     bonusSettingsLabel: "Bonus Settings",
     addBonus: "Add Bonus",
@@ -140,6 +153,7 @@ const PaymentMethodsManagement = () => {
   }, [language, isLanguageLoaded, translate]);
 
   const gatewayOptions = [
+    { value: "stripe", label: "Stripe", logo: "/payment_logo/stripe.png" },
     { value: "plisio", label: "Plisio", logo: "/payment_logo/plisio.png" },
     { value: "hoodpay", label: "HoodPay", logo: "/payment_logo/hoodpay.jpeg" },
     {
@@ -161,6 +175,11 @@ const PaymentMethodsManagement = () => {
       value: "paygate",
       label: "PayGate",
       logo: "/payment_logo/paygate.png",
+    },
+    {
+      value: "volet",
+      label: "Volet",
+      logo: "/payment_logo/volet.png",
     },
   ];
 
@@ -275,19 +294,52 @@ const PaymentMethodsManagement = () => {
     e.preventDefault();
 
     try {
+      console.log("📤 Submitting payment settings:", {
+        gateway: formData.gateway,
+        name: formData.name,
+        hasWebhookSecret: !!formData.webhookSecret,
+        webhookSecretLength: formData.webhookSecret?.length || 0,
+        hasIpnSecret: !!formData.ipnSecret,
+        ipnSecretLength: formData.ipnSecret?.length || 0,
+        hasBusinessId: !!formData.businessId,
+      });
+
+      // ✅ Build the payload - send ALL formData
+      const payload = { ...formData };
+
+      console.log("📦 Complete payload:", {
+        gateway: payload.gateway,
+        name: payload.name,
+        apiKey: payload.apiKey ? "***" + payload.apiKey.slice(-4) : "NOT SET",
+        webhookSecret: payload.webhookSecret ? `SET (${payload.webhookSecret.length} chars) ***${payload.webhookSecret.slice(-4)}` : "NOT SET",
+        ipnSecret: payload.ipnSecret ? `SET (${payload.ipnSecret.length} chars)` : "NOT SET",
+        businessId: payload.businessId || "NOT SET",
+        merchantId: payload.merchantId || "NOT SET",
+      });
+
       const url = editingSetting
         ? `/api/payment-settings/${editingSetting._id}`
         : "/api/payment-settings";
 
       const method = editingSetting ? "PUT" : "POST";
 
+      console.log("🌐 Calling:", method, url);
+
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
+
+      console.log("📥 Server response:", {
+        success: data.success,
+        hasData: !!data.data,
+        hasWebhookSecret: !!data.data?.webhookSecret,
+        webhookSecretStored: data.data?.webhookSecret ? "YES ✅" : "NO ❌",
+        error: data.error,
+      });
 
       if (data.success) {
         Swal.fire(
@@ -305,7 +357,7 @@ const PaymentMethodsManagement = () => {
         Swal.fire(texts.error, data.error, "error");
       }
     } catch (error) {
-      console.error("Error saving setting:", error);
+      console.error("❌ Error saving setting:", error);
       Swal.fire(texts.error, texts.failedToSaveSetting, "error");
     }
   };
@@ -314,6 +366,10 @@ const PaymentMethodsManagement = () => {
     setEditingSetting(setting);
     setFormData({
       ...setting,
+      businessId: setting.businessId || setting.merchantId || "",
+      webhookSecret: setting.webhookSecret || "",
+      ipnSecret: setting.ipnSecret || "",
+      allowedIps: setting.allowedIps || [],
       bonusSettings: (setting.bonusSettings || []).map((bonus) => ({
         minAmount: bonus.minAmount || 0,
         bonusPercentage: bonus.bonusPercentage || 0,
@@ -416,6 +472,10 @@ const PaymentMethodsManagement = () => {
       apiKey: "",
       apiSecret: "",
       merchantId: "",
+      businessId: "",
+      webhookSecret: "",
+      ipnSecret: "",
+      allowedIps: [],
       minAmount: 1,
       bonusSettings: [],
       feeSettings: {
@@ -433,21 +493,29 @@ const PaymentMethodsManagement = () => {
 
   // Field visibility and labels by gateway
   const showApiKey = [
+    "stripe",
     "plisio",
     "hoodpay",
     "nowpayment",
     "changenow",
     "cryptomus",
+    "volet",
   ].includes(formData.gateway);
-  const showApiSecret = formData.gateway === "nowpayment";
+  const showApiSecret = ["stripe", "volet"].includes(formData.gateway);
   const showMerchantId = [
     "hoodpay",
     "changenow",
     "cryptomus",
     "paygate",
+    "volet",
   ].includes(formData.gateway);
+  const showBusinessId = ["hoodpay", "volet"].includes(formData.gateway);
+  const showWebhookSecretField = ["hoodpay", "stripe", "volet"].includes(formData.gateway);
+  const showIpnSecretField = formData.gateway === "nowpayment";
+  const showAllowedIpsField = ["hoodpay", "stripe", "volet"].includes(formData.gateway);
   const merchantLabel =
-    formData.gateway === "hoodpay" ? texts.businessId : texts.merchantId;
+    formData.gateway === "hoodpay" ? texts.businessId : 
+    formData.gateway === "volet" ? "Volet Account Email" : texts.merchantId;
 
   if (loading) {
     return (
@@ -460,7 +528,9 @@ const PaymentMethodsManagement = () => {
   return (
     <div className="p-4 sm:p-6 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
-        <h2 className="text-xl sm:text-2xl font-bold text-white">{texts.heading}</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-white">
+          {texts.heading}
+        </h2>
         <button
           onClick={() => {
             setEditingSetting(null);
@@ -478,12 +548,14 @@ const PaymentMethodsManagement = () => {
         {settings
           .filter((s) =>
             [
+              "stripe",
               "plisio",
               "hoodpay",
               "nowpayment",
               "changenow",
               "cryptomus",
               "paygate",
+              "volet",
             ].includes(s.gateway)
           )
           .map((setting) => {
@@ -564,7 +636,10 @@ const PaymentMethodsManagement = () => {
                     </h4>
                     <div className="space-y-1">
                       {setting.bonusSettings.map((bonus, index) => (
-                        <div key={index} className="text-[10px] sm:text-xs text-gray-300">
+                        <div
+                          key={index}
+                          className="text-[10px] sm:text-xs text-gray-300"
+                        >
                           <span className="text-gray-400">
                             ${bonus.minAmount}+
                           </span>{" "}
@@ -764,7 +839,7 @@ const PaymentMethodsManagement = () => {
                 {showApiKey && (
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
-                      {texts.apiKey} *
+                      {formData.gateway === "volet" ? "SCI Password *" : formData.gateway === "stripe" ? "Secret Key" : texts.apiKey + " *"}
                     </label>
                     <div className="relative">
                       <input
@@ -779,6 +854,7 @@ const PaymentMethodsManagement = () => {
                         }
                         className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                         required
+                        placeholder={formData.gateway === "stripe" ? "sk_test_51..." : ""}
                       />
                       <button
                         type="button"
@@ -824,13 +900,23 @@ const PaymentMethodsManagement = () => {
                         )}
                       </button>
                     </div>
+                    {formData.gateway === "volet" && (
+                      <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
+                        Your Volet SCI Password for signature generation
+                      </p>
+                    )}
+                    {formData.gateway === "stripe" && (
+                      <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
+                        Enter your Stripe Secret Key (starts with sk_test_ or sk_live_) - used for server-side API calls
+                      </p>
+                    )}
                   </div>
                 )}
 
                 {showApiSecret && (
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
-                      {texts.apiSecret} *
+                      {formData.gateway === "volet" ? "API Security Word *" : formData.gateway === "stripe" ? "Publishable Key" : texts.apiSecret}
                     </label>
                     <div className="relative">
                       <input
@@ -842,15 +928,18 @@ const PaymentMethodsManagement = () => {
                             apiSecret: e.target.value,
                           }))
                         }
-                        className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
-                        required
+                        className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        required={formData.gateway === "stripe"}
+                        disabled={formData.gateway === "nowpayment"}
+                        placeholder={formData.gateway === "nowpayment" ? "Not required for NOWPayments" : formData.gateway === "volet" ? "Volet API Security Word for webhook verification" : formData.gateway === "stripe" ? "pk_test_51..." : ""}
                       />
                       <button
                         type="button"
                         onClick={() =>
                           setShowApiSecretPassword(!showApiSecretPassword)
                         }
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white disabled:opacity-50"
+                        disabled={formData.gateway === "nowpayment"}
                       >
                         {showApiSecretPassword ? (
                           <svg
@@ -889,6 +978,21 @@ const PaymentMethodsManagement = () => {
                         )}
                       </button>
                     </div>
+                    {formData.gateway === "nowpayment" && (
+                      <p className="text-xs text-red-400 mt-1">
+                        API Secret is not required for NOWPayments
+                      </p>
+                    )}
+                    {formData.gateway === "volet" && (
+                      <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
+                        API Security Word for webhook signature verification
+                      </p>
+                    )}
+                    {formData.gateway === "stripe" && (
+                      <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
+                        Enter your Stripe Publishable Key (starts with pk_test_ or pk_live_) - used for frontend checkout
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -904,11 +1008,206 @@ const PaymentMethodsManagement = () => {
                         setFormData((prev) => ({
                           ...prev,
                           merchantId: e.target.value,
+                          // For HoodPay, also update businessId field
+                          ...(formData.gateway === "hoodpay" && {
+                            businessId: e.target.value,
+                          }),
                         }))
                       }
                       className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                       required
                     />
+                    {formData.gateway === "volet" && (
+                      <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
+                        Your Volet account email (ac_account_email)
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {showBusinessId && (
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
+                      {formData.gateway === "volet" ? "SCI Name *" : texts.businessId + " *"}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.businessId}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          businessId: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
+                      required
+                    />
+                    {formData.gateway === "volet" && (
+                      <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
+                        Your Volet SCI name (ac_sci_name) from your Volet merchant settings
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {showWebhookSecretField && (
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
+                      {formData.gateway === "stripe" ? `${texts.webhookSecret} (Optional)` : `${texts.webhookSecret} *`}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showWebhookSecret ? "text" : "password"}
+                        value={formData.webhookSecret}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            webhookSecret: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
+                        required={formData.gateway !== "stripe"}
+                        placeholder={formData.gateway === "stripe" ? "whsec_... (optional - can add later)" : ""}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowWebhookSecret(!showWebhookSecret)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                      >
+                        {showWebhookSecret ? (
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
+                      {formData.gateway === "stripe" 
+                        ? "Optional: Get from Stripe Dashboard → Developers → Webhooks. Needed for automatic payment status updates. You can add this later."
+                        : texts.webhookSecretHelp}
+                    </p>
+                  </div>
+                )}
+
+                {showIpnSecretField && (
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
+                      {texts.ipnSecret} *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showIpnSecret ? "text" : "password"}
+                        value={formData.ipnSecret}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            ipnSecret: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowIpnSecret(!showIpnSecret)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                      >
+                        {showIpnSecret ? (
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
+                      {texts.ipnSecretHelp}
+                    </p>
+                  </div>
+                )}
+
+                {showAllowedIpsField && (
+                  <div className="md:col-span-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
+                      {texts.allowedIps}
+                    </label>
+                    <textarea
+                      value={(formData.allowedIps || []).join("\n")}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          allowedIps: e.target.value
+                            .split("\n")
+                            .map((ip) => ip.trim())
+                            .filter((ip) => ip.length > 0),
+                        }))
+                      }
+                      placeholder={texts.allowedIpsPlaceholder}
+                      rows={3}
+                      className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
+                    />
+                    <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
+                      {texts.allowedIpsHelp}
+                    </p>
                   </div>
                 )}
 

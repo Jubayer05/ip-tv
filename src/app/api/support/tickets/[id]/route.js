@@ -1,4 +1,5 @@
 import { connectToDatabase } from "@/lib/db";
+import { emitTicketListUpdate, emitTicketUpdate } from "@/lib/socket";
 import SupportTicket from "@/models/SupportTicket";
 import { NextResponse } from "next/server";
 
@@ -43,6 +44,7 @@ export async function PATCH(request, { params }) {
     }
 
     const updates = {};
+    const wasNewMessage = !!body?.message?.sender;
 
     if (body?.status && ["open", "reply", "close"].includes(body.status)) {
       updates.status = body.status;
@@ -75,6 +77,28 @@ export async function PATCH(request, { params }) {
     }
 
     await ticket.save();
+
+    // Emit Socket.io event when message is added or status changes
+    if (wasNewMessage || updates.status) {
+      const updatedTicket = await SupportTicket.findById(id)
+        .select("-__v")
+        .lean();
+
+      if (wasNewMessage) {
+        emitTicketUpdate(id, {
+          ticket: updatedTicket,
+          message: body.message,
+          status: ticket.status,
+        });
+      }
+
+      // Notify for list updates
+      if (ticket.user) {
+        emitTicketListUpdate(ticket.user.toString());
+      }
+      // Notify admins
+      emitTicketListUpdate();
+    }
 
     return NextResponse.json({
       success: true,

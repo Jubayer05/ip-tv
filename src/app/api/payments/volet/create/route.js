@@ -7,6 +7,10 @@ import Product from "@/models/Product";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
+/**
+ * POST /api/payments/volet/create
+ * Create a Volet payment for subscriptions/orders
+ */
 export async function POST(request) {
   try {
     const {
@@ -31,7 +35,8 @@ export async function POST(request) {
     const adultChannelsValue = meta?.adultChannels || adultChannels;
     const quantityValue = meta?.quantity || quantity;
 
-    if (!amount || amount <= 0) {
+    // Validate amount
+    if (!amount || Number(amount) <= 0) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
@@ -57,43 +62,49 @@ export async function POST(request) {
     );
     const finalAmount = feeCalculation.totalAmount;
 
-    // Update the service with database credentials
-    voletService.setCredentials(
-      paymentSettings.apiKey,
-      paymentSettings.apiSecret
-    );
+    // Initialize Volet service with credentials from database
+    voletService.initialize(paymentSettings);
 
     const origin = new URL(request.url).origin;
-    const orderNumber =
-      providedOrderNumber || `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    
+    // Generate order number
+    const orderNumber = providedOrderNumber || `volet-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 
-    // Create Volet payment with final amount (including fees)
+    // Create Volet payment
     const result = await voletService.createPayment({
-      orderName,
-      orderNumber,
-      sourceCurrency: currency,
-      sourceAmount: finalAmount, // Use final amount including fees
-      currency: "BTC",
-      email: customerEmail || "",
-      callbackUrl: `${origin}/api/payments/volet/webhook`,
-      description: `IPTV Subscription - Order ${orderNumber}${
+      orderId: orderNumber,
+      amount: finalAmount,
+      currency: currency.toUpperCase(),
+      description: `${orderName} - Order ${orderNumber}${
         feeCalculation.feeAmount > 0
           ? ` (${formatFeeInfo(feeCalculation)})`
           : ""
       }`,
-      plugin: "IPTV_PLATFORM",
-      version: "1.0",
+      statusUrl: `${origin}/api/payments/volet/webhook`,
+      successUrl: `${origin}/payment-success?order_id=${orderNumber}`,
+      failUrl: `${origin}/payment-cancel?order_id=${orderNumber}`,
+      customerEmail: customerEmail || "",
     });
 
-    // Check if Volet API call was successful
+    // Check if Volet payment creation was successful
     if (!result.success || !result.data) {
+      console.error("[Volet Create] Failed to create payment:", result.error);
       return NextResponse.json(
-        { error: "Failed to create Volet payment" },
+        { error: result.error || "Failed to create Volet payment" },
         { status: 500 }
       );
     }
 
     const payment = result.data;
+
+    // Validate checkout URL
+    if (!payment.checkoutUrl) {
+      console.error("[Volet Create] No checkout URL in response:", payment);
+      return NextResponse.json(
+        { error: "Volet did not return a checkout URL" },
+        { status: 500 }
+      );
+    }
 
     // Find existing order or create new one
     let order = await Order.findOne({ orderNumber });
@@ -171,64 +182,70 @@ export async function POST(request) {
 
       // Create new order
       order = new Order({
-        orderNumber: payment.id,
+        orderNumber: orderNumber,
         userId: userId || null,
         guestEmail: resolvedGuestEmail,
         products: orderProducts,
-        totalAmount: finalAmount, // Store final amount including fees
-        originalAmount: amount, // Store original amount before fees
-        serviceFee: feeCalculation.feeAmount, // Store service fee amount
+        totalAmount: finalAmount,
+        originalAmount: amount,
+        serviceFee: feeCalculation.feeAmount,
         discountAmount: 0,
         couponCode: couponCode,
-        paymentMethod: "Cryptocurrency",
+        paymentMethod: "Volet",
         paymentGateway: "Volet",
-        paymentStatus: payment.status,
+        paymentStatus: "pending",
         contactInfo: resolvedContactInfo,
-        status: "completed", // Order is ready, waiting for payment
+        status: "pending",
       });
     } else {
       // Update existing order with new payment details
-      order.paymentMethod = "Cryptocurrency";
+      order.paymentMethod = "Volet";
       order.paymentGateway = "Volet";
-      order.paymentStatus = payment.status;
-      order.totalAmount = finalAmount; // Update with final amount
-      order.originalAmount = amount; // Store original amount
-      order.serviceFee = feeCalculation.feeAmount; // Store service fee
+      order.paymentStatus = "pending";
+      order.totalAmount = finalAmount;
+      order.originalAmount = amount;
+      order.serviceFee = feeCalculation.feeAmount;
     }
 
     // Update order with Volet payment details
     order.voletPayment = {
-      paymentId: payment.id,
-      status: payment.status,
-      amount: payment.amount,
-      currency: payment.currency,
-      sourceAmount: payment.source_amount,
-      sourceCurrency: payment.source_currency,
-      walletAddress: payment.wallet_address || "",
-      confirmations: payment.confirmations || 0,
-      actualSum: payment.actual_sum || "0.00000000",
-      expiresAt: payment.expires_at
-        ? new Date(payment.expires_at * 1000)
-        : null,
+      paymentId: orderNumber,
+      status: "pending",
+      priceAmount: finalAmount,
+      priceCurrency: currency.toUpperCase(),
+      paymentUrl: payment.checkoutUrl,
+      customerEmail: customerEmail || order.contactInfo?.email || "",
+      orderDescription: `${orderName} - Order ${orderNumber}`,
+      sciName: paymentSettings.businessId,
+      accountEmail: paymentSettings.merchantId,
       callbackReceived: false,
       lastStatusUpdate: new Date(),
+      metadata: {
+        original_amount: amount,
+        service_fee: feeCalculation.feeAmount,
+        final_amount: finalAmount,
+      },
     };
 
     await order.save();
+
+    console.log("[Volet Create] Order created/updated:", {
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      amount: finalAmount,
+      checkoutUrl: payment.checkoutUrl.substring(0, 50) + "...",
+    });
 
     return NextResponse.json({
       success: true,
       orderId: order._id,
       orderNumber: order.orderNumber,
-      paymentId: payment.id,
-      checkoutUrl: payment.payment_url,
-      amount: payment.amount,
-      currency: payment.currency,
-      status: payment.status,
-      walletAddress: payment.wallet_address,
-      expiresAt: payment.expires_at
-        ? new Date(payment.expires_at * 1000).toISOString()
-        : null,
+      paymentId: orderNumber,
+      checkoutUrl: payment.checkoutUrl,
+      amount: finalAmount,
+      originalAmount: amount,
+      currency: currency.toUpperCase(),
+      status: "pending",
       // Include fee information in response
       feeInfo: {
         originalAmount: feeCalculation.originalAmount,
@@ -240,7 +257,7 @@ export async function POST(request) {
       },
     });
   } catch (error) {
-    console.error("Volet create error:", error);
+    console.error("[Volet Create] Error:", error);
     return NextResponse.json(
       { error: error?.message || "Failed to create Volet payment" },
       { status: 500 }

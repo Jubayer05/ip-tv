@@ -220,7 +220,7 @@ const CardPayment = () => {
               />
             </div>
           </div>
-          
+
           <div className="mt-3 sm:mt-4">
             <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
               Description

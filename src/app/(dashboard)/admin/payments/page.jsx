@@ -2,6 +2,7 @@
 import GuideManagement from "@/components/dashboard/AdminDashboard/Legal/GuideManagement";
 import CardPayment from "@/components/dashboard/AdminDashboard/PaymentManagement/CardPayment";
 import PaymentMethodsManagement from "@/components/dashboard/AdminDashboard/PaymentManagement/PaymentMethodsManagement";
+import PayGateProvidersManagement from "@/components/dashboard/AdminDashboard/PaymentManagement/PayGateProvidersManagement";
 import UsersBalance from "@/components/dashboard/AdminDashboard/PaymentManagement/UsersBalances";
 import { useState } from "react";
 
@@ -13,6 +14,11 @@ export default function paymentManagement() {
       id: "payment_methods",
       label: "Payment Methods",
       component: <PaymentMethodsManagement />,
+    },
+    {
+      id: "paygate_providers",
+      label: "PayGate Providers",
+      component: <PayGateProvidersManagement />,
     },
     {
       id: "card_payment",

@@ -9,7 +9,7 @@ export default function Footer() {
   const { language, translate } = useLanguage();
 
   const ORIGINAL_DESCRIPTION =
-    "Cheap Stream is a budget-friendly IPTV service that delivers unlimited access to movies, live TV, and entertainment in HD and 4K—without contracts or hidden fees.";
+    "Cheap Stream is an affordable IPTV service that lets you watch movies, live TV, and other entertainment in HD and 4K without having to sign a contract or pay extra fees.";
   const ORIGINAL_COPYRIGHT = "Copyright © Cheap Stream";
   const ORIGINAL_ALL_RIGHTS = "All rights reserved";
   const ORIGINAL_DEVELOPED_BY = "Developed by";
@@ -243,9 +243,10 @@ export default function Footer() {
               <Image
                 src="/logos/logo.png"
                 alt="Cheap Stream"
-                width={150}
-                height={150}
-                className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-[100px] lg:h-[100px]"
+                width={100}
+                height={100}
+                priority
+                className="w-auto h-20 sm:h-24 md:h-32 lg:h-[100px]"
               />
             </div>
 
@@ -263,6 +264,9 @@ export default function Footer() {
                     key={index}
                     href={social.href}
                     className="text-primary transition-colors"
+                    aria-label={`Visit our ${social.platform} page`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
                     <IconComponent className="w-5 h-5 sm:w-6 sm:h-6" />
                   </a>
@@ -303,13 +307,13 @@ export default function Footer() {
                     >
                       <div className="flex items-start gap-2">
                         <div className="w-12 h-12 flex-shrink-0 relative overflow-hidden rounded-lg">
-                          <img
-                            src={ad.imageUrl}
+                          <Image
+                            src={ad.imageUrl || "/icons/profile.png"}
                             alt={ad.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                            onError={(e) => {
-                              e.target.src = "/icons/profile.png";
-                            }}
+                            fill
+                            sizes="48px"
+                            className="object-cover group-hover:scale-110 transition-transform duration-300"
+                            loading="lazy"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </div>
@@ -383,13 +387,13 @@ export default function Footer() {
                   >
                     <div className="flex items-start gap-3">
                       <div className="w-14 h-14 flex-shrink-0 relative overflow-hidden rounded-lg">
-                        <img
-                          src={ad.imageUrl}
+                        <Image
+                          src={ad.imageUrl || "/icons/profile.png"}
                           alt={ad.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          onError={(e) => {
-                            e.target.src = "/icons/profile.png";
-                          }}
+                          fill
+                          sizes="56px"
+                          className="object-cover group-hover:scale-110 transition-transform duration-300"
+                          loading="lazy"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       </div>

@@ -1,7 +1,9 @@
+import crypto from "crypto";
+import { NextResponse } from "next/server";
+
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
 import Visitor from "@/models/Visitor";
-import { NextResponse } from "next/server";
 
 // Simple authentication middleware
 async function authenticateUser(request) {
@@ -39,9 +41,66 @@ async function authenticateUser(request) {
   }
 }
 
+function generateTrialUsername(length = 8) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const bytes = crypto.randomBytes(length * 2);
+  let result = "";
+  for (let i = 0; i < bytes.length && result.length < length; i += 1) {
+    result += alphabet[bytes[i] % alphabet.length];
+  }
+  return result.padEnd(length, "X");
+}
+
+const sanitizeWhatsappTelegram = (value) =>
+  value ? value.toString().replace(/\D/g, "").slice(0, 15) : "";
+
+const createFallbackWhatsappTelegram = () =>
+  (Date.now().toString(36) + Math.random().toString(36))
+    .replace(/[^0-9]/g, "")
+    .slice(0, 10);
+
+// Type validation and normalization helper
+const normalizeType = (type) => {
+  if (!type) return null;
+  const upperType = String(type).toUpperCase();
+  if (upperType === "M3U") return "M3U";
+  if (upperType === "MAG") return "MAG";
+  if (upperType === "ENIGMA" || upperType === "ENIGMA2") return "ENIGMA2";
+  return null;
+};
+
+const isValidType = (type) => {
+  const normalized = normalizeType(type);
+  return normalized !== null;
+};
+
+const coerceBooleanString = (value) => (value ? "1" : "0");
+
+const parseExpiration = (subscription) => {
+  const raw =
+    subscription?.expiring_at ||
+    subscription?.expire ||
+    subscription?.expire_at ||
+    subscription?.expireDate;
+
+  if (!raw) return null;
+
+  if (typeof raw === "number") {
+    return new Date(raw * 1000);
+  }
+
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed;
+  }
+
+  return null;
+};
+
+const TEMPLATE_ID = "10742";
+
 export async function POST(request) {
   try {
-    // Authenticate user
     const authResult = await authenticateUser(request);
     if (authResult.error) {
       return NextResponse.json(
@@ -51,10 +110,66 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { key, username, password, lineType, mac, visitorId, templateId } =
-      body;
 
-    // If visitorId provided, block if already used on this device/browser
+    // Log the raw body data
+    console.log("=== FREE TRIAL CREATE - RAW BODY DATA ===");
+    console.log(JSON.stringify(body, null, 2));
+
+    const {
+      key,
+      username,
+      password,
+      type: typeFromBody,
+      lineType, // Backward compatibility
+      mac,
+      visitorId,
+      packageId,
+      maxConnections = 1,
+      forcedCountry = "ALL",
+      adult = 0,
+      whatsappTelegram,
+      enableVpn = 0,
+      paid = 0,
+      note = "Test API",
+    } = body;
+
+    // Convert lineType to type if type is not provided (backward compatibility)
+    const rawType =
+      typeFromBody ||
+      (lineType !== undefined
+        ? lineType === 0
+          ? "M3U"
+          : lineType === 1
+          ? "MAG"
+          : "ENIGMA2"
+        : undefined);
+
+    // Normalize type to uppercase for API (M3U, MAG, ENIGMA2)
+    const type = normalizeType(rawType);
+
+    // Log the extracted values
+    console.log("=== FREE TRIAL CREATE - EXTRACTED VALUES ===");
+    console.log({
+      rawType,
+      normalizedType: type,
+      typeFromBody,
+      lineType,
+      mac,
+      macType: typeof mac,
+      macLength: mac ? mac.length : 0,
+      hasMac: !!mac,
+    });
+
+    const generatedUsername =
+      (username || "").replace(/[^A-Z]/g, "").slice(0, 12) ||
+      generateTrialUsername();
+
+    const sanitizedWhatsapp =
+      sanitizeWhatsappTelegram(whatsappTelegram) ||
+      createFallbackWhatsappTelegram();
+
+    const packageIdentifier = packageId || TEMPLATE_ID;
+
     if (visitorId) {
       await connectToDatabase();
       const existingVisitor = await Visitor.findOne({ visitorId });
@@ -66,55 +181,110 @@ export async function POST(request) {
       }
     }
 
-    // Validate required fields
-    if (!key || lineType === undefined || !templateId) {
+    if (!key || !type || !packageIdentifier) {
       return NextResponse.json(
-        { error: "API key, lineType, and templateId are required" },
+        { error: "API key, type, and packageId are required" },
         { status: 400 }
       );
     }
 
-    // Validate lineType
-    if (![0, 1, 2].includes(lineType)) {
+    if (!type || !isValidType(rawType)) {
       return NextResponse.json(
-        { error: "Invalid lineType. Must be 0 (m3u), 1 (mag), or 2 (enigma2)" },
+        { error: "Invalid type. Must be M3U, MAG, or Enigma" },
         { status: 400 }
       );
     }
 
-    // Validate MAC address for lineType 1 & 2
-    if ((lineType === 1 || lineType === 2) && !mac) {
+    if ((type === "MAG" || type === "ENIGMA2") && !mac) {
       return NextResponse.json(
-        { error: "MAC address is required for lineType 1 & 2" },
+        { error: "MAC address is required for MAG and Enigma subscriptions" },
         { status: 400 }
       );
     }
 
-    // Prepare request payload
-    const requestPayload = {
-      key,
-      lineType,
-      templateId, // Add this line
-    };
-
-    // Add optional fields only if they have values
-    if (username) requestPayload.username = username;
-    if (password) requestPayload.password = password;
-    if (mac) requestPayload.mac = mac;
-
-    const iptvResponse = await fetch("http://zlive.cc/api/free-trail-create", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "IPTV-Client/1.0",
-      },
-      body: JSON.stringify(requestPayload),
+    // Build form payload - base fields for all types
+    const formPayload = new URLSearchParams({
+      type,
+      package_id: String(packageIdentifier),
+      template_id: TEMPLATE_ID,
+      max_connections: String(maxConnections),
+      forced_country: forcedCountry,
+      adult: coerceBooleanString(adult),
+      note,
+      whatsapp_telegram: sanitizedWhatsapp,
+      enable_vpn: coerceBooleanString(enableVpn),
+      paid: coerceBooleanString(paid),
     });
 
-    // Get response text first to debug
+    // Log subscription type handling
+    console.log("=== FREE TRIAL CREATE - SUBSCRIPTION TYPE HANDLING ===");
+    console.log({
+      rawType,
+      normalizedType: type,
+      isM3U: type === "M3U",
+      isMAG: type === "MAG",
+      isEnigma: type === "ENIGMA2",
+      requiresMac: type === "MAG" || type === "ENIGMA2",
+      requiresUsername: type === "M3U",
+      hasMac: !!mac,
+      macValue: mac,
+      username: generatedUsername,
+    });
+
+    // For M3U: username (and optionally password) is required
+    if (type === "M3U") {
+      formPayload.append("username", generatedUsername);
+    if (password) formPayload.append("password", password);
+      console.log("✓ M3U subscription - username added:", generatedUsername);
+    }
+
+    // For MAG/Enigma: mac_address is required (username/password not needed per API docs)
+    if ((type === "MAG" || type === "ENIGMA2") && mac) {
+      formPayload.append("mac_address", mac);
+      console.log("✓ MAG/Enigma subscription - mac_address added:", mac);
+    } else if ((type === "MAG" || type === "ENIGMA2") && !mac) {
+      console.log(
+        "⚠ WARNING: MAC address required for type",
+        type,
+        "but not provided"
+      );
+    }
+
+    // Log the final form payload before sending
+    console.log("=== FREE TRIAL CREATE - FORM PAYLOAD ===");
+    console.log("Form Payload String:", formPayload.toString());
+    console.log("Form Payload Entries:", Object.fromEntries(formPayload));
+    console.log("MAC Address in payload:", formPayload.get("mac_address"));
+    console.log("Type in payload:", formPayload.get("type"));
+
+    console.log("=== FREE TRIAL CREATE - API REQUEST ===");
+    console.log("API URL: https://megaott.net/api/v1/subscriptions-test");
+    console.log("Request Headers:", {
+      Accept: "application/json",
+      Authorization: `Bearer ${key?.substring(0, 10)}...`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    });
+
+    const iptvResponse = await fetch(
+      "https://megaott.net/api/v1/subscriptions",
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: formPayload.toString(),
+      }
+    );
+
     const responseText = await iptvResponse.text();
 
-    // Check if response is HTML (error page)
+    console.log("=== FREE TRIAL CREATE - API RESPONSE ===");
+    console.log("Status:", iptvResponse.status);
+    console.log("Status Text:", iptvResponse.statusText);
+    console.log("Response Text:", responseText);
+
     if (
       responseText.trim().startsWith("<!DOCTYPE") ||
       responseText.trim().startsWith("<html")
@@ -149,20 +319,29 @@ export async function POST(request) {
       );
     }
 
-    // Check if IPTV service returned an error
-    if (iptvData.code !== 200) {
-      console.error("IPTV Service Error:", iptvData);
+    if (!iptvResponse.ok) {
+      const statusClass = Math.floor(iptvResponse.status / 100);
+      const errorMessage =
+        iptvData?.message ||
+        iptvData?.msg ||
+        `IPTV service returned a ${iptvResponse.status} status`;
+
+      if (statusClass === 4) {
+        console.error("MegaOTT client error:", iptvData);
+      } else if (statusClass === 5) {
+        console.error("MegaOTT server error:", iptvData);
+      }
+
       return NextResponse.json(
         {
-          error: iptvData.message || iptvData.msg || "IPTV service error",
+          error: errorMessage,
           details: iptvData,
-          code: iptvData.code,
+          status: iptvResponse.status,
         },
-        { status: 400 }
+        { status: iptvResponse.status }
       );
     }
 
-    // Check if user has already used free trial
     if (authResult.user.freeTrial?.hasUsed) {
       return NextResponse.json(
         { error: "You have already used your free trial" },
@@ -170,11 +349,20 @@ export async function POST(request) {
       );
     }
 
-    // Check if this device has already been used for a trial (fraud prevention)
+    const subscription = iptvData?.data ?? iptvData;
+    if (!subscription || typeof subscription !== "object") {
+      return NextResponse.json(
+        {
+          error: "IPTV service returned an unexpected payload",
+          details: iptvData,
+        },
+        { status: 500 }
+      );
+    }
+
     if (visitorId) {
       const existingVisitor = await Visitor.findOne({ visitorId });
       if (existingVisitor && !existingVisitor.eligibleForTrial) {
-        // Mark user as fraud and block the request
         await User.findByIdAndUpdate(authResult.user._id, {
           $set: {
             "freeTrial.hasUsed": true,
@@ -182,9 +370,8 @@ export async function POST(request) {
             "freeTrial.trialData": {
               lineId: "FRAUD_DETECTED",
               username: "FRAUD_DETECTED",
-              templateId: templateId, // Changed from hardcoded 1271
               templateName: "Fraud Detection",
-              lineType: 0,
+              type: "M3U",
               expireDate: new Date(),
             },
           },
@@ -200,10 +387,10 @@ export async function POST(request) {
       }
     }
 
-    // Mark visitor as used (block future trials on this device/browser)
+    const expireDate = parseExpiration(subscription);
+
     try {
       if (visitorId) {
-        const expireUnix = iptvData.data.expire || iptvData.data.expireDate;
         await Visitor.findOneAndUpdate(
           { visitorId },
           {
@@ -211,15 +398,16 @@ export async function POST(request) {
               associatedUser: authResult.user?._id || null,
               eligibleForTrial: false,
               trialUsedAt: new Date(),
-              "trialData.lineId": iptvData.data.lineId || iptvData.data.id,
-              "trialData.username": iptvData.data.username || username,
-              "trialData.templateId": templateId, // Changed from hardcoded 1271
+              "trialData.lineId":
+                subscription.lineId || subscription.id || null,
+              "trialData.username": subscription.username || generatedUsername,
+              "trialData.templateId": TEMPLATE_ID,
               "trialData.templateName":
-                iptvData.data.templateName || `Template ${templateId}`,
-              "trialData.lineType": lineType,
-              "trialData.expireDate": expireUnix
-                ? new Date(expireUnix * 1000)
-                : null,
+                subscription.template?.name ||
+                subscription.templateName ||
+                "Template 10742",
+              "trialData.type": type,
+              "trialData.expireDate": expireDate,
             },
           },
           { upsert: true, new: true }
@@ -229,27 +417,28 @@ export async function POST(request) {
       console.error("Failed to update visitor record:", e);
     }
 
-    // Update user's free trial status
     try {
       await authResult.user.markFreeTrialUsed({
-        lineId: iptvData.data.lineId || iptvData.data.id,
-        username: iptvData.data.username || username,
-        password: iptvData.data.password, // Add password from IPTV response
-        templateId: templateId, // Changed from hardcoded 1271
-        templateName: iptvData.data.templateName || `Template ${templateId}`,
-        lineType: lineType,
-        expire: iptvData.data.expire || iptvData.data.expireDate,
+        lineId: subscription.lineId || subscription.id || null,
+        username: subscription.username || generatedUsername,
+        password: subscription.password || null,
+        templateId: TEMPLATE_ID,
+        templateName:
+          subscription.template?.name ||
+          subscription.templateName ||
+          "Template 10742",
+        type,
+        expire: expireDate ? expireDate.getTime() / 1000 : null,
       });
     } catch (updateError) {
       console.error("Failed to update user free trial status:", updateError);
     }
 
-    // Success case
     return NextResponse.json({
       success: true,
       message: "Free trial created successfully",
-      data: iptvData.data,
-      fullResponse: iptvData, // Include full response for debugging
+      data: subscription,
+      fullResponse: iptvData,
     });
   } catch (error) {
     console.error("Free trial creation error:", error);

@@ -6,6 +6,7 @@ import {
   BarChart3,
   Bell,
   CreditCard,
+  ExternalLink,
   FileText,
   Gift,
   HelpCircle,
@@ -210,6 +211,11 @@ export default function Sidebar() {
       href: "/admin/settings",
       label: "System Settings",
       icon: Settings,
+    },
+    {
+      href: "/admin/url-tracking",
+      label: "URL Tracking",
+      icon: ExternalLink,
     },
   ];
 

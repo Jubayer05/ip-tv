@@ -1,273 +1,344 @@
 import crypto from "crypto";
 
+/**
+ * Volet SCI (Shopping Cart Interface) Payment Service
+ * 
+ * Based on official Volet documentation:
+ * - SCI URL: https://account.volet.com/sci/
+ * - Authentication: Time-based token (SHA-256 of secretKey:YYYYMMDD:HH in UTC)
+ * - Signature: HMAC-SHA256 of sorted parameters
+ */
 class VoletService {
   constructor() {
-    this.apiKey = null;
-    this.secretKey = null;
-    this.apiName = null;
-    this.accountEmail = null;
-    this.baseUrl = "https://account.volet.com/wsm/apiWebService"; // Correct SOAP endpoint
-  }
-
-  setCredentials(apiKey, secretKey, apiName, accountEmail) {
-    this.apiKey = apiKey;
-    this.secretKey = secretKey;
-    this.apiName = apiName;
-    this.accountEmail = accountEmail;
-  }
-
-  // Generate authentication token as per Volet documentation
-  generateAuthToken() {
-    const now = new Date();
-    const dateUTC = now.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
-    const timeUTC = now.toISOString().slice(11, 13); // HH
-
-    const text = `${this.secretKey}:${dateUTC}:${timeUTC}`;
-    const crypto = require("crypto");
-    return crypto.createHash("sha256").update(text).digest("hex").toUpperCase();
+    this.sciPassword = null;      // SCI Password (apiKey) - for generating ac_sign
+    this.apiSecurityWord = null;  // API Security Word (apiSecret) - for webhook verification
+    this.sciName = null;          // SCI Name (businessId) - ac_sci_name
+    this.accountEmail = null;     // Volet Account Email (merchantId) - ac_account_email
+    this.sciUrl = "https://account.volet.com/sci/";
   }
 
   /**
-   * Create a new payment/invoice
+   * Initialize service with credentials from PaymentSettings
    */
-  async createPayment({
-    orderName,
-    orderNumber,
-    sourceCurrency = "USD",
-    sourceAmount,
-    currency = "BTC",
-    email = "",
-    callbackUrl,
-    description = "",
-    plugin = "",
-    version = "",
-  }) {
-    if (!this.apiKey) {
-      throw new Error("VOLET_API_KEY not configured");
+  initialize(paymentSettings) {
+    if (!paymentSettings) {
+      throw new Error("Payment settings are required");
     }
 
-    const payload = {
-      api_key: this.apiKey,
-      order_name: orderName,
-      order_number: orderNumber,
-      source_currency: sourceCurrency,
-      source_amount: String(sourceAmount),
-      currency: currency,
-      email: email,
-      callback_url: callbackUrl,
-      description: description,
-      plugin: plugin,
-      version: version,
+    this.sciPassword = paymentSettings.apiKey;           // SCI Password
+    this.apiSecurityWord = paymentSettings.apiSecret;    // API Security Word
+    this.sciName = paymentSettings.businessId;           // SCI Name
+    this.accountEmail = paymentSettings.merchantId;      // Volet Account Email
+
+    console.log("[VoletService] Initialized with:", {
+      hasSciPassword: !!this.sciPassword,
+      hasApiSecurityWord: !!this.apiSecurityWord,
+      sciName: this.sciName,
+      accountEmail: this.accountEmail,
+    });
+  }
+
+  /**
+   * Legacy method for backward compatibility
+   */
+  setCredentials(apiKey, secretKey, sciName, accountEmail) {
+    this.sciPassword = apiKey;
+    this.apiSecurityWord = secretKey;
+    this.sciName = sciName || this.sciName;
+    this.accountEmail = accountEmail || this.accountEmail;
+  }
+
+  /**
+   * Generate time-based authentication token as per Volet documentation
+   * Format: SHA-256 hash of "secretKey:YYYYMMDD:HH" (UTC time)
+   */
+  generateAuthToken() {
+    if (!this.sciPassword) {
+      throw new Error("SCI Password not configured");
+    }
+
+    const now = new Date();
+    const dateUTC = now.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
+    const hourUTC = now.toISOString().slice(11, 13); // HH
+
+    const tokenString = `${this.sciPassword}:${dateUTC}:${hourUTC}`;
+    const token = crypto.createHash("sha256").update(tokenString).digest("hex").toUpperCase();
+
+    console.log("[VoletService] Generated auth token for:", { dateUTC, hourUTC });
+    return token;
+  }
+
+  /**
+   * Generate HMAC-SHA256 signature for SCI form (ac_sign)
+   * Per Volet docs: Sort parameters alphabetically, concatenate values, then HMAC-SHA256
+   * 
+   * @param {Object} params - Form parameters (excluding ac_sign)
+   * @returns {string} - HMAC-SHA256 signature in uppercase hex
+   */
+  generateSignature(params) {
+    if (!this.sciPassword) {
+      throw new Error("SCI Password not configured for signature generation");
+    }
+
+    // Sort parameters alphabetically by key
+    const sortedKeys = Object.keys(params).sort();
+    
+    // Concatenate values in sorted order
+    const signatureString = sortedKeys
+      .filter(key => key !== "ac_sign") // Exclude ac_sign itself
+      .map(key => params[key])
+      .join("");
+
+    // Create HMAC-SHA256 signature
+    const signature = crypto
+      .createHmac("sha256", this.sciPassword)
+      .update(signatureString)
+      .digest("hex")
+      .toUpperCase();
+
+    console.log("[VoletService] Generated signature:", {
+      paramCount: sortedKeys.length,
+      signatureLength: signature.length,
+    });
+
+    return signature;
+  }
+
+  /**
+   * Build SCI form data for payment
+   * 
+   * @param {Object} options - Payment options
+   * @returns {Object} - Form data with all required fields including ac_sign
+   */
+  buildSCIFormData({
+    orderId,
+    amount,
+    currency = "USD",
+    description = "",
+    statusUrl = "",
+    successUrl = "",
+    failUrl = "",
+    customerEmail = "",
+  }) {
+    if (!this.accountEmail || !this.sciName) {
+      throw new Error("Volet account email and SCI name are required");
+    }
+
+    // Build form parameters (all ac_ prefixed as per Volet spec)
+    const formData = {
+      ac_account_email: this.accountEmail,
+      ac_sci_name: this.sciName,
+      ac_amount: String(Number(amount).toFixed(2)),
+      ac_currency: currency.toUpperCase(),
+      ac_order_id: String(orderId),
     };
 
+    // Add optional fields if provided
+    if (description) {
+      formData.ac_comments = description;
+    }
+    if (statusUrl) {
+      formData.ac_status_url = statusUrl; // Webhook callback URL
+    }
+    if (successUrl) {
+      formData.ac_success_url = successUrl;
+    }
+    if (failUrl) {
+      formData.ac_fail_url = failUrl;
+    }
+    if (customerEmail) {
+      formData.ac_payer_email = customerEmail;
+    }
+
+    // Generate signature
+    formData.ac_sign = this.generateSignature(formData);
+
+    console.log("[VoletService] Built SCI form data:", {
+      orderId: formData.ac_order_id,
+      amount: formData.ac_amount,
+      currency: formData.ac_currency,
+      hasSignature: !!formData.ac_sign,
+    });
+
+    return formData;
+  }
+
+  /**
+   * Create a payment and return the SCI checkout URL
+   * 
+   * @param {Object} options - Payment options
+   * @returns {Object} - Payment result with checkout URL
+   */
+  async createPayment({
+    orderId,
+    amount,
+    currency = "USD",
+    description = "",
+    statusUrl = "",
+    successUrl = "",
+    failUrl = "",
+    customerEmail = "",
+  }) {
     try {
-      const response = await fetch(`${this.baseUrl}/payments/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify(payload),
-        cache: "no-store",
+      // Build form data
+      const formData = this.buildSCIFormData({
+        orderId,
+        amount,
+        currency,
+        description,
+        statusUrl,
+        successUrl,
+        failUrl,
+        customerEmail,
       });
 
-      const data = await response.json();
+      // Build checkout URL with query parameters
+      // Volet SCI accepts both POST form and GET with query params
+      const queryParams = new URLSearchParams(formData).toString();
+      const checkoutUrl = `${this.sciUrl}?${queryParams}`;
 
-      if (!response.ok || data?.status !== "success") {
-        throw new Error(
-          data?.message || data?.error || "Failed to create payment"
-        );
-      }
+      console.log("[VoletService] Created payment:", {
+        orderId,
+        amount,
+        currency,
+        checkoutUrlLength: checkoutUrl.length,
+      });
 
       return {
         success: true,
-        data: data.data,
+        data: {
+          paymentId: orderId,
+          orderId: orderId,
+          checkoutUrl: checkoutUrl,
+          formData: formData,
+          sciUrl: this.sciUrl,
+          amount: amount,
+          currency: currency,
+          status: "pending",
+        },
       };
     } catch (error) {
-      console.error("Volet create payment error:", error);
-
-      // Return a mock response instead of throwing to prevent crashes
+      console.error("[VoletService] Create payment error:", error);
       return {
         success: false,
-        error: "Volet payment service is currently unavailable",
+        error: error.message || "Failed to create Volet payment",
         data: null,
       };
     }
   }
 
   /**
-   * Get payment details by transaction ID
+   * Verify webhook signature from Volet callback
+   * 
+   * @param {Object} callbackData - Webhook payload
+   * @returns {boolean} - True if signature is valid
    */
-  async getPaymentDetails(txnId) {
-    if (!this.apiKey) {
-      throw new Error("VOLET_API_KEY not configured");
-    }
-
-    try {
-      const response = await fetch(`${this.baseUrl}/payments/${txnId}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        cache: "no-store",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || data?.status !== "success") {
-        throw new Error(
-          data?.message || data?.error || "Failed to get payment details"
-        );
-      }
-
-      return {
-        success: true,
-        data: data.data,
-      };
-    } catch (error) {
-      console.error("Volet get payment details error:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get supported cryptocurrencies
-   */
-  async getSupportedCurrencies() {
-    if (!this.apiKey) {
-      throw new Error("VOLET_API_KEY not configured");
-    }
-
-    try {
-      const response = await fetch(`${this.baseUrl}/currencies`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        cache: "no-store",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || data?.status !== "success") {
-        throw new Error(
-          data?.message || data?.error || "Failed to get supported currencies"
-        );
-      }
-
-      return {
-        success: true,
-        data: data.data,
-      };
-    } catch (error) {
-      console.error("Volet get currencies error:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Verify webhook signature
-   */
-  verifyWebhookSignature(postData, signature) {
-    if (!this.secretKey) {
-      console.error("VOLET_SECRET_KEY not configured");
+  verifyWebhookSignature(callbackData) {
+    if (!this.apiSecurityWord) {
+      console.error("[VoletService] API Security Word not configured for webhook verification");
       return false;
     }
 
-    if (!signature) {
-      console.error("No signature in webhook data");
+    const receivedSignature = callbackData.ac_sign;
+    if (!receivedSignature) {
+      console.error("[VoletService] No ac_sign in webhook data");
       return false;
     }
 
     try {
-      // Create HMAC SHA-256 hash
-      const hmac = crypto.createHmac("sha256", this.secretKey);
-      hmac.update(JSON.stringify(postData));
-      const calculatedSignature = hmac.digest("hex");
+      // Build params object excluding ac_sign
+      const params = { ...callbackData };
+      delete params.ac_sign;
 
-      const isValid = calculatedSignature === signature;
+      // Sort parameters alphabetically
+      const sortedKeys = Object.keys(params).sort();
+      
+      // Concatenate values in sorted order
+      const signatureString = sortedKeys
+        .map(key => params[key])
+        .join("");
+
+      // Calculate expected signature using API Security Word
+      const expectedSignature = crypto
+        .createHmac("sha256", this.apiSecurityWord)
+        .update(signatureString)
+        .digest("hex")
+        .toUpperCase();
+
+      const isValid = expectedSignature === receivedSignature.toUpperCase();
 
       if (!isValid) {
-        console.error("Signature verification failed:", {
-          calculated: calculatedSignature,
-          received: signature,
+        console.error("[VoletService] Webhook signature mismatch:", {
+          expected: expectedSignature.substring(0, 16) + "...",
+          received: receivedSignature.substring(0, 16) + "...",
         });
+      } else {
+        console.log("[VoletService] Webhook signature verified successfully");
       }
 
       return isValid;
     } catch (error) {
-      console.error("Error verifying webhook signature:", error);
+      console.error("[VoletService] Error verifying webhook signature:", error);
       return false;
     }
   }
 
   /**
-   * Get balance for specific currency
+   * Parse webhook callback data and extract payment info
+   * 
+   * @param {Object} callbackData - Raw webhook data from Volet
+   * @returns {Object} - Parsed payment information
    */
-  async getBalance(currency = "BTC") {
-    if (!this.apiKey) {
-      throw new Error("VOLET_API_KEY not configured");
+  parseWebhookData(callbackData) {
+    return {
+      orderId: callbackData.ac_order_id,
+      transactionId: callbackData.ac_transaction_id || callbackData.ac_transfer,
+      amount: parseFloat(callbackData.ac_amount || 0),
+      currency: callbackData.ac_currency || "USD",
+      payerEmail: callbackData.ac_payer_email || "",
+      status: this.mapWebhookStatus(callbackData),
+      rawData: callbackData,
+    };
+  }
+
+  /**
+   * Map Volet webhook status to internal status
+   * 
+   * @param {Object} callbackData - Webhook data
+   * @returns {string} - Internal status (pending, completed, failed)
+   */
+  mapWebhookStatus(callbackData) {
+    // Volet sends different fields to indicate status
+    // Check for transaction ID presence as indicator of success
+    if (callbackData.ac_transaction_id || callbackData.ac_transfer) {
+      return "completed";
+    }
+    
+    // Check for error indicators
+    if (callbackData.ac_error || callbackData.error) {
+      return "failed";
     }
 
-    try {
-      const response = await fetch(`${this.baseUrl}/balances/${currency}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        cache: "no-store",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || data?.status !== "success") {
-        throw new Error(
-          data?.message || data?.error || "Failed to get balance"
-        );
-      }
-
-      return {
-        success: true,
-        data: data.data,
-      };
-    } catch (error) {
-      console.error("Volet get balance error:", error);
-      throw error;
-    }
+    return "pending";
   }
 
   /**
    * Get payment status description
    */
-  getStatusDescription(status, statusCode) {
+  getStatusDescription(status) {
     const statusMap = {
-      new: "Payment created, waiting for payment",
-      pending: "Payment received, waiting for confirmations",
+      pending: "Payment pending - waiting for completion",
       completed: "Payment completed successfully",
       failed: "Payment failed",
-      cancelled: "Payment cancelled",
       expired: "Payment expired",
-    };
-
-    const codeMap = {
-      1: "New payment",
-      2: "Pending payment",
-      3: "Payment completed",
-      4: "Payment failed",
-      5: "Payment cancelled",
-      6: "Payment expired",
+      cancelled: "Payment cancelled",
     };
 
     return {
       status: statusMap[status] || `Unknown status: ${status}`,
-      code: codeMap[statusCode] || `Unknown code: ${statusCode}`,
       isCompleted: status === "completed",
       isPending: status === "pending",
-      isWaiting: status === "new",
-      isFailed: ["failed", "cancelled", "expired"].includes(status),
+      isFailed: ["failed", "expired", "cancelled"].includes(status),
     };
   }
 
@@ -275,41 +346,12 @@ class VoletService {
    * Format payment response with additional information
    */
   formatPaymentResponse(paymentData) {
-    const statusInfo = this.getStatusDescription(
-      paymentData.status,
-      paymentData.status_code
-    );
+    const statusInfo = this.getStatusDescription(paymentData.status);
 
     return {
       ...paymentData,
       statusInfo,
-      isExpired:
-        paymentData.expires_at && Date.now() / 1000 > paymentData.expires_at,
-      timeRemaining: paymentData.expires_at
-        ? Math.max(0, paymentData.expires_at - Date.now() / 1000)
-        : 0,
-      formattedAmount: {
-        crypto: `${paymentData.amount} ${paymentData.currency}`,
-        fiat: `${paymentData.source_amount} ${paymentData.source_currency}`,
-      },
-      paymentUrl: paymentData.payment_url || "",
-      qrCodeData: paymentData.qr_code_data || "",
-    };
-  }
-
-  /**
-   * Check if payment needs attention (expired, failed, etc.)
-   */
-  needsAttention(paymentData) {
-    const now = Date.now() / 1000;
-    return {
-      isExpired: paymentData.expires_at && now > paymentData.expires_at,
-      isExpiringSoon:
-        paymentData.expires_at && paymentData.expires_at - now < 300, // 5 minutes
-      hasFailed: ["failed", "cancelled"].includes(paymentData.status),
-      needsAction:
-        ["new", "pending"].includes(paymentData.status) &&
-        (!paymentData.expires_at || now < paymentData.expires_at),
+      formattedAmount: `${paymentData.amount} ${paymentData.currency}`,
     };
   }
 }

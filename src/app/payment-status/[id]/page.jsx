@@ -40,6 +40,11 @@ const PAYMENT_PROVIDERS = {
     statusEndpoint: (id) => `/api/payments/nowpayment/status/${id}`,
     logo: "/payment_logo/now_payments.png",
   },
+  nowpayment: {
+    name: "NOWPayments",
+    statusEndpoint: (id) => `/api/payments/nowpayment/status/${id}`,
+    logo: "/payment_logo/now_payments.png",
+  },
   hoodpay: {
     name: "HoodPay",
     statusEndpoint: (id) => `/api/payments/hoodpay/status/${id}`,
@@ -54,6 +59,11 @@ const PAYMENT_PROVIDERS = {
     name: "Volet",
     statusEndpoint: (id) => `/api/payments/volet/status/${id}`,
     logo: "/payment_logo/volet.png",
+  },
+  stripe: {
+    name: "Stripe",
+    statusEndpoint: (id) => `/api/payments/stripe/status/${id}`,
+    logo: "/payment_logo/stripe.png",
   },
 };
 
@@ -175,6 +185,7 @@ export default function PaymentStatusPage() {
 
   // Get provider from URL parameter or detect from transaction
   const providerParam = searchParams.get("provider")?.toLowerCase();
+  const urlStatus = searchParams.get("status")?.toLowerCase(); // Get status from URL
 
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -182,7 +193,6 @@ export default function PaymentStatusPage() {
   const [provider, setProvider] = useState(providerParam);
   const [copied, setCopied] = useState(false);
   const [countdown, setCountdown] = useState(5);
-  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   // Fetch payment status
   const fetchStatus = async () => {
@@ -206,23 +216,31 @@ export default function PaymentStatusPage() {
         return;
       }
 
+
       const res = await fetch(providerConfig.statusEndpoint(params.id));
       const data = await res.json();
+
 
       if (!res.ok) {
         throw new Error(data.error || "Failed to fetch status");
       }
 
+      // If URL says success, override the API status if it's still pending
+      if (urlStatus === 'success') {
+        // Override the status to completed if URL says success
+        if (data.status === 'pending' || data.status === 'waiting' || data.status === 'new') {
+          data.status = 'completed';
+          if (data.payment) {
+            data.payment.status = 'completed';
+            data.payment.internalStatus = 'completed';
+          }
+        }
+      }
+
       setStatus(data);
       setError(null);
-
-      // Check if should redirect
-      const statusConfig = STATUS_CONFIG[data.status];
-      if (statusConfig?.redirect) {
-        setShouldRedirect(true);
-      }
     } catch (error) {
-      console.error("Error fetching status:", error);
+      console.error("❌ Error fetching status:", error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -251,44 +269,109 @@ export default function PaymentStatusPage() {
     if (params.id) {
       fetchStatus();
 
-      // Poll every 30 seconds for processing states
+      // Poll every 10 seconds for processing states
       const interval = setInterval(() => {
         if (status) {
-          const statusConfig = STATUS_CONFIG[status.status];
+          const paymentStatus = status.status || status.payment?.status || status.payment?.internalStatus || 'pending';
+          const statusConfig = STATUS_CONFIG[paymentStatus];
           if (statusConfig?.polling) {
             fetchStatus();
           }
         }
-      }, 30000);
+      }, 10000); // Poll every 10 seconds
 
       return () => clearInterval(interval);
     }
   }, [params.id, provider]);
 
-  // Countdown and redirect logic
+  // Auto-redirect logic for ALL payment providers
   useEffect(() => {
-    if (shouldRedirect && countdown > 0) {
-      const timer = setInterval(() => {
-        setCountdown((prev) => prev - 1);
+    if (!status) return;
+
+    const finalStatus = status.status || status.payment?.status || status.payment?.internalStatus || "pending";
+    const paymentType = searchParams.get("type") || status.type || "subscription";
+
+    console.log("🔍 Payment status check:", { finalStatus, paymentType, provider });
+
+    // Auto-redirect on success
+    if (finalStatus === "completed" || finalStatus === "finished" || finalStatus === "paid") {
+      console.log("✅ Payment successful! Starting redirect countdown...");
+      
+      const interval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            // Redirect based on payment type
+            if (paymentType === "deposit") {
+              console.log("🔄 Redirecting to wallet...");
+              window.location.href = "/dashboard/wallet";
+            } else {
+              console.log("🔄 Redirecting to orders...");
+              window.location.href = "/dashboard/orders";
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
-      return () => clearInterval(timer);
+
+      return () => clearInterval(interval);
     }
 
-    if (shouldRedirect && countdown === 0) {
-      const statusConfig = STATUS_CONFIG[status?.status];
-      if (statusConfig?.redirectPath) {
-        const params = new URLSearchParams({
-          orderNumber: status.orderId || "",
-          amount: status.amount || "",
-          method: PAYMENT_PROVIDERS[provider]?.name || "",
-          ...(status.status.includes("fail") || status.status === "expired"
-            ? { error: statusConfig.description }
-            : {}),
+    // Auto-redirect on failure/cancellation
+    if (finalStatus === "failed" || finalStatus === "cancelled" || finalStatus === "expired") {
+      console.log(`❌ Payment ${finalStatus}! Starting redirect countdown...`);
+      
+      const interval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            console.log("🔄 Redirecting to packages...");
+            window.location.href = "/packages";
+            return 0;
+          }
+          return prev - 1;
         });
-        router.push(`${statusConfig.redirectPath}?${params.toString()}`);
-      }
+      }, 1000);
+
+      return () => clearInterval(interval);
     }
-  }, [shouldRedirect, countdown, status, provider]);
+  }, [status, searchParams, provider]);
+
+  // Helper function to get display amount
+  const getDisplayAmount = (status) => {
+    if (!status) return "Calculating...";
+    
+    // Try different property paths
+    const amount = status.amount || 
+                   status.payment?.priceAmount || 
+                   status.payment?.amount ||
+                   status.priceAmount;
+    
+    const currency = (status.currency || 
+                     status.payment?.priceCurrency || 
+                     status.payment?.currency ||
+                     status.priceCurrency || 
+                     "USD").toUpperCase();
+    
+    if (!amount || amount === 0) {
+      return "Processing...";
+    }
+    
+    return `${Number(amount).toFixed(2)} ${currency}`;
+  };
+
+  // Helper function to get display status
+  const getDisplayStatus = (status) => {
+    if (!status) return "pending";
+    
+    // Try different property paths
+    return status.status || 
+           status.payment?.internalStatus || 
+           status.payment?.paymentStatus || 
+           status.paymentStatus ||
+           "pending";
+  };
 
   // Copy to clipboard
   const copyToClipboard = (text) => {
@@ -337,7 +420,8 @@ export default function PaymentStatusPage() {
   }
 
   // Get status configuration
-  const statusConfig = STATUS_CONFIG[status?.status] || STATUS_CONFIG.pending;
+  const currentStatus = getDisplayStatus(status);
+  const statusConfig = STATUS_CONFIG[currentStatus] || STATUS_CONFIG.pending;
   const StatusIcon = statusConfig.icon;
   const providerConfig = PAYMENT_PROVIDERS[provider];
 
@@ -409,13 +493,13 @@ export default function PaymentStatusPage() {
                 <InfoItem label="Transaction ID" value={params.id} copyable />
                 <InfoItem
                   label="Status"
-                  value={status.status}
+                  value={currentStatus}
                   badge
                   statusConfig={statusConfig}
                 />
                 <InfoItem
                   label="Amount"
-                  value={`${status.amount} ${status.currency}`}
+                  value={getDisplayAmount(status)}
                 />
                 {status.orderId && (
                   <InfoItem label="Order ID" value={status.orderId} />
@@ -426,33 +510,97 @@ export default function PaymentStatusPage() {
             {/* Provider-specific payment information */}
             {renderPaymentInfo(status, provider, copyToClipboard, copied)}
 
-            {/* Redirect countdown */}
-            {shouldRedirect && (
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-6 text-center">
-                <p className="text-blue-400">
-                  Redirecting in{" "}
-                  <span className="font-bold text-white">{countdown}</span>{" "}
-                  seconds...
+            {/* Redirect countdown for ALL providers */}
+            {(currentStatus === "completed" || 
+              currentStatus === "finished" || 
+              currentStatus === "paid" ||
+              currentStatus === "failed" ||
+              currentStatus === "cancelled" ||
+              currentStatus === "expired") && (
+              <div className={`${
+                currentStatus === "completed" || currentStatus === "finished" || currentStatus === "paid"
+                  ? "bg-green-500/10 border-green-500/20"
+                  : "bg-red-500/10 border-red-500/20"
+              } border rounded-xl p-4 mb-6 text-center`}>
+                <p className={`${
+                  currentStatus === "completed" || currentStatus === "finished" || currentStatus === "paid"
+                    ? "text-green-400"
+                    : "text-red-400"
+                }`}>
+                  {currentStatus === "completed" || currentStatus === "finished" || currentStatus === "paid" ? (
+                    <>
+                      ✅ Payment successful! Redirecting to{" "}
+                      {searchParams.get("type") === "deposit" ? "wallet" : "orders"} in{" "}
+                      <span className="font-bold text-white">{countdown}</span> second{countdown !== 1 ? "s" : ""}...
+                    </>
+                  ) : (
+                    <>
+                      ❌ Payment {currentStatus}! Redirecting to packages in{" "}
+                      <span className="font-bold text-white">{countdown}</span> second{countdown !== 1 ? "s" : ""}...
+                    </>
+                  )}
                 </p>
               </div>
             )}
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                onClick={fetchStatus}
-                className="flex-1 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 flex items-center justify-center gap-2"
-              >
-                <RefreshCw className="w-5 h-5" />
-                Refresh Status
-              </Button>
-              <Link
-                href="/dashboard"
-                className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-gray-700"
-              >
-                <Home className="w-5 h-5" />
-                Go to Dashboard
-              </Link>
+              {/* Show different buttons based on status */}
+              {currentStatus === "completed" || currentStatus === "finished" || currentStatus === "paid" ? (
+                <>
+                  <Button
+                    onClick={() => {
+                      const type = searchParams.get("type") || status.type || "subscription";
+                      window.location.href = type === "deposit" ? "/dashboard/wallet" : "/dashboard/orders";
+                    }}
+                    className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 flex items-center justify-center gap-2"
+                  >
+                    <Wallet className="w-5 h-5" />
+                    Go to {searchParams.get("type") === "deposit" ? "Wallet" : "Orders"}
+                  </Button>
+                  <Button
+                    onClick={() => window.location.href = "/"}
+                    className="flex-1 bg-gray-800 hover:bg-gray-700 flex items-center justify-center gap-2"
+                  >
+                    <Home className="w-5 h-5" />
+                    Back to Home
+                  </Button>
+                </>
+              ) : currentStatus === "failed" || currentStatus === "cancelled" || currentStatus === "expired" ? (
+                <>
+                  <Button
+                    onClick={() => window.location.href = "/packages"}
+                    className="flex-1 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 flex items-center justify-center gap-2"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    Try Again
+                  </Button>
+                  <Button
+                    onClick={() => window.location.href = "/"}
+                    className="flex-1 bg-gray-800 hover:bg-gray-700 flex items-center justify-center gap-2"
+                  >
+                    <Home className="w-5 h-5" />
+                    Back to Home
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    onClick={fetchStatus}
+                    className="flex-1 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 flex items-center justify-center gap-2"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    Refresh Status
+                  </Button>
+                  <Link
+                    href="/dashboard"
+                    className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-gray-700"
+                  >
+                    <Home className="w-5 h-5" />
+                    Go to Dashboard
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

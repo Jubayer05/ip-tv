@@ -234,17 +234,25 @@ const OrderHistory = () => {
   };
 
   const buildM3uUrl = (credential) => {
-    if (credential.lineInfo) {
-      const lines = credential.lineInfo.split("\n");
-      const m3uLine = lines.find((line) => line.includes("m3u_plus"));
-      if (m3uLine) return m3uLine;
+    if (!credential?.lineInfo) return "";
+
+    let info = null;
+    try {
+      info =
+        typeof credential.lineInfo === "string"
+          ? JSON.parse(credential.lineInfo)
+          : credential.lineInfo;
+    } catch {
+      return "";
     }
 
-    if (credential.username && credential.password) {
-      return `http://hfast.xyz/get.php?username=${credential.username}&password=${credential.password}&type=m3u_plus&output=ts`;
-    }
+    if (!info || typeof info !== "object") return "";
 
-    return "";
+    // M3U (0) → dns_link; MAG/Enigma2 (1/2) → portal_link (fallback to dns_link)
+    if (credential.lineType === 0) {
+      return info.dns_link || "";
+    }
+    return info.portal_link || info.dns_link || "";
   };
 
   const getLineTypeName = (lineType) => {

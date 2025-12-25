@@ -1,3 +1,5 @@
+import { connectToDatabase } from "@/lib/db";
+import Settings from "@/models/Settings";
 import FAQ from "@/components/features/Home/FaqHome";
 import ContactBanner from "@/components/features/Support/Contact/ContactBanner";
 import ContactForm from "@/components/features/Support/Contact/ContactForm";
@@ -5,23 +7,19 @@ import ContactInfo from "@/components/features/Support/Contact/ContactInfo";
 
 export async function generateMetadata() {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/admin/settings`,
-      {
-        cache: "no-store",
-      }
-    );
-    const data = await response.json();
+    // Direct DB access instead of HTTP fetch (avoids Docker networking issues)
+    await connectToDatabase();
+    const settings = await Settings.getSettings();
 
-    if (data.success && data.data.metaManagement?.contact) {
-      const meta = data.data.metaManagement.contact;
+    if (settings?.metaManagement?.contact) {
+      const meta = settings.metaManagement.contact;
       return {
         title: meta.title,
         description: meta.description,
         keywords: meta.keywords,
         openGraph: {
-          title: meta.openGraph.title,
-          description: meta.openGraph.description,
+          title: meta.openGraph?.title || meta.title,
+          description: meta.openGraph?.description || meta.description,
         },
       };
     }
@@ -31,15 +29,15 @@ export async function generateMetadata() {
 
   // Fallback metadata
   return {
-    title: "Contact Us - Cheap Stream | Get Support & Help",
+    title: "Need Help? Get in Touch - Cheap Stream Support",
     description:
-      "Contact Cheap Stream's support team for help with IPTV services, technical support, billing questions, and general inquiries. We're here to help 24/7.",
+      "Have a question or running into issues? Our support team is here around the clock. Drop us a message and we'll get back to you fast—usually within a few hours.",
     keywords:
-      "contact Cheap Stream, IPTV support, customer service, technical support, help desk, Cheap Stream contact, streaming support",
+      "contact support, get help, customer service, reach us, support team",
     openGraph: {
-      title: "Contact Us - Cheap Stream | Get Support & Help",
+      title: "Need Help? Get in Touch - Cheap Stream Support",
       description:
-        "Contact Cheap Stream's support team for help with IPTV services, technical support, billing questions, and general inquiries. We're here to help 24/7.",
+        "Have a question or running into issues? Our support team is here around the clock. Drop us a message and we'll get back to you fast—usually within a few hours.",
     },
   };
 }

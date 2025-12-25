@@ -18,6 +18,25 @@ const WalletDepositSchema = new mongoose.Schema(
       required: true,
       min: 0.01,
     },
+    // NEW: Track original amount before fees
+    originalAmount: {
+      type: Number,
+      default: function () {
+        return this.amount;
+      },
+    },
+    // NEW: Final amount including service fees
+    finalAmount: {
+      type: Number,
+      default: function () {
+        return this.amount;
+      },
+    },
+    // NEW: Service fee amount
+    serviceFee: {
+      type: Number,
+      default: 0,
+    },
     currency: {
       type: String,
       default: "USD",
@@ -65,9 +84,13 @@ const WalletDepositSchema = new mongoose.Schema(
       priceCurrency: { type: String, default: "USD" },
       payAmount: { type: Number, default: 0 },
       payCurrency: { type: String, default: "" },
+      actuallyPaid: { type: Number, default: 0 }, // NEW: Track actual amount paid
       paymentUrl: { type: String, default: "" },
+      customerEmail: { type: String, default: "" }, // NEW: Track customer email
+      orderDescription: { type: String, default: "" }, // NEW: Track description
       callbackReceived: { type: Boolean, default: false },
       lastStatusUpdate: { type: Date, default: Date.now },
+      metadata: { type: Object, default: {} }, // NEW: Store custom metadata
     },
 
     plisioPayment: {
@@ -121,6 +144,7 @@ const WalletDepositSchema = new mongoose.Schema(
       description: { type: String, default: "" },
       paymentUrl: { type: String },
       provider: { type: String, default: "moonpay" },
+      providerType: { type: String, enum: ["crypto", "card"], default: "card" }, // NEW: Track provider type
       walletData: {
         address_in: { type: String },
         polygon_address_in: { type: String },
@@ -133,9 +157,46 @@ const WalletDepositSchema = new mongoose.Schema(
         txid_in: { type: String },
         txid_out: { type: String },
         address_in: { type: String },
+        confirmedAt: { type: Date }, // NEW: Track when payment was confirmed
+      },
+      // NEW: Crypto-specific details for direct crypto payments
+      cryptoDetails: {
+        network: { type: String }, // e.g., 'tron', 'ethereum', 'polygon', 'bitcoin'
+        coin: { type: String }, // e.g., 'USDT', 'BTC', 'ETH', 'USDC'
+        walletAddress: { type: String }, // Display address for user
+        polygonAddress: { type: String }, // Polygon-specific address
+        expiresAt: { type: Date }, // Payment expiration time
+        instructions: {
+          amount: { type: Number }, // Exact amount to send
+          currency: { type: String }, // Currency to send (USDT, BTC, etc.)
+          network: { type: String }, // Network name for display
+          message: { type: String }, // Instruction message for user
+        },
       },
       callbackReceived: { type: Boolean, default: false },
       lastStatusUpdate: { type: Date, default: Date.now },
+      metadata: { type: Object, default: {} },
+    },
+
+    // Volet SCI Payment
+    voletPayment: {
+      paymentId: { type: String, index: true }, // ac_order_id
+      orderId: { type: String, index: true }, // Internal order ID
+      status: { type: String, default: "pending" }, // pending, completed, failed, expired
+      priceAmount: { type: Number, default: 0 }, // Amount in fiat (USD)
+      priceCurrency: { type: String, default: "USD" },
+      paymentUrl: { type: String, default: "" }, // SCI checkout URL
+      customerEmail: { type: String, default: "" },
+      orderDescription: { type: String, default: "" },
+      // Volet SCI specific fields
+      sciName: { type: String, default: "" }, // ac_sci_name
+      accountEmail: { type: String, default: "" }, // ac_account_email (merchant)
+      transactionId: { type: String, default: "" }, // Volet transaction ID from webhook
+      // Status tracking
+      callbackReceived: { type: Boolean, default: false },
+      lastStatusUpdate: { type: Date, default: Date.now },
+      completedAt: { type: Date },
+      // Metadata for additional info
       metadata: { type: Object, default: {} },
     },
   },
@@ -154,11 +215,6 @@ WalletDepositSchema.pre("save", function (next) {
   }
   next();
 });
-
-// Force recompilation to ensure new fields are recognized
-if (mongoose.models.WalletDeposit) {
-  delete mongoose.models.WalletDeposit;
-}
 
 const WalletDeposit = mongoose.model("WalletDeposit", WalletDepositSchema);
 export default WalletDeposit;

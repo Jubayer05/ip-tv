@@ -299,7 +299,7 @@ export default function ManageLogo() {
           Important Notes:
         </h4>
         <ul className="text-xs text-gray-400 space-y-1 list-disc list-inside">
-          <li>Logos are stored on the VPS in /var/www/uploads/logos/</li>
+          <li>Logos are stored on the VPS</li>
           <li>Supported formats: JPEG, PNG, WebP, ICO</li>
           <li>Maximum file size: 5MB</li>
           <li>Changes will reflect across the entire website</li>

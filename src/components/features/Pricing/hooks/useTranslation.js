@@ -300,6 +300,9 @@ export const useTranslation = (
           ORIGINAL_TEXTS.controls.devices.recommended,
           ORIGINAL_TEXTS.controls.devices.device,
           ORIGINAL_TEXTS.controls.devices.devices,
+          ORIGINAL_TEXTS.controls.accountBox.title,
+          ORIGINAL_TEXTS.controls.accountConfiguration.title,
+          ORIGINAL_TEXTS.controls.deviceType.title,
           ORIGINAL_TEXTS.controls.adultChannels.title,
           ORIGINAL_TEXTS.controls.adultChannels.on,
           ORIGINAL_TEXTS.controls.adultChannels.off,
@@ -352,6 +355,15 @@ export const useTranslation = (
               recommended: translated[currentIndex++],
               device: translated[currentIndex++],
               devices: translated[currentIndex++],
+            },
+            accountBox: {
+              title: translated[currentIndex++],
+            },
+            accountConfiguration: {
+              title: translated[currentIndex++],
+            },
+            deviceType: {
+              title: translated[currentIndex++],
             },
             adultChannels: {
               title: translated[currentIndex++],

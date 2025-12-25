@@ -1,25 +1,22 @@
-import ExploreChannelBanner from "@/components/features/ExploreChannel/ExploreChannelBanner";
-import TrendingContentSlider from "@/components/features/ExploreChannel/TrendingContentSlider";
+import { connectToDatabase } from "@/lib/db";
+import Settings from "@/models/Settings";
+import ExploreClient from "./ExploreClient";
 
 export async function generateMetadata() {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/admin/settings`,
-      {
-        cache: "no-store",
-      }
-    );
-    const data = await response.json();
+    // Direct DB access instead of HTTP fetch (avoids Docker networking issues)
+    await connectToDatabase();
+    const settings = await Settings.getSettings();
 
-    if (data.success && data.data.metaManagement?.explore) {
-      const meta = data.data.metaManagement.explore;
+    if (settings?.metaManagement?.explore) {
+      const meta = settings.metaManagement.explore;
       return {
         title: meta.title,
         description: meta.description,
         keywords: meta.keywords,
         openGraph: {
-          title: meta.openGraph.title,
-          description: meta.openGraph.description,
+          title: meta.openGraph?.title || meta.title,
+          description: meta.openGraph?.description || meta.description,
         },
       };
     }
@@ -43,10 +40,5 @@ export async function generateMetadata() {
 }
 
 export default function ExploreChannels() {
-  return (
-    <div className="font-secondary">
-      <ExploreChannelBanner />
-      <TrendingContentSlider />
-    </div>
-  );
+  return <ExploreClient />;
 }

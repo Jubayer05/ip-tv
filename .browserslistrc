@@ -1,0 +1,17 @@
+# Modern browsers only - ES2020+ features are natively supported
+# This completely eliminates polyfills for Array.at, flat, flatMap, Object.fromEntries, etc.
+
+# Target only browsers that support ES2020+ natively
+# These browsers support: Array.at, flat, flatMap, Object.fromEntries, Object.hasOwn, String.trimStart/End
+Chrome >= 92
+Firefox >= 90
+Safari >= 15.4
+Edge >= 92
+iOS >= 15.4
+Samsung >= 16
+Opera >= 78
+
+# Exclude legacy browsers explicitly
+not IE 11
+not op_mini all
+not dead

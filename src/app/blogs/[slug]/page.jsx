@@ -1,239 +1,80 @@
-"use client";
-import { ArrowLeft, Calendar } from "lucide-react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { connectToDatabase } from "@/lib/db";
+import Blog from "@/models/Blog";
+import BlogDetailClient from "./BlogDetailClient";
 
-const BlogDetailPage = () => {
-  const { slug } = useParams();
-  const { language, translate, isLanguageLoaded } = useLanguage();
-  const [blog, setBlog] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+export async function generateMetadata({ params }) {
+  const { slug } = await params;
 
-  // Original static texts
-  const ORIGINAL_TEXTS = {
-    blogNotFound: "Blog Not Found",
-    blogNotFoundMessage: "The blog you're looking for doesn't exist.",
-    backToBlogs: "Back to Blogs",
-    by: "By"
-  };
+  try {
+    await connectToDatabase();
+    const blog = await Blog.findOne({ slug, isActive: true }).lean();
 
-  const [texts, setTexts] = useState(ORIGINAL_TEXTS);
-  const [translatedBlog, setTranslatedBlog] = useState(null);
+    if (blog) {
+      const excerpt =
+        blog.details?.replace(/<[^>]*>/g, "").substring(0, 155) + "...";
 
-  useEffect(() => {
-    fetchBlog();
-  }, [slug]);
-
-  // Translate static texts
-  useEffect(() => {
-    if (!isLanguageLoaded || language?.code === "en") {
-      setTexts(ORIGINAL_TEXTS);
-      return;
+      return {
+        title: `${blog.title} - Cheap Stream Blog`,
+        description: excerpt,
+        keywords: blog.tags?.join(", ") || "IPTV, streaming, entertainment",
+        openGraph: {
+          title: blog.title,
+          description: excerpt,
+          type: "article",
+          publishedTime: blog.publishedAt || blog.createdAt,
+          authors: [blog.authorName || "Cheap Stream Team"],
+          images: blog.image
+            ? [
+                {
+                  url: blog.image,
+                  width: 1200,
+                  height: 630,
+                  alt: blog.title,
+                },
+              ]
+            : undefined,
+        },
+        twitter: {
+          card: "summary_large_image",
+          title: blog.title,
+          description: excerpt,
+          images: blog.image ? [blog.image] : undefined,
+        },
+        alternates: {
+          canonical: `${process.env.NEXT_PUBLIC_APP_URL}/blogs/${slug}`,
+        },
+      };
     }
-
-    let isMounted = true;
-    (async () => {
-      try {
-        const items = [
-          ORIGINAL_TEXTS.blogNotFound,
-          ORIGINAL_TEXTS.blogNotFoundMessage,
-          ORIGINAL_TEXTS.backToBlogs,
-          ORIGINAL_TEXTS.by
-        ];
-        const translated = await translate(items);
-        if (!isMounted) return;
-
-        const [tBlogNotFound, tBlogNotFoundMessage, tBackToBlogs, tBy] = translated;
-        setTexts({
-          blogNotFound: tBlogNotFound,
-          blogNotFoundMessage: tBlogNotFoundMessage,
-          backToBlogs: tBackToBlogs,
-          by: tBy
-        });
-      } catch (error) {
-        console.error("Translation error:", error);
-        setTexts(ORIGINAL_TEXTS);
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [language?.code, translate, isLanguageLoaded]);
-
-  // Translate blog content
-  useEffect(() => {
-    if (!blog || !isLanguageLoaded || language?.code === "en") {
-      setTranslatedBlog(blog);
-      return;
-    }
-
-    let isMounted = true;
-    (async () => {
-      try {
-        // Collect all translatable content from blog
-        const textsToTranslate = [
-          blog.title,
-          blog.details,
-          ...(blog.tags || [])
-        ];
-
-        const translated = await translate(textsToTranslate);
-        if (!isMounted) return;
-
-        const [tTitle, tDetails, ...tTags] = translated;
-
-        setTranslatedBlog({
-          ...blog,
-          title: tTitle,
-          details: tDetails,
-          tags: blog.tags ? tTags : undefined
-        });
-      } catch (error) {
-        console.error("Translation error:", error);
-        setTranslatedBlog(blog);
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [blog, language?.code, translate, isLanguageLoaded]);
-
-  const fetchBlog = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/blogs/slug/${slug}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setBlog(data.data);
-      } else {
-        setError(data.error || "Blog not found");
-      }
-    } catch (error) {
-      console.error("Error fetching blog:", error);
-      setError("Failed to load blog");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black text-white p-4 sm:p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-800 rounded w-1/4 mb-6"></div>
-            <div className="h-64 bg-gray-800 rounded mb-6"></div>
-            <div className="h-6 bg-gray-800 rounded w-3/4 mb-4"></div>
-            <div className="h-4 bg-gray-800 rounded w-full mb-2"></div>
-            <div className="h-4 bg-gray-800 rounded w-2/3"></div>
-          </div>
-        </div>
-      </div>
-    );
+  } catch (error) {
+    console.error("Error generating blog metadata:", error);
   }
 
-  if (error || !blog) {
-    return (
-      <div className="min-h-screen bg-black text-white p-4 sm:p-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-2xl font-bold mb-4">{texts.blogNotFound}</h1>
-          <p className="text-gray-400 mb-6">
-            {error || texts.blogNotFoundMessage}
-          </p>
-          <Link
-            href="/blogs"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {texts.backToBlogs}
-          </Link>
-        </div>
-      </div>
-    );
+  return {
+    title: "Blog Post - Cheap Stream",
+    description: "Read the latest news and updates from Cheap Stream TV.",
+  };
+}
+
+export default async function BlogDetailPage({ params }) {
+  const { slug } = await params;
+
+  // Fetch initial blog data for SSR
+  let initialBlog = null;
+  try {
+    await connectToDatabase();
+    const blog = await Blog.findOne({ slug, isActive: true }).lean();
+    if (blog) {
+      initialBlog = {
+        ...blog,
+        _id: blog._id.toString(),
+        createdAt: blog.createdAt?.toISOString(),
+        updatedAt: blog.updatedAt?.toISOString(),
+        publishedAt: blog.publishedAt?.toISOString(),
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching blog:", error);
   }
 
-  const displayBlog = translatedBlog || blog;
-
-  return (
-    <div className="min-h-screen bg-black text-white p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Back Button */}
-        <Link
-          href="/blogs"
-          className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 mb-6 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {texts.backToBlogs}
-        </Link>
-
-        {/* Blog Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
-            {displayBlog.title}
-          </h1>
-
-          <div className="flex items-center gap-4 text-gray-400 mb-6">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              <span>
-                {new Date(
-                  displayBlog.publishedAt || displayBlog.createdAt
-                ).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
-            <span>{texts.by} {displayBlog.authorName}</span>
-          </div>
-
-          {/* Tags */}
-          {displayBlog.tags && displayBlog.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-6">
-              {displayBlog.tags.map((tag, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 bg-cyan-500/20 text-cyan-400 text-sm rounded-full border border-cyan-500/30"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Featured Image */}
-        {displayBlog.image && (
-          <div className="mb-8">
-            <img
-              src={displayBlog.image}
-              alt={displayBlog.title}
-              className="w-full h-64 sm:h-96 object-cover rounded-lg"
-              onError={(e) => {
-                e.target.src =
-                  "https://via.placeholder.com/800x400?text=No+Image";
-              }}
-            />
-          </div>
-        )}
-
-        {/* Blog Content */}
-        <div className="prose prose-invert max-w-none">
-          <div
-            className="text-gray-300 leading-relaxed text-base sm:text-lg"
-            dangerouslySetInnerHTML={{ __html: displayBlog.details }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default BlogDetailPage;
+  return <BlogDetailClient slug={slug} initialBlog={initialBlog} />;
+}

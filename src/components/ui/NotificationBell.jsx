@@ -23,19 +23,16 @@ const NotificationBell = () => {
     }
   }, [user]);
 
-  // Prepare HTMLAudio using public file
-  useEffect(() => {
+  // Lazy-load audio only when needed (not on initial page load)
+  const loadAudio = () => {
     if (typeof window === "undefined") return;
     if (!audioRef.current) {
       const a = new window.Audio("/sound/notificaiton.wav");
-      a.preload = "auto";
+      a.preload = "none"; // Changed from "auto" to "none" for lazy loading
       a.volume = 0.85;
       audioRef.current = a;
-      try {
-        a.load();
-      } catch {}
     }
-  }, []);
+  };
 
   // Prepare AudioContext early to allow WebAudio fallback
   useEffect(() => {
@@ -69,6 +66,9 @@ const NotificationBell = () => {
 
   const playBeep = () => {
     try {
+      // Load audio on-demand (only when notification arrives)
+      loadAudio();
+
       if (audioRef.current) {
         audioRef.current.currentTime = 0;
         audioRef.current

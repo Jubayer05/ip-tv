@@ -4,8 +4,30 @@ import Order from "@/models/Order";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
 
+// Rate limiting for bulk emails (in-memory, resets on server restart)
+let lastBulkEmailTime = 0;
+const BULK_EMAIL_COOLDOWN = 3600000; // 1 hour between bulk emails (in milliseconds)
+const MAX_RECIPIENTS_PER_BULK = 50; // Maximum recipients per bulk email
+
 export async function POST(request) {
   try {
+    // Rate limiting check
+    const now = Date.now();
+    const timeSinceLastEmail = now - lastBulkEmailTime;
+
+    if (timeSinceLastEmail < BULK_EMAIL_COOLDOWN) {
+      const remainingMinutes = Math.ceil(
+        (BULK_EMAIL_COOLDOWN - timeSinceLastEmail) / 60000
+      );
+      return NextResponse.json(
+        {
+          error: `Bulk email cooldown active. Please wait ${remainingMinutes} minute(s) before sending another bulk email.`,
+          cooldownRemaining: remainingMinutes,
+        },
+        { status: 429 }
+      );
+    }
+
     const { subject, message, targetUsers, customFilters } =
       await request.json();
 
@@ -116,8 +138,32 @@ export async function POST(request) {
       );
     }
 
-    // Extract emails
-    const emails = filteredUsers.map((user) => user.email);
+    // Extract emails and validate count
+    const emails = filteredUsers
+      .map((user) => user.email)
+      .filter((email) => email && email.trim().length > 0);
+
+    if (emails.length === 0) {
+      return NextResponse.json(
+        { error: "No valid email addresses found" },
+        { status: 400 }
+      );
+    }
+
+    // Check recipient limit
+    if (emails.length > MAX_RECIPIENTS_PER_BULK) {
+      return NextResponse.json(
+        {
+          error: `Too many recipients (${emails.length}). Maximum allowed is ${MAX_RECIPIENTS_PER_BULK} recipients per bulk email. Please filter your selection.`,
+          recipientCount: emails.length,
+          maxAllowed: MAX_RECIPIENTS_PER_BULK,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Update last bulk email time before sending
+    lastBulkEmailTime = now;
 
     // Send bulk email
     const emailSent = await sendBulkNotificationEmail(emails, subject, message);

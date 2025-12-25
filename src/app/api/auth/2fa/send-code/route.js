@@ -16,13 +16,30 @@ export async function POST(request) {
       );
     }
 
-    // Find user
-    const user = await User.findOne({ email });
+    // Find user or create if not exists (for admin-created or social login users)
+    let user = await User.findOne({ email });
     if (!user) {
-      return NextResponse.json(
-        { success: false, error: "User not found" },
-        { status: 404 }
-      );
+      // Create user in MongoDB for users that exist in Firebase but not MongoDB
+      // This can happen with admin-created users or social login
+      try {
+        user = await User.create({
+          email,
+          profile: {
+            firstName: email.split("@")[0],
+            lastName: "",
+            username: email.split("@")[0],
+          },
+          role: "user",
+          isActive: true,
+          emailVerified: true,
+        });
+      } catch (createError) {
+        console.error("Failed to create user for 2FA:", createError);
+        return NextResponse.json(
+          { success: false, error: "User account setup failed. Please contact support." },
+          { status: 500 }
+        );
+      }
     }
 
     // Generate 6-digit code

@@ -1,7 +1,9 @@
 import { connectToDatabase } from "@/lib/db";
-import { applyPaymentUpdate } from "@/lib/payments/paymentUpdater";
-import nowpaymentsService from "@/lib/paymentServices/nowpaymentsService";
+import nowpaymentsService from "@/lib/paymentServices/nowpaymentsServiceV2";
+import CryptoPayment from "@/models/CryptoPayment";
 import Order from "@/models/Order";
+import PaymentSettings from "@/models/PaymentSettings";
+import WalletDeposit from "@/models/WalletDeposit";
 import { NextResponse } from "next/server";
 
 export async function GET(_request, { params }) {
@@ -14,72 +16,204 @@ export async function GET(_request, { params }) {
       );
     }
 
+    console.log(`🔍 Checking payment status for ID: ${id}`);
+
     await connectToDatabase();
 
-    // First, try to get the order from our database
-    const order = await Order.findOne({
-      $or: [
-        { "nowpaymentsPayment.paymentId": id },
-        { "nowpaymentsPayment.orderId": id },
-        { orderNumber: id },
-      ],
+    // Get payment settings
+    const paymentSettings = await PaymentSettings.findOne({
+      gateway: "nowpayment",
+      isActive: true,
     });
 
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    if (!paymentSettings || !paymentSettings.apiKey) {
+      return NextResponse.json(
+        { error: "NOWPayments not configured" },
+        { status: 500 }
+      );
     }
 
-    // Try to get payment status from NOWPayments API
-    let payment;
-    let statusInfo = { isCompleted: false, isPending: true, isFailed: false };
+    // 🔥 Initialize V2 service
+    await nowpaymentsService.initialize(paymentSettings);
 
-    try {
-      const result = await nowpaymentsService.getPayment(id);
-      payment = result.data;
+    // 🔥 Try to find CryptoPayment record first
+    const cryptoPayment = await CryptoPayment.findById(id);
 
-      // Update order with latest status from NOWPayments
-      await applyPaymentUpdate({
-        order,
-        gatewayKey: "nowpaymentsPayment",
-        rawStatus: payment.payment_status,
-        gatewayFields: {
-          status: payment.payment_status,
-          payAmount: payment.pay_amount || 0,
-          payCurrency: payment.pay_currency || "",
-        },
+    if (cryptoPayment) {
+      console.log(`📝 Found CryptoPayment record:`, {
+        id: cryptoPayment._id,
+        invoiceId: cryptoPayment.invoiceId,
+        paymentId: cryptoPayment.paymentId,
+        status: cryptoPayment.paymentStatus,
+        internalStatus: cryptoPayment.internalStatus,
       });
 
-      statusInfo = nowpaymentsService.getStatusDescription(
-        payment.payment_status
-      );
-    } catch (apiError) {
-      console.warn(
-        "NOWPayments API error, using stored order status:",
-        apiError.message
-      );
+      // If we have a payment_id, fetch live status from NOWPayments
+      let liveStatus = null;
+      if (cryptoPayment.paymentId) {
+        try {
+          const result = await nowpaymentsService.getPaymentStatus(
+            cryptoPayment.paymentId
+          );
 
-      // If NOWPayments API fails, use the stored status from our database
-      const storedStatus = order.nowpaymentsPayment?.status || "waiting";
-      statusInfo = nowpaymentsService.getStatusDescription(storedStatus);
+          if (result.success) {
+            liveStatus = result.data;
+            
+            // Update local record if status changed
+            if (liveStatus.payment_status !== cryptoPayment.paymentStatus) {
+              cryptoPayment.paymentStatus = liveStatus.payment_status;
+              cryptoPayment.internalStatus = nowpaymentsService.mapToInternalStatus(
+                liveStatus.payment_status
+              );
+              cryptoPayment.actuallyPaid = liveStatus.actually_paid || cryptoPayment.actuallyPaid;
+              cryptoPayment.updatedAt = new Date();
+              await cryptoPayment.save();
+            }
+          }
+        } catch (apiError) {
+          console.warn("⚠️ Could not fetch live status:", apiError.message);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        payment: {
+          id: cryptoPayment._id,
+          invoiceId: cryptoPayment.invoiceId,
+          paymentId: cryptoPayment.paymentId,
+          orderId: cryptoPayment.orderId,
+          status: cryptoPayment.paymentStatus,
+          internalStatus: cryptoPayment.internalStatus,
+          priceAmount: cryptoPayment.priceAmount,
+          priceCurrency: cryptoPayment.priceCurrency,
+          payCurrency: cryptoPayment.payCurrency,
+          payAmount: cryptoPayment.payAmount,
+          actuallyPaid: cryptoPayment.actuallyPaid,
+          payAddress: cryptoPayment.payAddress,
+          invoiceUrl: cryptoPayment.invoiceUrl,
+          createdAt: cryptoPayment.createdAt,
+          updatedAt: cryptoPayment.updatedAt,
+          paidAt: cryptoPayment.paidAt,
+        },
+        liveStatus: liveStatus,
+      });
     }
 
-    return NextResponse.json({
-      success: true,
-      paymentId: id,
-      status: order.nowpaymentsPayment?.status || "waiting",
-      isCompleted: statusInfo.isCompleted,
-      isPending: statusInfo.isPending,
-      isFailed: statusInfo.isFailed,
-      amount: order.nowpaymentsPayment?.priceAmount || order.totalAmount,
-      currency: order.nowpaymentsPayment?.priceCurrency || "USD",
-      orderUpdated: true,
-      orderId: order._id,
-      orderNumber: order.orderNumber,
-    });
-  } catch (error) {
-    console.error("NOWPayments status error:", error);
+    // 🔥 Fallback: Check if it's an order ID
+    const order = await Order.findById(id);
+    if (order?.nowpaymentsPayment) {
+      console.log(`📋 Found order with NOWPayments data:`, {
+        orderId: order._id,
+        invoiceId: order.nowpaymentsPayment.invoiceId,
+        paymentId: order.nowpaymentsPayment.paymentId,
+        status: order.nowpaymentsPayment.paymentStatus,
+      });
+
+      // Fetch live status if we have payment_id
+      let liveStatus = null;
+      if (order.nowpaymentsPayment.paymentId) {
+        try {
+          const result = await nowpaymentsService.getPaymentStatus(
+            order.nowpaymentsPayment.paymentId
+          );
+
+          if (result.success) {
+            liveStatus = result.data;
+          }
+        } catch (apiError) {
+          console.warn("⚠️ Could not fetch live status:", apiError.message);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        payment: {
+          id: order._id,
+          invoiceId: order.nowpaymentsPayment.invoiceId,
+          paymentId: order.nowpaymentsPayment.paymentId,
+          orderId: order.orderNumber,
+          status: order.nowpaymentsPayment.paymentStatus,
+          internalStatus: order.paymentStatus,
+          priceAmount: order.nowpaymentsPayment.priceAmount,
+          priceCurrency: order.nowpaymentsPayment.priceCurrency,
+          payCurrency: order.nowpaymentsPayment.payCurrency,
+          payAmount: order.nowpaymentsPayment.payAmount,
+          actuallyPaid: order.nowpaymentsPayment.actuallyPaid,
+          payAddress: order.nowpaymentsPayment.payAddress,
+          invoiceUrl: order.nowpaymentsPayment.paymentUrl,
+          createdAt: order.createdAt,
+          updatedAt: order.updatedAt,
+          paidAt: order.paidAt,
+        },
+        liveStatus: liveStatus,
+      });
+    }
+
+    // 🔥 Fallback: Check wallet deposits
+    const deposit = await WalletDeposit.findById(id);
+    if (deposit?.nowpaymentsPayment) {
+      console.log(`💰 Found wallet deposit:`, {
+        depositId: deposit._id,
+        invoiceId: deposit.nowpaymentsPayment.invoiceId,
+        paymentId: deposit.nowpaymentsPayment.paymentId,
+        status: deposit.nowpaymentsPayment.status,
+      });
+
+      // Fetch live status if we have payment_id
+      let liveStatus = null;
+      if (deposit.nowpaymentsPayment.paymentId) {
+        try {
+          const result = await nowpaymentsService.getPaymentStatus(
+            deposit.nowpaymentsPayment.paymentId
+          );
+
+          if (result.success) {
+            liveStatus = result.data;
+          }
+        } catch (apiError) {
+          console.warn("⚠️ Could not fetch live status:", apiError.message);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        payment: {
+          id: deposit._id,
+          invoiceId: deposit.nowpaymentsPayment.invoiceId,
+          paymentId: deposit.nowpaymentsPayment.paymentId,
+          orderId: deposit.depositId,
+          status: deposit.nowpaymentsPayment.status,
+          internalStatus: deposit.status,
+          priceAmount: deposit.nowpaymentsPayment.priceAmount,
+          priceCurrency: deposit.nowpaymentsPayment.priceCurrency,
+          payCurrency: deposit.nowpaymentsPayment.payCurrency,
+          payAmount: deposit.nowpaymentsPayment.payAmount,
+          actuallyPaid: deposit.nowpaymentsPayment.actuallyPaid,
+          payAddress: deposit.nowpaymentsPayment.payAddress,
+          invoiceUrl: deposit.nowpaymentsPayment.invoiceUrl,
+          createdAt: deposit.createdAt,
+          updatedAt: deposit.updatedAt,
+        },
+        liveStatus: liveStatus,
+      });
+    }
+
+    console.log(`❌ Payment/Order/Deposit not found for ID: ${id}`);
+
     return NextResponse.json(
-      { error: error?.message || "Failed to get NOWPayments payment status" },
+      {
+        error: "Payment not found",
+        details: "No payment, order, or deposit found with this ID",
+      },
+      { status: 404 }
+    );
+  } catch (error) {
+    console.error("❌ Status check error:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to check payment status",
+        details: error.message,
+      },
       { status: 500 }
     );
   }

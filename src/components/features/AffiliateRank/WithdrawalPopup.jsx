@@ -91,7 +91,7 @@ export default function WithdrawalPopup({
       <div className="bg-black border border-[#212121] rounded-lg p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold">{heading}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-gray-400 hover:text-white" aria-label="Close withdrawal popup">
             <X size={20} />
           </button>
         </div>

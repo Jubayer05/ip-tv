@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "fs/promises";
 import { NextResponse } from "next/server";
 import path from "path";
+import { uploadPaths, getPublicUrl } from "@/config/upload";
 
 export async function POST(request) {
   try {
@@ -14,8 +15,8 @@ export async function POST(request) {
       );
     }
 
-    // Create upload directory if it doesn't exist
-    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
+    // Use centralized upload directory
+    const uploadDir = uploadPaths.general();
     await mkdir(uploadDir, { recursive: true });
 
     // Generate unique filename
@@ -29,8 +30,8 @@ export async function POST(request) {
     const buffer = Buffer.from(bytes);
     await writeFile(filePath, buffer);
 
-    // Return the URL path (not full filesystem path)
-    const fileUrl = `/uploads/${fileName}`;
+    // Return the URL path using centralized function
+    const fileUrl = getPublicUrl(null, fileName);
 
     return NextResponse.json({
       success: true,

@@ -2,46 +2,48 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { memo, useEffect, useState, useCallback, useMemo } from "react";
 
 // Sample movie data
 const movies = [
   {
     id: 1,
-    title: "Interstellar",
-    image: "/movies/trailer-1.jpg",
-    tagline: "Mankind's next step will be our greatest",
-    duration: "2h 49m",
-    rating: "PG-13",
-  },
-  {
-    id: 2,
     title: "Inception",
-    image: "/movies/trailer-2.jpg",
+    image: "/movies/trailer-1.jpg",
     tagline: "Your mind is the scene of the crime",
     duration: "2h 28m",
     rating: "PG-13",
   },
   {
+    id: 2,
+    title: "Reversion",
+    image: "/movies/trailer-2.jpg",
+    tagline: "The future is now",
+    duration: "2h 28m",
+    rating: "PG-13",
+  },
+  {
     id: 3,
-    title: "The Matrix",
+    title: "Interstellar",
     image: "/movies/trailer-3.jpg",
-    tagline: "Welcome to the real world",
+    tagline: "Mankind's next step will be our greatest",
     duration: "2h 16m",
     rating: "R",
   },
   {
     id: 4,
-    title: "Blade Runner",
+    title: "Inception",
     image: "/movies/trailer-1.jpg",
-    tagline: "More human than human",
-    duration: "1h 57m",
-    rating: "R",
+    tagline: "Your mind is the scene of the crime",
+    duration: "2h 28m",
+    rating: "PG-13",
   },
 ];
 
 const LatestTrailers = () => {
   const { language, translate } = useLanguage();
+  const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
@@ -79,23 +81,23 @@ const LatestTrailers = () => {
     return () => clearInterval(interval);
   }, [isAutoPlaying, movies.length]);
 
-  const nextSlide = () => {
+  const nextSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % movies.length);
     setIsAutoPlaying(false);
-  };
+  }, []);
 
-  const prevSlide = () => {
+  const prevSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev - 1 + movies.length) % movies.length);
     setIsAutoPlaying(false);
-  };
+  }, []);
 
-  const goToSlide = (index) => {
+  const goToSlide = useCallback((index) => {
     setCurrentIndex(index);
     setIsAutoPlaying(false);
-  };
+  }, []);
 
-  // Get the three slides to display (previous, current, next)
-  const getVisibleSlides = () => {
+  // Get the three slides to display (previous, current, next) - memoized
+  const visibleSlides = useMemo(() => {
     const prevIndex = (currentIndex - 1 + movies.length) % movies.length;
     const nextIndex = (currentIndex + 1) % movies.length;
 
@@ -104,9 +106,7 @@ const LatestTrailers = () => {
       { ...movies[currentIndex], position: "current" },
       { ...movies[nextIndex], position: "next" },
     ];
-  };
-
-  const visibleSlides = getVisibleSlides();
+  }, [currentIndex]);
 
   return (
     <section
@@ -171,23 +171,31 @@ const LatestTrailers = () => {
                   }`}
                 >
                   <article
-                    className={`group relative bg-gray-900 rounded-xl overflow-hidden cursor-pointer
+                    className={`group relative bg-gray-900 rounded-xl overflow-hidden
                        transition-all duration-500 aspect-[16/10] sm:aspect-[4/3] md:aspect-[3/2]
                         w-[200px] sm:w-[300px] md:w-[500px] lg:w-[600px] xl:w-[700px]
                          ${
                            movie.position === "current"
-                             ? "ring-2 ring-cyan-400 shadow-2xl shadow-cyan-400/30"
-                             : "ring-1 ring-gray-700 hover:ring-cyan-400/50"
+                             ? "ring-2 ring-cyan-400 shadow-2xl shadow-cyan-400/30 cursor-pointer"
+                             : "ring-1 ring-gray-700 hover:ring-cyan-400/50 cursor-pointer"
                          }`}
-                    onClick={() =>
-                      goToSlide(movies.findIndex((m) => m.id === movie.id))
-                    }
+                    onClick={() => {
+                      if (movie.position === "current") {
+                        // Navigate to packages page for current trailer
+                        router.push("/packages");
+                      } else {
+                        // Change slide for non-current trailers
+                        goToSlide(movies.findIndex((m) => m.id === movie.id));
+                      }
+                    }}
                   >
                     <div className="relative h-full">
                       <Image
                         src={movie.image}
                         alt={`${movie.title} movie poster`}
                         fill
+                        sizes="(max-width: 640px) 200px, (max-width: 768px) 300px, (max-width: 1024px) 500px, (max-width: 1280px) 600px, 700px"
+                        quality={65}
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
@@ -202,9 +210,9 @@ const LatestTrailers = () => {
                             {movie.duration}
                           </span>
                         </div>
-                        <h4 className="text-sm sm:text-base md:text-2xl lg:text-3xl xl:text-4xl font-bold mb-1 sm:mb-2 md:mb-3 lg:mb-4 tracking-wide line-clamp-1">
+                        <p className="text-sm sm:text-base md:text-2xl lg:text-3xl xl:text-4xl font-bold mb-1 sm:mb-2 md:mb-3 lg:mb-4 tracking-wide line-clamp-1">
                           {movie.title}
-                        </h4>
+                        </p>
                         <p className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl text-gray-300 opacity-80 line-clamp-2">
                           {movie.tagline}
                         </p>
@@ -241,4 +249,4 @@ const LatestTrailers = () => {
   );
 };
 
-export default LatestTrailers;
+export default memo(LatestTrailers);

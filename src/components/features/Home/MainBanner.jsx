@@ -2,60 +2,121 @@
 import Button from "@/components/ui/button";
 import Polygon from "@/components/ui/polygon";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState, useCallback } from "react";
 
 const MainBanner = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
 
-  const [heading1, setHeading1] = useState("YOUR TICKET TO ENDLESS");
-  const [heading2, setHeading2] = useState("ENTERTAINMENT");
+  const [heading1, setHeading1] = useState("STREAM MORE,");
+  const [heading2, setHeading2] = useState("PAY LESS");
   const [paragraph, setParagraph] = useState(
-    "Why pay more when you can stream smarter? Cheap Stream brings you thousands of movies at the best price. Whether you love action, drama, comedy, or horror, we have something for everyone—all in HD & 4K quality with zero buffering."
+    "Are you sick of paying too much for cable? We get it. For a small fee, Cheap Stream lets you watch live TV, movies, and sports on any device. Just great entertainment whenever you want it, with no contracts or hassle."
   );
-  const [placeholder, setPlaceholder] = useState("Email Address");
-  const [buttonText, setButtonText] = useState("Get Started");
+  const [placeholder, setPlaceholder] = useState("Enter your email");
+  const [buttonText, setButtonText] = useState("Start Watching");
 
+  // Store original content from API for translation
+  const [originalContent, setOriginalContent] = useState({
+    heading1: "STREAM MORE,",
+    heading2: "PAY LESS",
+    paragraph:
+      "Are you sick of paying too much for cable? We get it. For a small fee, Cheap Stream lets you watch live TV, movies, and sports on any device. Just great entertainment whenever you want it, with no contracts or hassle.",
+    placeholder: "Enter your email",
+    buttonText: "Start Watching",
+  });
+
+  // Fetch banner content from settings - deferred to not block render
   useEffect(() => {
-    // Fetch banner content from settings
     const fetchBannerContent = async () => {
       try {
         const response = await fetch("/api/admin/settings");
         const data = await response.json();
         if (data.success && data.data.banners?.home) {
           const homeBanner = data.data.banners.home;
-          setHeading1(homeBanner.heading1 || heading1);
-          setHeading2(homeBanner.heading2 || heading2);
-          setParagraph(homeBanner.paragraph || paragraph);
-          setPlaceholder(homeBanner.placeholder || placeholder);
-          setButtonText(homeBanner.buttonText || buttonText);
+          const newContent = {
+            heading1: homeBanner.heading1 || originalContent.heading1,
+            heading2: homeBanner.heading2 || originalContent.heading2,
+            paragraph: homeBanner.paragraph || originalContent.paragraph,
+            placeholder: homeBanner.placeholder || originalContent.placeholder,
+            buttonText: homeBanner.buttonText || originalContent.buttonText,
+          };
+
+          setOriginalContent(newContent);
+          setHeading1(newContent.heading1);
+          setHeading2(newContent.heading2);
+          setParagraph(newContent.paragraph);
+          setPlaceholder(newContent.placeholder);
+          setButtonText(newContent.buttonText);
         }
       } catch (error) {
         console.error("Failed to fetch banner content:", error);
       }
     };
 
-    fetchBannerContent();
-  }, []);
+    // Defer API call to after initial paint using requestIdleCallback
+    if (typeof window !== 'undefined') {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => fetchBannerContent(), { timeout: 2000 });
+      } else {
+        setTimeout(fetchBannerContent, 1);
+      }
+    }
+  }, []); // Only run once on mount
 
+  // Translate banner content when language changes or content is loaded
   useEffect(() => {
-    // Only translate when language is loaded and not English
-    if (!isLanguageLoaded || language.code === "en") return;
+    // Don't translate if language isn't loaded yet or it's English
+    if (!isLanguageLoaded || language.code === "en") {
+      // Reset to original content if switching to English
+      if (language.code === "en") {
+        setHeading1(originalContent.heading1);
+        setHeading2(originalContent.heading2);
+        setParagraph(originalContent.paragraph);
+        setPlaceholder(originalContent.placeholder);
+        setButtonText(originalContent.buttonText);
+      }
+      return;
+    }
 
     let isMounted = true;
-    (async () => {
-      const items = [heading1, heading2, paragraph, placeholder, buttonText];
-      const translated = await translate(items);
-      if (!isMounted) return;
 
-      const [tHeading1, tHeading2, tParagraph, tPlaceholder, tButtonText] =
-        translated;
+    const translateContent = async () => {
+      try {
+        const items = [
+          originalContent.heading1,
+          originalContent.heading2,
+          originalContent.paragraph,
+          originalContent.placeholder,
+          originalContent.buttonText,
+        ];
 
-      // setHeading1(tHeading1); // This line is no longer needed as heading1 is now directly from settings
-      // setHeading2(tHeading2); // This line is no longer needed
-      // setParagraph(tParagraph); // This line is no longer needed
-      // setPlaceholder(tPlaceholder); // This line is no longer needed
-      // setButtonText(tButtonText); // This line is no longer needed
-    })();
+        const translated = await translate(items);
+
+        if (!isMounted) return;
+
+        const [tHeading1, tHeading2, tParagraph, tPlaceholder, tButtonText] =
+          translated;
+
+        // Apply translations if they exist
+        if (tHeading1) setHeading1(tHeading1);
+        if (tHeading2) setHeading2(tHeading2);
+        if (tParagraph) setParagraph(tParagraph);
+        if (tPlaceholder) setPlaceholder(tPlaceholder);
+        if (tButtonText) setButtonText(tButtonText);
+      } catch (error) {
+        console.error("Translation error:", error);
+        // Fallback to original content on error
+        if (isMounted) {
+          setHeading1(originalContent.heading1);
+          setHeading2(originalContent.heading2);
+          setParagraph(originalContent.paragraph);
+          setPlaceholder(originalContent.placeholder);
+          setButtonText(originalContent.buttonText);
+        }
+      }
+    };
+
+    translateContent();
 
     return () => {
       isMounted = false;
@@ -64,11 +125,11 @@ const MainBanner = () => {
     language.code,
     isLanguageLoaded,
     translate,
-    heading1,
-    heading2,
-    paragraph,
-    placeholder,
-    buttonText,
+    originalContent.heading1,
+    originalContent.heading2,
+    originalContent.paragraph,
+    originalContent.placeholder,
+    originalContent.buttonText,
   ]);
 
   return (
@@ -102,4 +163,5 @@ const MainBanner = () => {
     </Polygon>
   );
 };
-export default MainBanner;
+
+export default memo(MainBanner);

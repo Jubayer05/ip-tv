@@ -5,8 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Circle, Play, Plus, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Slider from "react-slick";
-import "slick-carousel/slick/slick-theme.css";
-import "slick-carousel/slick/slick.css";
+import "@/styles/slick-minimal.css";
 
 const ExploreChannelBanner = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();

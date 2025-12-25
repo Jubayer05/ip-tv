@@ -36,12 +36,11 @@ const FreeTrialCard = () => {
   const [iptvApiKey, setIptvApiKey] = useState(null);
   const [freeTrialContent, setFreeTrialContent] = useState({
     title: "Start Your Free Trial",
-    description:
-      "Experience premium IPTV content for 24 hours - completely free!",
+    description: "Experience premium IPTV content for 4 hours",
     features: [
       {
         id: 1,
-        title: "24 Hours Free",
+        title: "4 Hours Free",
         description: "Full access to all channels and features",
         icon: "clock",
       },
@@ -135,12 +134,11 @@ const FreeTrialCard = () => {
         } else {
           setOriginalFreeTrialContent({
             title: "Start Your Free Trial",
-            description:
-              "Experience premium IPTV content for 24 hours - completely free!",
+            description: "Experience premium IPTV content for 4 hours",
             features: [
               {
                 id: 1,
-                title: "24 Hours Free",
+                title: "4 Hours Free",
                 description: "Full access to all channels and features",
                 icon: "clock",
               },
@@ -170,12 +168,11 @@ const FreeTrialCard = () => {
         console.error("Failed to fetch free trial content:", error);
         setOriginalFreeTrialContent({
           title: "Start Your Free Trial",
-          description:
-            "Experience premium IPTV content for 24 hours - completely free!",
+          description: "Experience premium IPTV content for 4 hours",
           features: [
             {
               id: 1,
-              title: "24 Hours Free",
+              title: "4 Hours Free",
               description: "Full access to all channels and features",
               icon: "clock",
             },
@@ -209,6 +206,13 @@ const FreeTrialCard = () => {
   const hasUsedFreeTrial = useMemo(() => {
     return user?.freeTrial?.hasUsed || visitorEligible === false;
   }, [user?.freeTrial?.hasUsed, visitorEligible]);
+
+  const expiresAtDate = trialData
+    ? new Date(trialData.expiringAt * 1000)
+    : null;
+  const hoursRemaining = expiresAtDate
+    ? Math.max(0, Math.round((expiresAtDate.getTime() - Date.now()) / 36e5))
+    : null;
 
   const isVpnBlocked = vpnStatus?.isVPN === true;
 
@@ -246,9 +250,8 @@ const FreeTrialCard = () => {
         if (json.success) {
           setVisitorEligible(json.eligible);
 
-          if (!json.eligible && user?.email) {
-            window.location.reload();
-          }
+          // Removed auto-reload to prevent infinite loop
+          // User will see the "already used" message instead
         } else {
           setVisitorEligible(false);
         }
@@ -263,7 +266,7 @@ const FreeTrialCard = () => {
     return () => {
       isMounted = false;
     };
-  }, [visitorId]);
+  }, [visitorId, user?.email]);
 
   useEffect(() => {
     if (!user || visitorEligible === false || hasUsedFreeTrial) return;
@@ -368,26 +371,74 @@ const FreeTrialCard = () => {
         return;
       }
 
+      // Determine the type based on selected line type
+      const subscriptionType =
+        selectedLineType === 0
+          ? "M3U"
+          : selectedLineType === 1
+          ? "MAG"
+          : "ENIGMA2";
+
+      // Log what we're sending
+      console.log("=== FRONTEND - FREE TRIAL REQUEST ===");
+      console.log({
+        selectedLineType,
+        subscriptionType,
+        macAddress,
+        hasMacAddress: !!macAddress,
+      });
+
+      const requestBody = {
+        key: iptvApiKey,
+        packageId: 1,
+        type: subscriptionType,
+        mac: selectedLineType > 0 ? macAddress : undefined,
+        visitorId,
+        maxConnections: 1,
+        forcedCountry: "ALL",
+        adult: 0,
+        enableVpn: 0,
+        paid: 0,
+      };
+
+      console.log("=== FRONTEND - REQUEST BODY ===");
+      console.log(JSON.stringify(requestBody, null, 2));
+
       const response = await fetch("/api/iptv/free-trial-create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          key: iptvApiKey,
-          templateId: selectedTemplate,
-          lineType: selectedLineType,
-          mac: selectedLineType > 0 ? macAddress : undefined,
-          visitorId,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
+        const payload = data.data;
+        const normalizedTrial = {
+          type: payload.type,
+          id: payload.id,
+          username: payload.username,
+          password: payload.password,
+          macAddress: payload.mac_address,
+          packageName: payload.package?.name ?? "—",
+          templateName: payload.template?.name ?? "—",
+          maxConnections: payload.max_connections,
+          forcedCountry: payload.forced_country,
+          adult: payload.adult ? "Yes" : "No",
+          note: payload.note ?? "",
+          contact: payload.whatsapp_telegram ?? "",
+          paid: payload.paid ? "Yes" : "No",
+          expiringAt: payload.expiring_at,
+          dnsLink: payload.dns_link ?? "",
+          samsungLgDns: payload.dns_link_for_samsung_lg ?? "",
+          portalLink: payload.portal_link ?? "",
+        };
+
         setSuccess(true);
-        setTrialData(data.data);
+        setTrialData(normalizedTrial);
         setError("");
 
         try {
@@ -441,7 +492,7 @@ const FreeTrialCard = () => {
 
   const ORIGINAL_TEXTS = {
     freeTrialCreatedSuccessfully: "Free Trial Created Successfully!",
-    your24HourFreeTrialIsNowActive: "Your 24-hour free trial is now active",
+    your24HourFreeTrialIsNowActive: "Your 4-hour free trial is now active",
     fullApiResponse: "Full API Response",
     trialDetails: "Trial Details",
     connectionInformation: "Connection Information",
@@ -457,7 +508,7 @@ const FreeTrialCard = () => {
     enterMacAddress: "Enter MAC address (e.g., 1A:2B:3C:4D:5E:6F)",
     requiredForDevices: "Required for",
     devices: "devices",
-    start24HourFreeTrial: "Start 24-Hour Free Trial",
+    start24HourFreeTrial: "Start 4-Hour Free Trial",
     creatingTrial: "Creating Trial...",
     youNeedToBeLoggedIn: "You need to be logged in to start a free trial",
     youHaveAlreadyUsed:
@@ -473,21 +524,31 @@ const FreeTrialCard = () => {
   useEffect(() => {
     let isMounted = true;
     (async () => {
-      const textsToTranslate = Object.values(ORIGINAL_TEXTS);
-      const translated = await translate(textsToTranslate);
-      if (!isMounted) return;
+      try {
+        const textsToTranslate = Object.values(ORIGINAL_TEXTS);
+        const translated = await translate(textsToTranslate);
+        if (!isMounted) return;
 
-      const newTranslatedTexts = {};
-      Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
-        newTranslatedTexts[key] = translated[index];
-      });
-      setTranslatedTexts(newTranslatedTexts);
+        const newTranslatedTexts = {};
+        Object.keys(ORIGINAL_TEXTS).forEach((key, index) => {
+          newTranslatedTexts[key] = translated[index];
+        });
+        setTranslatedTexts(newTranslatedTexts);
+      } catch (error) {
+        console.error("Translation error:", error);
+        if (isMounted) {
+          setTranslatedTexts(ORIGINAL_TEXTS);
+        }
+      }
     })();
 
     return () => {
       isMounted = false;
     };
   }, [translate]);
+
+  const fallbackExpiry = new Date(Date.now() + 4 * 60 * 60 * 1000);
+  const displayExpiry = expiresAtDate ?? fallbackExpiry;
 
   if (success && trialData) {
     return (
@@ -505,9 +566,9 @@ const FreeTrialCard = () => {
 
           {/* Trial Details - Shows each field once */}
           <div className="bg-black/30 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 text-left">
-            <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">
+            <p className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">
               {translatedTexts.trialDetails}
-            </h3>
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
               <div className="bg-black/50 rounded-lg p-3 sm:p-4">
                 <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
@@ -523,6 +584,14 @@ const FreeTrialCard = () => {
                 </span>
                 <span className="text-white font-mono text-sm sm:text-base break-all">
                   {trialData.password}
+                </span>
+              </div>
+              <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
+                  Type:
+                </span>
+                <span className="text-white text-sm sm:text-base">
+                  {trialData.type}
                 </span>
               </div>
               <div className="bg-black/50 rounded-lg p-3 sm:p-4">
@@ -543,60 +612,73 @@ const FreeTrialCard = () => {
               </div>
               <div className="bg-black/50 rounded-lg p-3 sm:p-4">
                 <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
+                  Max Connections:
+                </span>
+                <span className="text-white text-sm sm:text-base">
+                  {trialData.maxConnections}
+                </span>
+              </div>
+              <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
+                  Forced Country:
+                </span>
+                <span className="text-white text-sm sm:text-base">
+                  {trialData.forcedCountry}
+                </span>
+              </div>
+              <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
+                  Adult Content:
+                </span>
+                <span className="text-white text-sm sm:text-base">
+                  {trialData.adult}
+                </span>
+              </div>
+
+              <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
                   Expires:
                 </span>
                 <span className="text-white text-sm sm:text-base">
-                  {new Date(trialData.expire * 1000).toLocaleString()}
+                  {displayExpiry.toLocaleString()}
                 </span>
               </div>
-              {trialData.lineId && (
+              {trialData.macAddress && (
                 <div className="bg-black/50 rounded-lg p-3 sm:p-4">
                   <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
-                    Line ID:
+                    MAC Address:
                   </span>
                   <span className="text-white font-mono text-sm sm:text-base break-all">
-                    {trialData.lineId}
+                    {trialData.macAddress}
                   </span>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Connection Information - Shows M3U and IPTV URLs */}
-          <div className="bg-black/30 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 text-left">
-            <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">
-              {translatedTexts.connectionInformation}
-            </h3>
-            <div className="space-y-3 sm:space-y-4">
-              {trialData.lineInfo &&
-                trialData.lineInfo.includes("m3u_plus") && (
-                  <div className="bg-black/50 rounded-lg p-3 sm:p-4">
-                    <p className="text-gray-400 text-xs sm:text-sm mb-2 font-medium">
-                      M3U Playlist URL:
-                    </p>
-                    <p className="text-white font-mono text-xs sm:text-sm break-all bg-gray-900/50 p-2 rounded">
-                      {trialData.lineInfo
-                        .split("\n")
-                        .find((line) => line.includes("m3u_plus"))}
-                    </p>
-                  </div>
-                )}
-
-              {trialData.lineInfo &&
-                trialData.lineInfo.includes("IPTV Url:") && (
-                  <div className="bg-black/50 rounded-lg p-3 sm:p-4">
-                    <p className="text-gray-400 text-xs sm:text-sm mb-2 font-medium">
-                      IPTV URL:
-                    </p>
-                    <p className="text-white font-mono text-xs sm:text-sm break-all bg-gray-900/50 p-2 rounded">
-                      {trialData.lineInfo
-                        .split("\n")
-                        .find((line) => line.includes("IPTV Url:"))
-                        ?.replace("IPTV Url:", "")
-                        .trim()}
-                    </p>
-                  </div>
-                )}
+              <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
+                  M3U Link:
+                </span>
+                <span className="text-white font-mono text-xs sm:text-sm break-all">
+                  {trialData.dnsLink || "—"}
+                </span>
+              </div>
+              <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
+                  Samsung/LG M3U:
+                </span>
+                <span className="text-white font-mono text-xs sm:text-sm break-all">
+                  {trialData.samsungLgDns || "—"}
+                </span>
+              </div>
+              {trialData.portalLink && (
+                <div className="bg-black/50 rounded-lg p-3 sm:p-4">
+                  <span className="text-gray-400 block mb-1 text-xs sm:text-sm">
+                    Portal Link:
+                  </span>
+                  <span className="text-white font-mono text-xs sm:text-sm break-all">
+                    {trialData.portalLink}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -640,7 +722,7 @@ const FreeTrialCard = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 font-secondary text-center mt-3 sm:mt-5">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 font-secondary text-center mt-3 sm:mt-5 min-h-[600px] sm:min-h-[700px]">
       {!hasUsedFreeTrial && vpnChecking && (
         <div className="mb-3 sm:mb-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg flex items-center justify-center gap-2">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
@@ -672,9 +754,9 @@ const FreeTrialCard = () => {
         <div className="bg-gradient-to-r from-[#00b877] to-[#44dcf3] p-4 sm:p-6 lg:p-8 text-center">
           <div className="flex items-center justify-center mb-3 sm:mb-4">
             <Play className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black">
               {freeTrialContent.title}
-            </h1>
+            </h2>
           </div>
           <p className="text-black/80 text-base sm:text-lg lg:text-xl font-medium">
             {freeTrialContent.description}
@@ -688,9 +770,9 @@ const FreeTrialCard = () => {
               return (
                 <div key={feature.id} className="text-center">
                   <IconComponent className="w-10 h-10 sm:w-12 sm:h-12 text-[#00b877] mx-auto mb-2 sm:mb-3" />
-                  <h3 className="text-white font-semibold text-base sm:text-lg mb-1 sm:mb-2">
+                  <p className="text-white font-semibold text-base sm:text-lg mb-1 sm:mb-2">
                     {feature.title}
-                  </h3>
+                  </p>
                   <p className="text-gray-400 text-xs sm:text-sm">
                     {feature.description}
                   </p>
@@ -700,10 +782,10 @@ const FreeTrialCard = () => {
           </div>
 
           <div className="mb-6 sm:mb-8">
-            <h3 className="text-white font-semibold text-lg sm:text-xl mb-3 sm:mb-4 flex items-center justify-center sm:justify-start">
+            <h2 className="text-white font-semibold text-lg sm:text-xl mb-3 sm:mb-4 flex items-center justify-center sm:justify-start">
               <Zap className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-[#44dcf3]" />
               {translatedTexts.chooseYourDeviceType}
-            </h3>
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {lineTypes.map((type) => (
                 <div
@@ -716,9 +798,9 @@ const FreeTrialCard = () => {
                   onClick={() => handleLineTypeChange(type.id)}
                 >
                   <div className="text-xl sm:text-2xl mb-2">{type.icon}</div>
-                  <h4 className="text-white font-medium text-sm sm:text-base mb-1">
+                  <p className="text-white font-medium text-sm sm:text-base mb-1">
                     {type.name}
-                  </h4>
+                  </p>
                   <p className="text-gray-400 text-xs sm:text-sm">
                     {type.description}
                   </p>
@@ -729,9 +811,9 @@ const FreeTrialCard = () => {
 
           {selectedLineType > 0 && (
             <div className="mb-6 sm:mb-8">
-              <h3 className="text-white font-semibold text-base sm:text-lg mb-2 sm:mb-3">
+              <p className="text-white font-semibold text-base sm:text-lg mb-2 sm:mb-3">
                 {translatedTexts.macAddress}
-              </h3>
+              </p>
               <Input
                 type="text"
                 placeholder={translatedTexts.enterMacAddress}
@@ -814,9 +896,9 @@ const FreeTrialCard = () => {
           </div>
 
           <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-black/30 rounded-xl">
-            <h3 className="text-white font-semibold text-base sm:text-lg mb-2 sm:mb-3">
+            <p className="text-white font-semibold text-base sm:text-lg mb-2 sm:mb-3">
               {freeTrialContent.includedTitle}
-            </h3>
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
               {freeTrialContent.includedItems.map((item, index) => (
                 <div key={index} className="flex items-start">

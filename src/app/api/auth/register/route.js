@@ -97,12 +97,22 @@ export async function POST(request) {
     );
 
     if (!emailSent) {
+      // BYPASSING THE ERROR HANDLING FOR NOW!
       // If email fails, clean up the token
-      await VerificationToken.deleteOne({ token: verificationToken.token });
-      return NextResponse.json(
-        { error: "Failed to send verification email. Please try again." },
-        { status: 500 }
-      );
+      // await VerificationToken.deleteOne({ token: verificationToken.token });
+      // return NextResponse.json(
+      //   { error: "Failed to send verification email. Please try again." },
+      //   { status: 500 }
+      // );
+      // If email fails in production, return error but keep token
+
+      // VERIFICATION URL: http://localhost:3000/verify-email?token=TOKEN
+      return NextResponse.json({
+        success: true,
+        message: "Registration successful! Email service temporarily unavailable. Please contact support for verification link.",
+        email: email,
+        warning: "Email service unavailable",
+      });
     }
 
     return NextResponse.json({

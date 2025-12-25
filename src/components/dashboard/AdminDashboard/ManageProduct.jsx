@@ -82,7 +82,8 @@ const ManageProduct = () => {
     discountPercentage: "Discount Percentage",
     adultChannelsFee: "Adult Channels Fee",
     feePercentage: "Fee Percentage",
-    percentageAddedToTotal: "Percentage added to total when adult channels are enabled",
+    percentageAddedToTotal:
+      "Percentage added to total when adult channels are enabled",
     productVariants: "Product Variants",
     addVariant: "Add Variant",
     variant: "Variant",
@@ -642,7 +643,7 @@ const ManageProduct = () => {
               </label>
               <Input
                 type="number"
-                value={product.adultChannelsFeePercentage || 20}
+                value={product.adultChannelsFeePercentage || 0}
                 onChange={(e) =>
                   setProduct((prev) => ({
                     ...prev,

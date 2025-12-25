@@ -3,8 +3,7 @@ import Button from "@/components/ui/button";
 import { ArrowRight, ChevronLeft, ChevronRight, Circle } from "lucide-react";
 import Image from "next/image";
 import Slider from "react-slick";
-import "slick-carousel/slick/slick-theme.css";
-import "slick-carousel/slick/slick.css";
+import "@/styles/slick-minimal.css";
 
 const TrendingCommon = ({
   title = "Trending Content",
@@ -30,6 +29,12 @@ const TrendingCommon = ({
     autoplay: autoplay,
     arrows: true,
     autoplaySpeed: autoPlayDuration,
+    // Performance optimizations for Slick
+    lazyLoad: 'progressive',
+    waitForAnimate: false,
+    useCSS: true,
+    useTransform: true,
+    cssEase: 'ease-out',
     responsive: [
       {
         breakpoint: 1280,
@@ -65,12 +70,13 @@ const TrendingCommon = ({
   const CustomArrow = ({ className, style, onClick, direction }) => (
     <button
       onClick={onClick}
-      className={`absolute top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-black/50 hover:bg-black/70 text-white 
+      className={`absolute top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-black/50 hover:bg-black/70 text-white
         rounded-full flex items-center justify-center transition-all duration-300
          transform hover:scale-110 border border-[rgba(255,255,255,0.49)] ${
            direction === "next" ? "right-2 sm:right-4" : "left-2 sm:left-4"
          }`}
       style={{ ...style, display: "flex" }}
+      aria-label={direction === "next" ? "Next slide" : "Previous slide"}
     >
       {direction === "next" ? (
         <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />

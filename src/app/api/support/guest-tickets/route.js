@@ -3,6 +3,11 @@ import GuestSupportTicket from "@/models/GuestSupportTicket";
 import Notification from "@/models/Notification";
 import User from "@/models/User";
 import { NextResponse } from "next/server";
+import { getSuperAdminEmails } from "@/lib/superAdmin";
+import {
+  emitGuestTicketListUpdate,
+  emitNewGuestTicket,
+} from "@/lib/socket";
 
 // GET /api/support/guest-tickets
 // - admin list: no guestEmail -> returns all guest tickets
@@ -92,12 +97,19 @@ export async function POST(request) {
 
     await ticket.save();
 
+    // Emit Socket.io event for new guest ticket
+    emitNewGuestTicket(ticket._id.toString(), {
+      _id: ticket._id,
+      title: ticket.title,
+      status: ticket.status,
+      guestEmail: ticket.guestEmail,
+      createdAt: ticket.createdAt,
+    });
+    emitGuestTicketListUpdate(); // Notify admins
+
     // Notify admins/support staff about the new guest ticket
     try {
-      const superAdminEmails = [
-        "jubayer0504@gmail.com",
-        "alan.sangasare10@gmail.com",
-      ];
+      const superAdminEmails = getSuperAdminEmails();
 
       const adminsAndSupport = await User.find({
         $or: [

@@ -4,17 +4,29 @@ import Settings from "@/models/Settings";
 import { NextResponse } from "next/server";
 
 // GET current settings
-export async function GET() {
+export async function GET(request) {
   try {
     await connectToDatabase();
     const settings = await Settings.getSettings();
     const response = NextResponse.json({ success: true, data: settings });
 
-    // Add caching headers
-    response.headers.set(
-      "Cache-Control",
-      "public, s-maxage=300, stale-while-revalidate=600"
-    );
+    // Check if this is an admin request (from admin panel) - no cache
+    const url = new URL(request.url);
+    const isAdminRequest = url.searchParams.get("nocache") === "true";
+
+    if (isAdminRequest) {
+      // No caching for admin panel requests
+      response.headers.set(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate, proxy-revalidate"
+      );
+    } else {
+      // Cache for public requests - 5 minutes with revalidation
+      response.headers.set(
+        "Cache-Control",
+        "public, s-maxage=300, stale-while-revalidate=600, max-age=300"
+      );
+    }
 
     return response;
   } catch (e) {
@@ -39,6 +51,13 @@ export async function PUT(request) {
       otherApiKeys,
       metaManagement,
       loginOptions,
+      paymentGateways, // ✅ NEW: Handle payment gateway settings
+      freeTrialContent, // Handle free trial content
+      banners, // Handle banner content updates
+      cardPayment, // Handle card payment settings
+      contactInfo, // Handle contact info updates
+      socialMedia, // Handle social media links
+      logos, // Handle logo updates
     } = body;
 
     // Handle login options
@@ -46,6 +65,30 @@ export async function PUT(request) {
       await Settings.findOneAndUpdate(
         {},
         { $set: { loginOptions } },
+        { upsert: true, new: true }
+      );
+    }
+
+    if (paymentGateways) {
+      // Validate payment gateway credentials
+      const validPaymentGateways = {};
+
+      Object.entries(paymentGateways).forEach(([gateway, config]) => {
+        validPaymentGateways[gateway] = {
+          enabled: config?.enabled || false,
+          name: config?.name || gateway,
+          apiKey: config?.apiKey || "",
+          apiSecret: config?.apiSecret || "",
+          merchantId: config?.merchantId || "",
+          webhookSecret: config?.webhookSecret || "",
+          testMode: config?.testMode || false,
+          updatedAt: new Date(),
+        };
+      });
+
+      await Settings.findOneAndUpdate(
+        {},
+        { $set: { paymentGateways: validPaymentGateways } },
         { upsert: true, new: true }
       );
     }
@@ -140,7 +183,7 @@ export async function PUT(request) {
     }
 
     // Handle addons only if no other updates
-    if (addons && !apiKeys && !smtp && !otherApiKeys) {
+    if (addons && !apiKeys && !smtp && !otherApiKeys && !paymentGateways) {
       await Settings.findOneAndUpdate(
         {},
         { $set: { addons: addons } },
@@ -157,10 +200,72 @@ export async function PUT(request) {
       );
     }
 
-    return NextResponse.json({
+    // Handle free trial content
+    if (freeTrialContent) {
+      await Settings.findOneAndUpdate(
+        {},
+        { $set: { freeTrialContent } },
+        { upsert: true, new: true }
+      );
+    }
+
+    // Handle banner content updates
+    if (banners) {
+      await Settings.findOneAndUpdate(
+        {},
+        { $set: { banners } },
+        { upsert: true, new: true }
+      );
+    }
+
+    // Handle card payment settings
+    if (cardPayment) {
+      await Settings.findOneAndUpdate(
+        {},
+        { $set: { cardPayment } },
+        { upsert: true, new: true }
+      );
+    }
+
+    // Handle contact info updates
+    if (contactInfo) {
+      await Settings.findOneAndUpdate(
+        {},
+        { $set: { contactInfo } },
+        { upsert: true, new: true }
+      );
+    }
+
+    // Handle social media links
+    if (socialMedia) {
+      await Settings.findOneAndUpdate(
+        {},
+        { $set: { socialMedia } },
+        { upsert: true, new: true }
+      );
+    }
+
+    // Handle logo updates
+    if (logos) {
+      await Settings.findOneAndUpdate(
+        {},
+        { $set: { logos } },
+        { upsert: true, new: true }
+      );
+    }
+
+    const response = NextResponse.json({
       success: true,
       message: "Settings updated successfully",
     });
+
+    // Invalidate cache after update
+    response.headers.set(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, proxy-revalidate"
+    );
+
+    return response;
   } catch (error) {
     console.error("Error updating settings:", error);
     return NextResponse.json(

@@ -3,13 +3,24 @@ import NotificationBell from "@/components/ui/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ChevronDown, Menu, ShoppingCart, User, Wallet, X } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import ReactCountryFlag from "react-country-flag";
-import DepositPopup from "../features/AffiliateRank/DepositPopup";
 import Button from "../ui/button";
-import AudioUnlocker from "./AudioUnlocker";
+
+// Lazy load heavy components
+const ReactCountryFlag = dynamic(() => import("react-country-flag"), {
+  ssr: false,
+  loading: () => <span className="w-4 h-4 bg-gray-600 rounded animate-pulse" />,
+});
+
+const DepositPopup = dynamic(
+  () => import("../features/AffiliateRank/DepositPopup"),
+  { ssr: false }
+);
+
+const AudioUnlocker = dynamic(() => import("./AudioUnlocker"), { ssr: false });
 
 const langToCountry = {
   en: "GB",
@@ -123,7 +134,6 @@ const Navbar = () => {
     ORIGINAL_DEPOSIT_FUNDS
   );
   const [guestLoginLabel, setGuestLoginLabel] = useState(ORIGINAL_GUEST_LOGIN);
-  const [mainLogo, setMainLogo] = useState("/logos/logo.png");
 
   // Fetch products for dropdown
   const fetchProducts = async () => {
@@ -168,24 +178,6 @@ const Navbar = () => {
     };
 
     fetchCardPaymentSettings();
-  }, []);
-
-  useEffect(() => {
-    const fetchLogoSettings = async () => {
-      try {
-        const response = await fetch("/api/admin/settings/logos");
-        const data = await response.json();
-
-        if (data.success && data.data.mainLogo) {
-          setMainLogo(data.data.mainLogo);
-        }
-      } catch (error) {
-        console.error("Error fetching logo settings:", error);
-        // Keep default logo on error
-      }
-    };
-
-    fetchLogoSettings();
   }, []);
 
   // Update the translation logic to dynamically handle the array
@@ -291,6 +283,8 @@ const Navbar = () => {
             <button
               onClick={toggleMobileMenu}
               className="text-white hover:text-gray-300 transition-colors"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -304,7 +298,12 @@ const Navbar = () => {
                       onMouseEnter={() => setIsProductsMenuOpen(true)}
                       onMouseLeave={() => setIsProductsMenuOpen(false)}
                     >
-                      <button className="font-primary h-[80px] text-white hover:text-primary transition-colors uppercase tracking-wide text-base flex items-center gap-1">
+                      <button
+                        className="font-primary h-[80px] text-white hover:text-primary transition-colors uppercase tracking-wide text-base flex items-center gap-1"
+                        aria-label="Our websites menu"
+                        aria-haspopup="true"
+                        aria-expanded={isProductsMenuOpen}
+                      >
                         {navLabels[i]}
                         <ChevronDown size={16} />
                       </button>
@@ -330,14 +329,17 @@ const Navbar = () => {
                                     }
                                     className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors group"
                                   >
-                                    <div className="flex-shrink-0">
-                                      <img
-                                        src={product.imageUrl}
+                                    <div className="flex-shrink-0 w-12 h-12 relative">
+                                      <Image
+                                        src={
+                                          product.imageUrl ||
+                                          "/icons/profile.png"
+                                        }
                                         alt={product.title}
-                                        className="w-12 h-12 object-cover rounded-lg"
-                                        onError={(e) => {
-                                          e.target.src = "/icons/profile.png";
-                                        }}
+                                        fill
+                                        sizes="48px"
+                                        className="object-cover rounded-lg"
+                                        loading="lazy"
                                       />
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -376,7 +378,16 @@ const Navbar = () => {
           {/* Center Section - Logo */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center top-[13px]">
             <Link href="/">
-              <Image src={mainLogo} alt="Logo" width={100} height={100} />
+              <Image
+                src="/logos/logo.png"
+                alt="Logo"
+                width={80}
+                height={80}
+                quality={60}
+                priority
+                sizes="(max-width: 640px) 60px, (max-width: 768px) 70px, 80px"
+                className="w-auto h-[60px] sm:h-[70px] md:h-[80px]"
+              />
             </Link>
           </div>
 
@@ -386,6 +397,9 @@ const Navbar = () => {
             <Link
               href="/cart"
               className="relative text-white hover:text-gray-300 transition-colors"
+              aria-label={`Shopping cart${
+                cartItemsCount > 0 ? `, ${cartItemsCount} items` : ""
+              }`}
             >
               <ShoppingCart size={20} />
               {cartItemsCount > 0 && (
@@ -400,6 +414,7 @@ const Navbar = () => {
               <Link
                 href="/guest-login"
                 className="text-white hover:text-gray-300 transition-colors hidden sm:block"
+                aria-label="Guest login"
               >
                 <User size={20} />
               </Link>
@@ -430,12 +445,15 @@ const Navbar = () => {
               <button
                 onClick={() => setIsLanguageOpen(!isLanguageOpen)}
                 className="flex outline-none items-center font-secondary text-white space-x-2 hover:text-gray-300 transition-colors border border-gray-600 rounded-[30px] px-3 lg:px-5 py-2 lg:py-3 text-xs bg-gray-900"
+                aria-label={`Select language, currently ${language?.name}`}
+                aria-haspopup="true"
+                aria-expanded={isLanguageOpen}
               >
                 <ReactCountryFlag
                   countryCode={langToCountry[language?.code] || "GB"}
                   svg
                   style={{ width: "1rem", height: "1rem" }}
-                  aria-label={language?.name}
+                  aria-hidden="true"
                 />
                 <span className="hidden lg:inline">{language?.name}</span>
                 <span className="lg:hidden">
@@ -480,6 +498,9 @@ const Navbar = () => {
                 <button
                   onClick={toggleUserMenu}
                   className="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-gray-700 text-white rounded-full transition-colors border border-gray-600 relative"
+                  aria-label="User menu"
+                  aria-haspopup="true"
+                  aria-expanded={isUserMenuOpen}
                 >
                   <img
                     src={user.profile.avatar || "/icons/profile.png"}
@@ -578,6 +599,7 @@ const Navbar = () => {
               <button
                 onClick={toggleMobileMenu}
                 className="text-white hover:text-gray-300"
+                aria-label="Close mobile menu"
               >
                 <X size={24} />
               </button>
@@ -618,14 +640,16 @@ const Navbar = () => {
                               }}
                               className="flex items-center gap-3 p-2 hover:bg-gray-800 rounded cursor-pointer"
                             >
-                              <img
-                                src={product.imageUrl}
-                                alt={product.title}
-                                className="w-8 h-8 object-cover rounded"
-                                onError={(e) => {
-                                  e.target.src = "/icons/profile.png";
-                                }}
-                              />
+                              <div className="w-8 h-8 relative flex-shrink-0">
+                                <Image
+                                  src={product.imageUrl || "/icons/profile.png"}
+                                  alt={product.title}
+                                  fill
+                                  sizes="32px"
+                                  className="object-cover rounded"
+                                  loading="lazy"
+                                />
+                              </div>
                               <div className="flex-1 min-w-0">
                                 <h4 className="text-xs font-medium text-white truncate">
                                   {product.title}
@@ -732,13 +756,16 @@ const Navbar = () => {
                   <button
                     onClick={() => setIsLanguageOpen(!isLanguageOpen)}
                     className="flex outline-none items-center justify-between w-full font-secondary text-white hover:text-gray-300 transition-colors border border-gray-600 rounded-[30px] px-4 py-3 text-sm bg-gray-800"
+                    aria-label={`Select language, currently ${language?.name}`}
+                    aria-haspopup="true"
+                    aria-expanded={isLanguageOpen}
                   >
                     <div className="flex items-center space-x-2">
                       <ReactCountryFlag
                         countryCode={langToCountry[language?.code] || "GB"}
                         svg
                         style={{ width: "1rem", height: "1rem" }}
-                        aria-label={language?.name}
+                        aria-hidden="true"
                       />
                       <span>{language?.name}</span>
                     </div>

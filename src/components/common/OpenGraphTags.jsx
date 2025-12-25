@@ -7,7 +7,8 @@ const OpenGraphTags = ({
   url,
   type = "website",
 }) => {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cheapstream.com";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || "https://cheapstreamtv.com";
   const fullImageUrl = image?.startsWith("http")
     ? image
     : `${baseUrl}${image || "/icons/live.png"}`;

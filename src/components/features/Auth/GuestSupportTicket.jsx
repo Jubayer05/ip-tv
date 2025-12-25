@@ -1,7 +1,11 @@
 "use client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  useGuestTicketListSocket,
+  useGuestTicketSocket,
+} from "@/hooks/useSocket";
 import { MessageCircle, Send, Upload, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 export default function GuestSupportTicket({ verifiedEmail, onBack }) {
@@ -18,6 +22,7 @@ export default function GuestSupportTicket({ verifiedEmail, onBack }) {
 
   // Add file input ref
   const fileInputRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   // Original text constants
   const ORIGINAL_TEXTS = {
@@ -107,28 +112,87 @@ export default function GuestSupportTicket({ verifiedEmail, onBack }) {
     };
   }, [language.code, isLanguageLoaded, translate]);
 
-  const loadTickets = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(
-        `/api/support/guest-tickets?guestEmail=${encodeURIComponent(
-          verifiedEmail
-        )}`
-      );
-      const data = await res.json();
-      if (data?.success) setTickets(data.data || []);
-    } catch (e) {
-      console.error("Error loading tickets:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadTickets = useCallback(
+    async (showLoader = true) => {
+      if (!verifiedEmail) return;
+      try {
+        if (showLoader) {
+          setLoading(true);
+        }
+        const res = await fetch(
+          `/api/support/guest-tickets?guestEmail=${encodeURIComponent(
+            verifiedEmail
+          )}`
+        );
+        const data = await res.json();
+        if (data?.success) setTickets(data.data || []);
+      } catch (e) {
+        console.error("Error loading tickets:", e);
+      } finally {
+        if (showLoader) {
+          setLoading(false);
+        }
+      }
+    },
+    [verifiedEmail]
+  );
+
+  // Refresh function for Socket.io updates (no loading spinner)
+  const refresh = useCallback(() => {
+    loadTickets(false); // Load without showing loading spinner
+  }, [loadTickets]);
 
   useEffect(() => {
     if (verifiedEmail) {
       loadTickets();
     }
-  }, [verifiedEmail]);
+  }, [verifiedEmail, loadTickets]);
+
+  // Socket.io: Listen for guest ticket updates when ticket is open
+  useGuestTicketSocket(
+    activeId,
+    useCallback(
+      (data) => {
+        // Update the specific ticket when socket event is received
+        setTickets((prev) =>
+          prev.map((t) =>
+            t._id === data.ticketId
+              ? { ...t, ...data.ticket, messages: data.ticket.messages }
+              : t
+          )
+        );
+        // Auto-scroll to bottom when new message arrives
+        if (data.ticketId === activeId) {
+          setTimeout(() => {
+            const container = messagesContainerRef.current;
+            if (container && container.scrollHeight !== undefined) {
+              container.scrollTop = container.scrollHeight;
+            }
+          }, 150);
+        }
+      },
+      [activeId]
+    )
+  );
+
+  // Socket.io: Listen for guest ticket list updates
+  useGuestTicketListSocket(refresh, verifiedEmail);
+
+  // Auto-scroll to bottom when messages change or ticket opens
+  useEffect(() => {
+    if (activeId) {
+      const activeTicket = tickets.find((t) => t._id === activeId);
+      if (activeTicket) {
+        const timeoutId = setTimeout(() => {
+          const container = messagesContainerRef.current;
+          if (container && container.scrollHeight !== undefined) {
+            container.scrollTop = container.scrollHeight;
+          }
+        }, 200);
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [activeId, tickets]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -202,7 +266,7 @@ export default function GuestSupportTicket({ verifiedEmail, onBack }) {
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok && data.success) {
         Swal.fire({
           icon: "success",
           title: "Ticket Created!",
@@ -223,7 +287,14 @@ export default function GuestSupportTicket({ verifiedEmail, onBack }) {
         // Reload tickets
         loadTickets();
       } else {
-        throw new Error(data.error || "Failed to create ticket");
+        // Show error popup directly instead of throwing
+        Swal.fire({
+          icon: "error",
+          title: "Error Creating Ticket",
+          text:
+            data.error || "Failed to create support ticket. Please try again.",
+          confirmButtonColor: "#dc3545",
+        });
       }
     } catch (error) {
       console.error("Error creating ticket:", error);
@@ -264,7 +335,15 @@ export default function GuestSupportTicket({ verifiedEmail, onBack }) {
       const data = await res.json();
       if (data.success) {
         setReplyText("");
-        loadTickets();
+        // Socket.io will automatically update via useGuestTicketSocket hook
+        refresh(); // Just refresh silently
+        // Auto-scroll after sending message
+        setTimeout(() => {
+          const container = messagesContainerRef.current;
+          if (container && container.scrollHeight !== undefined) {
+            container.scrollTop = container.scrollHeight;
+          }
+        }, 200);
       } else {
         throw new Error(data.error || "Failed to send reply");
       }
@@ -433,7 +512,10 @@ export default function GuestSupportTicket({ verifiedEmail, onBack }) {
 
               {/* Messages */}
               {ticket.messages && ticket.messages.length > 0 && (
-                <div className="space-y-3 mb-4">
+                <div
+                  ref={activeId === ticket._id ? messagesContainerRef : null}
+                  className="space-y-3 mb-4 max-h-64 overflow-y-auto"
+                >
                   {ticket.messages.map((message, index) => (
                     <div
                       key={index}
@@ -472,10 +554,14 @@ export default function GuestSupportTicket({ verifiedEmail, onBack }) {
                     onChange={(e) => setReplyText(e.target.value)}
                     placeholder="Type your reply..."
                     rows={2}
+                    onFocus={() => setActiveId(ticket._id)}
                     className="w-full px-3 py-2 bg-[#0c171c] border border-[#FFFFFF26] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 transition-colors resize-none text-sm"
                   />
                   <button
-                    onClick={() => handleReply(ticket._id)}
+                    onClick={() => {
+                      setActiveId(ticket._id);
+                      handleReply(ticket._id);
+                    }}
                     disabled={replying || !replyText.trim()}
                     className="flex items-center gap-2 px-4 py-2 bg-cyan-400 text-black rounded-lg font-medium hover:bg-cyan-300 transition-colors disabled:opacity-60 text-sm"
                   >

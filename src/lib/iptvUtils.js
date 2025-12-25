@@ -1,15 +1,16 @@
-// IPTV Package IDs
+// IPTV Package IDs (MegaOTT)
 export const IPTV_PACKAGES = {
-  2: "1 Month Subscription",
-  3: "3 Month Subscription",
-  4: "6 Month Subscription",
+  4: "1 Month Subscription",
+  6: "3 Month Subscription",
+  3: "6 Month Subscription",
   5: "12 Month Subscription",
+  8: "24 Month Subscription",
 };
 
 // IPTV Template IDs - Auto-selected based on Adult Channels
 export const IPTV_TEMPLATES = {
-  1271: "NoAdult", // Used when Adult Channels is OFF
-  1266: "All", // Used when Adult Channels is ON
+  10742: "Standard",
+  13316: "Adult",
 };
 
 // Line Types
@@ -42,5 +43,5 @@ export function validateStatusValue(val) {
 
 // Helper function to get templateId based on adult channels setting
 export function getTemplateIdByAdultChannels(adultChannels) {
-  return adultChannels ? 1266 : 1271;
+  return adultChannels ? 13316 : 10742;
 }

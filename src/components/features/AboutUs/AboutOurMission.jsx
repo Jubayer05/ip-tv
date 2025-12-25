@@ -9,15 +9,15 @@ import { useEffect, useState } from "react";
 const AboutOurMission = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
 
-  const ORIGINAL_MISSION_HEADING = "OUR MISSION";
+  const ORIGINAL_MISSION_HEADING = "WHAT WE DO";
   const ORIGINAL_MISSION_PARAGRAPH_1 =
-    "To make streaming easy, affordable, and accessible for everyone—everywhere.";
+    "Simple: we bring you great TV without the crazy prices.";
   const ORIGINAL_MISSION_PARAGRAPH_2 =
-    "Whether you're watching the latest blockbuster, catching the game live, or relaxing with a TV marathon, Cheap Stream brings the content you love straight to your screen.";
+    "Movie night with the family, Sunday football, or binge-watching your favorite series at 2am—we make it happen on your terms. No complicated setups, no surprise fees.";
   const ORIGINAL_SIGN_IN_BUTTON = "Sign In";
-  const ORIGINAL_GLOBAL_HEADING = "GLOBAL ENTERTAINMENT, LOCAL FEEL";
+  const ORIGINAL_GLOBAL_HEADING = "WATCH FROM ANYWHERE";
   const ORIGINAL_GLOBAL_PARAGRAPH =
-    "From Hollywood hits to international channels, we've curated a global experience that still feels personal. Cheap Stream works on any device—TV, tablet, phone, or PC —so you can stream wherever you are.";
+    "Hollywood blockbusters, international soccer, news from back home—we pull it all together in one place. Fire it up on your TV, grab your tablet, or use your phone. Works the same everywhere you go.";
 
   const [missionHeading, setMissionHeading] = useState(
     ORIGINAL_MISSION_HEADING
@@ -94,7 +94,7 @@ const AboutOurMission = () => {
             </h2>
             <p className="text-gray-300 text-sm mb-4 ">{missionParagraph1}</p>
             <p className="text-gray-300 text-sm mb-8 ">{missionParagraph2}</p>
-            <Link href="/sign-in">
+            <Link href="/login">
               <Button size="md" className="cursor-pointer">
                 {signInButton}
               </Button>
@@ -138,7 +138,7 @@ const AboutOurMission = () => {
               <p className="text-gray-300 text-sm mb-6 leading-relaxed">
                 {globalParagraph}
               </p>
-              <Link href="/sign-in">
+              <Link href="/login">
                 <Button>{signInButton}</Button>
               </Link>
             </div>

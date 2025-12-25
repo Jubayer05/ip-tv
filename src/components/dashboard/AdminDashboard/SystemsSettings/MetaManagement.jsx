@@ -88,7 +88,7 @@ const MetaManagement = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch("/api/admin/settings");
+      const response = await fetch("/api/admin/settings?nocache=true");
       const data = await response.json();
       if (data.success) {
         setSettings(data.data);

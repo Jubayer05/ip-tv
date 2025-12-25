@@ -5,6 +5,7 @@ import { usePopupStates } from "@/components/features/Pricing/hooks/usePopupStat
 import CartCheckoutPopup from "@/components/features/Pricing/Popup/CartCheckoutPopup";
 import Button from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import { ArrowLeft, ShoppingBag, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -15,6 +16,9 @@ const CartPage = () => {
   const [showCartCheckout, setShowCartCheckout] = useState(false);
   const { user } = useAuth();
   const popupStates = usePopupStates();
+
+  // Add tracking
+  usePageTracking("cart");
 
   useEffect(() => {
     const loadCart = () => {

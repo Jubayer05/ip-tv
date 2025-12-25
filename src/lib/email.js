@@ -20,14 +20,24 @@ export const createTransporter = async () => {
     throw new Error("SMTP configuration incomplete");
   }
 
+  const smtpPort = port || 587;
+  // Auto-detect secure based on port: 465 = SSL, 587 = TLS, others use database setting
+  const isSecure = secure !== undefined ? secure : smtpPort === 465;
+
   return nodemailer.createTransport({
     host: host,
-    port: port || 587,
-    secure: secure || false,
+    port: smtpPort,
+    secure: isSecure, // true for 465 (SSL), false for 587 (TLS)
     auth: {
       user: user,
       pass: pass,
     },
+    // Add connection pooling limits to prevent too many connections
+    pool: true,
+    maxConnections: 1,
+    maxMessages: 10,
+    rateDelta: 1000, // 1 second
+    rateLimit: 5, // Max 5 emails per rateDelta
   });
 };
 
@@ -378,10 +388,27 @@ export async function sendIPTVCredentialsEmail({ toEmail, fullName, order }) {
           }
 
           // If M3U URL is not found in lineInfo, construct it
-          if (!m3uUrl && cred.username && cred.password) {
-            // Construct M3U URL based on common IPTV service patterns
-            m3uUrl = `http://hfast.xyz/get.php?username=${cred.username}&password=${cred.password}&type=m3u_plus&output=ts`;
-            iptvUrl = `http://hfast.xyz/get.php?username=${cred.username}&password=${cred.password}&type=m3u_plus&output=ts`;
+          // Use URLs from provider response (stored in cred.lineInfo)
+          if (!m3uUrl && cred.lineInfo) {
+            try {
+              const info =
+                typeof cred.lineInfo === "string"
+                  ? JSON.parse(cred.lineInfo)
+                  : cred.lineInfo;
+
+              if (info && typeof info === "object") {
+                // For M3U, primary is dns_link
+                if (info.dns_link) m3uUrl = String(info.dns_link).trim();
+
+                // Provide a secondary URL block if available (portal or samsung/lg or dns)
+                if (info.portal_link) iptvUrl = String(info.portal_link).trim();
+                else if (info.dns_link_for_samsung_lg)
+                  iptvUrl = String(info.dns_link_for_samsung_lg).trim();
+                else if (info.dns_link) iptvUrl = String(info.dns_link).trim();
+              }
+            } catch {
+              // ignore parse errors; no fallback URL
+            }
           }
 
           return `
@@ -671,6 +698,21 @@ export async function send2FACodeEmail(email, code, firstName) {
 }
 
 export async function sendBulkNotificationEmail(emails, subject, htmlContent) {
+  // Limit recipients per email to prevent overwhelming SMTP server
+  const MAX_RECIPIENTS = 50;
+
+  if (!emails || !Array.isArray(emails) || emails.length === 0) {
+    console.error("Bulk email: No valid email addresses provided");
+    return false;
+  }
+
+  if (emails.length > MAX_RECIPIENTS) {
+    console.error(
+      `Bulk email: Too many recipients (${emails.length}). Maximum is ${MAX_RECIPIENTS}`
+    );
+    return false;
+  }
+
   const smtpUser = await getSmtpUser();
 
   const mailOptions = {
@@ -701,6 +743,7 @@ export async function sendBulkNotificationEmail(emails, subject, htmlContent) {
   try {
     const transporter = await createTransporter();
     await transporter.sendMail(mailOptions);
+    console.log(`Bulk email sent successfully to ${emails.length} recipients`);
     return true;
   } catch (error) {
     console.error("Bulk email sending failed:", error);
@@ -827,16 +870,26 @@ export async function sendFreeTrialCredentialsEmail({
 
     const expireDate = new Date(trialData.expire * 1000);
     const lineTypeName = lineTypeNames[trialData.lineType] || "M3U Playlist";
+    const expiresAt =
+      trialData.expiringAt && !Number.isNaN(new Date(trialData.expiringAt))
+        ? new Date(trialData.expiringAt)
+        : new Date(Date.now() + 4 * 60 * 60 * 1000);
+
+    // assemble strings once
+    const lineTypeLabel = trialData.type || "M3U Playlist";
+    const packageName = trialData.packageName || trialData.package?.name || "—";
+    const templateName =
+      trialData.templateName || trialData.template?.name || "—";
 
     const mailOptions = {
       from: `"Cheap Stream" <${smtpUser}>`,
       to: toEmail,
-      subject: `🎉 Your Free Trial is Ready! - 24 Hours of Premium IPTV`,
+      subject: `🎉 Your Free Trial is Ready! - 4 Hours of Premium IPTV`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; background: #fff;">
           <div style="background: linear-gradient(135deg, #00b877 0%, #44dcf3 100%); padding: 30px; text-align: center; color: white;">
             <h1 style="margin: 0; font-size: 28px;">🎉 Your Free Trial is Ready!</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 18px;">24 Hours of Premium IPTV Access</p>
+            <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 18px;">4 Hours of Premium IPTV Access</p>
           </div>
 
           <div style="padding: 30px; background: #ffffff;">
@@ -845,18 +898,24 @@ export async function sendFreeTrialCredentialsEmail({
             },</p>
             
             <p style="color: #555; line-height: 1.6; margin-bottom: 25px; font-size: 16px;">
-              🚀 Congratulations! Your free trial is now active and ready to use. You have <strong>24 hours</strong> to experience our premium IPTV service completely free!
+              🚀 Congratulations! Your free trial is now active and ready to use. You have <strong>4 hours</strong> to experience our premium IPTV service completely free!
             </p>
 
             <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 25px 0;">
               <h3 style="color: #856404; margin: 0 0 10px 0;">⏰ Trial Information</h3>
               <div style="color: #856404;">
-                <p style="margin: 5px 0;"><strong>Duration:</strong> 24 hours</p>
-                <p style="margin: 5px 0;"><strong>Expires:</strong> ${expireDate.toLocaleString()}</p>
-                <p style="margin: 5px 0;"><strong>Device Type:</strong> ${lineTypeName}</p>
-                <p style="margin: 5px 0;"><strong>Template:</strong> ${
-                  trialData.templateName || `Template ${trialData.templateId}`
-                }</p>
+                            <div style="margin: 5px 0;"><strong>Expires:</strong> ${expiresAt.toLocaleString()}</div>
+            <div style="margin: 5px 0;"><strong>Package:</strong> ${packageName}</div>
+            <div style="margin: 5px 0;"><strong>Template:</strong> ${templateName}</div>
+            <div style="margin: 5px 0;"><strong>Max Connections:</strong> ${
+              trialData.maxConnections ?? "—"
+            }</div>
+            <div style="margin: 5px 0;"><strong>Forced Country:</strong> ${
+              trialData.forcedCountry ?? "—"
+            }</div>
+            <div style="margin: 5px 0;"><strong>Adult:</strong> ${
+              trialData.adult ?? "No"
+            }</div>
               </div>
             </div>
 
@@ -877,6 +936,32 @@ export async function sendFreeTrialCredentialsEmail({
                   </div>
                 </div>
               </div>
+
+              <div style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h3 style="color: #0c5460; margin: 0 0 15px 0;">Connection Links</h3>
+              <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #ccc;">
+                <p style="margin: 0 0 10px 0;">
+                  <strong>DNS Link:</strong><br />
+                  <span style="font-family: monospace; word-break: break-all;">${
+                    trialData.dnsLink || "Not provided"
+                  }</span>
+                </p>
+                <p style="margin: 0 0 10px 0;">
+                  <strong>Samsung/LG DNS:</strong><br />
+                  <span style="font-family: monospace; word-break: break-all;">${
+                    trialData.samsungLgDns || "Not provided"
+                  }</span>
+                </p>
+                ${
+                  trialData.portalLink
+                    ? `<p style="margin: 0;">
+                        <strong>Portal Link:</strong><br />
+                        <span style="font-family: monospace; word-break: break-all;">${trialData.portalLink}</span>
+                       </p>`
+                    : ""
+                }
+              </div>
+            </div>
 
               ${
                 trialData.lineId
@@ -939,7 +1024,7 @@ export async function sendFreeTrialCredentialsEmail({
               <h3 style="color: #155724; margin: 0 0 15px 0;">🎯 What's Next?</h3>
               <div style="color: #155724;">
                 <p style="margin: 8px 0;">• Use these credentials in your preferred IPTV player</p>
-                <p style="margin: 8px 0;">• Enjoy 24 hours of premium content access</p>
+                <p style="margin: 8px 0;">• Enjoy 4 hours of premium content access</p>
                 <p style="margin: 8px 0;">• Explore our channel lineup and features</p>
                 <p style="margin: 8px 0;">• Upgrade to a full subscription when you're ready</p>
               </div>
@@ -977,7 +1062,7 @@ export async function sendFreeTrialCredentialsEmail({
               <h3 style="color: #856404; margin: 0 0 10px 0;">⚠️ Important Reminders</h3>
               <div style="color: #856404; font-size: 14px;">
                 <p style="margin: 5px 0;">• Keep your credentials secure and don't share them</p>
-                <p style="margin: 5px 0;">• Your trial expires in exactly 24 hours</p>
+                <p style="margin: 5px 0;">• Your trial expires in exactly 4 hours</p>
                 <p style="margin: 5px 0;">• No credit card required for this trial</p>
                 <p style="margin: 5px 0;">• Contact support if you need any assistance</p>
               </div>

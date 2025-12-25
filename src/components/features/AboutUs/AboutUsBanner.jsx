@@ -7,11 +7,11 @@ const AboutUsBanner = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
 
   const [heading1, setHeading1] = useState(
-    "Streaming Shouldn't Break the Bank."
+    "Good TV Shouldn't Cost a Fortune."
   );
-  const [heading2, setHeading2] = useState("We Make Sure It Doesn't.");
+  const [heading2, setHeading2] = useState("That's Why We Built This.");
   const [paragraph, setParagraph] = useState(
-    "At Cheap Stream, we believe everyone deserves access to top-quality entertainment—without expensive cable bills, long-term contracts, or complicated setups. We're a passionate team of streamers, techies, and movie lovers who were tired of overpriced services and limited content. So, we created a better way."
+    "We got tired of paying $150 a month for cable and streaming services that charge you for every little thing. So a few of us—people who don't have cable, techies, and TV addicts—decided to take action. Streaming that works without long contracts or hidden fees."
   );
 
   useEffect(() => {

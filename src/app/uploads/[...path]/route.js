@@ -1,6 +1,7 @@
 import { readFile, stat } from "fs/promises";
 import { NextResponse } from "next/server";
 import path from "path";
+import { getUploadDir } from "@/config/upload";
 
 export const runtime = "nodejs";
 
@@ -9,7 +10,9 @@ export async function GET(request, { params }) {
     // Await params as required in Next.js 15
     const resolvedParams = await params;
     const filePath = resolvedParams.path.join("/");
-    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
+    
+    // Use centralized upload directory
+    const uploadDir = getUploadDir();
     const fullPath = path.join(uploadDir, filePath);
 
     // Security check - ensure the file is within the upload directory

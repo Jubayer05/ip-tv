@@ -1,6 +1,6 @@
 "use client";
-import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function ProductForm() {
@@ -10,7 +10,7 @@ export default function ProductForm() {
   const ORIGINAL_TEXTS = {
     title: "Product Form",
     subtitle: "Product management form",
-    button: "Go Home"
+    button: "Go Home",
   };
 
   // State for translated content
@@ -26,9 +26,9 @@ export default function ProductForm() {
         const items = [
           ORIGINAL_TEXTS.title,
           ORIGINAL_TEXTS.subtitle,
-          ORIGINAL_TEXTS.button
+          ORIGINAL_TEXTS.button,
         ];
-        
+
         const translated = await translate(items);
         if (!isMounted) return;
 
@@ -37,7 +37,7 @@ export default function ProductForm() {
         setTexts({
           title: tTitle,
           subtitle: tSubtitle,
-          button: tButton
+          button: tButton,
         });
       } catch (error) {
         console.error("Translation error:", error);

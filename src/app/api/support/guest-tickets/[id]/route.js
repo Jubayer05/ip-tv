@@ -2,6 +2,10 @@ import { connectToDatabase } from "@/lib/db";
 import { sendGenericEmail } from "@/lib/email";
 import GuestSupportTicket from "@/models/GuestSupportTicket";
 import { NextResponse } from "next/server";
+import {
+  emitGuestTicketUpdate,
+  emitGuestTicketListUpdate,
+} from "@/lib/socket";
 
 // GET /api/support/guest-tickets/[id]
 export async function GET(request, { params }) {
@@ -69,6 +73,22 @@ export async function POST(request, { params }) {
     }
 
     await ticket.save();
+
+    // Emit Socket.io event for guest ticket update
+    const updatedTicket = await GuestSupportTicket.findById(id)
+      .select("-__v")
+      .lean();
+
+    emitGuestTicketUpdate(id, {
+      ticket: updatedTicket,
+      message: { sender, text: String(text).trim() },
+      status: ticket.status,
+    });
+
+    // Notify for list updates
+    emitGuestTicketListUpdate(ticket.guestEmail);
+    // Notify admins
+    emitGuestTicketListUpdate();
 
     // If admin sent a message, send email notification to guest
     if (sender === "admin") {
@@ -165,6 +185,20 @@ export async function PATCH(request, { params }) {
     ticket.status = status;
     ticket.lastUpdatedBy = "admin";
     await ticket.save();
+
+    // Emit Socket.io event for status change
+    const updatedTicket = await GuestSupportTicket.findById(id)
+      .select("-__v")
+      .lean();
+
+    emitGuestTicketUpdate(id, {
+      ticket: updatedTicket,
+      status: ticket.status,
+    });
+
+    // Notify for list updates
+    emitGuestTicketListUpdate(ticket.guestEmail);
+    emitGuestTicketListUpdate(); // Notify admins
 
     return NextResponse.json({
       success: true,

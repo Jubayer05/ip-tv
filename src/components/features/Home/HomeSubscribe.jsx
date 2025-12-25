@@ -8,10 +8,10 @@ import { useEffect, useState } from "react";
 const HomeSubscribe = () => {
   const { language, translate } = useLanguage();
 
-  const ORIGINAL_HEADING_1 = "Start Streaming for Less –";
-  const ORIGINAL_HEADING_2 = "Sign Up Today!";
+  const ORIGINAL_HEADING_1 = "Cut the Cable Bill,";
+  const ORIGINAL_HEADING_2 = "Keep the Entertainment";
   const ORIGINAL_PARAGRAPH =
-    "Ready to ditch overpriced streaming services? Join Cheap Stream now and start watching your favorite movies instantly.";
+    "Why keep paying $100+ a month for cable? Switch to Cheap Stream and get all your channels, movies, and live sports for way less. Takes about 2 minutes to set up.";
   const ORIGINAL_PLACEHOLDER = "Email Address";
   const ORIGINAL_BUTTON = "Get Started";
 
@@ -55,11 +55,11 @@ const HomeSubscribe = () => {
           {/* Left Content */}
           <div className="flex-1 max-w-2xl md:pl-14 mt-8 md:mt-0 px-4 md:px-0">
             {/* Main heading */}
-            <h1 className="text-white text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-6 leading-tight text-center md:text-left">
+            <h2 className="text-white text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-6 leading-tight text-center md:text-left">
               {heading1}
               <br />
               <span className="text-primary">{heading2}</span>
-            </h1>
+            </h2>
 
             <p className="text-center md:text-left text-white text-xs sm:text-sm md:text-base lg:text-[16px] font-medium mb-4 md:mb-8 leading-relaxed font-secondary max-w-xl">
               {paragraph}
@@ -92,6 +92,9 @@ const HomeSubscribe = () => {
               alt="subscribe"
               width={400}
               height={560}
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 300px, 400px"
+              quality={70}
+              loading="lazy"
               className="w-full h-[200px] sm:h-[250px] md:w-[300px] md:h-[300px] lg:w-[400px] lg:h-[560px] object-cover rounded-lg"
             />
 

@@ -2,8 +2,7 @@
 import Button from "@/components/ui/button";
 import { MessageSquare, Quote, Star } from "lucide-react";
 import { useEffect, useState } from "react";
-import "slick-carousel/slick/slick-theme.css";
-import "slick-carousel/slick/slick.css";
+import "@/styles/slick-minimal.css";
 
 const ReviewsPage = () => {
   const [reviews, setReviews] = useState([]);
@@ -288,9 +287,9 @@ const ReviewsPage = () => {
                   {getUserInitial(review)}
                 </div>
                 <div className="ml-3">
-                  <h4 className="font-semibold text-white text-sm md:text-base">
+                  <p className="font-semibold text-white text-sm md:text-base">
                     {getUserDisplayName(review)}
-                  </h4>
+                  </p>
                   <p className="text-gray-400 text-xs md:text-sm font-secondary">
                     {getDisplayDate(review)}
                   </p>

@@ -50,8 +50,8 @@ function VerifyEmailInner() {
       "Welcome to Cheap Stream! Your account has been verified and created.",
     welcomeAboard: "Welcome aboard!",
     redirectingMessage:
-      "You're now being redirected to your dashboard where you can start exploring our services.",
-    redirectingToDashboard: "Redirecting to dashboard...",
+      "You're now being redirected to our homepage where you can start exploring our services.",
+    redirectingToDashboard: "Redirecting to homepage...",
     verifyYourEmail: "VERIFY YOUR EMAIL",
     completeRegistrationMessage:
       "Complete your registration by setting a password for your account.",
@@ -208,13 +208,13 @@ function VerifyEmailInner() {
         if (result?.success) {
           setSuccess(true);
           setTimeout(() => {
-            router.push("/dashboard");
+            router.push("/");
           }, 800);
         } else {
-          // fallback: still show success but send to login if hydration fails
+          // fallback: still show success but send to home if hydration fails
           setSuccess(true);
           setTimeout(() => {
-            router.push("/login");
+            router.push("/");
           }, 800);
         }
       } else {

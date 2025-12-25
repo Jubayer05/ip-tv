@@ -7,14 +7,14 @@ import { useEffect, useState } from "react";
 const PricingBanner = () => {
   const { translate, isLanguageLoaded } = useLanguage();
 
-  const [heading1, setHeading1] = useState("Watch More, Pay Less –");
-  const [heading2, setHeading2] = useState("Choose Your Streaming Plans");
+  const [heading1, setHeading1] = useState("Find Your Perfect Plan –");
+  const [heading2, setHeading2] = useState("No Contracts, No Catch");
   const [paragraph, setParagraph] = useState(
-    "At Cheap Stream, we believe in affordable entertainment without sacrificing quality. Whether you're a casual viewer or a full-on movie marathoner, we've got a plan that fits your lifestyle—and your budget."
+    "Whether you watch a little or a lot, we have something that fits. Pick a plan, try it out, and switch anytime. It's that simple."
   );
-  const [buttonText, setButtonText] = useState("Start with a Free Trial!");
+  const [buttonText, setButtonText] = useState("Try It Free for 24 Hours");
   const [trialNote, setTrialNote] = useState(
-    "*Try Cheap Stream free for 24 hours—no credit card required!"
+    "*No credit card needed. Just pick a plan and start watching."
   );
 
   // Store original content for translation
@@ -29,27 +29,27 @@ const PricingBanner = () => {
         if (data.success && data.data.banners?.pricing) {
           const pricingBanner = data.data.banners.pricing;
           const content = {
-            heading1: pricingBanner.heading1 || "Watch More, Pay Less –",
-            heading2: pricingBanner.heading2 || "Choose Your Streaming Plans",
+            heading1: pricingBanner.heading1 || "Find Your Perfect Plan –",
+            heading2: pricingBanner.heading2 || "No Contracts, No Catch",
             paragraph:
               pricingBanner.paragraph ||
-              "At Cheap Stream, we believe in affordable entertainment without sacrificing quality. Whether you're a casual viewer or a full-on movie marathoner, we've got a plan that fits your lifestyle—and your budget.",
-            buttonText: pricingBanner.buttonText || "Start with a Free Trial!",
+              "Whether you watch a little or a lot, we have something that fits. Pick a plan, try it out, and switch anytime. It's that simple.",
+            buttonText: pricingBanner.buttonText || "Try It Free for 24 Hours",
             trialNote:
               pricingBanner.trialNote ||
-              "*Try Cheap Stream free for 24 hours—no credit card required!",
+              "*No credit card needed. Just pick a plan and start watching.",
           };
           setOriginalContent(content);
         } else {
           // Use default content if no backend content
           const defaultContent = {
-            heading1: "Watch More, Pay Less –",
-            heading2: "Choose Your Streaming Plans",
+            heading1: "Find Your Perfect Plan –",
+            heading2: "No Contracts, No Catch",
             paragraph:
-              "At Cheap Stream, we believe in affordable entertainment without sacrificing quality. Whether you're a casual viewer or a full-on movie marathoner, we've got a plan that fits your lifestyle—and your budget.",
-            buttonText: "Start with a Free Trial!",
+              "Whether you watch a little or a lot, we have something that fits. Pick a plan, try it out, and switch anytime. It's that simple.",
+            buttonText: "Try It Free for 24 Hours",
             trialNote:
-              "*Try Cheap Stream free for 24 hours—no credit card required!",
+              "*No credit card needed. Just pick a plan and start watching.",
           };
           setOriginalContent(defaultContent);
         }
@@ -57,13 +57,13 @@ const PricingBanner = () => {
         console.error("Failed to fetch banner content:", error);
         // Use default content on error
         const defaultContent = {
-          heading1: "Watch More, Pay Less –",
-          heading2: "Choose Your Streaming Plans",
+          heading1: "Find Your Perfect Plan –",
+          heading2: "No Contracts, No Catch",
           paragraph:
-            "At Cheap Stream, we believe in affordable entertainment without sacrificing quality. Whether you're a casual viewer or a full-on movie marathoner, we've got a plan that fits your lifestyle—and your budget.",
-          buttonText: "Start with a Free Trial!",
+            "Whether you watch a little or a lot, we have something that fits. Pick a plan, try it out, and switch anytime. It's that simple.",
+          buttonText: "Try It Free for 24 Hours",
           trialNote:
-            "*Try Cheap Stream free for 24 hours—no credit card required!",
+            "*No credit card needed. Just pick a plan and start watching.",
         };
         setOriginalContent(defaultContent);
       }

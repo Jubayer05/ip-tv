@@ -3,6 +3,7 @@ import Order from "@/models/Order";
 import User from "@/models/User";
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
+import { isSuperAdminEmail } from "@/lib/superAdmin";
 
 export const runtime = "nodejs";
 
@@ -38,7 +39,32 @@ async function authenticateUser(request) {
     }
 
     await connectToDatabase();
-    const user = await User.findById(decoded.userId);
+    let user = await User.findById(decoded.userId);
+
+    // If user not found by ID, try finding by email
+    if (!user && decoded.email) {
+      user = await User.findOne({ email: decoded.email });
+    }
+
+    // If still not found, create the user (for admin-created or social login users)
+    if (!user && decoded.email) {
+      try {
+        user = await User.create({
+          email: decoded.email,
+          profile: {
+            firstName: decoded.email.split("@")[0],
+            lastName: "",
+            username: decoded.email.split("@")[0],
+          },
+          role: decoded.role || "user",
+          isActive: true,
+          emailVerified: true,
+        });
+      } catch (createError) {
+        console.error("Failed to create user:", createError);
+        return { error: "User setup failed", status: 500 };
+      }
+    }
 
     if (!user || !user.isActive) {
       return { error: "Invalid or inactive user", status: 401 };
@@ -53,11 +79,7 @@ async function authenticateUser(request) {
 
 // Check if user has admin access
 function hasAdminAccess(user) {
-  const superAdminEmails = [
-    "jubayer0504@gmail.com",
-    "alan.sangasare10@gmail.com",
-  ];
-  return user?.role === "admin" || superAdminEmails.includes(user?.email);
+  return user?.role === "admin" || isSuperAdminEmail(user?.email);
 }
 
 export async function GET(request) {

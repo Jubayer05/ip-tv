@@ -17,7 +17,7 @@ export default function GuestCheckoutPopup({
     title: "CHOOSE YOUR CHECKOUT OPTION",
     subtitle: "Select how you'd like to proceed with your order",
     buttons: {
-      quickBuy: "Quick Buy - Continue as Guest",
+      quickBuy: "Quick Buy Keep Going as a Guest",
       register: "Register to unlock full features",
     },
     features: {
@@ -116,6 +116,7 @@ export default function GuestCheckoutPopup({
           <button
             onClick={onClose}
             className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-6 md:right-6 text-white hover:text-gray-300 transition-colors"
+            aria-label="Close guest checkout popup"
           >
             <X size={20} className="sm:w-6 sm:h-6" />
           </button>

@@ -1,35 +1,43 @@
+import nowpaymentsService from "@/lib/paymentServices/nowpaymentsServiceV2";
+import PaymentSettings from "@/models/PaymentSettings";
+import { connectToDatabase } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const apiKey = process.env.NOWPAYMENTS_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "NOWPAYMENTS_API_KEY not configured" },
-        { status: 500 }
-      );
-    }
+    await connectToDatabase();
 
-    const response = await fetch("https://api-sandbox.nowpayments.io/v1/currencies", {
-      headers: {
-        "x-api-key": apiKey
-      }
+    // Get payment settings
+    const paymentSettings = await PaymentSettings.findOne({
+      gateway: "nowpayment",
+      isActive: true,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (!paymentSettings || !paymentSettings.apiKey) {
       return NextResponse.json(
-        { error: data?.message || "Failed to fetch currencies" },
+        { error: "NOWPayments not configured" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(data);
+    // Configure service
+    nowpaymentsService.setApiKey(paymentSettings.apiKey);
+    if (paymentSettings.sandboxMode) {
+      nowpaymentsService.setSandboxMode(true);
+    }
 
-  } catch (e) {
+    // Get available currencies
+    const result = await nowpaymentsService.getAvailableCurrencies();
+
+    return NextResponse.json({
+      success: true,
+      currencies: result.currencies,
+      count: result.currencies.length,
+    });
+  } catch (error) {
+    console.error("Currencies error:", error);
     return NextResponse.json(
-      { error: e?.message || "Failed to fetch currencies" },
+      { error: error.message || "Failed to fetch currencies" },
       { status: 500 }
     );
   }

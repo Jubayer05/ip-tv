@@ -78,7 +78,7 @@ export const usePricingPlan = () => {
           const data = await response.json();
           setProduct(data[0]);
           // Set recommended plan as default selected
-          const recommendedIndex = data[0].variants?.findIndex(
+          const recommendedIndex = data[0]?.variants?.findIndex(
             (v) => v.recommended
           );
           if (recommendedIndex !== -1) {

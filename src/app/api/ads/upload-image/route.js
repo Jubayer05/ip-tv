@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "fs/promises";
 import { NextResponse } from "next/server";
 import path from "path";
+import { uploadPaths, getPublicUrl, isValidFileType, isValidFileSize, uploadConfig } from "@/config/upload";
 
 export async function POST(request) {
   try {
@@ -14,9 +15,8 @@ export async function POST(request) {
       );
     }
 
-    // Validate file type
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowedTypes.includes(file.type)) {
+    // Validate file type using centralized config
+    if (!isValidFileType(file)) {
       return NextResponse.json(
         {
           success: false,
@@ -27,9 +27,8 @@ export async function POST(request) {
       );
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
+    // Validate file size using centralized config
+    if (!isValidFileSize(file)) {
       return NextResponse.json(
         { success: false, error: "File size too large. Maximum size is 5MB." },
         { status: 400 }
@@ -39,9 +38,8 @@ export async function POST(request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create upload directory
-    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
-    const adsDir = path.join(uploadDir, "ads");
+    // Use centralized upload path
+    const adsDir = uploadPaths.ads();
     await mkdir(adsDir, { recursive: true });
 
     // Generate unique filename
@@ -53,8 +51,8 @@ export async function POST(request) {
     // Save file
     await writeFile(filepath, buffer);
 
-    // Return the public URL
-    const imageUrl = `/uploads/ads/${filename}`;
+    // Return the public URL using centralized function
+    const imageUrl = getPublicUrl('ads', filename);
 
     return NextResponse.json({
       success: true,
@@ -83,10 +81,11 @@ export async function DELETE(request) {
 
     // Extract filename from URL
     const filename = path.basename(imageUrl);
-    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
-    const filepath = path.join(uploadDir, "ads", filename);
+    const adsDir = uploadPaths.ads();
+    const filepath = path.join(adsDir, filename);
 
     // Delete file
+    const { unlink } = await import("fs/promises");
     await unlink(filepath);
 
     return NextResponse.json({

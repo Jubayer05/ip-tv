@@ -9,6 +9,8 @@ import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
+    console.log("START: HoodPay create payment");
+
     const {
       amount,
       currency = "USD",
@@ -24,13 +26,22 @@ export async function POST(request) {
       meta = {},
     } = await request.json();
 
+    console.log("Request data:", {
+      amount,
+      currency,
+      userId,
+      customerEmail,
+      meta,
+    });
+
+    // Validate amount
     if (!amount || Number(amount) <= 0) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
     await connectToDatabase();
 
-    // Get HoodPay payment settings from database
+    // Get HoodPay payment settings
     const paymentSettings = await PaymentSettings.findOne({
       gateway: "hoodpay",
       isActive: true,
@@ -43,6 +54,12 @@ export async function POST(request) {
       );
     }
 
+    console.log("HoodPay settings loaded:", {
+      hasApiKey: !!paymentSettings.apiKey,
+      hasBusinessId: !!paymentSettings.businessId,
+      hasWebhookSecret: !!paymentSettings.webhookSecret,
+    });
+
     // Calculate service fee
     const feeCalculation = calculateServiceFee(
       amount,
@@ -50,27 +67,170 @@ export async function POST(request) {
     );
     const finalAmount = feeCalculation.totalAmount;
 
-    // Update the service with database credentials
-    hoodpayService.apiKey = paymentSettings.apiKey;
-    if (paymentSettings.apiSecret) {
-      hoodpayService.apiSecret = paymentSettings.apiSecret;
+    console.log("Fee calculation:", {
+      originalAmount: amount,
+      serviceFee: feeCalculation.feeAmount,
+      finalAmount: finalAmount,
+    });
+
+    // Configure HoodPay service
+    hoodpayService.setApiKey(paymentSettings.apiKey);
+    
+    const businessId = paymentSettings.businessId || paymentSettings.merchantId;
+    if (!businessId) {
+      return NextResponse.json(
+        { error: "HoodPay Business ID is not configured. Please add it in payment settings." },
+        { status: 400 }
+      );
     }
+    hoodpayService.setBusinessId(businessId);
+    
+    if (paymentSettings.webhookSecret) {
+      hoodpayService.setWebhookSecret(paymentSettings.webhookSecret);
+    }
+    
+    if (paymentSettings.allowedIps && paymentSettings.allowedIps.length > 0) {
+      hoodpayService.setAllowedIps(paymentSettings.allowedIps);
+    }
+
+    console.log("HoodPay service configured");
 
     const origin = new URL(request.url).origin;
 
-    // Prepare metadata for HoodPay (simplified to avoid validation issues)
+    // Determine if this is a deposit or subscription
+    const isDeposit = meta?.purpose === "deposit";
+    
+    console.log("Order type:", {
+      isDeposit,
+      purpose: meta?.purpose,
+      productId: meta?.productId,
+      variantId: meta?.variantId,
+    });
+
+    // Validate product info for subscriptions
+    let orderProducts = [];
+    
+    if (!isDeposit) {
+      const productId = meta?.productId;
+      const variantId = meta?.variantId;
+      
+      if (!productId || !variantId) {
+        return NextResponse.json(
+          {
+            error: "productId and variantId are required for subscription orders",
+            received: { productId, variantId },
+          },
+          { status: 400 }
+        );
+      }
+
+      console.log("Looking up product:", { productId, variantId });
+
+      const product = await Product.findById(productId);
+      if (!product) {
+        return NextResponse.json(
+          { error: "Product not found" },
+          { status: 404 }
+        );
+      }
+
+      const variant = product.variants.find(
+        (v) => v._id.toString() === variantId
+      );
+      if (!variant) {
+        return NextResponse.json(
+          { error: "Variant not found" },
+          { status: 404 }
+        );
+      }
+
+      console.log("Product found:", {
+        productName: product.name,
+        variantPrice: variant.price,
+        variantDuration: variant.durationMonths,
+      });
+
+      orderProducts = [
+        {
+          productId: product._id,
+          variantId: variant._id,
+          quantity: Number(meta?.quantity ?? quantity),
+          price: variant.price,
+          duration: variant.durationMonths || 0,
+          devicesAllowed: Number(meta?.devices ?? devicesAllowed),
+          adultChannels: Boolean(meta?.adultChannels ?? adultChannels),
+        },
+      ];
+    } else {
+      // Deposit order
+      orderProducts = [
+        {
+          productId: null,
+          variantId: null,
+          quantity: 1,
+          price: Number(amount),
+          duration: 0,
+          devicesAllowed: 0,
+          adultChannels: false,
+        },
+      ];
+    }
+
+    // Generate order number
+    const orderNumber = providedOrderNumber || `hoodpay-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+
+    console.log("Order number generated:", orderNumber);
+
+    // Build contact info
+    let resolvedContactInfo = contactInfo;
+    let resolvedGuestEmail = customerEmail || null;
+
+    if (userId) {
+      const user = await User.findById(userId);
+      if (user) {
+        resolvedContactInfo = {
+          fullName:
+            `${user?.profile?.firstName || ""} ${
+              user?.profile?.lastName || ""
+            }`.trim() ||
+            user?.profile?.username ||
+            user?.email,
+          email: user.email,
+          phone: user?.profile?.phone || "",
+        };
+        resolvedGuestEmail = null;
+        
+        console.log("User found:", {
+          userId: user._id,
+          email: user.email,
+        });
+      }
+    } else if (!resolvedContactInfo) {
+      resolvedContactInfo = {
+        fullName: customerEmail || "Guest",
+        email: customerEmail || "",
+        phone: "",
+      };
+    }
+
+    // Prepare metadata for HoodPay
     const hoodpayMetadata = {
-      order_number: providedOrderNumber || "",
+      order_number: orderNumber,
       user_id: userId || "",
-      purpose: meta?.purpose || "order",
+      purpose: isDeposit ? "deposit" : "subscription",
+      product_id: meta?.productId || "",
+      variant_id: meta?.variantId || "",
     };
+
+    console.log("Creating HoodPay payment with metadata:", hoodpayMetadata);
 
     let payment;
     let hoodpayPaymentData = {
-      status: "pending",
-      amount: Number(finalAmount), // Use final amount including fees
+      status: "pending", // Map 'created' to 'pending'
+      sourceAmount: Number(amount), // Original amount before fees
+      amount: Number(finalAmount), // Total amount with fees
       currency: currency.toUpperCase(),
-      customerEmail: customerEmail || "",
+      customerEmail: resolvedContactInfo.email || customerEmail || "",
       description: `${orderName}${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
       callbackReceived: false,
       lastStatusUpdate: new Date(),
@@ -78,180 +238,85 @@ export async function POST(request) {
     };
 
     try {
-      // Create HoodPay payment with final amount
+      // Create HoodPay payment
       const result = await hoodpayService.createPayment({
-        amount: finalAmount, // Use final amount including fees
+        amount: finalAmount,
         currency,
-        customerEmail,
-        description: `${orderName}${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
-        callbackUrl: `${origin}/api/payments/hoodpay/webhook`,
-        successUrl: `${origin}/payment-status/hoodpay-${Date.now()}`,
+        orderId: orderNumber,
+        orderDescription: `${orderName}${feeCalculation.feeAmount > 0 ? ` (${formatFeeInfo(feeCalculation)})` : ''}`,
+        customerEmail: resolvedContactInfo.email || customerEmail,
         metadata: hoodpayMetadata,
+        notifyUrl: `${origin}/api/payments/hoodpay/webhook`,
+        returnUrl: `${origin}/payment-success?orderNumber=${orderNumber}&amount=${finalAmount}&gateway=hoodpay&type=${isDeposit ? 'deposit' : 'order'}`,
+        cancelUrl: `${origin}/payment-cancel?orderNumber=${orderNumber}&gateway=hoodpay&type=${isDeposit ? 'deposit' : 'order'}`,
       });
 
       payment = result.data;
 
-      // Update HoodPay payment data with API response
+      console.log("HoodPay payment created:", {
+        paymentId: payment.paymentId,
+        paymentUrl: payment.paymentUrl?.substring(0, 50) + "...",
+        status: payment.status,
+      });
+
+      // Update payment data with API response
       hoodpayPaymentData = {
         ...hoodpayPaymentData,
-        paymentId: payment.id,
-        paymentUrl: payment.payment_url,
+        paymentId: payment.paymentId,
+        paymentUrl: payment.paymentUrl,
+        status: payment.status === 'created' ? 'pending' : payment.status, // Map HoodPay status to internal status
       };
     } catch (apiError) {
       console.error("HoodPay API Error:", apiError);
-
-      // If HoodPay API fails, we can still create the order but mark it as failed
-      // This allows the user to retry or use a different payment method
-      hoodpayPaymentData = {
-        ...hoodpayPaymentData,
-        status: "failed",
-        paymentId: `failed-${Date.now()}`,
-        paymentUrl: "",
-      };
-
       return NextResponse.json(
         {
           success: false,
           error: "HoodPay payment creation failed",
           details: apiError.message,
-          orderCreated: false,
         },
         { status: 500 }
       );
     }
 
-    // Find existing order or create new one
-    const orderNumber =
-      providedOrderNumber || payment?.id || `hoodpay-${Date.now()}`;
-    let order = await Order.findOne({ orderNumber });
-
-    if (!order) {
-      // If not a deposit, validate product info
-      const isDeposit = (meta?.purpose || "order") === "deposit";
-      let orderProducts = [];
-
-      if (!isDeposit) {
-        const productId = meta?.productId;
-        const variantId = meta?.variantId;
-        if (!productId || !variantId) {
-          return NextResponse.json(
-            {
-              error: "productId and variantId are required for order creation",
-              suggestion:
-                "Provide productId and variantId in meta for non-deposit payments",
-            },
-            { status: 400 }
-          );
-        }
-        const product = await Product.findById(productId);
-        if (!product)
-          return NextResponse.json(
-            { error: "Product not found" },
-            { status: 404 }
-          );
-        const variant = product.variants.find(
-          (v) => v._id.toString() === variantId
-        );
-        if (!variant)
-          return NextResponse.json(
-            { error: "Variant not found" },
-            { status: 404 }
-          );
-
-        orderProducts = [
-          {
-            productId: product._id,
-            variantId: variant._id,
-            quantity: Number(meta?.quantity ?? quantity),
-            price: variant.price,
-            duration: variant.durationMonths || 0,
-            devicesAllowed: Number(meta?.devices ?? devicesAllowed),
-            adultChannels: Boolean(meta?.adultChannels ?? adultChannels),
-          },
-        ];
-      } else {
-        // Deposit top-up
-        orderProducts = [
-          {
-            productId: null,
-            variantId: null,
-            quantity: 1,
-            price: Number(amount), // Original amount for product price
-            duration: 0,
-            devicesAllowed: 0,
-            adultChannels: false,
-          },
-        ];
-      }
-
-      // Build contact info
-      let resolvedContactInfo = contactInfo;
-      let resolvedGuestEmail = customerEmail || null;
-
-      if (userId) {
-        const user = await User.findById(userId);
-        if (user) {
-          resolvedContactInfo = {
-            fullName:
-              `${user?.profile?.firstName || ""} ${
-                user?.profile?.lastName || ""
-              }`.trim() ||
-              user?.profile?.username ||
-              user?.email,
-            email: user.email,
-            phone: user?.profile?.phone || "",
-          };
-          resolvedGuestEmail = null;
-        }
-      } else if (!resolvedContactInfo) {
-        resolvedContactInfo = {
-          fullName: customerEmail || "Guest",
-          email: customerEmail || "",
-          phone: "",
-        };
-      }
-
-      order = new Order({
-        orderNumber,
-        userId: userId || null,
-        guestEmail: resolvedGuestEmail,
-        products: orderProducts,
-        totalAmount: Number(finalAmount), // Store final amount including fees
-        originalAmount: Number(amount), // Store original amount
-        serviceFee: Number(feeCalculation.feeAmount), // Store service fee
-        discountAmount: 0,
-        couponCode: couponCode,
-        paymentMethod: "Card",
-        paymentGateway: "HoodPay",
-        paymentStatus:
-          hoodpayPaymentData.status === "failed" ? "failed" : "pending",
-        contactInfo: resolvedContactInfo,
-        status: hoodpayPaymentData.status === "failed" ? "cancelled" : "new",
-      });
-    } else {
-      order.paymentMethod = "Card";
-      order.paymentGateway = "HoodPay";
-      order.paymentStatus =
-        hoodpayPaymentData.status === "failed" ? "failed" : "pending";
-      order.totalAmount = Number(finalAmount); // Update with final amount
-      order.originalAmount = Number(amount); // Store original amount
-      order.serviceFee = Number(feeCalculation.feeAmount); // Store service fee
-    }
-
-    order.hoodpayPayment = hoodpayPaymentData;
+    // Create order record
+    const order = new Order({
+      orderNumber,
+      userId: userId || null,
+      guestEmail: resolvedGuestEmail,
+      products: orderProducts,
+      totalAmount: Number(finalAmount),
+      originalAmount: Number(amount),
+      serviceFee: Number(feeCalculation.feeAmount),
+      discountAmount: 0,
+      couponCode: couponCode,
+      paymentMethod: "Card",
+      paymentGateway: "HoodPay",
+      paymentStatus: "pending",
+      contactInfo: resolvedContactInfo,
+      status: "new",
+      hoodpayPayment: hoodpayPaymentData,
+    });
 
     await order.save();
+
+    console.log("Order saved:", {
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      totalAmount: order.totalAmount,
+    });
+
+    console.log("SUCCESS: HoodPay payment created");
 
     return NextResponse.json({
       success: true,
       orderId: order._id,
       orderNumber: order.orderNumber,
-      paymentId: payment?.id,
-      checkoutUrl: payment?.payment_url || "",
-      amount: finalAmount, // Return final amount
+      paymentId: payment.paymentId,
+      checkoutUrl: payment.paymentUrl,
+      amount: finalAmount,
+      originalAmount: amount,
       currency,
-      status: payment?.status || "pending",
-      // Include fee information in response
+      status: payment.status,
       feeInfo: {
         originalAmount: feeCalculation.originalAmount,
         serviceFee: feeCalculation.feeAmount,

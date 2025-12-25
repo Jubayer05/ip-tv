@@ -19,14 +19,12 @@ export async function POST(request) {
     // Check if user exists
     const user = await User.findOne({ email });
 
-    // For security, always return success even if user doesn't exist
-    // This prevents email enumeration attacks
+    // Return error if user doesn't exist
     if (!user) {
-      return NextResponse.json({
-        success: true,
-        message:
-          "If an account exists with this email, a password reset link has been sent.",
-      });
+      return NextResponse.json(
+        { error: "This email is not registered with us." },
+        { status: 404 }
+      );
     }
 
     // Generate reset token

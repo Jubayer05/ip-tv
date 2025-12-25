@@ -1,7 +1,6 @@
 "use client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useApi } from "@/hooks/useApi";
-import { CheckCircle, Clock, Play, Shield, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const ManageFreeTrial = () => {
@@ -12,8 +11,7 @@ const ManageFreeTrial = () => {
   const [saved, setSaved] = useState(false);
   const [freeTrialContent, setFreeTrialContent] = useState({
     title: "Start Your Free Trial",
-    description:
-      "Experience premium IPTV content for 24 hours - completely free!",
+    description: "Experience premium IPTV content for 4 hours",
     features: [
       {
         id: 1,
@@ -42,14 +40,6 @@ const ManageFreeTrial = () => {
       "No credit card required",
     ],
   });
-
-  const iconMap = {
-    clock: Clock,
-    star: Star,
-    shield: Shield,
-    play: Play,
-    checkCircle: CheckCircle,
-  };
 
   // Original static texts
   const ORIGINAL_TEXTS = {
@@ -113,7 +103,7 @@ const ManageFreeTrial = () => {
     try {
       setLoading(true);
       setError("");
-      const response = await apiCall("/api/admin/settings", "GET");
+      const response = await apiCall("/api/admin/settings?nocache=true", "GET");
       if (response.success && response.data.freeTrialContent) {
         setFreeTrialContent(response.data.freeTrialContent);
       }

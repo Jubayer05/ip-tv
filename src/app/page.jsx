@@ -1,38 +1,56 @@
-import TrustPilotWidget from "@/components/common/TrustPilotWidget";
-import FAQ from "@/components/features/Home/FaqHome";
-import FeatureHome from "@/components/features/Home/FeatureHome";
-import FreeTrialCard from "@/components/features/Home/FreeTrial";
-import HomeSubscribe from "@/components/features/Home/HomeSubscribe";
 import MainBanner from "@/components/features/Home/MainBanner";
 import dynamic from "next/dynamic";
 
-// Lazy load heavy components
-const LatestTrailers = dynamic(
-  () => import("@/components/features/Home/LatestTrailers"),
-  {
-    loading: () => (
-      <div className="h-64 bg-gray-800 animate-pulse rounded-lg" />
-    ),
-  }
+// Minimal loading skeletons with fixed heights to prevent CLS
+const FreeTrialSkeleton = () => (
+  <div className="max-w-4xl mx-auto p-4 sm:p-6 mt-3 sm:mt-5 min-h-[600px] sm:min-h-[700px] bg-gray-800/20 rounded-2xl" />
+);
+const MoviesSkeleton = () => (
+  <div className="container mx-auto px-4 py-8 min-h-[400px]" />
+);
+const SectionSkeleton = () => (
+  <div className="container mx-auto px-4 py-6 min-h-[300px]" />
+);
+
+// Below-the-fold components - lazy loaded for code splitting
+const FreeTrialCard = dynamic(
+  () => import("@/components/features/Home/FreeTrial"),
+  { loading: () => <FreeTrialSkeleton /> }
 );
 
 const TrendingMovies = dynamic(
   () => import("@/components/features/Home/TrendingMovie"),
-  {
-    loading: () => (
-      <div className="h-64 bg-gray-800 animate-pulse rounded-lg" />
-    ),
-  }
+  { loading: () => <MoviesSkeleton /> }
+);
+
+const FeatureHome = dynamic(
+  () => import("@/components/features/Home/FeatureHome"),
+  { loading: () => <SectionSkeleton /> }
+);
+
+const LatestTrailers = dynamic(
+  () => import("@/components/features/Home/LatestTrailers"),
+  { loading: () => <SectionSkeleton /> }
+);
+
+const HomeSubscribe = dynamic(
+  () => import("@/components/features/Home/HomeSubscribe"),
+  { loading: () => <SectionSkeleton /> }
+);
+
+const TrustPilotWidget = dynamic(
+  () => import("@/components/common/TrustPilotWidget"),
+  { loading: () => <SectionSkeleton /> }
 );
 
 const ReviewShowHome = dynamic(
   () => import("@/components/features/UserReview/ReviewShowHome"),
-  {
-    loading: () => (
-      <div className="h-64 bg-gray-800 animate-pulse rounded-lg" />
-    ),
-  }
+  { loading: () => <SectionSkeleton /> }
 );
+
+const FAQ = dynamic(() => import("@/components/features/Home/FaqHome"), {
+  loading: () => <SectionSkeleton />,
+});
 
 export async function generateMetadata() {
   try {
@@ -61,15 +79,15 @@ export async function generateMetadata() {
 
   // Fallback metadata
   return {
-    title: "Cheap Stream | Premium IPTV Service - Live TV, Movies & Sports",
+    title: "Watch live TV, movies, and sports online for cheap",
     description:
-      "Cheap Stream offers premium IPTV services with thousands of live TV channels, movies, TV shows, and sports. Start streaming today with our affordable plans.",
+      "Finally, a streaming service that doesn't break the bank. Get thousands of live channels, movies, and sports on any device. Plans start at just $5/month.",
     keywords:
-      "IPTV service, live TV streaming, movie streaming, sports streaming, Cheap Stream, premium streaming, affordable IPTV, entertainment streaming",
+      "IPTV, live TV online, stream sports, watch movies, cord cutting, cable replacement, streaming service",
     openGraph: {
-      title: "Cheap Stream | Premium IPTV Service - Live TV, Movies & Sports",
+      title: "Watch live TV, movies, and sports online for cheap",
       description:
-        "Cheap Stream offers premium IPTV services with thousands of live TV channels, movies, TV shows, and sports. Start streaming today with our affordable plans.",
+        "Finally, a streaming service that doesn't break the bank. Get thousands of live channels, movies, and sports on any device. Plans start at just $5/month.",
     },
   };
 }

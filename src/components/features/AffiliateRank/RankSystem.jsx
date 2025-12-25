@@ -7,7 +7,7 @@ export default function RankSystem() {
   const [rankSystems, setRankSystems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const ORIGINAL_HEADING = "RANK SYSTEM - UNLOCK MORE AS YOU SPEND";
+  const ORIGINAL_HEADING = "RANK SYSTEM GET MORE AS YOU SPEND";
   const ORIGINAL_SUBTITLE =
     "Your total spending and referrals unlock rank-based discounts and benefits.";
   const ORIGINAL_FOOTER =

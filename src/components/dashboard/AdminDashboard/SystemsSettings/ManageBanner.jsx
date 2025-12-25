@@ -152,7 +152,7 @@ const ManageBanner = () => {
     try {
       setLoading(true);
       setError("");
-      const response = await apiCall("/api/admin/settings", "GET");
+      const response = await apiCall("/api/admin/settings?nocache=true", "GET");
       if (response.success && response.data.banners) {
         // Merge fetched data with default structure to ensure all fields exist
         const updatedBanners = { ...banners };

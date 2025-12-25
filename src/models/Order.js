@@ -135,25 +135,30 @@ const StripePaymentSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// Add this schema near the PlisioPaymentSchema
+// Volet SCI Payment Schema
 const VoletPaymentSchema = new mongoose.Schema(
   {
-    paymentId: { type: String, required: true, index: true }, // Volet payment ID
+    paymentId: { type: String, index: true }, // ac_order_id
     status: {
       type: String,
-      enum: ["new", "pending", "completed", "failed", "cancelled", "expired"],
-      default: "new",
+      enum: ["pending", "completed", "failed", "cancelled", "expired"],
+      default: "pending",
     },
-    amount: { type: String, required: true }, // Crypto amount
-    currency: { type: String, required: true }, // Crypto currency (BTC, ETH, etc.)
-    sourceAmount: { type: String, required: true }, // Original fiat amount
-    sourceCurrency: { type: String, default: "USD" }, // Original fiat currency
-    walletAddress: { type: String, default: "" },
-    confirmations: { type: Number, default: 0 },
-    actualSum: { type: String, default: "0.00000000" },
-    expiresAt: { type: Date, default: null },
+    priceAmount: { type: Number, default: 0 }, // Amount in fiat (USD)
+    priceCurrency: { type: String, default: "USD" },
+    paymentUrl: { type: String, default: "" }, // SCI checkout URL
+    customerEmail: { type: String, default: "" },
+    orderDescription: { type: String, default: "" },
+    // Volet SCI specific fields
+    sciName: { type: String, default: "" }, // ac_sci_name
+    accountEmail: { type: String, default: "" }, // ac_account_email (merchant)
+    transactionId: { type: String, default: "" }, // Volet transaction ID from webhook
+    // Status tracking
     callbackReceived: { type: Boolean, default: false },
     lastStatusUpdate: { type: Date, default: Date.now },
+    completedAt: { type: Date },
+    // Metadata for additional info
+    metadata: { type: Object, default: {} },
   },
   { _id: false }
 );
@@ -162,7 +167,17 @@ const VoletPaymentSchema = new mongoose.Schema(
 const NOWPaymentsSchema = new mongoose.Schema(
   {
     paymentId: { type: String, index: true },
+    invoiceId: { type: String },
+    purchaseId: { type: String }, // For partial payments
     orderId: { type: String, index: true },
+    payAddress: { type: String },
+    payCurrency: { type: String },
+    priceCurrency: { type: String },
+    priceAmount: { type: Number },
+    payAmount: { type: Number },
+    actuallyPaid: { type: Number, default: 0 },
+    amountReceived: { type: Number, default: 0 },
+    paymentStatus: { type: String }, // NOWPayments status
     status: {
       type: String,
       enum: [
@@ -177,15 +192,36 @@ const NOWPaymentsSchema = new mongoose.Schema(
       ],
       default: "waiting",
     },
-    priceAmount: { type: Number, required: true },
-    priceCurrency: { type: String, required: true },
-    payAmount: { type: Number, default: 0 },
-    payCurrency: { type: String, default: "" },
-    paymentUrl: { type: String, default: "" },
-    customerEmail: { type: String, default: "" },
     orderDescription: { type: String, default: "" },
+    createdAt: { type: String },
+    updatedAt: { type: String },
+    expirationEstimateDate: { type: String },
+    networkFee: { type: Number },
+    outcomeAmount: { type: Number },
+    outcomeCurrency: { type: String },
+    payinExtraId: { type: String },
+    smartContract: { type: String },
+    burningPercent: { type: Number },
     callbackReceived: { type: Boolean, default: false },
     lastStatusUpdate: { type: Date, default: Date.now },
+
+    // Subscription fields
+    subscriptionId: { type: String },
+    subscriptionPlanId: { type: String },
+    isRecurring: { type: Boolean, default: false },
+    nextBillingDate: { type: Date },
+    billingInterval: { type: Number }, // in days
+
+    // Partial payment tracking
+    isPartialPayment: { type: Boolean, default: false },
+    partialPaymentHistory: [
+      {
+        amount: { type: Number },
+        paymentId: { type: String },
+        receivedAt: { type: Date },
+      },
+    ],
+
     metadata: { type: Object, default: {} },
   },
   { _id: false }
@@ -372,6 +408,29 @@ const OrderSchema = new mongoose.Schema(
       default: false,
     },
 
+    // Subscription tracking
+    subscription: {
+      isActive: { type: Boolean, default: false },
+      planId: { type: String },
+      planName: { type: String },
+      intervalDays: { type: Number },
+      nextBillingDate: { type: Date },
+      lastBillingDate: { type: Date },
+      autoRenew: { type: Boolean, default: false },
+      status: {
+        type: String,
+        enum: ["active", "inactive", "past_due", "expired", "cancelled"],
+        default: "inactive",
+      },
+    },
+
+    // Payment completion timestamp
+    paidAt: { type: Date },
+
+    // Store original and service fee amounts
+    originalAmount: { type: Number },
+    serviceFee: { type: Number, default: 0 },
+
     // IPTV Configuration (legacy top-level for backward compatibility)
     lineType: { type: Number, default: 0 },
     templateId: { type: Number, default: 1271 }, // Default to NoAdult template
@@ -413,10 +472,6 @@ OrderSchema.pre("save", function (next) {
   next();
 });
 
-// Force recompilation to ensure new fields are recognized
-if (mongoose.models.Order) {
-  delete mongoose.models.Order;
-}
-
-const Order = mongoose.model("Order", OrderSchema);
+// Check if model already exists to prevent overwrite error
+const Order = mongoose.models.Order || mongoose.model("Order", OrderSchema);
 export default Order;

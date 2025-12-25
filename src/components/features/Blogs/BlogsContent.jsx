@@ -15,7 +15,7 @@ const BlogContent = () => {
   // Original static texts
   const ORIGINAL_TEXTS = {
     noBlogsTitle: "No Blogs Available",
-    noBlogsMessage: "Check back later for new content!"
+    noBlogsMessage: "Check back later for new content!",
   };
 
   const [texts, setTexts] = useState(ORIGINAL_TEXTS);
@@ -34,14 +34,17 @@ const BlogContent = () => {
     let isMounted = true;
     (async () => {
       try {
-        const items = [ORIGINAL_TEXTS.noBlogsTitle, ORIGINAL_TEXTS.noBlogsMessage];
+        const items = [
+          ORIGINAL_TEXTS.noBlogsTitle,
+          ORIGINAL_TEXTS.noBlogsMessage,
+        ];
         const translated = await translate(items);
         if (!isMounted) return;
 
         const [tNoBlogsTitle, tNoBlogsMessage] = translated;
         setTexts({
           noBlogsTitle: tNoBlogsTitle,
-          noBlogsMessage: tNoBlogsMessage
+          noBlogsMessage: tNoBlogsMessage,
         });
       } catch (error) {
         console.error("Translation error:", error);

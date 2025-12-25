@@ -178,8 +178,8 @@ export default function LoginComponent() {
         } else {
           // Trusted device - direct login, record device and redirect
           await recordDeviceLogin();
-          // router.push("/dashboard");
-          window.location.href = "/dashboard";
+          // Redirect to homepage after successful login
+          window.location.href = "/";
         }
       } else {
         setError(result.error);
@@ -220,8 +220,8 @@ export default function LoginComponent() {
 
   const handleSocialSuccess = (data) => {
     // The SocialLogin component now handles AuthContext updates
-    // Just redirect to dashboard
-    window.location.href = "/dashboard";
+    // Redirect to homepage after successful login
+    window.location.href = "/";
   };
 
   const handleSocialError = (error) => {

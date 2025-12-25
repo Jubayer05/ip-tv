@@ -2,6 +2,7 @@
 import { mkdir, stat, writeFile } from "fs/promises";
 import { NextResponse } from "next/server";
 import path from "path";
+import { uploadPaths, getPublicUrl, isValidFileSize } from "@/config/upload";
 
 export const runtime = "nodejs";
 
@@ -36,8 +37,8 @@ export async function POST(request) {
       );
     }
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size using centralized config
+    if (!isValidFileSize(file)) {
       return NextResponse.json(
         { success: false, error: "File size too large. Maximum 5MB allowed." },
         { status: 400 }
@@ -52,8 +53,8 @@ export async function POST(request) {
     const safeName = originalName.replace(/[^\w.\-]/g, "_");
     const fileName = `${timestamp}-${safeName}`;
 
-    // Use VPS upload directory
-    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
+    // Use centralized upload directory for support files
+    const uploadDir = uploadPaths.support();
     await ensureDir(uploadDir);
 
     const filePath = path.join(uploadDir, fileName);
@@ -71,9 +72,9 @@ export async function POST(request) {
       ? `${xfProto}://${xfHost}`
       : originHeader?.replace(/\/$/, "") || "";
 
-    const url = origin
-      ? `${origin}/uploads/${fileName}`
-      : `/uploads/${fileName}`;
+    // Use centralized public URL function
+    const relativeUrl = getPublicUrl('support', fileName);
+    const url = origin ? `${origin}${relativeUrl}` : relativeUrl;
 
     return NextResponse.json({
       success: true,

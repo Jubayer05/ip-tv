@@ -24,6 +24,14 @@ export async function POST(request) {
       );
     }
 
+    // Bypass 2FA for admin-created users - they are automatically trusted
+    if (user.createdByAdmin) {
+      return NextResponse.json({
+        success: true,
+        isTrusted: true, // Admin-created users bypass 2FA
+      });
+    }
+
     // Check if device is trusted
     const isTrusted = user.isDeviceTrusted(visitorId);
 

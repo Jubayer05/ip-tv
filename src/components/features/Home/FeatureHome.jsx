@@ -7,17 +7,17 @@ import { useEffect, useState } from "react";
 const FeatureHome = ({ featureAbout = false }) => {
   const { language, translate } = useLanguage();
 
-  const ORIGINAL_HEADING = "WATCH WHAT YOU LOVE, ANYTIME, ANYWHERE";
+  const ORIGINAL_HEADING = "YOUR SHOWS, YOUR SCHEDULE";
   const ORIGINAL_PARAGRAPH =
-    "Our multiple 99% uptime servers are strategically located across the globe, ensuring seamless streaming no matter where you are. From the Americas to Europe, Asia, and beyond — we've got you covered for the ultimate viewing experience.";
-  const ORIGINAL_FEATURE_1_TITLE = "Massive Movie Library";
-  const ORIGINAL_FEATURE_1_DESC = "From classics to the latest releases";
-  const ORIGINAL_FEATURE_2_TITLE = "HD & 4K Streaming";
-  const ORIGINAL_FEATURE_2_DESC = "Crystal-clear quality, every time";
-  const ORIGINAL_FEATURE_3_TITLE = "No Contracts, No Hidden Fees";
-  const ORIGINAL_FEATURE_3_DESC = "Cancel anytime";
-  const ORIGINAL_FEATURE_4_TITLE = "Works on Any Device";
-  const ORIGINAL_FEATURE_4_DESC = "Watch on your TV, laptop, phone, or tablet";
+    "We run servers across the globe so you get smooth playback wherever you are. Whether you're at home in the US, traveling through Europe, or relaxing in Asia, your favorite content follows you.";
+  const ORIGINAL_FEATURE_1_TITLE = "Thousands of Movies";
+  const ORIGINAL_FEATURE_1_DESC = "Old favorites and new releases alike";
+  const ORIGINAL_FEATURE_2_TITLE = "Sharp HD & 4K Picture";
+  const ORIGINAL_FEATURE_2_DESC = "See every detail, no blur";
+  const ORIGINAL_FEATURE_3_TITLE = "Cancel When You Want";
+  const ORIGINAL_FEATURE_3_DESC = "Month-to-month, no strings attached";
+  const ORIGINAL_FEATURE_4_TITLE = "Any Screen Works";
+  const ORIGINAL_FEATURE_4_DESC = "Phone, tablet, laptop, or big screen TV";
 
   const [heading, setHeading] = useState(ORIGINAL_HEADING);
   const [paragraph, setParagraph] = useState(ORIGINAL_PARAGRAPH);
@@ -93,8 +93,11 @@ const FeatureHome = ({ featureAbout = false }) => {
               src="/background/feature.png"
               width={400}
               height={500}
-              alt="hero-image"
+              alt="Cheap Stream TV streaming features"
               className="rounded-3xl w-full h-[300px] sm:h-[400px] md:h-[530px] object-cover"
+              sizes="(max-width: 768px) 100vw, 400px"
+              quality={70}
+              loading="lazy"
             />
           </div>
 
@@ -102,13 +105,13 @@ const FeatureHome = ({ featureAbout = false }) => {
           <div className="space-y-8 text-left lg:text-left order-1 md:order-2">
             {/* Main heading */}
             <div className="space-y-4">
-              <h1
+              <h2
                 className={`text-2xl md:text-4xl text-left md:text-center text-white font-bold leading-tight ${
                   featureAbout ? "" : "md:text-5xl"
                 }`}
               >
                 {heading}
-              </h1>
+              </h2>
 
               <p className="text-gray-300 font-secondary text-xs md:text-xl text-left md:text-center leading-relaxed max-w-2xl">
                 {paragraph}
@@ -123,9 +126,9 @@ const FeatureHome = ({ featureAbout = false }) => {
                   <Film className="w-6 h-6 text-green-400" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-white">
+                  <p className="text-xl font-semibold text-white">
                     {feature1Title}
-                  </h3>
+                  </p>
                   <p className="text-gray-400 text-xs md:text-base font-secondary">
                     {feature1Desc}
                   </p>
@@ -138,9 +141,9 @@ const FeatureHome = ({ featureAbout = false }) => {
                   <div className="text-yellow-400 font-bold text-sm">4K</div>
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-white">
+                  <p className="text-xl font-semibold text-white">
                     {feature2Title}
-                  </h3>
+                  </p>
                   <p className="text-gray-400 text-xs md:text-base font-secondary">
                     {feature2Desc}
                   </p>
@@ -153,9 +156,9 @@ const FeatureHome = ({ featureAbout = false }) => {
                   <Zap className="w-6 h-6 text-purple-400" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-white">
+                  <p className="text-xl font-semibold text-white">
                     {feature3Title}
-                  </h3>
+                  </p>
                   <p className="text-gray-400 text-xs md:text-base font-secondary">
                     {feature3Desc}
                   </p>
@@ -168,9 +171,9 @@ const FeatureHome = ({ featureAbout = false }) => {
                   <Monitor className="w-6 h-6 text-cyan-400" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-white">
+                  <p className="text-xl font-semibold text-white">
                     {feature4Title}
-                  </h3>
+                  </p>
                   <p className="text-gray-400 text-xs md:text-base font-secondary">
                     {feature4Desc}
                   </p>

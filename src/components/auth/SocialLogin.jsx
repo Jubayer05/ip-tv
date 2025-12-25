@@ -115,8 +115,8 @@ export default function SocialLogin({ onSuccess, onError, loading = false }) {
           // Record device login BEFORE redirecting
           await recordDeviceLogin();
 
-          // Force page reload to trigger AuthContext re-initialization
-          window.location.href = "/dashboard";
+          // Redirect to homepage after successful login
+          window.location.href = "/";
         } else {
           throw new Error(data.error || "Social login failed");
         }

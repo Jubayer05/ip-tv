@@ -1,15 +1,17 @@
 "use client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTicketListSocket, useTicketSocket } from "@/hooks/useSocket";
 import {
   CheckCircle,
   Clock,
   MessageCircle,
+  Search,
   Send,
   User,
   X,
   ZoomIn,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const SupportTicketAdmin = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
@@ -22,6 +24,8 @@ const SupportTicketAdmin = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [lastViewedTickets, setLastViewedTickets] = useState({}); // Track last viewed message count
   const [expandedImage, setExpandedImage] = useState(null);
+  const [searchEmail, setSearchEmail] = useState(""); // Search by email
+  const messagesContainerRef = useRef(null);
 
   const ORIGINAL_TEXTS = {
     heading: "Support Tickets (Admin)",
@@ -30,8 +34,8 @@ const SupportTicketAdmin = () => {
     reply: "Replied",
     closed: "Closed",
     total: "Total",
-    loadingTickets: "Loading tickets...",
-    noTicketsFound: "No tickets found",
+    loadingTickets: "Loading support tickets...",
+    noTicketsFound: "No support tickets found",
     user: "User",
     messages: "messages",
     close: "Close",
@@ -45,6 +49,8 @@ const SupportTicketAdmin = () => {
     sending: "Sending...",
     send: "Send",
     expandedView: "Expanded view",
+    searchByEmail: "Search by email...",
+    clearSearch: "Clear",
   };
 
   const [texts, setTexts] = useState(ORIGINAL_TEXTS);
@@ -70,83 +76,145 @@ const SupportTicketAdmin = () => {
     };
   }, [language.code, isLanguageLoaded, translate]);
 
-  const load = async () => {
-    try {
-      setLoading(true);
+  // Optimized load function with user data from API
+  const load = useCallback(
+    async (showLoader = true) => {
+      try {
+        if (showLoader) {
+          setLoading(true);
+        }
 
-      // Load filtered tickets for display
-      const q =
-        activeTab !== "all" ? `?status=${encodeURIComponent(activeTab)}` : "";
-      const res = await fetch(`/api/support/tickets${q}`);
-      const data = await res.json();
+        // Build query params
+        const params = new URLSearchParams();
+        if (activeTab !== "all") {
+          params.append("status", activeTab);
+        }
+        params.append("withUserData", "true"); // Request user data from API
 
-      if (data?.success) {
-        // Load ALL tickets for stats calculation
-        const allTicketsRes = await fetch(`/api/support/tickets`);
-        const allTicketsData = await allTicketsRes.json();
+        // Load filtered tickets for display with user data
+        const res = await fetch(`/api/support/tickets?${params.toString()}`);
+        const data = await res.json();
 
-        // Populate user data for filtered tickets
-        const ticketsWithUsers = await Promise.all(
-          (data.data || []).map(async (ticket) => {
-            try {
-              const userRes = await fetch(
-                `/api/users/profile?userId=${encodeURIComponent(ticket.user)}`
-              );
-              const userData = await userRes.json();
-              return {
-                ...ticket,
-                userDisplayName: userData.success
-                  ? `${userData.data.firstName || ""} ${
-                      userData.data.lastName || ""
-                    }`.trim() || "Unknown User"
-                  : "Unknown User",
-              };
-            } catch (e) {
-              return { ...ticket, userDisplayName: "Unknown User" };
-            }
-          })
-        );
+        if (data?.success) {
+          // Transform API response - userDisplayName should already be included
+          const ticketsWithUsers = (data.data || []).map((ticket) => ({
+            ...ticket,
+            userDisplayName: ticket.userDisplayName || "Unknown User",
+            userEmail: ticket.userEmail || null,
+          }));
 
-        setTickets(ticketsWithUsers);
+          setTickets(ticketsWithUsers);
 
-        // Store all tickets for stats
-        if (allTicketsData?.success) {
-          const allTicketsWithUsers = await Promise.all(
-            (allTicketsData.data || []).map(async (ticket) => {
-              try {
-                const userRes = await fetch(
-                  `/api/users/profile?userId=${encodeURIComponent(ticket.user)}`
-                );
-                const userData = await userRes.json();
-                return {
-                  ...ticket,
-                  userDisplayName: userData.success
-                    ? `${userData.data.firstName || ""} ${
-                        userData.data.lastName || ""
-                      }`.trim() || "Unknown User"
-                    : "Unknown User",
-                };
-              } catch (e) {
-                return { ...ticket, userDisplayName: "Unknown User" };
-              }
-            })
-          );
+          // Load ALL tickets for stats calculation (without user data for speed)
+          const allTicketsRes = await fetch(`/api/support/tickets`);
+          const allTicketsData = await allTicketsRes.json();
 
-          // Set all tickets for stats calculation
-          setAllTickets(allTicketsWithUsers);
+          if (allTicketsData?.success) {
+            // For stats, we only need basic info - don't fetch user data
+            setAllTickets(allTicketsData.data || []);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (showLoader) {
+          setLoading(false);
         }
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [activeTab]
+  );
+
+  // Refresh function for Socket.io updates (no loading spinner)
+  const refresh = useCallback(() => {
+    load(false); // Load without showing loading spinner
+  }, [load]);
 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
+
+  // Socket.io: Listen for ticket updates when chat is open
+  useTicketSocket(
+    activeId,
+    useCallback(
+      (data) => {
+        // Update the specific ticket when socket event is received (optimistic update)
+        setTickets((prev) =>
+          prev.map((t) =>
+            t._id === data.ticketId
+              ? {
+                  ...t,
+                  ...data.ticket,
+                  messages: data.ticket.messages || t.messages,
+                  status: data.status || t.status,
+                }
+              : t
+          )
+        );
+        // Also update allTickets for stats (only status/message count)
+        setAllTickets((prev) =>
+          prev.map((t) =>
+            t._id === data.ticketId
+              ? {
+                  ...t,
+                  status: data.status || t.status,
+                  messages: data.ticket?.messages || t.messages,
+                  lastUpdatedBy: data.ticket?.lastUpdatedBy || t.lastUpdatedBy,
+                }
+              : t
+          )
+        );
+        // Auto-scroll to bottom when new message arrives (only if this is the active ticket)
+        if (data.ticketId === activeId) {
+          setTimeout(() => {
+            const container = messagesContainerRef.current;
+            if (container && container.scrollHeight !== undefined) {
+              container.scrollTop = container.scrollHeight;
+            }
+          }, 200);
+        }
+      },
+      [activeId]
+    )
+  );
+
+  // Auto-scroll to bottom when messages change or chat opens
+  useEffect(() => {
+    if (!activeId) return;
+
+    const activeTicket = tickets.find((t) => t._id === activeId);
+    if (!activeTicket) return;
+
+    // Use a longer timeout to ensure DOM is fully rendered
+    const timeoutId = setTimeout(() => {
+      const container = messagesContainerRef.current;
+      if (container && container.scrollHeight !== undefined) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [activeId, tickets]);
+
+  // Socket.io: Listen for ticket list updates (admin view)
+  // Only update stats, don't reload all tickets to prevent loading spinner
+  useTicketListSocket(
+    useCallback(() => {
+      // Silently update stats by fetching all tickets without user data
+      fetch(`/api/support/tickets`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.success) {
+            setAllTickets(data.data || []);
+          }
+        })
+        .catch((e) => {
+          console.error("Error refreshing ticket stats:", e);
+        });
+    }, [])
+  );
 
   const sendMessage = async (ticketId) => {
     if (!replyText.trim()) return;
@@ -164,7 +232,14 @@ const SupportTicketAdmin = () => {
       const data = await res.json();
       if (data?.success) {
         setReplyText(""); // Clear input after successful send
-        await load(); // Reload tickets
+        // Socket.io will automatically update via useTicketSocket hook
+        // Auto-scroll after sending message
+        setTimeout(() => {
+          const container = messagesContainerRef.current;
+          if (container && container.scrollHeight !== undefined) {
+            container.scrollTop = container.scrollHeight;
+          }
+        }, 250);
       }
     } catch (e) {
       console.error(e);
@@ -182,7 +257,8 @@ const SupportTicketAdmin = () => {
       });
       const data = await res.json();
       if (data?.success) {
-        await load();
+        // Socket.io will automatically update via useTicketListSocket hook
+        // No need to refresh, socket updates handle it
       }
     } catch (e) {
       console.error(e);
@@ -237,6 +313,21 @@ const SupportTicketAdmin = () => {
   };
 
   const stats = getTicketStats();
+
+  // Filter tickets by search email
+  const filteredTickets = useMemo(() => {
+    if (!searchEmail.trim()) {
+      return tickets;
+    }
+    const searchLower = searchEmail.toLowerCase().trim();
+    return tickets.filter(
+      (ticket) =>
+        ticket.userEmail?.toLowerCase().includes(searchLower) ||
+        ticket.userDisplayName?.toLowerCase().includes(searchLower) ||
+        ticket.guestEmail?.toLowerCase().includes(searchLower) ||
+        ticket.guestName?.toLowerCase().includes(searchLower)
+    );
+  }, [tickets, searchEmail]);
 
   // Define tabs with reply status
   const tabs = [
@@ -319,6 +410,31 @@ const SupportTicketAdmin = () => {
         </div>
       </div>
 
+      {/* Search Bar */}
+      <div className="bg-black border border-[#212121] rounded-lg p-4 text-white">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder={texts.searchByEmail}
+              value={searchEmail}
+              onChange={(e) => setSearchEmail(e.target.value)}
+              className="w-full bg-black border border-[#212121] rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 text-sm focus:outline-none focus:border-primary transition-colors"
+            />
+          </div>
+          {searchEmail && (
+            <button
+              onClick={() => setSearchEmail("")}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm transition-colors flex items-center gap-2"
+            >
+              <X className="w-4 h-4" />
+              {texts.clearSearch}
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Tickets List */}
       <div className="bg-black border border-[#212121] rounded-lg p-4 sm:p-6 text-white">
         {loading ? (
@@ -328,16 +444,18 @@ const SupportTicketAdmin = () => {
               {texts.loadingTickets}
             </p>
           </div>
-        ) : tickets.length === 0 ? (
+        ) : filteredTickets.length === 0 ? (
           <div className="text-center py-6 sm:py-8 text-gray-400">
             <MessageCircle className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 opacity-50" />
-            <p className="text-xs sm:text-sm sm:text-base">
-              {texts.noTicketsFound}
+            <p className="text-xs sm:text-sm">
+              {searchEmail
+                ? `No tickets found for "${searchEmail}"`
+                : texts.noTicketsFound}
             </p>
           </div>
         ) : (
           <div className="space-y-3 sm:space-y-4">
-            {tickets.map((t) => (
+            {filteredTickets.map((t) => (
               <div
                 key={t._id}
                 className="border border-[#212121] rounded-lg overflow-hidden"
@@ -363,7 +481,17 @@ const SupportTicketAdmin = () => {
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-400">
                         <span className="flex items-center gap-1">
                           <User className="w-3 h-3" />
-                          {texts.user}: {t.userDisplayName || t.user}
+                          {texts.user}: {t.userDisplayName || t.user || "Guest"}
+                          {t.userEmail && (
+                            <span className="text-gray-500">
+                              ({t.userEmail})
+                            </span>
+                          )}
+                          {t.guestEmail && (
+                            <span className="text-gray-500">
+                              ({t.guestEmail})
+                            </span>
+                          )}
                         </span>
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-[10px] sm:text-xs ${getStatusColor(
@@ -419,7 +547,10 @@ const SupportTicketAdmin = () => {
                 {activeId === t._id && (
                   <div className="bg-gray-950/50">
                     {/* Messages */}
-                    <div className="h-64 sm:h-96 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-3">
+                    <div
+                      ref={messagesContainerRef}
+                      className="h-64 sm:h-96 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-3"
+                    >
                       {t.messages?.map((m, idx) => (
                         <div
                           key={idx}
@@ -494,6 +625,18 @@ const SupportTicketAdmin = () => {
                             placeholder={texts.typeYourReply}
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
+                            onFocus={() => {
+                              // Auto-scroll when input is focused
+                              setTimeout(() => {
+                                const container = messagesContainerRef.current;
+                                if (
+                                  container &&
+                                  container.scrollHeight !== undefined
+                                ) {
+                                  container.scrollTop = container.scrollHeight;
+                                }
+                              }, 100);
+                            }}
                             onKeyPress={(e) => {
                               if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();

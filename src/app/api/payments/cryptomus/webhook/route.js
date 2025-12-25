@@ -1,15 +1,61 @@
+import crypto from "crypto";
 import { connectToDatabase } from "@/lib/db";
 import cryptomusService from "@/lib/paymentServices/cryptomusService";
 import { applyPaymentUpdate } from "@/lib/payments/paymentUpdater";
+import { getServerApiKeys } from "@/lib/serverApiKeys";
 import Order from "@/models/Order";
 import { NextResponse } from "next/server";
+
+// Verify webhook signature from Cryptomus
+function verifyWebhookSignature(body, signature, apiKey) {
+  if (!signature || !apiKey) {
+    return false;
+  }
+
+  try {
+    // Cryptomus sends the signature in the 'sign' header
+    // The signature is: md5(base64(body) + apiKey)
+    const dataString = JSON.stringify(body);
+    const expectedSignature = crypto
+      .createHash("md5")
+      .update(Buffer.from(dataString).toString("base64") + apiKey)
+      .digest("hex");
+
+    return signature === expectedSignature;
+  } catch (error) {
+    console.error("Cryptomus signature verification error:", error);
+    return false;
+  }
+}
 
 export async function POST(request) {
   try {
     await connectToDatabase();
 
-    const body = await request.json();
+    // Get API keys for signature verification
+    const apiKeys = await getServerApiKeys();
+    const cryptomusApiKey = apiKeys?.cryptomus?.apiKey;
+
+    // Clone the request to read the body (can only be read once)
+    const clonedRequest = request.clone();
+    const body = await clonedRequest.json();
     const { order_id, status, payment_status, uuid } = body;
+
+    // Get the signature from headers
+    const signature = request.headers.get("sign");
+
+    // Verify webhook signature if API key is configured
+    if (cryptomusApiKey) {
+      if (!verifyWebhookSignature(body, signature, cryptomusApiKey)) {
+        console.error("Cryptomus webhook signature verification failed");
+        return NextResponse.json(
+          { error: "Invalid webhook signature" },
+          { status: 401 }
+        );
+      }
+    } else {
+      console.warn("Cryptomus API key not configured - skipping signature verification");
+    }
 
     if (!order_id || !uuid) {
       return NextResponse.json(

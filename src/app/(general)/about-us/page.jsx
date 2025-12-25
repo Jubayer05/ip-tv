@@ -1,28 +1,22 @@
-import AboutOurMission from "@/components/features/AboutUs/AboutOurMission";
-import AboutStatistics from "@/components/features/AboutUs/AboutStatistic";
-import FAQ from "@/components/features/Home/FaqHome";
-import FeatureHome from "@/components/features/Home/FeatureHome";
-import HomeSubscribe from "@/components/features/Home/HomeSubscribe";
+import { connectToDatabase } from "@/lib/db";
+import Settings from "@/models/Settings";
+import AboutUsClient from "./AboutUsClient";
 
 export async function generateMetadata() {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/admin/settings`,
-      {
-        cache: "no-store",
-      }
-    );
-    const data = await response.json();
+    // Direct DB access instead of HTTP fetch (avoids Docker networking issues)
+    await connectToDatabase();
+    const settings = await Settings.getSettings();
 
-    if (data.success && data.data.metaManagement?.about) {
-      const meta = data.data.metaManagement.about;
+    if (settings?.metaManagement?.about) {
+      const meta = settings.metaManagement.about;
       return {
         title: meta.title,
         description: meta.description,
         keywords: meta.keywords,
         openGraph: {
-          title: meta.openGraph.title,
-          description: meta.openGraph.description,
+          title: meta.openGraph?.title || meta.title,
+          description: meta.openGraph?.description || meta.description,
         },
       };
     }
@@ -32,29 +26,18 @@ export async function generateMetadata() {
 
   // Fallback metadata
   return {
-    title: "About Us - Cheap Stream | Premium IPTV Service Provider",
+    title: "About Cheap Stream TV - Our Story and What Drives Us",
     description:
-      "Discover Cheap Stream's mission to provide premium IPTV services worldwide.",
-    keywords: "IPTV service provider, streaming service, Cheap Stream about us",
+      "We started Cheap Stream because everyone deserves good TV at a fair price. Learn how we built a service that puts viewers first, not profits.",
+    keywords: "about Cheap Stream, streaming company, who we are, our mission",
     openGraph: {
-      title: "About Us - Cheap Stream | Premium IPTV Service Provider",
+      title: "About Cheap Stream TV - Our Story and What Drives Us",
       description:
-        "Discover Cheap Stream's mission to provide premium IPTV services worldwide.",
+        "We started Cheap Stream because everyone deserves good TV at a fair price. Learn how we built a service that puts viewers first, not profits.",
     },
   };
 }
 
 export default function AboutUs() {
-  return (
-    <div className="-mt-8 md:-mt-14">
-      <div className="py-16">
-        <AboutOurMission />
-        <FeatureHome featureAbout={true} />
-        <AboutStatistics />
-        <AboutOurMission />
-        <HomeSubscribe />
-        <FAQ />
-      </div>
-    </div>
-  );
+  return <AboutUsClient />;
 }

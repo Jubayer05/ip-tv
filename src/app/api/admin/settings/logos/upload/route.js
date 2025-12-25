@@ -1,3 +1,4 @@
+import { getPublicUrl, isValidFileSize, uploadPaths } from "@/config/upload";
 import { mkdir, unlink, writeFile } from "fs/promises";
 import { NextResponse } from "next/server";
 import path from "path";
@@ -41,18 +42,16 @@ export async function POST(request) {
       );
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
+    // Validate file size using centralized config
+    if (!isValidFileSize(file)) {
       return NextResponse.json(
         { success: false, error: "File size too large. Maximum size is 5MB." },
         { status: 400 }
       );
     }
 
-    // Create logos directory if it doesn't exist
-    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
-    const logosDir = path.join(uploadDir, "logos");
+    // Use centralized upload path
+    const logosDir = uploadPaths.logos();
     await mkdir(logosDir, { recursive: true });
 
     // Generate unique filename based on logo type
@@ -66,8 +65,8 @@ export async function POST(request) {
     const buffer = Buffer.from(bytes);
     await writeFile(filePath, buffer);
 
-    // Return the URL path (not full filesystem path)
-    const fileUrl = `/uploads/logos/${fileName}`;
+    // Return the URL path using centralized function
+    const fileUrl = getPublicUrl("logos", fileName);
 
     return NextResponse.json({
       success: true,
@@ -112,8 +111,8 @@ export async function DELETE(request) {
 
     // Extract filename from URL
     const filename = path.basename(imageUrl);
-    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
-    const filePath = path.join(uploadDir, "logos", filename);
+    const logosDir = uploadPaths.logos();
+    const filePath = path.join(logosDir, filename);
 
     try {
       await unlink(filePath);

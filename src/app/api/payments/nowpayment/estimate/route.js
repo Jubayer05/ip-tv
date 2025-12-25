@@ -1,4 +1,72 @@
+import nowpaymentsService from "@/lib/paymentServices/nowpaymentsServiceV2";
+import PaymentSettings from "@/models/PaymentSettings";
+import { connectToDatabase } from "@/lib/db";
 import { NextResponse } from "next/server";
+
+export async function POST(request) {
+  try {
+    const { amount, currencyFrom = "usd", currencyTo = "btc" } = await request.json();
+
+    if (!amount || Number(amount) <= 0) {
+      return NextResponse.json(
+        { error: "Valid amount is required" },
+        { status: 400 }
+      );
+    }
+
+    await connectToDatabase();
+
+    // Get payment settings
+    const paymentSettings = await PaymentSettings.findOne({
+      gateway: "nowpayment",
+      isActive: true,
+    });
+
+    if (!paymentSettings || !paymentSettings.apiKey) {
+      return NextResponse.json(
+        { error: "NOWPayments not configured" },
+        { status: 500 }
+      );
+    }
+
+    // Configure service
+    nowpaymentsService.setApiKey(paymentSettings.apiKey);
+    if (paymentSettings.sandboxMode) {
+      nowpaymentsService.setSandboxMode(true);
+    }
+
+    // Get estimate
+    const result = await nowpaymentsService.getEstimatedPrice(
+      amount,
+      currencyFrom,
+      currencyTo
+    );
+
+    // Get minimum amount
+    let minAmount = null;
+    try {
+      const minResult = await nowpaymentsService.getMinimumPaymentAmount(
+        currencyTo,
+        currencyFrom
+      );
+      minAmount = minResult.minAmount;
+    } catch (error) {
+      console.warn("Could not fetch minimum amount:", error);
+    }
+
+    return NextResponse.json({
+      success: true,
+      ...result.data,
+      minimumAmount: minAmount,
+    });
+  } catch (error) {
+    console.error("Estimate error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to get estimate" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function GET(request) {
   try {
@@ -14,36 +82,42 @@ export async function GET(request) {
       );
     }
 
-    const apiKey = process.env.NOWPAYMENTS_API_KEY;
-    if (!apiKey) {
+    await connectToDatabase();
+
+    // Get payment settings
+    const paymentSettings = await PaymentSettings.findOne({
+      gateway: "nowpayment",
+      isActive: true,
+    });
+
+    if (!paymentSettings || !paymentSettings.apiKey) {
       return NextResponse.json(
-        { error: "NOWPAYMENTS_API_KEY not configured" },
+        { error: "NOWPayments not configured" },
         { status: 500 }
       );
     }
 
-    const response = await fetch(
-      `https://api-sandbox.nowpayments.io/v1/estimate?amount=${amount}&currency_from=${currencyFrom}&currency_to=${currencyTo}`,
-      {
-        headers: {
-          "x-api-key": apiKey,
-        },
-      }
+    // Configure service
+    nowpaymentsService.setApiKey(paymentSettings.apiKey);
+    if (paymentSettings.sandboxMode) {
+      nowpaymentsService.setSandboxMode(true);
+    }
+
+    // Get estimate
+    const result = await nowpaymentsService.getEstimatedPrice(
+      amount,
+      currencyFrom,
+      currencyTo
     );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: data?.message || "Failed to get estimate" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(data);
-  } catch (e) {
+    return NextResponse.json({
+      success: true,
+      ...result.data,
+    });
+  } catch (error) {
+    console.error("Estimate error:", error);
     return NextResponse.json(
-      { error: e?.message || "Failed to get estimate" },
+      { error: error.message || "Failed to get estimate" },
       { status: 500 }
     );
   }

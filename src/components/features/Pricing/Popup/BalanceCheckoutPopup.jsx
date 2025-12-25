@@ -300,6 +300,7 @@ export default function BalanceCheckoutPopup({ isOpen, onClose, onSuccess }) {
         <button
           onClick={onClose}
           className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-6 md:right-6 text-white hover:text-gray-300 transition-colors"
+          aria-label="Close balance checkout popup"
         >
           <X size={20} className="sm:w-6 sm:h-6" />
         </button>

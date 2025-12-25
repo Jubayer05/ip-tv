@@ -4,177 +4,266 @@ import { getServerIptvApiKey } from "@/lib/serverApiKeys";
 import Order from "@/models/Order";
 import { NextResponse } from "next/server";
 
-// Map duration months to package IDs according to API docs
+// Map duration months to MegaOTT package IDs
 const getPackageId = (durationMonths) => {
   switch (durationMonths) {
     case 1:
-      return 2; // 1 Month Subscription
+      return 4; // 1 Month
     case 3:
-      return 3; // 3 Month Subscription
+      return 6; // 3 Months
     case 6:
-      return 4; // 6 Month Subscription
+      return 3; // 6 Months
     case 12:
-      return 5; // 12 Month Subscription
+      return 5; // 12 Months
+    case 24:
+      return 8; // 24 Months / 2 Years
     default:
-      return 2; // Default to 1 month
+      return 4; // Default to 1 month
   }
+};
+
+// Translate legacy ZLive val → MegaOTT package IDs, otherwise pass-through if already correct
+const translatePackageId = (incomingVal, durationMonths) => {
+  const v = Number(incomingVal);
+
+  // If already a valid MegaOTT id, keep it
+  if ([4, 6, 3, 5, 8].includes(v)) return v;
+
+  // Legacy ZLive → MegaOTT
+  const legacyMap = {
+    2: 4, // 1 Month
+    3: 6, // 3 Months
+    4: 3, // 6 Months
+    5: 5, // 12 Months
+  };
+  if (legacyMap[v]) return legacyMap[v];
+
+  // Fallback to duration-based mapping
+  return getPackageId(durationMonths);
 };
 
 // Helper function to get package name
 function getPackageName(packageId) {
   const packageNames = {
-    2: "1 Month Subscription",
-    3: "3 Month Subscription",
-    4: "6 Month Subscription",
+    4: "1 Month Subscription",
+    6: "3 Month Subscription",
+    3: "6 Month Subscription",
     5: "12 Month Subscription",
+    8: "24 Month Subscription",
   };
   return packageNames[packageId] || "Unknown Package";
 }
 
-// Create IPTV account via external API using two-step process (with template fallback)
+// Type validation and normalization helper
+const normalizeType = (type) => {
+  if (!type) return null;
+  // If it's already a string type, normalize it
+  if (typeof type === "string") {
+    const upperType = type.toUpperCase();
+    if (upperType === "M3U") return "M3U";
+    if (upperType === "MAG") return "MAG";
+    if (upperType === "ENIGMA" || upperType === "ENIGMA2") return "ENIGMA2";
+  }
+  // If it's a number (lineType), convert it
+  if (typeof type === "number") {
+    if (type === 0) return "M3U";
+    if (type === 1) return "MAG";
+    if (type === 2) return "ENIGMA2";
+  }
+  return null;
+};
+
+// Backward compatibility: convert lineType number to type string
+const lineTypeToType = (lineType) => {
+  if (lineType === 0) return "M3U";
+  if (lineType === 1) return "MAG";
+  if (lineType === 2) return "ENIGMA2";
+  return "M3U";
+};
+
+const coerceBooleanString = (value) => (value ? "1" : "0");
+
+const sanitizeWhatsappTelegram = (value) =>
+  value ? value.toString().replace(/\D/g, "").slice(0, 15) : "";
+
+const createFallbackWhatsappTelegram = () =>
+  (Date.now().toString(36) + Math.random().toString(36))
+    .replace(/[^0-9]/g, "")
+    .slice(0, 10) || "0000000000";
+
+const parseExpiration = (subscription) => {
+  const raw =
+    subscription?.expiring_at ||
+    subscription?.expire ||
+    subscription?.expire_at ||
+    subscription?.expireDate;
+
+  if (!raw) return null;
+
+  if (typeof raw === "number") {
+    return new Date(raw * 1000);
+  }
+
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed;
+  }
+
+  return null;
+};
+
+// Create IPTV account via MegaOTT API
 async function createIPTVAccount({
   username,
   password,
   templateId,
-  lineType,
+  type, // Accept type string (M3U, MAG, ENIGMA2) or lineType number for backward compatibility
+  lineType, // Backward compatibility
   macAddress,
   durationMonths,
   val,
   con,
+  adult,
+  orderNumber,
 }) {
-  const packageId = val || getPackageId(durationMonths);
+  const packageId = translatePackageId(val, durationMonths);
   const deviceCount = con || 1;
 
-  // Get IPTV API key from database
+  // Normalize type: accept either type string or lineType number
+  const rawType =
+    type || (lineType !== undefined ? lineTypeToType(lineType) : "M3U");
+  const normalizedType = normalizeType(rawType) || "M3U";
+
+  if (
+    (normalizedType === "MAG" || normalizedType === "ENIGMA2") &&
+    !macAddress
+  ) {
+    throw new Error("MAC address is required for MAG and Enigma2 lines");
+  }
+
   const iptvApiKey = await getServerIptvApiKey();
   if (!iptvApiKey) {
     throw new Error("IPTV API key not configured in settings");
   }
 
-  // Step 1: Create free trial account with fallback candidates
-  const validTemplateIds = [1271, 1266]; // 1271: NoAdult, 1266: All
-
-  const normalizeTemplateId = (t) => {
-    const n = Number(t);
-    return validTemplateIds.includes(n) ? n : 1271; // default to 1271 (NoAdult)
-  };
-
-  const templateCandidates = Array.from(
-    new Set([normalizeTemplateId(templateId), 1271, 1266]) // Try requested, then NoAdult, then All
+  const note = orderNumber ? `Paid order ${orderNumber}` : "Paid order";
+  const whatsappTelegram = sanitizeWhatsappTelegram(
+    createFallbackWhatsappTelegram()
   );
 
-  const tryCreateTrial = async (tplId) => {
-    const payload = {
-      key: iptvApiKey,
-      username,
-      password,
-      templateId: tplId,
-      lineType,
-    };
-    if (lineType > 0 && macAddress) payload.mac = macAddress;
+  // Build form payload - base fields for all types
+  const formPayload = new URLSearchParams({
+    type: normalizedType,
+    package_id: String(packageId),
+    template_id: String(templateId),
+    max_connections: String(deviceCount),
+    forced_country: "ALL",
+    adult: coerceBooleanString(adult),
+    note,
+    whatsapp_telegram: whatsappTelegram,
+    enable_vpn: "0",
+    paid: "1",
+  });
 
-    const r = await fetch("http://zlive.cc/api/free-trail-create", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "IPTV-Client/1.0",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const txt = await r.text();
-    let json;
-    try {
-      json = JSON.parse(txt);
-    } catch {
-      throw new Error(`Invalid API response: ${txt}`);
-    }
-    return json;
-  };
-
-  let trialData = null;
-  let lastError = null;
-  let chosenTemplateId = normalizeTemplateId(templateId);
-
-  for (const cand of templateCandidates) {
-    const res = await tryCreateTrial(cand);
-
-    if (res?.code === 200) {
-      trialData = res;
-      chosenTemplateId = cand; // lock in the working template
-      break;
-    }
-
-    const msg = (res?.message || res?.msg || "").toLowerCase();
-    lastError = res?.message || res?.msg || "Unknown error";
-
-    // Only rotate to next candidate for template errors; for others, abort
-    if (!msg.includes("bouquets template id")) {
-      break;
-    }
+  // For M3U: username (and optionally password) is required
+  if (normalizedType === "M3U") {
+    formPayload.append("username", username);
+    if (password) formPayload.append("password", password);
   }
 
-  if (!trialData || trialData.code !== 200) {
-    throw new Error(`Free trial creation failed: ${lastError}`);
+  // For MAG/Enigma: mac_address is required (username/password not needed per API docs)
+  if (
+    (normalizedType === "MAG" || normalizedType === "ENIGMA2") &&
+    macAddress
+  ) {
+    formPayload.append("mac_address", macAddress);
   }
 
-  const upgradePayload = {
-    key: iptvApiKey,
-    username,
-    password,
-    action: "update",
-    val: packageId, // Use val parameter or fallback to packageId
-    con: deviceCount, // Use con parameter or fallback to 1
-  };
+  const iptvResponse = await fetch("https://megaott.net/api/v1/subscriptions", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${iptvApiKey}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: formPayload.toString(),
+  });
 
-  const upgradeResponse = await fetch(
-    "http://zlive.cc/api/free-trail-upgrade",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "IPTV-Client/1.0",
-      },
-      body: JSON.stringify(upgradePayload),
-    }
-  );
+  const responseText = await iptvResponse.text();
 
-  const upgradeResponseText = await upgradeResponse.text();
-
-  let upgradeData;
-  try {
-    upgradeData = JSON.parse(upgradeResponseText);
-  } catch {
-    throw new Error(`Invalid upgrade API response: ${upgradeResponseText}`);
-  }
-
-  if (upgradeData.code !== 200) {
+  if (
+    responseText.trim().startsWith("<!DOCTYPE") ||
+    responseText.trim().startsWith("<html")
+  ) {
     throw new Error(
-      `Upgrade failed: ${
-        upgradeData.message || upgradeData.msg || "Unknown error"
-      }`
+      "IPTV service returned an HTML error page. Check API key/service status."
     );
   }
 
-  // Return the trial data (which contains the account info) with updated package info
+  let iptvData;
+  try {
+    iptvData = JSON.parse(responseText);
+  } catch {
+    throw new Error(
+      `Invalid response from IPTV service: ${responseText.substring(0, 200)}`
+    );
+  }
+
+  if (!iptvResponse.ok) {
+    const errorMessage =
+      iptvData?.message ||
+      iptvData?.msg ||
+      `IPTV service returned a ${iptvResponse.status} status`;
+    throw new Error(errorMessage);
+  }
+
+  if (iptvData?.status === false || iptvData?.success === false) {
+    const rejectionMessage =
+      iptvData?.message || iptvData?.msg || "IPTV service rejected the request";
+    throw new Error(rejectionMessage);
+  }
+
+  const subscription = iptvData?.data ?? iptvData;
+  if (!subscription || typeof subscription !== "object") {
+    throw new Error("IPTV service returned an unexpected payload");
+  }
+
+  const expireDate = parseExpiration(subscription);
+  const expireTimestamp = expireDate
+    ? Math.floor(expireDate.getTime() / 1000)
+    : 0;
+  const numericTemplateId = Number(templateId);
+
+  const rawId =
+    subscription.lineId || subscription.id || subscription.subscriptionId;
+  const lineIdNum =
+    rawId !== undefined && rawId !== null && !Number.isNaN(Number(rawId))
+      ? Number(rawId)
+      : undefined;
+
   return {
-    ...trialData.data,
+    lineId: lineIdNum ?? null,
+    username: subscription.username || username,
+    password: subscription.password || password,
+    expire: expireTimestamp,
     package: packageId,
     packageName: getPackageName(packageId),
     isOfficial: true,
-    templateId: chosenTemplateId,
+    templateId: numericTemplateId,
+    templateName:
+      subscription.template?.name ||
+      subscription.templateName ||
+      subscription.template?.title ||
+      `Template ${numericTemplateId}`,
+    lineInfo: JSON.stringify(subscription),
   };
 }
 
 // Generate username and password
 function generateCredentials(orderNumber, index = 0) {
-  // Generate shorter username (8 characters max)
   const randomString = Math.random().toString(36).substring(2, 10);
   const username = index > 0 ? `${randomString}${index}` : randomString;
-
-  // Generate shorter password (8 characters max)
   const password = Math.random().toString(36).substring(2, 10);
-
   return { username, password };
 }
 
@@ -183,7 +272,7 @@ export async function POST(request) {
     await connectToDatabase();
 
     const body = await request.json();
-    const { orderNumber, val, con, lineType, deviceInfo } = body; // Add lineType and deviceInfo
+    const { orderNumber, val, con, type, lineType, deviceInfo } = body;
 
     if (!orderNumber) {
       return NextResponse.json(
@@ -192,13 +281,11 @@ export async function POST(request) {
       );
     }
 
-    // Find the order
     const order = await Order.findOne({ orderNumber });
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Check if order is paid
     if (order.paymentStatus !== "completed") {
       return NextResponse.json(
         { error: "Order payment not completed" },
@@ -206,7 +293,6 @@ export async function POST(request) {
       );
     }
 
-    // Check if IPTV credentials already exist
     if (order.iptvCredentials && order.iptvCredentials.length > 0) {
       return NextResponse.json(
         { error: "IPTV credentials already created for this order" },
@@ -218,20 +304,29 @@ export async function POST(request) {
     const credentials = [];
 
     try {
-      // Use the generated credentials from the order if available, otherwise generate new ones
       const generatedCredentials = product.generatedCredentials || [];
       const configs = product.accountConfigurations || [];
       const qty = product.quantity || configs.length || 1;
 
-      // Get line type from order or request body
-      const orderLineType = product.lineType || lineType || 0;
+      // Get type from product (new format) or convert lineType (old format) - support both
+      const productType =
+        product.type ||
+        (product.lineType !== undefined
+          ? lineTypeToType(product.lineType)
+          : null);
+      const orderType =
+        type ||
+        productType ||
+        (lineType !== undefined ? lineTypeToType(lineType) : "M3U");
 
-      // Get device info from order or request body
+      // For backward compatibility, also get lineType number if needed
+      const orderLineType = product.lineType || lineType || 0;
       const orderDeviceInfo = product.deviceInfo || deviceInfo || {};
 
       for (let i = 0; i < qty; i++) {
-        // pick username/password
-        let username, password;
+        let username;
+        let password;
+
         if (generatedCredentials.length > i) {
           const cred = generatedCredentials[i];
           username = cred.username;
@@ -242,36 +337,47 @@ export async function POST(request) {
           password = cred.password;
         }
 
-        // per-account config
         const cfg = configs[i] || {};
         const devices = Number(cfg.devices || product.devicesAllowed || 1);
         const adult = Boolean(
           cfg.adultChannels ??
-            (product.lineType > 0
+            (orderLineType > 0
               ? product.adultChannelsConfig?.[i]
               : product.adultChannels)
         );
 
-        // device-specific extras for MAG/Enigma2
+        // Get MAC address for MAG/Enigma - check both type and lineType
         let macAddress = null;
-        if (orderLineType > 0) {
-          // For MAG (1) and Enigma2 (2), use MAC address from device info
+        const accountType = cfg.type || orderType;
+        const accountLineType =
+          cfg.lineType !== undefined ? cfg.lineType : orderLineType;
+        const requiresMac =
+          accountType === "MAG" ||
+          accountType === "ENIGMA2" ||
+          accountLineType > 0;
+
+        if (requiresMac) {
           macAddress =
-            orderDeviceInfo.macAddress || product.macAddresses?.[i] || "";
+            cfg.deviceInfo?.macAddress ||
+            orderDeviceInfo.macAddress ||
+            product.macAddresses?.[i] ||
+            "";
         }
 
-        // choose template per account
         const templateIdForAccount = getTemplateIdByAdultChannels(adult);
 
         const iptvData = await createIPTVAccount({
           username,
           password,
           templateId: templateIdForAccount,
-          lineType: orderLineType, // Use the line type from order/request
+          type: accountType, // Use type string
+          lineType: accountLineType, // Keep for backward compatibility
           macAddress,
           durationMonths: product.duration,
-          val, // package id (optional; helper derives from duration if missing)
-          con: devices, // per-account devices
+          val,
+          con: devices,
+          adult,
+          orderNumber: order.orderNumber,
         });
 
         credentials.push({
@@ -283,31 +389,38 @@ export async function POST(request) {
           packageName: iptvData.packageName,
           templateId: templateIdForAccount,
           templateName: iptvData.templateName,
-          lineType: orderLineType, // Store the line type
+          type: accountType, // Store type string
+          lineType: accountLineType, // Keep for backward compatibility
           macAddress: macAddress || "",
           adultChannels: adult,
-          devices, // persist devices for this account
+          devices,
           lineInfo: iptvData.lineInfo,
           isActive: true,
         });
       }
 
-      // Update order with credentials
       order.iptvCredentials = credentials;
       await order.save();
 
       return NextResponse.json({
         success: true,
         message: "IPTV credentials created successfully",
-        order: order, // Return the complete order with credentials
+        order,
         credentials: credentials.map((cred) => ({
           username: cred.username,
           password: cred.password,
-          lineType: cred.lineType,
+          type:
+            cred.type ||
+            (cred.lineType !== undefined
+              ? lineTypeToType(cred.lineType)
+              : "M3U"),
+          lineType: cred.lineType, // Keep for backward compatibility
           macAddress: cred.macAddress,
           adultChannels: cred.adultChannels,
           devices: cred.devices,
-          expire: new Date(cred.expire * 1000).toISOString(),
+          expire: cred.expire
+            ? new Date(cred.expire * 1000).toISOString()
+            : null,
         })),
       });
     } catch (iptvError) {

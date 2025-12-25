@@ -1,4 +1,6 @@
 import { connectToDatabase } from "@/lib/db";
+import { emitNewTicket, emitTicketListUpdate } from "@/lib/socket";
+import { getSuperAdminEmails } from "@/lib/superAdmin";
 import Notification from "@/models/Notification";
 import SupportTicket from "@/models/SupportTicket";
 import User from "@/models/User";
@@ -33,42 +35,63 @@ export async function GET(request) {
       .sort({ createdAt: -1 })
       .select("-__v");
 
-    // If admin wants user data, populate it
+    // If admin wants user data, populate it (optimized with batch fetching)
     if (withUserData && !userId && !guestEmail) {
-      tickets = await Promise.all(
-        tickets.map(async (ticket) => {
-          try {
-            if (ticket.isGuestTicket) {
-              return {
-                ...ticket.toObject(),
-                userDisplayName:
-                  ticket.guestName || ticket.guestEmail || "Guest User",
-                isGuest: true,
-              };
-            } else {
-              const user = await User.findById(ticket.user).select(
-                "firstName lastName"
-              );
-              return {
-                ...ticket.toObject(),
-                userDisplayName: user
-                  ? `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-                    "Unknown User"
-                  : "Unknown User",
-                isGuest: false,
-              };
-            }
-          } catch (e) {
+      // Collect all user IDs for batch lookup
+      const userIds = tickets
+        .filter((t) => !t.isGuestTicket && t.user)
+        .map((t) => t.user);
+
+      // Batch fetch all users at once (more efficient)
+      const usersMap = new Map();
+      if (userIds.length > 0) {
+        try {
+          const users = await User.find({
+            _id: { $in: userIds },
+          }).select("email profile.firstName profile.lastName");
+          users.forEach((user) => {
+            usersMap.set(user._id.toString(), user);
+          });
+        } catch (e) {
+          console.error("Error fetching users:", e);
+        }
+      }
+
+      // Map tickets with user data
+      tickets = tickets.map((ticket) => {
+        try {
+          if (ticket.isGuestTicket) {
             return {
               ...ticket.toObject(),
-              userDisplayName: ticket.isGuestTicket
-                ? "Guest User"
+              userDisplayName:
+                ticket.guestName || ticket.guestEmail || "Guest User",
+              userEmail: ticket.guestEmail || null,
+              isGuest: true,
+            };
+          } else {
+            const user = usersMap.get(ticket.user?.toString());
+            return {
+              ...ticket.toObject(),
+              userDisplayName: user
+                ? `${user.profile?.firstName || ""} ${
+                    user.profile?.lastName || ""
+                  }`.trim() || "Unknown User"
                 : "Unknown User",
-              isGuest: ticket.isGuestTicket || false,
+              userEmail: user?.email || null,
+              isGuest: false,
             };
           }
-        })
-      );
+        } catch (e) {
+          return {
+            ...ticket.toObject(),
+            userDisplayName: ticket.isGuestTicket
+              ? "Guest User"
+              : "Unknown User",
+            userEmail: ticket.isGuestTicket ? ticket.guestEmail : null,
+            isGuest: ticket.isGuestTicket || false,
+          };
+        }
+      });
     }
 
     return NextResponse.json({
@@ -160,12 +183,20 @@ export async function POST(request) {
     const ticket = new SupportTicket(ticketData);
     await ticket.save();
 
+    // Emit Socket.io event for new ticket
+    emitNewTicket(ticket._id.toString(), {
+      _id: ticket._id,
+      title: ticket.title,
+      status: ticket.status,
+      user: ticket.user || null,
+      guestEmail: ticket.guestEmail || null,
+      createdAt: ticket.createdAt,
+    });
+    emitTicketListUpdate(); // Notify admins
+
     // Notify admins/support staff about the new ticket
     try {
-      const superAdminEmails = [
-        "jubayer0504@gmail.com",
-        "alan.sangasare10@gmail.com",
-      ];
+      const superAdminEmails = getSuperAdminEmails();
 
       const adminsAndSupport = await User.find({
         $or: [

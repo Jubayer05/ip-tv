@@ -1,45 +1,17 @@
 import ReviewsPage from "@/components/features/UserReview/ReviewsPage";
 
-export async function generateMetadata() {
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/admin/settings`,
-      {
-        cache: "no-store",
-      }
-    );
-    const data = await response.json();
-
-    if (data.success && data.data.metaManagement?.reviews) {
-      const meta = data.data.metaManagement.reviews;
-      return {
-        title: meta.title,
-        description: meta.description,
-        keywords: meta.keywords,
-        openGraph: {
-          title: meta.openGraph.title,
-          description: meta.openGraph.description,
-        },
-      };
-    }
-  } catch (error) {
-    console.error("Failed to fetch meta settings:", error);
-  }
-
-  // Fallback metadata
-  return {
-    title: "Customer Reviews - Cheap Stream | Premium IPTV Service",
+export const metadata = {
+  title: "Customer Reviews - See What People Say About Cheap Stream",
+  description:
+    "Real reviews from real customers. See why thousands of people switched to Cheap Stream for their TV and movie streaming. No fake testimonials, just honest feedback.",
+  keywords:
+    "Cheap Stream reviews, customer feedback, streaming reviews, IPTV testimonials, user ratings",
+  openGraph: {
+    title: "Customer Reviews - See What People Say About Cheap Stream",
     description:
-      "Read honest customer reviews and testimonials about Cheap Stream's premium IPTV service. See what our satisfied customers have to say.",
-    keywords:
-      "IPTV reviews, customer testimonials, Cheap Stream reviews, streaming service reviews",
-    openGraph: {
-      title: "Customer Reviews - Cheap Stream | Premium IPTV Service",
-      description:
-        "Read honest customer reviews and testimonials about Cheap Stream's premium IPTV service. See what our satisfied customers have to say.",
-    },
-  };
-}
+      "Real reviews from real customers. See why thousands of people switched to Cheap Stream for their TV and movie streaming. No fake testimonials, just honest feedback.",
+  },
+};
 
 export default function Reviews() {
   return (

@@ -65,16 +65,35 @@ export async function POST(request) {
     // Update password in Firebase
     try {
       // Get Firebase user by email
-      const firebaseUser = await admin.auth().getUserByEmail(email);
+      let firebaseUser;
+      try {
+        firebaseUser = await admin.auth().getUserByEmail(email);
+      } catch (getUserError) {
+        // User doesn't exist in Firebase (might be admin-created user)
+        // Create the user in Firebase
+        if (getUserError.code === "auth/user-not-found") {
+          firebaseUser = await admin.auth().createUser({
+            email: email,
+            password: password,
+            emailVerified: true,
+          });
+        } else {
+          throw getUserError;
+        }
+      }
 
-      // Update the password in Firebase
-      await admin.auth().updateUser(firebaseUser.uid, {
-        password: password,
-      });
+      // Update the password in Firebase (only if user existed)
+      if (firebaseUser && !firebaseUser.passwordHash) {
+        // User was just created, password already set
+      } else if (firebaseUser) {
+        await admin.auth().updateUser(firebaseUser.uid, {
+          password: password,
+        });
+      }
     } catch (firebaseError) {
       console.error("Firebase password update error:", firebaseError);
       return NextResponse.json(
-        { error: "Failed to update password in authentication system" },
+        { error: "Failed to update password in authentication system. Please try again." },
         { status: 500 }
       );
     }

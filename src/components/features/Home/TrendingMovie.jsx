@@ -1,12 +1,12 @@
 "use client";
 import Button from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import "@/styles/slick-minimal.css";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import Slider from "react-slick";
-import "slick-carousel/slick/slick-theme.css";
-import "slick-carousel/slick/slick.css";
 
 const TrendingMovies = () => {
   const { language, translate } = useLanguage();
@@ -37,37 +37,37 @@ const TrendingMovies = () => {
   const movies = [
     {
       id: 1,
-      title: "Black Panther",
+      title: "Harry Potter",
       poster: "/movies/1.jpg",
       isHot: false,
     },
     {
       id: 2,
-      title: "Star Wars: The Force Awakens",
+      title: "The Legend",
       poster: "/movies/2.jpg",
       isHot: true,
     },
     {
       id: 3,
-      title: "Agent",
+      title: "Shadow and Bone",
       poster: "/movies/3.jpg",
       isHot: false,
     },
     {
       id: 4,
-      title: "Shadow and Bone",
+      title: "Agent",
       poster: "/movies/4.jpg",
       isHot: true,
     },
     {
       id: 5,
-      title: "The Legend",
+      title: "Star Wars",
       poster: "/movies/5.jpg",
       isHot: false,
     },
     {
       id: 6,
-      title: "Another Movie",
+      title: "Black Panther",
       poster: "/movies/6.jpg",
       isHot: false,
     },
@@ -116,12 +116,13 @@ const TrendingMovies = () => {
   const CustomArrow = ({ className, style, onClick, direction }) => (
     <button
       onClick={onClick}
-      className={`absolute top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-black/50 hover:bg-black/70 text-white 
+      className={`absolute top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-black/50 hover:bg-black/70 text-white
         rounded-full flex items-center justify-center transition-all duration-300
          transform hover:scale-110 border border-[rgba(255,255,255,0.49)] ${
            direction === "next" ? "right-4" : "left-4"
          }`}
       style={{ ...style, display: "flex" }}
+      aria-label={direction === "next" ? "Next slide" : "Previous slide"}
     >
       {direction === "next" ? (
         <ChevronRight className="w-6 h-6 " />
@@ -145,9 +146,11 @@ const TrendingMovies = () => {
           <h2 className="text-2xl md:text-3xl font-bold tracking-wider uppercase text-center sm:text-left">
             {heading}
           </h2>
-          <Button className="bg-white text-black px-4 sm:px-6 py-1.5 sm:py-2 rounded-full font-medium hover:bg-gray-200 transition-all flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
-            {buttonText} <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-          </Button>
+          <Link href="/packages">
+            <Button className="bg-white text-black px-4 sm:px-6 py-1.5 sm:py-2 rounded-full font-medium hover:bg-gray-200 transition-all flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
+              {buttonText} <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+            </Button>
+          </Link>
         </div>
 
         {/* Movie Carousel */}
@@ -159,10 +162,13 @@ const TrendingMovies = () => {
                   {/* Movie Poster */}
                   <div className="relative overflow-hidden rounded-lg bg-gray-800 aspect-[2/3] shadow-lg">
                     <Image
-                      width={100}
-                      height={200}
+                      width={200}
+                      height={300}
                       src={movie.poster}
                       alt={movie.title}
+                      sizes="(max-width: 480px) 140px, (max-width: 768px) 180px, (max-width: 1024px) 200px, 220px"
+                      quality={65}
+                      loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
 

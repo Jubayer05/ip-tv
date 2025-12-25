@@ -126,6 +126,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    createdByAdmin: {
+      type: Boolean,
+      default: false,
+    },
     lastLogin: {
       type: Date,
       default: null,
@@ -433,12 +437,7 @@ userSchema.methods.removeTrustedDevice = function (visitorId) {
   return this.save();
 };
 
-// Clear the model from cache to ensure new methods are available
-if (mongoose.models.User) {
-  delete mongoose.models.User;
-}
-
 // Check if model already exists to prevent overwrite error
-const User = mongoose.model("User", userSchema);
+const User = mongoose.models.User || mongoose.model("User", userSchema);
 
 export default User;

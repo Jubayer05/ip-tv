@@ -1,68 +1,47 @@
-import ProductSchema from "@/components/common/ProductSchema";
-import FAQ from "@/components/features/Home/FaqHome";
-import PricingBanner from "@/components/features/Pricing/PricingBanner";
-import PricingPlan from "@/components/features/Pricing/PricingPlan";
-import ReviewInput from "@/components/features/UserReview/ReviewInput";
-import ReviewShowHome from "@/components/features/UserReview/ReviewShowHome";
 import { connectToDatabase } from "@/lib/db";
 import Product from "@/models/Product";
+import Settings from "@/models/Settings";
+import PricingClient from "./PricingClient";
 
 export async function generateMetadata() {
   try {
-    // First try to get custom meta from settings
-    const settingsResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/admin/settings`,
-      {
-        cache: "no-store",
-      }
-    );
+    // Direct DB access instead of HTTP fetch (avoids Docker networking issues)
+    await connectToDatabase();
+    const settings = await Settings.getSettings();
 
-    // Check if response is ok and content-type is JSON
-    if (
-      settingsResponse.ok &&
-      settingsResponse.headers.get("content-type")?.includes("application/json")
-    ) {
-      const settingsData = await settingsResponse.json();
-
-      if (settingsData.success && settingsData.data.metaManagement?.packages) {
-        const meta = settingsData.data.metaManagement.packages;
-        return {
-          title: meta.title,
-          description: meta.description,
-          keywords: meta.keywords,
-          openGraph: {
-            title: meta.openGraph.title,
-            description: meta.openGraph.description,
-            url: `${process.env.NEXT_PUBLIC_APP_URL}/packages`,
-            type: "website",
-            images: [
-              {
-                url: "/icons/live.png",
-                width: 1200,
-                height: 630,
-                alt: meta.openGraph.title,
-              },
-            ],
-          },
-          twitter: {
-            card: "summary_large_image",
-            title: meta.openGraph.title,
-            description: meta.openGraph.description,
-            images: ["/icons/live.png"],
-          },
-          alternates: {
-            canonical: `${process.env.NEXT_PUBLIC_APP_URL}/packages`,
-          },
-        };
-      }
-    } else {
-      console.warn(
-        "Settings API returned non-JSON response, falling back to default metadata"
-      );
+    if (settings?.metaManagement?.packages) {
+      const meta = settings.metaManagement.packages;
+      return {
+        title: meta.title,
+        description: meta.description,
+        keywords: meta.keywords,
+        openGraph: {
+          title: meta.openGraph?.title || meta.title,
+          description: meta.openGraph?.description || meta.description,
+          url: `${process.env.NEXT_PUBLIC_APP_URL}/packages`,
+          type: "website",
+          images: [
+            {
+              url: "/icons/live.png",
+              width: 1200,
+              height: 630,
+              alt: meta.openGraph?.title || meta.title,
+            },
+          ],
+        },
+        twitter: {
+          card: "summary_large_image",
+          title: meta.openGraph?.title || meta.title,
+          description: meta.openGraph?.description || meta.description,
+          images: ["/icons/live.png"],
+        },
+        alternates: {
+          canonical: `${process.env.NEXT_PUBLIC_APP_URL}/packages`,
+        },
+      };
     }
 
     // If no custom meta, generate from product data
-    await connectToDatabase();
     const products = await Product.find({}).lean();
 
     if (products && products.length > 0) {
@@ -70,9 +49,9 @@ export async function generateMetadata() {
       const minPrice = Math.min(...product.variants.map((v) => v.price));
       const maxPrice = Math.max(...product.variants.map((v) => v.price));
 
-      const title = `Buy IPTV Service - Premium Streaming Packages | Cheap Stream`;
-      const description = `Get premium IPTV service with ${product.variants.length} flexible plans. HD streaming, multiple devices, premium channels. Starting from $${minPrice} to $${maxPrice}. Order now!`;
-      const keywords = `buy IPTV, IPTV service, premium streaming, HD channels, IPTV packages, streaming service, Cheap Stream, IPTV subscription`;
+      const title = `IPTV Plans & Pricing - Pick What Works for You | Cheap Stream`;
+      const description = `Choose from ${product.variants.length} different plans, starting at just $${minPrice}. All plans include HD channels, work on multiple devices, and come with our 24/7 support.`;
+      const keywords = `IPTV plans, streaming prices, TV subscription, channel packages, best IPTV deal`;
 
       return {
         title,
@@ -109,15 +88,15 @@ export async function generateMetadata() {
 
   // Fallback metadata with enhanced Open Graph
   return {
-    title: "Buy IPTV Service - Premium Streaming Packages | Cheap Stream",
+    title: "IPTV Plans & Pricing - Pick What Works for You | Cheap Stream",
     description:
-      "Get premium IPTV service with flexible plans, HD streaming, multiple devices, and premium channels. Affordable pricing starting from $5. Order now!",
+      "Simple pricing, no surprises. Choose a plan that fits your budget and start watching in minutes. All plans include HD quality and work on any device.",
     keywords:
-      "buy IPTV, IPTV service, premium streaming, HD channels, IPTV packages, streaming service, Cheap Stream, IPTV subscription",
+      "IPTV plans, streaming prices, TV subscription, channel packages, best IPTV deal, cord cutting",
     openGraph: {
-      title: "Buy IPTV Service - Premium Streaming Packages | Cheap Stream",
+      title: "IPTV Plans & Pricing - Pick What Works for You | Cheap Stream",
       description:
-        "Get premium IPTV service with flexible plans, HD streaming, multiple devices, and premium channels. Affordable pricing starting from $5. Order now!",
+        "Simple pricing, no surprises. Choose a plan that fits your budget and start watching in minutes. All plans include HD quality and work on any device.",
       url: `${process.env.NEXT_PUBLIC_APP_URL}/packages`,
       type: "website",
       images: [
@@ -125,15 +104,15 @@ export async function generateMetadata() {
           url: "/icons/live.png",
           width: 1200,
           height: 630,
-          alt: "Cheap Stream IPTV Packages",
+          alt: "Cheap Stream TV Plans and Pricing",
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Buy IPTV Service - Premium Streaming Packages | Cheap Stream",
+      title: "IPTV Plans & Pricing - Pick What Works for You | Cheap Stream",
       description:
-        "Get premium IPTV service with flexible plans, HD streaming, multiple devices, and premium channels. Affordable pricing starting from $5. Order now!",
+        "Simple pricing, no surprises. Choose a plan that fits your budget and start watching in minutes. All plans include HD quality and work on any device.",
       images: ["/icons/live.png"],
     },
     alternates: {
@@ -185,17 +164,5 @@ export default async function Pricing() {
       }
     : null;
 
-  return (
-    <div className="-mt-8 md:-mt-14">
-      <div className="mt-14 md:mt-0 md:py-16">
-        <PricingBanner />
-        <PricingPlan />
-        <ReviewShowHome />
-        <ReviewInput />
-        <FAQ />
-      </div>
-      {/* Add JSON-LD Schema for product-level SEO */}
-      {serializedProduct && <ProductSchema product={serializedProduct} />}
-    </div>
-  );
+  return <PricingClient serializedProduct={serializedProduct} />;
 }

@@ -13,23 +13,30 @@ export default function DepositPopup({
   userEmail,
 }) {
   const { language, translate, isLanguageLoaded } = useLanguage();
-  const [step, setStep] = useState("amount");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [statusText, setStatusText] = useState("");
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [loadingMethods, setLoadingMethods] = useState(true);
   const [selectedGateway, setSelectedGateway] = useState(null);
+  
+  // NEW: PayGate multi-provider support
+  const [paygateProviders, setPaygateProviders] = useState({ card: [] });
+  const [loadingProviders, setLoadingProviders] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState(null);
+  
+  // Validation state
+  const [validationStatus, setValidationStatus] = useState(null); // 'valid', 'invalid', or null
+  const [helperText, setHelperText] = useState("");
 
   // Original text constants for translation
   const ORIGINAL_TEXTS = {
     addFunds: "Add Funds",
     amount: "Amount ($)",
     enterAmount: "Enter amount",
-    proceedToPay: "Proceed to Pay",
     selectPaymentMethod: "Select a Payment Method",
+    selectPaymentProvider: "Select Payment Provider",
     noPaymentMethods: "No payment methods available",
-    selectedPaymentMethod: "Selected Payment Method",
     method: "Method:",
     depositAmount: "Deposit Amount:",
     serviceFee: "Service Fee:",
@@ -38,10 +45,6 @@ export default function DepositPopup({
     totalYoullReceive: "Total You'll Receive:",
     confirmPayment: "Confirm Payment",
     processing: "Processing...",
-    waitingForConfirmation: "Waiting for payment confirmation...",
-    paymentConfirmed: "Payment confirmed.",
-    paymentFailed: "Payment failed or canceled.",
-    failedToStartPayment: "Failed to start payment",
     invalidAmount: "Invalid amount",
     enterValidAmount: "Please enter a valid amount greater than 0.",
     min: "Min:",
@@ -52,9 +55,17 @@ export default function DepositPopup({
     total: "Total:",
     youGet: "You get",
     card: "Card",
-    crypto: "Crypto",
     payment: "Payment",
     exchange: "Exchange",
+    cardPayments: "Card Payments",
+    selectProvider: "Select a payment provider to continue",
+    provider: "Provider:",
+    enterAmountFirst: "Enter an amount to see available payment methods",
+    youNeedMore: "You need",
+    moreFor: "more for",
+    amountValid: "Amount is valid! Select a payment method below.",
+    cancel: "Cancel",
+    changePaymentMethod: "Change Payment Method",
   };
 
   // State for translated texts
@@ -95,13 +106,66 @@ export default function DepositPopup({
       fetchPaymentMethods();
     } else {
       // Reset state when popup is closed
-      setStep("amount");
       setAmount("");
       setLoading(false);
       setStatusText("");
       setSelectedGateway(null);
+      setSelectedProvider(null);
+      setPaygateProviders({ card: [] });
+      setValidationStatus(null);
+      setHelperText("");
     }
   }, [isOpen]);
+
+  // Fetch PayGate providers when PayGate is selected
+  useEffect(() => {
+    if (selectedGateway?.gateway === 'paygate') {
+      fetchPaygateProviders();
+    }
+  }, [selectedGateway]);
+
+  // Real-time validation when amount changes
+  useEffect(() => {
+    const amountNum = Number(amount);
+    
+    // No amount entered
+    if (!amount || amount === "") {
+      setValidationStatus(null);
+      setHelperText(texts.enterAmountFirst);
+      return;
+    }
+    
+    // Invalid amount (zero or negative)
+    if (amountNum <= 0) {
+      setValidationStatus('invalid');
+      setHelperText(texts.enterValidAmount);
+      return;
+    }
+    
+    // Check against all payment method minimums
+    if (paymentMethods.length > 0) {
+      const lowestMinimum = Math.min(...paymentMethods.map(m => m.minAmount));
+      const availableMethods = paymentMethods.filter(m => amountNum >= m.minAmount);
+      
+      if (availableMethods.length === 0) {
+        // Amount is too low for all methods
+        const closestMethod = paymentMethods.reduce((prev, curr) => 
+          (curr.minAmount < prev.minAmount) ? curr : prev
+        );
+        const needed = (closestMethod.minAmount - amountNum).toFixed(2);
+        setValidationStatus('invalid');
+        setHelperText(`${texts.youNeedMore} $${needed} ${texts.moreFor} ${closestMethod.name}`);
+      } else {
+        // Amount is valid for at least one method
+        setValidationStatus('valid');
+        setHelperText(texts.amountValid);
+      }
+    } else {
+      // No payment methods loaded yet
+      setValidationStatus('valid');
+      setHelperText(texts.amountValid);
+    }
+  }, [amount, paymentMethods, texts]);
 
   const fetchPaymentMethods = async () => {
     try {
@@ -110,7 +174,6 @@ export default function DepositPopup({
       const data = await response.json();
 
       if (data.success) {
-        // Filter only active payment methods
         const activeMethods = data.data.filter((method) => method.isActive);
         setPaymentMethods(activeMethods);
       }
@@ -121,35 +184,65 @@ export default function DepositPopup({
     }
   };
 
-  if (!isOpen) return null;
+  const fetchPaygateProviders = async () => {
+    try {
+      setLoadingProviders(true);
+      console.log("[DepositPopup] Fetching PayGate providers...");
+      
+      const timestamp = Date.now(); // Cache busting
+      const response = await fetch(`/api/payments/paygate/providers?region=US&t=${timestamp}`);
+      const data = await response.json();
 
-  const proceedToGateways = () => {
-    const num = Number(amount);
-    if (!num || num <= 0) {
-      Swal.fire({
-        icon: "warning",
-        title: texts.invalidAmount,
-        text: texts.enterValidAmount,
-        confirmButtonColor: "#00b877",
-      });
-      return;
+      if (data.success) {
+        // Filter only active providers (double-check on frontend)
+        const activeProviders = {
+          card: (data.providers.card || []).filter(p => p.isActive !== false),
+          crypto: (data.providers.crypto || []).filter(p => p.isActive !== false),
+          bank: (data.providers.bank || []).filter(p => p.isActive !== false),
+        };
+        
+        setPaygateProviders(activeProviders);
+        
+        // Auto-select first card provider if available
+        if (activeProviders.card.length > 0) {
+          setSelectedProvider(activeProviders.card[0]);
+        }
+      }
+    } catch (error) {
+      console.error("❌ [DepositPopup] Error fetching PayGate providers:", error);
+    } finally {
+      setLoadingProviders(false);
     }
-    setStep("gateway");
   };
+
+  if (!isOpen) return null;
 
   const selectGateway = (method) => {
     const isAmountValid = Number(amount) >= method.minAmount;
     if (isAmountValid) {
       setSelectedGateway(method);
+      setSelectedProvider(null); // Reset provider when changing gateway
     }
   };
 
   const confirmPayment = async () => {
     if (!selectedGateway) return;
 
+    // Validate provider for PayGate
+    if (selectedGateway.gateway === 'paygate' && !selectedProvider) {
+      Swal.fire({
+        icon: "warning",
+        title: "Provider Required",
+        text: texts.selectProvider,
+        confirmButtonColor: "#00b877",
+      });
+      return;
+    }
+
     if (loading) return;
     setLoading(true);
     setStatusText("");
+    
     try {
       const payload = {
         amount: Number(amount),
@@ -157,6 +250,19 @@ export default function DepositPopup({
         userId: userId || null,
         customerEmail: userEmail || "",
       };
+
+      // Add provider for PayGate
+      if (selectedGateway.gateway === 'paygate') {
+        payload.provider = selectedProvider.code;
+        payload.userRegion = 'US'; // You can detect this from user's location
+      }
+
+      console.log("🔵 Creating deposit:", {
+        gateway: selectedGateway.gateway,
+        amount: payload.amount,
+        userId: payload.userId,
+        provider: payload.provider || 'N/A',
+      });
 
       const res = await fetch(
         `/api/payments/${selectedGateway.gateway}/deposit`,
@@ -167,6 +273,11 @@ export default function DepositPopup({
         }
       );
 
+      console.log("📡 Deposit API response:", {
+        status: res.status,
+        ok: res.ok,
+      });
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(
@@ -175,35 +286,65 @@ export default function DepositPopup({
       }
 
       const data = await res.json();
+      
+      console.log("✅ Deposit data received:", {
+        success: data?.success,
+        depositId: data?.depositId,
+        hasCheckoutUrl: !!data?.checkoutUrl,
+        provider: data?.provider,
+      });
+
       const checkoutUrl = data?.checkoutUrl;
       const depositId = data?.depositId;
 
-      if (!checkoutUrl || !depositId) {
-        throw new Error("Invalid deposit creation response");
+      if (!data.success) {
+        throw new Error(data?.error || "Deposit creation failed");
       }
 
-      // Open payment gateway in new tab
-      window.open(checkoutUrl, "_blank", "noopener,noreferrer");
+      if (!checkoutUrl || checkoutUrl === "") {
+        console.error("❌ Missing checkoutUrl:", data);
+        throw new Error("Payment URL not generated. Please try again.");
+      }
 
-      // Redirect to payment status page instead of polling here
-      window.location.href = `/payment-status/${depositId}?provider=${selectedGateway.gateway}&type=deposit`;
+      if (!depositId) {
+        console.error("❌ Missing depositId:", data);
+        throw new Error("Deposit ID not generated. Please try again.");
+      }
 
-      // Close the popup
+      console.log("✅ Redirecting to payment checkout:", checkoutUrl);
+
+      if (onSuccess) {
+        onSuccess({
+          depositId,
+          amount: data.amount,
+          gateway: selectedGateway.gateway,
+          provider: data.provider,
+        });
+      }
+
       onClose?.();
+      window.location.href = checkoutUrl;
+
     } catch (e) {
+      console.error("❌ Deposit error:", e);
+      
+      Swal.fire({
+        icon: "error",
+        title: "Deposit Failed",
+        text: e?.message || texts.failedToStartPayment,
+        confirmButtonColor: "#00b877",
+      });
+      
       setStatusText(e?.message || texts.failedToStartPayment);
       setLoading(false);
     }
   };
 
-  // Helper function to get logo path - now checks for custom imageUrl first
   const getLogoPath = (method) => {
-    // First check if there's a custom imageUrl from the backend
     if (method.imageUrl) {
       return method.imageUrl;
     }
 
-    // Fallback to default logos
     const logoMap = {
       plisio: "/payment_logo/plisio.png",
       hoodpay: "/payment_logo/hoodpay.jpeg",
@@ -212,25 +353,24 @@ export default function DepositPopup({
       cryptomus: "/payment_logo/cryptomus.png",
       paygate: "/payment_logo/paygate.png",
       volet: "/payment_logo/volet.png",
+      stripe: "/payment_logo/stripe.png",
     };
     return logoMap[method.gateway] || "/payment_logo/default.png";
   };
 
-  // Helper function to get payment type
   const getPaymentType = (gateway) => {
     const typeMap = {
-      plisio: texts.crypto,
+      plisio: texts.card,
       hoodpay: texts.payment,
-      nowpayment: texts.crypto,
+      nowpayment: texts.card,
       changenow: texts.exchange,
-      cryptomus: texts.crypto,
-      paygate: texts.crypto,
-      volet: texts.crypto,
+      cryptomus: texts.card,
+      paygate: texts.card,
+      volet: texts.card,
     };
     return typeMap[gateway] || texts.payment;
   };
 
-  // Helper function to calculate service fee
   const calculateServiceFee = (method, amount) => {
     if (!method.feeSettings || !method.feeSettings.isActive) {
       return { feeAmount: 0, totalAmount: amount };
@@ -249,7 +389,6 @@ export default function DepositPopup({
     };
   };
 
-  // Helper function to get all applicable bonuses for a given amount
   const getApplicableBonuses = (method, amount) => {
     if (!method.bonusSettings || method.bonusSettings.length === 0) return [];
 
@@ -258,10 +397,9 @@ export default function DepositPopup({
     );
     if (activeBonuses.length === 0) return [];
 
-    // Find all applicable bonuses (amount meets minimum requirement)
     const applicableBonuses = activeBonuses
       .filter((bonus) => amount >= bonus.minAmount)
-      .sort((a, b) => b.bonusPercentage - a.bonusPercentage); // Sort by highest percentage first
+      .sort((a, b) => b.bonusPercentage - a.bonusPercentage);
 
     return applicableBonuses.map((bonus) => ({
       percentage: bonus.bonusPercentage,
@@ -280,37 +418,50 @@ export default function DepositPopup({
           <X size={20} />
         </button>
 
-        {step === "amount" && (
-          <div>
-            <h3 className="text-white text-lg sm:text-xl font-bold mb-4">
-              {texts.addFunds}
-            </h3>
-            <label className="block text-sm text-gray-300 mb-2">
-              {texts.amount}
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder={texts.enterAmount}
-              className="w-full bg-[#0c171c] border border-white/15 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
-            />
-            <button
-              onClick={proceedToGateways}
-              className="mt-4 w-full cursor-pointer py-2 bg-cyan-400 text-black rounded font-semibold hover:bg-cyan-300"
-            >
-              {texts.proceedToPay}
-            </button>
-          </div>
-        )}
+        <h3 className="text-white text-lg sm:text-xl font-bold mb-4">
+          {texts.addFunds}
+        </h3>
 
-        {step === "gateway" && (
-          <div>
-            <h3 className="text-white text-lg sm:text-xl font-bold mb-4">
+        {/* Amount Input with Real-time Validation */}
+        <div className="mb-6">
+          <label className="block text-sm text-gray-300 mb-2">
+            {texts.amount}
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            min="0.01"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder={texts.enterAmount}
+            className={`w-full bg-[#0c171c] border-2 rounded px-3 py-2 text-white focus:outline-none transition-colors ${
+              validationStatus === 'valid' 
+                ? 'border-green-500 focus:border-green-400' 
+                : validationStatus === 'invalid'
+                ? 'border-red-500 focus:border-red-400'
+                : 'border-white/15 focus:border-cyan-400'
+            }`}
+          />
+          {/* Helper Text */}
+          {helperText && (
+            <p className={`text-xs mt-2 ${
+              validationStatus === 'valid' 
+                ? 'text-green-400' 
+                : validationStatus === 'invalid'
+                ? 'text-red-400'
+                : 'text-gray-400'
+            }`}>
+              {helperText}
+            </p>
+          )}
+        </div>
+
+        {/* Auto-show Payment Methods when amount is entered */}
+        {amount && Number(amount) > 0 && (
+          <div className="mb-6">
+            <h4 className="text-white text-base font-semibold mb-3">
               {texts.selectPaymentMethod}
-            </h3>
+            </h4>
 
             {loadingMethods ? (
               <div className="flex justify-center items-center py-8">
@@ -328,7 +479,6 @@ export default function DepositPopup({
                   const isAmountValid = Number(amount) >= method.minAmount;
                   const isSelected = selectedGateway?._id === method._id;
 
-                  // Get the highest bonus available for this method (regardless of current amount)
                   const highestBonus =
                     method.bonusSettings && method.bonusSettings.length > 0
                       ? method.bonusSettings
@@ -363,7 +513,6 @@ export default function DepositPopup({
                         {getPaymentType(method.gateway)}
                       </span>
 
-                      {/* Always show minimum amount */}
                       <div className="text-xs text-center">
                         <span className="font-medium text-gray-600">
                           {texts.min} ${method.minAmount}
@@ -377,21 +526,18 @@ export default function DepositPopup({
                         )}
                       </div>
 
-                      {/* Always show bonus if available */}
                       {highestBonus && (
                         <div className="text-xs text-green-600 font-medium">
                           +{highestBonus.bonusPercentage}% {texts.bonusText}
                         </div>
                       )}
 
-                      {/* Show minimum amount to get this bonus */}
                       {highestBonus && (
                         <div className="text-xs text-gray-500">
                           {texts.min} ${highestBonus.minAmount} {texts.minToGet}
                         </div>
                       )}
 
-                      {/* Show service fee if active */}
                       {method.feeSettings && method.feeSettings.isActive && (
                         <div className="text-xs text-red-500 font-medium">
                           {texts.serviceFeeLabel}{" "}
@@ -401,14 +547,12 @@ export default function DepositPopup({
                         </div>
                       )}
 
-                      {/* Show total charge amount */}
                       {method.feeSettings && method.feeSettings.isActive && (
                         <div className="text-xs text-red-400 font-medium">
                           {texts.total}: ${feeInfo.totalAmount.toFixed(2)}
                         </div>
                       )}
 
-                      {/* Show current bonus if amount is valid and has applicable bonuses */}
                       {bonuses.length > 0 && isAmountValid && (
                         <div className="text-xs text-blue-600 font-medium">
                           {texts.youGet} +{bonuses[0].percentage}%
@@ -419,115 +563,225 @@ export default function DepositPopup({
                 })}
               </div>
             )}
+          </div>
+        )}
 
-            {/* Selected Gateway Summary */}
-            {selectedGateway && (
-              <div className="mt-6 p-4 bg-gray-800 rounded-lg">
-                <h4 className="text-white font-semibold mb-3 text-center">
-                  {texts.selectedPaymentMethod}
-                </h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">{texts.method}</span>
-                    <span className="text-white font-medium">
-                      {selectedGateway.name}
-                    </span>
-                  </div>
+        {/* PayGate Provider Selection (Auto-show when PayGate selected) */}
+        {selectedGateway?.gateway === 'paygate' && (
+          <div className="mb-6">
+            <div className="mb-6">
+              <button
+                onClick={() => {
+                  setSelectedGateway(null);
+                  setSelectedProvider(null);
+                }}
+                className="text-cyan-400 hover:text-cyan-300 mb-4 flex items-center gap-2 text-sm transition-colors"
+              >
+                <span>←</span> {texts.changePaymentMethod || "Back to Payment Methods"}
+              </button>
+              
+              <h3 className="text-white text-2xl font-bold mb-2">
+                {texts.selectPaymentProvider}
+              </h3>
+              <p className="text-gray-400 text-sm">
+                Choose how you want to pay with PayGate
+              </p>
+            </div>
 
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">{texts.depositAmount}</span>
-                    <span className="text-white font-medium">
-                      ${Number(amount).toFixed(2)}
-                    </span>
-                  </div>
-
-                  {/* Show service fee if active */}
-                  {(() => {
-                    const feeInfo = calculateServiceFee(
-                      selectedGateway,
-                      Number(amount)
-                    );
-                    if (feeInfo.feeAmount > 0) {
-                      return (
-                        <>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-300">
-                              {texts.serviceFee}
-                            </span>
-                            <span className="text-red-400 font-medium">
-                              ${feeInfo.feeAmount.toFixed(2)} (
-                              {selectedGateway.feeSettings.feeType ===
-                              "percentage"
-                                ? `${selectedGateway.feeSettings.feePercentage}%`
-                                : "Fixed"}
-                              )
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-300">
-                              {texts.totalCharge}
-                            </span>
-                            <span className="text-red-300 font-medium">
-                              ${feeInfo.totalAmount.toFixed(2)}
-                            </span>
-                          </div>
-                        </>
-                      );
-                    }
-                    return null;
-                  })()}
-
-                  {/* Show bonus for selected gateway */}
-                  {(() => {
-                    const bonuses = getApplicableBonuses(
-                      selectedGateway,
-                      Number(amount)
-                    );
-                    if (bonuses.length > 0) {
-                      // Get only the highest bonus (first one since they're sorted by percentage)
-                      const highestBonus = bonuses[0];
-                      return (
-                        <>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-300">{texts.bonus}</span>
-                            <span className="text-green-400 font-medium">
-                              +${highestBonus.amount.toFixed(2)} (
-                              {highestBonus.percentage}%)
-                            </span>
-                          </div>
-                          <div className="border-t border-gray-600 my-2"></div>
-                          <div className="flex justify-between text-sm font-semibold">
-                            <span className="text-white">
-                              {texts.totalYoullReceive}
-                            </span>
-                            <span className="text-cyan-400">
-                              $
-                              {(Number(amount) + highestBonus.amount).toFixed(
-                                2
-                              )}
-                            </span>
-                          </div>
-                        </>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-
-                <button
-                  onClick={confirmPayment}
-                  disabled={loading}
-                  className="mt-4 w-full py-2 bg-cyan-400 text-black rounded font-semibold hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? texts.processing : texts.confirmPayment}
-                </button>
+            {loadingProviders ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-400"></div>
               </div>
+            ) : (
+              <>
+                {/* Card Providers */}
+                {paygateProviders.card && paygateProviders.card.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="text-white text-lg font-semibold mb-3 flex items-center gap-2">
+                      💳 {texts.cardPayments || "Card Payments"}
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {paygateProviders.card.map((provider) => {
+                        const isSelected = selectedProvider?.code === provider.code;
+                        const isAmountValid = Number(amount) >= provider.minAmount;
+
+                        return (
+                          <button
+                            key={provider.code}
+                            onClick={() => setSelectedProvider(provider)}
+                            className={`p-4 rounded-lg border-2 transition-all ${
+                              isSelected
+                                ? 'border-cyan-500 bg-cyan-500/10'
+                                : isAmountValid
+                                ? 'border-gray-700 bg-gray-800 hover:border-gray-600'
+                                : 'border-gray-800 bg-gray-900/50 opacity-60 cursor-not-allowed'
+                            }`}
+                            disabled={!isAmountValid}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="text-left flex-1">
+                                <p className="text-white font-semibold">{provider.name}</p>
+                                <p className="text-gray-400 text-xs mt-1">{provider.description}</p>
+                                <p className={`text-xs mt-2 ${isAmountValid ? 'text-cyan-400' : 'text-red-400'}`}>
+                                  {texts.min}: ${provider.minAmount}
+                                </p>
+                                {!isAmountValid && (
+                                  <p className="text-red-400 text-xs mt-1">
+                                    {texts.youNeedMore || "Need"} ${(provider.minAmount - Number(amount)).toFixed(2)} {texts.moreFor || "more"}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-3xl ml-4">{provider.icon}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Payment Summary & Confirmation (Auto-show when method selected) */}
+        {selectedGateway && (selectedGateway.gateway !== 'paygate' || selectedProvider) && (
+          <div className="p-4 bg-gray-800 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-white font-semibold flex-1 text-center">
+                Payment Summary
+              </h4>
+              <button
+                onClick={() => {
+                  setSelectedGateway(null);
+                  setSelectedProvider(null);
+                }}
+                className="text-gray-400 hover:text-white transition-colors text-sm flex items-center gap-1"
+                title="Change payment method"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-300">{texts.method}</span>
+                <span className="text-white font-medium">
+                  {selectedGateway.name}
+                </span>
+              </div>
+
+              {selectedProvider && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-300">{texts.provider}</span>
+                  <span className="text-cyan-400 font-medium">
+                    {selectedProvider.name}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-300">{texts.depositAmount}</span>
+                <span className="text-white font-medium">
+                  ${Number(amount).toFixed(2)}
+                </span>
+              </div>
+
+              {(() => {
+                const feeInfo = calculateServiceFee(
+                  selectedGateway,
+                  Number(amount)
+                );
+                if (feeInfo.feeAmount > 0) {
+                  return (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-300">
+                          {texts.serviceFee}
+                        </span>
+                        <span className="text-red-400 font-medium">
+                          ${feeInfo.feeAmount.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-300">
+                          {texts.totalCharge}
+                        </span>
+                        <span className="text-red-300 font-medium">
+                          ${feeInfo.totalAmount.toFixed(2)}
+                        </span>
+                      </div>
+                    </>
+                  );
+                }
+                return null;
+              })()}
+
+              {(() => {
+                const bonuses = getApplicableBonuses(
+                  selectedGateway,
+                  Number(amount)
+                );
+                if (bonuses.length > 0) {
+                  const highestBonus = bonuses[0];
+                  return (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-300">{texts.bonus}</span>
+                        <span className="text-green-400 font-medium">
+                          +${highestBonus.amount.toFixed(2)} (
+                          {highestBonus.percentage}%)
+                        </span>
+                      </div>
+                      <div className="border-t border-gray-600 my-2"></div>
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span className="text-white">
+                          {texts.totalYoullReceive}
+                        </span>
+                        <span className="text-cyan-400">
+                          $
+                          {(Number(amount) + highestBonus.amount).toFixed(
+                            2
+                          )}
+                        </span>
+                      </div>
+                    </>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+
+            <button
+              onClick={confirmPayment}
+              disabled={loading}
+              className="mt-4 w-full py-2 bg-cyan-400 text-black rounded font-semibold hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                  <span>{texts.processing}</span>
+                </div>
+              ) : (
+                texts.confirmPayment
+              )}
+            </button>
+
+            {!loading && (
+              <button
+                onClick={() => {
+                  setSelectedGateway(null);
+                  setSelectedProvider(null);
+                }}
+                className="mt-2 w-full py-2 bg-gray-700 text-gray-300 rounded font-medium hover:bg-gray-600 transition-colors"
+              >
+                ← {texts.changePaymentMethod}
+              </button>
             )}
 
-            {!!statusText && (
-              <p className="text-xs text-gray-300 mt-4 text-center">
-                {statusText}
-              </p>
+            {!!statusText && !loading && (
+              <div className="mt-4 p-3 bg-red-500/10 border border-red-500 rounded-lg">
+                <p className="text-sm text-red-500 text-center">{statusText}</p>
+              </div>
             )}
           </div>
         )}

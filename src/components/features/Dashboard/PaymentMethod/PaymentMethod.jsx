@@ -1,7 +1,7 @@
 "use client";
-import Image from "next/image";
-import { Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Trash2 } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 const PaymentMethods = () => {
@@ -97,9 +97,7 @@ const PaymentMethods = () => {
           <h2 className="text-white text-base sm:text-lg font-semibold mb-2">
             {heading}
           </h2>
-          <p className="text-gray-400 text-xs sm:text-sm">
-            {subtitle}
-          </p>
+          <p className="text-gray-400 text-xs sm:text-sm">{subtitle}</p>
         </div>
         <button className="border border-gray-600 text-white px-4 sm:px-6 py-2 rounded-full font-medium text-xs sm:text-sm hover:bg-gray-800 transition-colors flex items-center gap-2 w-full sm:w-auto justify-center">
           <svg

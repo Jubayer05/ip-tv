@@ -1,7 +1,8 @@
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTicketListSocket, useTicketSocket } from "@/hooks/useSocket";
 import { Clock, MessageCircle, Send, Upload, X, ZoomIn } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 const SupportTicketUser = () => {
@@ -18,6 +19,7 @@ const SupportTicketUser = () => {
   const [replyText, setReplyText] = useState("");
   const [replying, setReplying] = useState(false);
   const [expandedImage, setExpandedImage] = useState(null);
+  const messagesContainerRef = useRef(null);
 
   const openTicketsCount = useMemo(
     () =>
@@ -25,7 +27,7 @@ const SupportTicketUser = () => {
     [tickets]
   );
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!user?._id) return;
     try {
       setLoading(true);
@@ -39,12 +41,60 @@ const SupportTicketUser = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?._id]);
 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?._id]);
+
+  // Socket.io: Listen for ticket updates when chat is open
+  useTicketSocket(
+    activeId,
+    useCallback(
+      (data) => {
+        // Update the specific ticket when socket event is received
+        setTickets((prev) =>
+          prev.map((t) =>
+            t._id === data.ticketId
+              ? { ...t, ...data.ticket, messages: data.ticket.messages }
+              : t
+          )
+        );
+        // Auto-scroll to bottom when new message arrives (only if this is the active ticket)
+        if (data.ticketId === activeId) {
+          setTimeout(() => {
+            const container = messagesContainerRef.current;
+            if (container && container.scrollHeight !== undefined) {
+              container.scrollTop = container.scrollHeight;
+            }
+          }, 150);
+        }
+      },
+      [activeId]
+    )
+  );
+
+  // Auto-scroll to bottom when messages change or chat opens
+  useEffect(() => {
+    if (!activeId) return;
+
+    const activeTicket = tickets.find((t) => t._id === activeId);
+    if (!activeTicket) return;
+
+    // Use a longer timeout to ensure DOM is fully rendered
+    const timeoutId = setTimeout(() => {
+      const container = messagesContainerRef.current;
+      if (container && container.scrollHeight !== undefined) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 200);
+
+    return () => clearTimeout(timeoutId);
+  }, [activeId, tickets]);
+
+  // Socket.io: Listen for ticket list updates
+  useTicketListSocket(load, user?._id);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -143,11 +193,13 @@ const SupportTicketUser = () => {
           showConfirmButton: false,
         });
       } else {
+        // Show error popup with better visibility
         Swal.fire({
           icon: "error",
-          title: "Error",
-          text: data?.error || "Failed to create ticket",
+          title: "Cannot Create Ticket",
+          text: data?.error || "Failed to create ticket. Please try again.",
           confirmButtonColor: "#44dcf3",
+          confirmButtonText: "OK",
         });
       }
     } catch (e) {
@@ -177,7 +229,16 @@ const SupportTicketUser = () => {
       const data = await res.json();
       if (data?.success) {
         setReplyText("");
+        // Socket.io will automatically update via useTicketSocket hook
+        // Still load to ensure sync, but it should be instant via socket
         await load();
+        // Auto-scroll after sending message
+        setTimeout(() => {
+          const container = messagesContainerRef.current;
+          if (container && container.scrollHeight !== undefined) {
+            container.scrollTop = container.scrollHeight;
+          }
+        }, 200);
       }
     } catch (e) {
       console.error(e);
@@ -334,7 +395,10 @@ const SupportTicketUser = () => {
                 {activeId === t._id && (
                   <div className="bg-gray-950/50">
                     {/* Messages */}
-                    <div className="h-96 overflow-y-auto p-4 space-y-3">
+                    <div
+                      ref={messagesContainerRef}
+                      className="h-96 overflow-y-auto p-4 space-y-3"
+                    >
                       {t.messages?.map((m, idx) => (
                         <div
                           key={idx}

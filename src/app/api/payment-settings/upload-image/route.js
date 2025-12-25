@@ -1,6 +1,7 @@
 import { mkdir, unlink, writeFile } from "fs/promises";
 import { NextResponse } from "next/server";
 import path from "path";
+import { uploadPaths, getPublicUrl, isValidFileType, isValidFileSize } from "@/config/upload";
 
 export async function POST(request) {
   try {
@@ -14,7 +15,7 @@ export async function POST(request) {
       );
     }
 
-    // Validate file type
+    // Validate file type using centralized config
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
@@ -26,18 +27,16 @@ export async function POST(request) {
       );
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
+    // Validate file size using centralized config
+    if (!isValidFileSize(file)) {
       return NextResponse.json(
         { success: false, error: "File size too large. Maximum size is 5MB." },
         { status: 400 }
       );
     }
 
-    // Create payment-images directory if it doesn't exist
-    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
-    const paymentImagesDir = path.join(uploadDir, "payment-images");
+    // Use centralized upload path
+    const paymentImagesDir = uploadPaths.paymentImages();
     await mkdir(paymentImagesDir, { recursive: true });
 
     // Generate unique filename
@@ -52,8 +51,8 @@ export async function POST(request) {
     const buffer = Buffer.from(bytes);
     await writeFile(filePath, buffer);
 
-    // Return the URL path (not full filesystem path)
-    const fileUrl = `/uploads/payment-images/${fileName}`;
+    // Return the URL path using centralized function
+    const fileUrl = getPublicUrl('payment-images', fileName);
 
     return NextResponse.json({
       success: true,
@@ -84,8 +83,8 @@ export async function DELETE(request) {
 
     // Extract filename from URL
     const filename = path.basename(imageUrl);
-    const uploadDir = process.env.UPLOAD_DIR || "/var/www/uploads";
-    const filePath = path.join(uploadDir, "payment-images", filename);
+    const paymentImagesDir = uploadPaths.paymentImages();
+    const filePath = path.join(paymentImagesDir, filename);
 
     try {
       await unlink(filePath);

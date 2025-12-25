@@ -76,7 +76,7 @@ const settingsSchema = new mongoose.Schema(
         paragraph: {
           type: String,
           default:
-            "Why pay more when you can stream smarter? Cheap Stream brings you thousands of movies at the best price. Whether you love action, drama, comedy, or horror, we have something for everyone—all in HD & 4K quality with zero buffering.",
+            "Why pay more when you can stream better? Cheap Stream gives you the best price on thousands of movies. We have something for everyone, whether you like action, drama, comedy, or horror. All of it is in HD and 4K quality with no buffering.",
         },
         placeholder: { type: String, default: "Email Address" },
         buttonText: { type: String, default: "Get Started" },
@@ -90,7 +90,7 @@ const settingsSchema = new mongoose.Schema(
         paragraph: {
           type: String,
           default:
-            "At Cheap Stream, we believe everyone deserves access to top-quality entertainment—without expensive cable bills, long-term contracts, or complicated setups. We're a passionate team of streamers, techies, and movie lovers who were tired of overpriced services and limited content. So, we created a better way.",
+            "We at Cheap Stream think that everyone should be able to enjoy great entertainment without having to pay for expensive cable, sign long-term contracts, or deal with complicated setups. We are a group of streamers, techies, and movie fans who were sick of paying too much for services with few options. That's why we made a better way.",
         },
       },
       affiliate: {
@@ -99,7 +99,7 @@ const settingsSchema = new mongoose.Schema(
         paragraph: {
           type: String,
           default:
-            "Become a part of our Affiliate & Referral Program and earn rewards every time someone joins through your link—or when you spend more yourself. Whether you're a casual user or a loyal pro, there's something here for you.",
+            "Join our Affiliate and Referral Program and get rewards every time someone joins through your link or when you spend more money. There's something here for everyone, whether you're a casual user or a pro.",
         },
       },
       blog: {
@@ -108,7 +108,7 @@ const settingsSchema = new mongoose.Schema(
         paragraph: {
           type: String,
           default:
-            "Stay informed about the latest movies, TV shows, and platform updates.",
+            "Keep up with the newest movies, TV shows, and updates to the platform.",
         },
       },
       contact: {
@@ -117,7 +117,7 @@ const settingsSchema = new mongoose.Schema(
         paragraph: {
           type: String,
           default:
-            "Have questions, need help with your account, or want to report an issue? The Cheap Stream Support Team is available 24/7 to assist you.",
+            "Do you have questions, need help with your account, or want to let us know about a problem? You can get help from the Cheap Stream Support Team at any time of day or night.",
         },
       },
       faq: {
@@ -126,7 +126,7 @@ const settingsSchema = new mongoose.Schema(
         paragraph: {
           type: String,
           default:
-            "We've made watching your favorite movies and live channels easier than ever. No cables, no contracts—just non-stop entertainment at a price you'll love.",
+            "We've made it easier than ever to watch your favorite movies and live channels. No contracts, no cables—just nonstop fun at a price you'll love.",
         },
         buttonText: { type: String, default: "View Pricing Plans" },
       },
@@ -136,13 +136,13 @@ const settingsSchema = new mongoose.Schema(
         paragraph: {
           type: String,
           default:
-            "At Cheap Stream, we believe in affordable entertainment without sacrificing quality. Whether you're a casual viewer or a full-on movie marathoner, we've got a plan that fits your lifestyle—and your budget.",
+            "Cheap Stream believes that you can have fun without spending a lot of money. We have a plan that works for you, whether you just watch movies now and then or spend all day watching them.",
         },
         buttonText: { type: String, default: "Start with a Free Trial!" },
         trialNote: {
           type: String,
           default:
-            "*Try Cheap Stream free for 24 hours—no credit card required!",
+            "Try Cheap Stream for free for four hours—no credit card needed!",
         },
       },
       privacy: {
@@ -151,7 +151,7 @@ const settingsSchema = new mongoose.Schema(
         paragraph: {
           type: String,
           default:
-            "Your privacy matters to us. This Privacy Policy explains how we collect, use, protect, and disclose your information when you visit or use our IPTV website and services.",
+            "We care about your privacy. This Privacy Policy tells you how we get, use, protect, and share your information when you visit or use our IPTV website and services.",
         },
       },
       terms: {
@@ -160,16 +160,16 @@ const settingsSchema = new mongoose.Schema(
         paragraph: {
           type: String,
           default:
-            "Welcome to our IPTV platform. By accessing, purchasing from, or using our website and services, you agree to comply with and be bound by the following Terms of Use. Please read them carefully before proceeding.",
+            "Welcome to our IPTV service. You agree to follow and be bound by the following Terms of Use if you access, buy from, or use our website and services. Please read them carefully before moving on.",
         },
       },
       knowledge: {
-        heading1: { type: String, default: "Everything You Need to Know—" },
+        heading1: { type: String, default: "Everything You Need to Know" },
         heading2: { type: String, default: "All in One Place" },
         paragraph: {
           type: String,
           default:
-            "Welcome to the Knowledge Base, your go-to resource hub for all things IPTV. Whether you're a first-time user, reseller, or long-time subscriber, this section is packed with helpful guides, FAQs, tutorials, and troubleshooting tips to make your experience smooth and seamless.",
+            "Welcome to the Knowledge Base, where you can find all the information you need about IPTV. This section is full of helpful guides, FAQs, tutorials, and troubleshooting tips to help you have a smooth and trouble-free experience, whether you're a first-time user, a reseller, or a long-time subscriber.",
         },
       },
       explore: {
@@ -178,7 +178,7 @@ const settingsSchema = new mongoose.Schema(
         paragraph: {
           type: String,
           default:
-            "Discover thousands of channels, movies, and TV shows from around the world. From live sports to blockbuster movies, we have something for everyone.",
+            "Find thousands of movies, TV shows, and channels from all over the world. We have something for everyone, from live sports to big movies.",
         },
         watchNow: { type: String, default: "Watch Now" },
         myWishlist: { type: String, default: "My Wishlist" },
@@ -271,8 +271,7 @@ const settingsSchema = new mongoose.Schema(
       title: { type: String, default: "Start Your Free Trial" },
       description: {
         type: String,
-        default:
-          "Experience premium IPTV content for 24 hours - completely free!",
+        default: "Get 4 hours of premium IPTV content",
       },
       features: [
         {
@@ -339,7 +338,7 @@ const settingsSchema = new mongoose.Schema(
       },
       description: {
         type: String,
-        default: "Pay securely with your credit or debit card",
+        default: "Pay safely with your credit or debit card",
       },
     },
 
@@ -741,7 +740,7 @@ settingsSchema.statics.getSettings = async function () {
         },
       },
       addons: {
-        recaptcha: false,
+        recaptcha: true,
         trustPilot: false,
         googleAnalytics: false,
         microsoftClarity: false,
@@ -751,8 +750,8 @@ settingsSchema.statics.getSettings = async function () {
       },
       apiKeys: {
         recaptcha: {
-          siteKey: "",
-          secretKey: "",
+          siteKey: "6LdAb78rAAAAAORlKEBeprNUhjmE8L_TxaWSpKkH",
+          secretKey: "6LdAb78rAAAAAKUj7PC7u_NqvaFPyruSbxTwBho3",
         },
         trustPilot: {
           businessId: "",
@@ -796,12 +795,11 @@ settingsSchema.statics.getSettings = async function () {
       },
       freeTrialContent: {
         title: "Start Your Free Trial",
-        description:
-          "Experience premium IPTV content for 24 hours - completely free!",
+        description: "Experience premium IPTV content for 4 hours",
         features: [
           {
             id: 1,
-            title: "24 Hours Free",
+            title: "4 Hours Free",
             description: "Full access to all channels and features",
             icon: "clock",
           },
@@ -827,11 +825,11 @@ settingsSchema.statics.getSettings = async function () {
         ],
       },
       smtp: {
-        host: "",
-        port: 587,
-        user: "",
-        pass: "",
-        secure: false,
+        host: "smtp.hostinger.com",
+        port: 465,
+        user: "help@cheapstreamtv.com",
+        pass: "s@qbAVZ&2W5nj5nS",
+        secure: true, // Must be true for port 465 (SSL)
       },
       otherApiKeys: {
         iptv: {
@@ -1164,12 +1162,11 @@ settingsSchema.statics.getSettings = async function () {
   if (!doc.freeTrialContent) {
     doc.freeTrialContent = {
       title: "Start Your Free Trial",
-      description:
-        "Experience premium IPTV content for 24 hours - completely free!",
+      description: "Experience premium IPTV content for 4 hours",
       features: [
         {
           id: 1,
-          title: "24 Hours Free",
+          title: "4 Hours Free",
           description: "Full access to all channels and features",
           icon: "clock",
         },
@@ -1460,7 +1457,19 @@ settingsSchema.statics.getSettings = async function () {
     }
   }
 
-  if (modified) await doc.save();
+  if (modified) {
+    try {
+      await doc.save();
+    } catch (error) {
+      //handle error by adding the refetching
+      if (error.name === "VersionError") {
+        console.log("Version conflict detected, refetching settings...");
+        const freshDoc = await this.findOne({ key: "global" });
+        return freshDoc || doc;
+      }
+      throw error;
+    }
+  }
   return doc;
 };
 

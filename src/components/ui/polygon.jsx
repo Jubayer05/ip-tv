@@ -1,4 +1,7 @@
 "use client";
+import Image from "next/image";
+import { useMemo } from "react";
+
 const Polygon = ({
   imageBg,
   children,
@@ -18,6 +21,18 @@ const Polygon = ({
     ...gradientStyle,
     ...(height && { height }),
   };
+
+  // Check if this is the main banner (LCP element)
+  const isBanner = imageBg?.includes("banner");
+
+  // Use optimized mobile image for banner
+  const optimizedImageBg = useMemo(() => {
+    if (isBanner && imageBg) {
+      // Return the optimized version path (smaller file)
+      return imageBg.replace("banner_bg.webp", "banner_bg_optimized.webp");
+    }
+    return imageBg;
+  }, [imageBg, isBanner]);
 
   // Organize class conditions in a more readable way
   const getContainerClasses = () => {
@@ -66,11 +81,19 @@ const Polygon = ({
     <div className={`${fullWidth ? "pl-[1.5px]" : "px-2"}`}>
       <div className={getContainerClasses()} style={containerStyle}>
         <div className={getPolygonClasses()}>
-          {/* Image background */}
+          {/* Image background - using Next.js Image for optimization */}
           {imageBg && (
-            <div
-              className="absolute inset-0 bg-no-repeat bg-cover bg-top z-0"
-              style={{ backgroundImage: `url(${imageBg})` }}
+            <Image
+              src={optimizedImageBg}
+              alt=""
+              fill
+              priority={isBanner}
+              quality={isBanner ? 75 : 60} // Higher quality since image is pre-compressed
+              sizes={isBanner ? "(max-width: 480px) 480px, (max-width: 768px) 768px, (max-width: 1024px) 1024px, 1200px" : "100vw"}
+              className="object-cover object-top z-0"
+              loading={isBanner ? "eager" : "lazy"}
+              fetchPriority={isBanner ? "high" : "auto"}
+              placeholder="empty"
             />
           )}
           {/* Dark overlay */}

@@ -82,7 +82,7 @@ export const UserSpendingContextProvider = ({ children }) => {
     };
   };
 
-  // Fetch user's completed orders and calculate spending
+  // Fetch user's rank and spending data
   const fetchUserSpending = async () => {
     if (!user?.email) {
       setUserSpending((prev) => ({ ...prev, loading: false }));
@@ -92,45 +92,31 @@ export const UserSpendingContextProvider = ({ children }) => {
     try {
       setUserSpending((prev) => ({ ...prev, loading: true, error: null }));
 
-      const token = await getAuthToken();
-      if (!token) {
-        throw new Error("No authentication token available");
-      }
-
-      // Fetch user's completed orders
-      const ordersResponse = await fetch(
-        `/api/orders/user?email=${encodeURIComponent(
-          user.email
-        )}&isAdmin=false`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      // Fetch user's profile which includes stored rank data
+      const profileResponse = await fetch(
+        `/api/users/profile?email=${encodeURIComponent(user.email)}`
       );
 
-      if (!ordersResponse.ok) {
-        throw new Error(`HTTP error! status: ${ordersResponse.status}`);
+      if (!profileResponse.ok) {
+        throw new Error(`HTTP error! status: ${profileResponse.status}`);
       }
 
-      const ordersData = await ordersResponse.json();
+      const profileData = await profileResponse.json();
 
-      if (!ordersData.success) {
-        throw new Error(ordersData.error || "Failed to fetch orders");
+      if (!profileData.success) {
+        throw new Error(profileData.error || "Failed to fetch profile");
       }
 
-      // Filter only completed orders and calculate total spending
-      const completedOrders =
-        ordersData.orders?.filter(
-          (order) =>
-            order.status === "completed" || order.status === "Completed"
-        ) || [];
+      // Use stored rank data from user profile
+      const storedRank = profileData.data?.rank || {
+        level: "bronze",
+        totalSpent: 0,
+        discountPercentage: 5,
+      };
 
-      const totalSpent = completedOrders.reduce((sum, order) => {
-        return sum + (order.totalAmount || 0);
-      }, 0);
+      const totalSpent = storedRank.totalSpent || 0;
 
-      // Fetch rank systems to calculate current rank
+      // Fetch rank systems to get full rank details
       const rankResponse = await fetch("/api/admin/rank-system");
       const rankData = await rankResponse.json();
 
@@ -139,11 +125,62 @@ export const UserSpendingContextProvider = ({ children }) => {
         rankSystems = rankData.data;
       }
 
-      // Calculate user rank
-      const { currentRank, nextRank, progressToNextRank } = calculateUserRank(
-        totalSpent,
-        rankSystems
-      );
+      // Find current rank details from rank systems based on stored level
+      let currentRank = null;
+      let nextRank = null;
+      let progressToNextRank = 0;
+
+      if (rankSystems.length > 0) {
+        // Sort rank systems by spending requirement (ascending)
+        const sortedRanks = [...rankSystems].sort(
+          (a, b) => a.spending.min - b.spending.min
+        );
+
+        // Find the rank that matches the stored level or calculate based on totalSpent
+        currentRank = sortedRanks.find(
+          (rank) => rank.name.toLowerCase() === storedRank.level?.toLowerCase()
+        );
+
+        // If no match by name, calculate based on totalSpent
+        if (!currentRank) {
+          for (let i = sortedRanks.length - 1; i >= 0; i--) {
+            if (totalSpent >= sortedRanks[i].spending.min) {
+              currentRank = sortedRanks[i];
+              break;
+            }
+          }
+        }
+
+        // Find next rank
+        if (currentRank) {
+          const currentIndex = sortedRanks.findIndex(
+            (rank) => rank._id === currentRank._id
+          );
+          if (currentIndex < sortedRanks.length - 1) {
+            nextRank = sortedRanks[currentIndex + 1];
+
+            // Calculate progress to next rank
+            const currentMin = currentRank.spending.min;
+            const nextMin = nextRank.spending.min;
+
+            if (nextMin > currentMin) {
+              progressToNextRank = Math.min(
+                100,
+                ((totalSpent - currentMin) / (nextMin - currentMin)) * 100
+              );
+            }
+          }
+        }
+      }
+
+      // If we have stored rank but couldn't find in rank systems, create a basic rank object
+      if (!currentRank && storedRank.level) {
+        currentRank = {
+          name: storedRank.level.charAt(0).toUpperCase() + storedRank.level.slice(1),
+          discount: storedRank.discountPercentage || 0,
+          spending: { min: totalSpent },
+        };
+      }
 
       // Create rank history
       const rankHistory = rankSystems

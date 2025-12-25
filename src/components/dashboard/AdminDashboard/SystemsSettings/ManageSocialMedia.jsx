@@ -75,7 +75,7 @@ const ManageSocialMedia = () => {
     try {
       setLoading(true);
       setError("");
-      const response = await apiCall("/api/admin/settings", "GET");
+      const response = await apiCall("/api/admin/settings?nocache=true", "GET");
       if (response.success) {
         setSocialMedia(response.data.socialMedia || socialMedia);
       }

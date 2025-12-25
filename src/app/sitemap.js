@@ -1,8 +1,10 @@
 import { connectToDatabase } from "@/lib/db";
+import Blog from "@/models/Blog";
 import Product from "@/models/Product";
 
 export default async function sitemap() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cheapstream.com";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || "https://cheapstreamtv.com";
 
   // Static pages
   const staticPages = [
@@ -29,6 +31,12 @@ export default async function sitemap() {
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/reviews`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.7,
     },
     {
       url: `${baseUrl}/blogs`,
@@ -88,11 +96,13 @@ export default async function sitemap() {
 
   // Dynamic pages from products
   let productPages = [];
+  let blogPages = [];
+
   try {
     await connectToDatabase();
-    const products = await Product.find({}).lean();
 
-    // Add product variants as individual pages if they have slugs
+    // Fetch products
+    const products = await Product.find({}).lean();
     products.forEach((product) => {
       product.variants.forEach((variant) => {
         if (variant.slug) {
@@ -105,12 +115,22 @@ export default async function sitemap() {
         }
       });
     });
+
+    // Fetch blogs
+    const blogs = await Blog.find({ isActive: true }).lean();
+    blogs.forEach((blog) => {
+      if (blog.slug) {
+        blogPages.push({
+          url: `${baseUrl}/blogs/${blog.slug}`,
+          lastModified: blog.updatedAt || blog.createdAt || new Date(),
+          changeFrequency: "monthly",
+          priority: 0.6,
+        });
+      }
+    });
   } catch (error) {
-    console.error("Error fetching products for sitemap:", error);
+    console.error("Error fetching data for sitemap:", error);
   }
 
-  // Blog pages (if you have dynamic blog routes)
-  // Add blog pages here if you have them
-
-  return [...staticPages, ...productPages];
+  return [...staticPages, ...productPages, ...blogPages];
 }

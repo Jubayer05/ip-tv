@@ -156,8 +156,8 @@ const TableCustom = ({
 
         .custom-antd-table .ant-table-thead > tr > th:nth-child(6),
         .custom-antd-table .ant-table-tbody > tr > td:nth-child(6) {
-          min-width: 80px !important;
-          max-width: 100px !important;
+          min-width: 120px !important;
+          max-width: 250px !important;
         }
 
         .custom-antd-table .ant-table-thead > tr > th:nth-child(7),

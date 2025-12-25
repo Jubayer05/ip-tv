@@ -90,7 +90,7 @@ const ManageContact = () => {
     try {
       setLoading(true);
       setError("");
-      const response = await apiCall("/api/admin/settings", "GET");
+      const response = await apiCall("/api/admin/settings?nocache=true", "GET");
       if (response.success) {
         setContactInfo({
           phoneNumber: response.data.contactInfo?.phoneNumber || "",

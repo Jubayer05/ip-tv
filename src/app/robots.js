@@ -1,5 +1,6 @@
 export default function robots() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cheapstream.com";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || "https://cheapstreamtv.com";
 
   return {
     rules: {

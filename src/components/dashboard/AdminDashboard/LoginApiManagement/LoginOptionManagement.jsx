@@ -94,7 +94,7 @@ const LoginOptionManagement = () => {
     try {
       setLoading(true);
       setError("");
-      const response = await apiCall("/api/admin/settings", "GET");
+      const response = await apiCall("/api/admin/settings?nocache=true", "GET");
       if (response.success) {
         if (response.data.loginOptions) {
           setLoginOptions(response.data.loginOptions);

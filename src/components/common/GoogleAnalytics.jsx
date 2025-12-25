@@ -6,22 +6,31 @@ export default function GoogleAnalytics() {
   const [measurementId, setMeasurementId] = useState("");
 
   useEffect(() => {
-    const checkAnalyticsSetting = async () => {
-      try {
-        const response = await fetch("/api/admin/settings");
-        const data = await response.json();
-        if (data.success && data.data.addons) {
-          setAnalyticsEnabled(data.data.addons.googleAnalytics);
-          if (data.data.apiKeys?.googleAnalytics?.measurementId) {
-            setMeasurementId(data.data.apiKeys.googleAnalytics.measurementId);
+    // Delay analytics check to not block initial render
+    const loadAnalytics = () => {
+      const checkAnalyticsSetting = async () => {
+        try {
+          const response = await fetch("/api/admin/settings");
+          const data = await response.json();
+          if (data.success && data.data.addons) {
+            setAnalyticsEnabled(data.data.addons.googleAnalytics);
+            if (data.data.apiKeys?.googleAnalytics?.measurementId) {
+              setMeasurementId(data.data.apiKeys.googleAnalytics.measurementId);
+            }
           }
+        } catch (error) {
+          console.error("Failed to check Google Analytics setting:", error);
         }
-      } catch (error) {
-        console.error("Failed to check Google Analytics setting:", error);
-      }
+      };
+      checkAnalyticsSetting();
     };
 
-    checkAnalyticsSetting();
+    // Use requestIdleCallback for non-blocking load, fallback to setTimeout
+    if ("requestIdleCallback" in window) {
+      requestIdleCallback(loadAnalytics, { timeout: 3000 });
+    } else {
+      setTimeout(loadAnalytics, 2000);
+    }
   }, []);
 
   useEffect(() => {

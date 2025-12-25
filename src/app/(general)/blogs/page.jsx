@@ -1,25 +1,22 @@
-import BlogBanner from "@/components/features/Blogs/BlogBaner";
-import BlogContent from "@/components/features/Blogs/BlogsContent";
+import { connectToDatabase } from "@/lib/db";
+import Settings from "@/models/Settings";
+import BlogClient from "./BlogClient";
 
 export async function generateMetadata() {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/admin/settings`,
-      {
-        cache: "no-store",
-      }
-    );
-    const data = await response.json();
+    // Direct DB access instead of HTTP fetch (avoids Docker networking issues)
+    await connectToDatabase();
+    const settings = await Settings.getSettings();
 
-    if (data.success && data.data.metaManagement?.blogs) {
-      const meta = data.data.metaManagement.blogs;
+    if (settings?.metaManagement?.blogs) {
+      const meta = settings.metaManagement.blogs;
       return {
         title: meta.title,
         description: meta.description,
         keywords: meta.keywords,
         openGraph: {
-          title: meta.openGraph.title,
-          description: meta.openGraph.description,
+          title: meta.openGraph?.title || meta.title,
+          description: meta.openGraph?.description || meta.description,
         },
       };
     }
@@ -42,13 +39,6 @@ export async function generateMetadata() {
   };
 }
 
-export default function Pricing() {
-  return (
-    <div className="-mt-8 md:-mt-14">
-      <div className="py-16">
-        <BlogBanner />
-        <BlogContent />
-      </div>
-    </div>
-  );
+export default function Blog() {
+  return <BlogClient />;
 }

@@ -1,5 +1,6 @@
 "use client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useGuestTicketListSocket, useSocket } from "@/hooks/useSocket";
 import {
   CheckCircle,
   ChevronDown,
@@ -11,7 +12,7 @@ import {
   UserX,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const GuestSupportTicketAdmin = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
@@ -22,6 +23,7 @@ const GuestSupportTicketAdmin = () => {
   const [statusFilter, setStatusFilter] = useState("open");
   const [expandedImage, setExpandedImage] = useState(null);
   const [expandedTickets, setExpandedTickets] = useState(new Set()); // Track expanded tickets
+  const messagesContainerRef = useRef(null);
 
   const ORIGINAL_TEXTS = {
     heading: "Guest Support Tickets",
@@ -65,27 +67,126 @@ const GuestSupportTicketAdmin = () => {
     };
   }, [language.code, isLanguageLoaded, translate]);
 
-  const load = async () => {
-    try {
-      setLoading(true);
-      const q = statusFilter
-        ? `?status=${encodeURIComponent(statusFilter)}`
-        : "";
-      const res = await fetch(`/api/support/guest-tickets${q}`);
-      const data = await res.json();
-      if (data?.success) {
-        setTickets(data.data || []);
+  const load = useCallback(
+    async (showLoader = true) => {
+      try {
+        if (showLoader) {
+          setLoading(true);
+        }
+        const q = statusFilter
+          ? `?status=${encodeURIComponent(statusFilter)}`
+          : "";
+        const res = await fetch(`/api/support/guest-tickets${q}`);
+        const data = await res.json();
+        if (data?.success) {
+          setTickets(data.data || []);
+        }
+      } catch (e) {
+        console.error("Error loading guest tickets:", e);
+      } finally {
+        if (showLoader) {
+          setLoading(false);
+        }
       }
-    } catch (e) {
-      console.error("Error loading guest tickets:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [statusFilter]
+  );
+
+  // Refresh function for Socket.io updates (no loading spinner)
+  const refresh = useCallback(() => {
+    load(false); // Load without showing loading spinner
+  }, [load]);
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
+
+  // Get socket connection for managing ticket rooms
+  const { socket, isConnected } = useSocket();
+
+  // Socket.io: Join/leave rooms for all expanded tickets and listen for updates
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const expandedTicketIds = Array.from(expandedTickets);
+    if (expandedTicketIds.length === 0) return;
+
+    // Join all expanded ticket rooms
+    expandedTicketIds.forEach((ticketId) => {
+      socket.emit("join-guest-ticket", ticketId);
+    });
+
+    // Listen for guest ticket updates for any expanded ticket
+    const handleUpdate = (data) => {
+      if (expandedTicketIds.includes(data.ticketId)) {
+        setTickets((prev) =>
+          prev.map((t) =>
+            t._id === data.ticketId
+              ? {
+                  ...t,
+                  ...data.ticket,
+                  messages: data.ticket.messages || t.messages,
+                  status: data.status || t.status,
+                }
+              : t
+          )
+        );
+        // Auto-scroll to bottom when new message arrives
+        setTimeout(() => {
+          const container = messagesContainerRef.current;
+          if (container && container.scrollHeight !== undefined) {
+            container.scrollTop = container.scrollHeight;
+          }
+        }, 150);
+      }
+    };
+
+    socket.on("guest-ticket-update", handleUpdate);
+
+    // Cleanup: leave all rooms and remove listener
+    return () => {
+      expandedTicketIds.forEach((ticketId) => {
+        socket.emit("leave-guest-ticket", ticketId);
+      });
+      socket.off("guest-ticket-update", handleUpdate);
+    };
+  }, [socket, isConnected, expandedTickets]);
+
+  // Socket.io: Listen for guest ticket list updates (admin view)
+  // This will refresh all tickets when any guest ticket is updated
+  useGuestTicketListSocket(
+    useCallback(() => {
+      // Refresh the ticket list silently (no loading spinner)
+      refresh();
+      // Auto-scroll after refresh if tickets are expanded
+      setTimeout(() => {
+        const container = messagesContainerRef.current;
+        if (container && container.scrollHeight !== undefined) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }, 200);
+    }, [refresh])
+  );
+
+  // Auto-scroll to bottom when messages change or ticket expands
+  useEffect(() => {
+    const expandedTicketIds = Array.from(expandedTickets);
+    if (expandedTicketIds.length > 0) {
+      const firstExpandedTicket = tickets.find((t) =>
+        expandedTicketIds.includes(t._id)
+      );
+      if (firstExpandedTicket) {
+        const timeoutId = setTimeout(() => {
+          const container = messagesContainerRef.current;
+          if (container && container.scrollHeight !== undefined) {
+            container.scrollTop = container.scrollHeight;
+          }
+        }, 200);
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [expandedTickets, tickets]);
 
   const handleReply = async (ticketId) => {
     if (!replyText.trim()) return;
@@ -101,7 +202,15 @@ const GuestSupportTicketAdmin = () => {
       const data = await res.json();
       if (data.success) {
         setReplyText("");
-        load();
+        // Socket.io will automatically update via useGuestTicketSocket hook
+        refresh(); // Just refresh stats silently
+        // Auto-scroll after sending message
+        setTimeout(() => {
+          const container = messagesContainerRef.current;
+          if (container && container.scrollHeight !== undefined) {
+            container.scrollTop = container.scrollHeight;
+          }
+        }, 200);
       }
     } catch (e) {
       console.error("Error sending reply:", e);
@@ -120,7 +229,8 @@ const GuestSupportTicketAdmin = () => {
 
       const data = await res.json();
       if (data.success) {
-        load();
+        // Socket.io will automatically update via useGuestTicketListSocket hook
+        refresh(); // Use refresh instead of load to avoid loading spinner
       }
     } catch (e) {
       console.error("Error updating status:", e);
@@ -308,7 +418,10 @@ const GuestSupportTicketAdmin = () => {
                         <h4 className="text-white font-medium text-xs sm:text-sm">
                           {texts.conversation}
                         </h4>
-                        <div className="max-h-48 sm:max-h-64 overflow-y-auto space-y-2 sm:space-y-3">
+                        <div
+                          ref={isExpanded ? messagesContainerRef : null}
+                          className="max-h-48 sm:max-h-64 overflow-y-auto space-y-2 sm:space-y-3"
+                        >
                           {ticket.messages.map((message, index) => (
                             <div
                               key={index}

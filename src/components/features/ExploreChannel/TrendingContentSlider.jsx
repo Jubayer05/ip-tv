@@ -1,103 +1,105 @@
 "use client";
 import TrendingCommon from "@/components/ui/TrendingCommon";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const TrendingContentSlider = () => {
   const { language, translate, isLanguageLoaded } = useLanguage();
+  const router = useRouter();
 
   // Original text constants
   const ORIGINAL_CONTENT_ITEMS = [
     {
       id: 1,
-      title: "Loki | Season 2",
+      title: "Harry Potter",
       poster: "/movies/1.jpg",
-      rating: "8.2/10",
-      year: "2023",
-      genres: ["Action", "TV Show", "United States"],
+      rating: "7.6/10",
+      year: "2001",
+      genres: ["Fantasy", "Adventure", "United Kingdom"],
     },
     {
       id: 2,
-      title: "The Mandalorian",
+      title: "The Legend",
       poster: "/movies/2.jpg",
-      rating: "8.7/10",
-      year: "2019",
-      genres: ["Action", "Sci-Fi", "United States"],
+      rating: "6.2/10",
+      year: "2016",
+      genres: ["Action", "Adventure", "United States"],
     },
     {
       id: 3,
-      title: "Stranger Things",
+      title: "Shadow and Bone",
       poster: "/movies/3.jpg",
-      rating: "8.8/10",
-      year: "2016",
-      genres: ["Supernatural", "Thriller", "United States"],
-    },
-    {
-      id: 4,
-      title: "House of the Dragon",
-      poster: "/movies/4.jpg",
-      rating: "8.4/10",
-      year: "2022",
+      rating: "7.6/10",
+      year: "2021",
       genres: ["Fantasy", "Drama", "United States"],
     },
     {
+      id: 4,
+      title: "Agent",
+      poster: "/movies/4.jpg",
+      rating: "7.3/10",
+      year: "2015",
+      genres: ["Action", "Comedy", "United States"],
+    },
+    {
       id: 5,
-      title: "Wednesday",
+      title: "Star Wars",
       poster: "/movies/5.jpg",
-      rating: "8.1/10",
-      year: "2022",
-      genres: ["Dark Comedy", "Mystery", "United States"],
+      rating: "7.9/10",
+      year: "2015",
+      genres: ["Action", "Sci-Fi", "United States"],
     },
     {
       id: 6,
-      title: "The Witcher",
+      title: "Black Panther",
       poster: "/movies/6.jpg",
-      rating: "8.2/10",
-      year: "2019",
-      genres: ["Fantasy", "Adventure", "United States"],
+      rating: "7.3/10",
+      year: "2018",
+      genres: ["Action", "Superhero", "United States"],
     },
   ];
 
   const ORIGINAL_TV_SHOWS = [
     {
       id: 1,
-      title: "The Morning Show",
+      title: "Bates Motel",
       poster: "/movies/tv-1.jpg",
       rating: "8.2/10",
-      year: "2023",
-      genres: ["Action", "TV Show", "United States"],
+      year: "2013",
+      genres: ["Drama", "Horror", "United States"],
     },
     {
       id: 2,
-      title: "TV Show name",
+      title: "The Pharmacist",
       poster: "/movies/tv-2.jpg",
-      rating: "8.2/10",
-      year: "2023",
-      genres: ["Action", "TV Show", "United States"],
+      rating: "8.1/10",
+      year: "2020",
+      genres: ["Documentary", "Crime", "United States"],
     },
     {
       id: 3,
-      title: "TV Show name",
+      title: "The 100",
       poster: "/movies/tv-3.jpg",
-      rating: "8.2/10",
-      year: "2023",
-      genres: ["Action", "TV Show", "United States"],
+      rating: "7.7/10",
+      year: "2014",
+      genres: ["Sci-Fi", "Drama", "United States"],
     },
     {
       id: 4,
-      title: "TV Show name",
+      title: "The Morning Show",
       poster: "/movies/tv-4.webp",
       rating: "8.2/10",
-      year: "2023",
-      genres: ["Action", "TV Show", "United States"],
+      year: "2019",
+      genres: ["Drama", "Comedy", "United States"],
     },
     {
       id: 5,
-      title: "TV Show name",
+      title: "Dinner for One",
       poster: "/movies/tv-5.webp",
-      rating: "8.2/10",
-      year: "2023",
-      genres: ["Action", "TV Show", "United States"],
+      rating: "8.0/10",
+      year: "1963",
+      genres: ["Comedy", "Short", "Germany"],
     },
   ];
 
@@ -290,12 +292,13 @@ const TrendingContentSlider = () => {
   }, [language.code, isLanguageLoaded, translate]);
 
   const handleItemClick = (item) => {
-    
+    // Navigate to packages page when item is clicked
+    router.push("/packages");
   };
 
   const handleButtonClick = () => {
-    // Add your navigation logic here
-    // Example: router.push('/browse');
+    // Navigate to packages page when button is clicked
+    router.push("/packages");
   };
 
   return (

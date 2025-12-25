@@ -53,7 +53,7 @@ const AffiliateManagement = () => {
     try {
       setLoading(true);
       setError("");
-      const res = await fetch("/api/admin/settings");
+      const res = await fetch("/api/admin/settings?nocache=true");
       const data = await res.json();
       if (res.ok && data?.success) {
         setPct(Number(data.data?.affiliateCommissionPct || 10));

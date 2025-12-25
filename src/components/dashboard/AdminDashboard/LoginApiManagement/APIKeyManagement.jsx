@@ -234,7 +234,7 @@ const APIKeyManagement = () => {
     try {
       setLoading(true);
       setError("");
-      const response = await apiCall("/api/admin/settings", "GET");
+      const response = await apiCall("/api/admin/settings?nocache=true", "GET");
       if (response.success) {
         if (response.data.smtp) {
           setSmtp(response.data.smtp);

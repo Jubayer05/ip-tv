@@ -1,6 +1,22 @@
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
+import admin from "firebase-admin";
 import { NextResponse } from "next/server";
+
+// Initialize Firebase Admin if not already initialized
+if (!admin.apps.length) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      }),
+    });
+  } catch (error) {
+    console.error("Firebase admin initialization error:", error);
+  }
+}
 
 // GET - Fetch users with pagination and search
 export async function GET(request) {
@@ -86,7 +102,7 @@ export async function POST(request) {
       );
     }
 
-    // Check if user already exists
+    // Check if user already exists in MongoDB
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return NextResponse.json(
@@ -98,11 +114,58 @@ export async function POST(request) {
       );
     }
 
-    // Create new user
+    // Check if user already exists in Firebase
+    let firebaseUser = null;
+    try {
+      firebaseUser = await admin.auth().getUserByEmail(email);
+      if (firebaseUser) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "User with this email already exists in authentication system",
+          },
+          { status: 400 }
+        );
+      }
+    } catch (error) {
+      // User doesn't exist in Firebase, which is what we want
+      if (error.code !== "auth/user-not-found") {
+        throw error;
+      }
+    }
+
+    // Create Firebase user first
+    let firebaseUid;
+    try {
+      const newFirebaseUser = await admin.auth().createUser({
+        email: email.toLowerCase().trim(),
+        password: password,
+        emailVerified: true, // Admin created users are pre-verified
+        displayName: profile.firstName
+          ? `${profile.firstName} ${profile.lastName || ""}`.trim()
+          : undefined,
+      });
+      firebaseUid = newFirebaseUser.uid;
+    } catch (firebaseError) {
+      console.error("Firebase user creation error:", firebaseError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to create user in authentication system",
+          details: firebaseError.message,
+        },
+        { status: 500 }
+      );
+    }
+
+    // Create MongoDB user with Firebase UID
     const newUser = new User({
-      email,
-      password,
+      email: email.toLowerCase().trim(),
+      password, // Store password in MongoDB for reference (Firebase handles auth)
+      firebaseUid, // Link to Firebase user
       role,
+      createdByAdmin: true, // Mark as admin-created to bypass 2FA
       profile: {
         firstName: profile.firstName || "",
         lastName: profile.lastName || "",
@@ -111,6 +174,11 @@ export async function POST(request) {
         ...profile,
       },
       isEmailVerified: true, // Admin created users are pre-verified
+      firebase: {
+        uid: firebaseUid,
+        provider: "email",
+        emailVerified: true,
+      },
     });
 
     await newUser.save();
@@ -126,10 +194,21 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Error creating user:", error);
+
+    // If MongoDB user creation failed but Firebase user was created, try to clean up
+    if (firebaseUid) {
+      try {
+        await admin.auth().deleteUser(firebaseUid);
+      } catch (cleanupError) {
+        console.error("Error cleaning up Firebase user:", cleanupError);
+      }
+    }
+
     return NextResponse.json(
       {
         success: false,
         error: "Failed to create user",
+        details: error.message,
       },
       { status: 500 }
     );

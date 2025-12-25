@@ -12,7 +12,7 @@ const AffiliateFundTransfer = () => {
 
   // Original static texts
   const ORIGINAL_TEXTS = {
-    heading: "Fund Transfer Management - Withdrawal Requests",
+    heading: "Managing Fund Transfers Requests for Withdrawals",
     searchPlaceholder: "Search by username, first name, last name, or email...",
     loadingWithdrawals: "Loading withdrawal requests...",
     noWithdrawals: "No withdrawal requests found",

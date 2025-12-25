@@ -1,3 +1,5 @@
+import { connectToDatabase } from "@/lib/db";
+import Settings from "@/models/Settings";
 import FAQ from "@/components/features/Home/FaqHome";
 import FaqBanner from "@/components/features/Support/FAQ/FaqBanner";
 import FaqTimeline from "@/components/features/Support/FAQ/FaqTimeline";
@@ -5,23 +7,19 @@ import FaqStillQuestion from "@/components/features/Support/FAQ/StillQuestion";
 
 export async function generateMetadata() {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/admin/settings`,
-      {
-        cache: "no-store",
-      }
-    );
-    const data = await response.json();
+    // Direct DB access instead of HTTP fetch (avoids Docker networking issues)
+    await connectToDatabase();
+    const settings = await Settings.getSettings();
 
-    if (data.success && data.data.metaManagement?.faq) {
-      const meta = data.data.metaManagement.faq;
+    if (settings?.metaManagement?.faq) {
+      const meta = settings.metaManagement.faq;
       return {
         title: meta.title,
         description: meta.description,
         keywords: meta.keywords,
         openGraph: {
-          title: meta.openGraph.title,
-          description: meta.openGraph.description,
+          title: meta.openGraph?.title || meta.title,
+          description: meta.openGraph?.description || meta.description,
         },
       };
     }
@@ -31,15 +29,15 @@ export async function generateMetadata() {
 
   // Fallback metadata
   return {
-    title: "FAQ - Cheap Stream | Frequently Asked Questions",
+    title: "Common Questions Answered - Cheap Stream FAQ",
     description:
-      "Find answers to frequently asked questions about Cheap Stream IPTV services, setup, troubleshooting, billing, and more. Quick solutions to common issues.",
+      "Got questions? We've got answers. Learn how to set up your service, fix common issues, understand billing, and get the most out of your Cheap Stream subscription.",
     keywords:
-      "FAQ, frequently asked questions, IPTV help, Cheap Stream FAQ, streaming questions, common issues, troubleshooting help",
+      "FAQ, help center, setup guide, troubleshooting, billing questions, how to use IPTV",
     openGraph: {
-      title: "FAQ - Cheap Stream | Frequently Asked Questions",
+      title: "Common Questions Answered - Cheap Stream FAQ",
       description:
-        "Find answers to frequently asked questions about Cheap Stream IPTV services, setup, troubleshooting, billing, and more. Quick solutions to common issues.",
+        "Got questions? We've got answers. Learn how to set up your service, fix common issues, understand billing, and get the most out of your Cheap Stream subscription.",
     },
   };
 }

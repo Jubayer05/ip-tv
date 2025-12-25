@@ -11,8 +11,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Slider from "react-slick";
-import "slick-carousel/slick/slick-theme.css";
-import "slick-carousel/slick/slick.css";
+import "@/styles/slick-minimal.css";
 
 const ReviewShowHome = () => {
   const { translate } = useLanguage();
@@ -31,7 +30,7 @@ const ReviewShowHome = () => {
     reviews: "reviews",
     dontJustTakeOurWord:
       "Don't just take our word for it. Here's what our satisfied customers have to say about our service.",
-    seeAllReviews: "See all reviews",
+    seeAllReviews: "View all reviews",
   };
 
   // Translated text state
@@ -154,7 +153,7 @@ const ReviewShowHome = () => {
   const CustomArrow = ({ style, onClick, direction }) => (
     <button
       onClick={onClick}
-      className={`absolute top-1/2 -translate-y-1/2 z-10 w-8 md:w-12 h-8 md:h-12 bg-black/50 hover:bg-black/70 text-white 
+      className={`absolute top-1/2 -translate-y-1/2 z-10 w-8 md:w-12 h-8 md:h-12 bg-black/50 hover:bg-black/70 text-white
         rounded-full flex items-center justify-center transition-all duration-300
          transform hover:scale-110 border border-[rgba(255,255,255,0.49)] ${
            direction === "next"
@@ -162,6 +161,7 @@ const ReviewShowHome = () => {
              : "-left-8 md:-left-14"
          }`}
       style={{ ...style, display: "flex" }}
+      aria-label={direction === "next" ? "Next review" : "Previous review"}
     >
       {direction === "next" ? (
         <ChevronRight className="w-6 h-6 " />
@@ -313,9 +313,9 @@ const ReviewShowHome = () => {
                         {getUserInitial(review)}
                       </div>
                       <div className="ml-3">
-                        <h4 className="font-semibold text-white text-sm md:text-base">
+                        <p className="font-semibold text-white text-sm md:text-base">
                           {getUserDisplayName(review)}
-                        </h4>
+                        </p>
                         <p className="text-gray-400 text-xs md:text-sm font-secondary">
                           {getDisplayDate(review)}
                         </p>

@@ -116,7 +116,8 @@ export default function TwoFactorAuth({ email, onBack, visitorId }) {
 
         const loginResult = await complete2FALogin(email);
         if (loginResult.success) {
-          router.push("/dashboard");
+          // Redirect to homepage after successful 2FA login
+          router.push("/");
         } else {
           setError(loginResult.error);
         }

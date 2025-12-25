@@ -1,21 +1,20 @@
 "use client";
-import { auth } from "@/lib/firebase";
+import { initializeFirebase } from "@/lib/firebase";
 import {
   getCustomErrorMessage,
   getFirebaseErrorMessage,
   isFirebaseError,
 } from "@/lib/firebaseErrorHandler";
-import {
-  applyActionCode,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signOut,
-  updateProfile,
-} from "firebase/auth";
 import { createContext, useContext, useEffect, useState } from "react";
+
+// Lazy load Firebase auth functions to reduce main thread blocking
+let firebaseAuthModule = null;
+const getFirebaseAuthFunctions = async () => {
+  if (!firebaseAuthModule) {
+    firebaseAuthModule = await import("firebase/auth");
+  }
+  return firebaseAuthModule;
+};
 
 const AuthContext = createContext({});
 
@@ -32,14 +31,46 @@ export const AuthContextProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [authToken, setAuthToken] = useState(null);
   const [is2FAPending, setIs2FAPending] = useState(false);
+  const [superAdminEmails, setSuperAdminEmails] = useState([]);
+
+  // Fetch super admin emails from API
+  useEffect(() => {
+    const fetchSuperAdminEmails = async () => {
+      try {
+        // Use authToken state or localStorage directly instead of getAuthToken()
+        const token =
+          authToken ||
+          (typeof window !== "undefined"
+            ? localStorage.getItem("authToken")
+            : null);
+        if (token) {
+          const response = await fetch("/api/admin/super-admins", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              setSuperAdminEmails(data.emails || []);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch super admin emails:", error);
+        // No fallback - keep empty array for security
+        // Super admin check will fail if API is unavailable
+        setSuperAdminEmails([]);
+      }
+    };
+
+    fetchSuperAdminEmails();
+  }, [authToken]); // Use authToken instead of getAuthToken
 
   // Check if user is super admin
   const isSuperAdmin = (email) => {
-    const superAdminEmails = [
-      "jubayer0504@gmail.com",
-      "alan.sangasare10@gmail.com",
-    ];
-    return superAdminEmails.includes(email);
+    if (!email || superAdminEmails.length === 0) return false;
+    return superAdminEmails.includes(email.toLowerCase().trim());
   };
 
   // Check if user has admin privileges
@@ -168,55 +199,71 @@ export const AuthContextProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    let unsubscribe = () => {};
+
+    // Lazy initialize Firebase auth listener
+    const setupAuthListener = async () => {
       try {
-        if (firebaseUser) {
-          const storedToken =
-            typeof window !== "undefined"
-              ? localStorage.getItem("authToken")
-              : null;
+        const auth = await initializeFirebase();
+        const { onAuthStateChanged } = await getFirebaseAuthFunctions();
 
-          if (!storedToken) {
-            setIs2FAPending(true);
+        unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          try {
+            if (firebaseUser) {
+              const storedToken =
+                typeof window !== "undefined"
+                  ? localStorage.getItem("authToken")
+                  : null;
+
+              if (!storedToken) {
+                setIs2FAPending(true);
+                setUser(null);
+                return;
+              }
+
+              const mongoUser = await fetchUserData(firebaseUser.email);
+
+              if (mongoUser) {
+                setIs2FAPending(false);
+                setUser(mongoUser);
+                setAuthToken(storedToken);
+              } else {
+                setIs2FAPending(false);
+                setUser({
+                  email: firebaseUser.email,
+                  role: isSuperAdmin(firebaseUser.email) ? "admin" : "user",
+                  profile: {
+                    firstName: firebaseUser.displayName?.split(" ")[0] || "",
+                    lastName:
+                      firebaseUser.displayName?.split(" ").slice(1).join(" ") ||
+                      "",
+                    username: firebaseUser.displayName || "",
+                    avatar: firebaseUser.photoURL || "",
+                  },
+                });
+                setAuthToken(storedToken);
+              }
+            } else {
+              setUser(null);
+              setIs2FAPending(false);
+              clearAuthToken();
+            }
+          } catch (error) {
+            console.error("Auth error:", error);
             setUser(null);
-            return;
-          }
-
-          const mongoUser = await fetchUserData(firebaseUser.email);
-
-          if (mongoUser) {
             setIs2FAPending(false);
-            setUser(mongoUser);
-            setAuthToken(storedToken);
-          } else {
-            setIs2FAPending(false);
-            setUser({
-              email: firebaseUser.email,
-              role: isSuperAdmin(firebaseUser.email) ? "admin" : "user",
-              profile: {
-                firstName: firebaseUser.displayName?.split(" ")[0] || "",
-                lastName:
-                  firebaseUser.displayName?.split(" ").slice(1).join(" ") || "",
-                username: firebaseUser.displayName || "",
-                avatar: firebaseUser.photoURL || "",
-              },
-            });
-            setAuthToken(storedToken);
+            clearAuthToken();
+          } finally {
+            setLoading(false);
           }
-        } else {
-          setUser(null);
-          setIs2FAPending(false);
-          clearAuthToken();
-        }
+        });
       } catch (error) {
-        console.error("Auth error:", error);
-        setUser(null);
-        setIs2FAPending(false);
-        clearAuthToken();
-      } finally {
+        console.error("Failed to initialize Firebase auth:", error);
         setLoading(false);
       }
-    });
+    };
+
+    setupAuthListener();
 
     return () => unsubscribe();
   }, []);
@@ -259,6 +306,10 @@ export const AuthContextProvider = ({ children }) => {
   ) => {
     const { skipDb = false } = options;
     try {
+      const auth = await initializeFirebase();
+      const { createUserWithEmailAndPassword, updateProfile } =
+        await getFirebaseAuthFunctions();
+
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -325,6 +376,9 @@ export const AuthContextProvider = ({ children }) => {
     visitorId = null
   ) => {
     try {
+      const auth = await initializeFirebase();
+      const { signInWithEmailAndPassword } = await getFirebaseAuthFunctions();
+
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
@@ -382,6 +436,9 @@ export const AuthContextProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      const auth = await initializeFirebase();
+      const { signOut } = await getFirebaseAuthFunctions();
+
       await signOut(auth);
       setUser(null);
       clearAuthToken();
@@ -393,6 +450,9 @@ export const AuthContextProvider = ({ children }) => {
 
   const resetPassword = async (email) => {
     try {
+      const auth = await initializeFirebase();
+      const { sendPasswordResetEmail } = await getFirebaseAuthFunctions();
+
       await sendPasswordResetEmail(auth, email);
       return { success: true };
     } catch (error) {
@@ -406,6 +466,9 @@ export const AuthContextProvider = ({ children }) => {
 
   const resendVerificationEmail = async () => {
     try {
+      const auth = await initializeFirebase();
+      const { sendEmailVerification } = await getFirebaseAuthFunctions();
+
       if (auth.currentUser) {
         await sendEmailVerification(auth.currentUser);
         return { success: true };
@@ -422,6 +485,9 @@ export const AuthContextProvider = ({ children }) => {
 
   const verifyEmail = async (actionCode) => {
     try {
+      const auth = await initializeFirebase();
+      const { applyActionCode } = await getFirebaseAuthFunctions();
+
       await applyActionCode(auth, actionCode);
       return { success: true };
     } catch (error) {

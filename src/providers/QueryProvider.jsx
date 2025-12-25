@@ -8,8 +8,14 @@ export default function QueryProvider({ children }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5 * 60 * 1000, // 5 minutes
-            cacheTime: 10 * 60 * 1000, // 10 minutes
+            staleTime: 10 * 60 * 1000, // 10 minutes - increased for better caching
+            gcTime: 15 * 60 * 1000, // 15 minutes (renamed from cacheTime)
+            refetchOnWindowFocus: false, // Reduce unnecessary refetches
+            refetchOnReconnect: false,
+            retry: 1, // Reduce retries for faster failure
+          },
+          mutations: {
+            retry: 1,
           },
         },
       })

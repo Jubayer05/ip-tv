@@ -92,10 +92,6 @@ verificationTokenSchema.statics.verifyToken = async function (email, token) {
   return false;
 };
 
-// In dev, force recompile so schema updates take effect
-if (mongoose.models.VerificationToken) {
-  delete mongoose.models.VerificationToken;
-}
 const VerificationToken = mongoose.model(
   "VerificationToken",
   verificationTokenSchema
